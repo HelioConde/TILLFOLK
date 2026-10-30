@@ -31,7 +31,7 @@
   const spriteUrls = {
     grass:A+"terrain/grass.png", dirt:A+"terrain/tilled-dirt.png", soil:A+"terrain/soil.png",
     crops:A+"farming/crops.png", trees:A+"environment/trees-and-bushes.png",
-    worker:A+"characters/worker-basic.png", premium:A+"characters/worker-variants.png",
+    worker:A+"characters/worker-basic.png", premium:A+"characters/worker-variants.png", actions:A+"characters/worker-actions.png",
     well:A+"structures/water-well.png", fences:A+"structures/fences.png",
     roof:A+"structures/wood-roof.png",walls:A+"structures/wood-walls.png",furniture:A+"structures/furniture.png",chest:A+"structures/chest.png",paths:A+"structures/paths.png",fenceGates:A+"structures/fence-gates.png",
     rocks:A+"environment/forageables.png"
@@ -55,12 +55,15 @@
   ];
   const workerPaletted=new Map();
   function workerAppearanceId(person){return Math.abs(Math.trunc(Number(person?.appearance)||0))%workerPalettes.length;}
-  function getWorkerSprite(person){
-    const original=valid(sprite.premium)?sprite.premium:sprite.worker;
+  function getWorkerSprite(person, useAction=false){
+    // As animações das ferramentas são do próprio pacote já incluído no projeto.
+    const sourceId=useAction&&valid(sprite.actions)?"actions":valid(sprite.premium)?"premium":"worker";
+    const original=sprite[sourceId];
     if(!valid(original))return original;
     const paletteId=workerAppearanceId(person);
     if(paletteId===0)return original;
-    if(workerPaletted.has(paletteId))return workerPaletted.get(paletteId);
+    const paletteKey=sourceId+":"+paletteId;
+    if(workerPaletted.has(paletteKey))return workerPaletted.get(paletteKey);
     const off=document.createElement("canvas");
     off.width=original.naturalWidth;off.height=original.naturalHeight;
     const context=off.getContext("2d",{willReadFrequently:true});
@@ -83,11 +86,12 @@
       }
       context.putImageData(frame,0,0);
     }catch(err){console.warn("Paleta original mantida:",err);}
-    workerPaletted.set(paletteId,off);
+    workerPaletted.set(paletteKey,off);
     return off;
   }
   sprite.premium.addEventListener("load",()=>{workerPaletted.clear();redrawStarterAvatars();});
   sprite.worker.addEventListener("load",()=>{workerPaletted.clear();redrawStarterAvatars();});
+  sprite.actions.addEventListener("load",()=>workerPaletted.clear());
   const labels = {clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar"};
   const icons = {clear:"🪓",till:"⛏️",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦"};
   const baseTime = {clear:120,till:90,fertilize:60,sow:60,water:90,harvest:120,carry:60};
@@ -334,6 +338,9 @@
       ...state.workers.map(worker=>({type:"worker",worker,depth:worker.y*TILE}))
     ].sort((a,b)=>a.depth-b.depth);
     const rowFor={down:0,up:1,left:2,right:3};
+    // O atlas worker-actions.png tem 3 grupos de 4 direções, com 2 quadros por ação:
+    // enxada (0–3), ferramenta de corte (4–7) e transporte (8–11).
+    const actionRow={till:0,fertilize:0,sow:0,clear:4,harvest:4,water:8,carry:8};
     for(const item of layers){
       const {x,y,type}=item;
       if(type==="tree"){
@@ -354,19 +361,35 @@
       }else{
         const w=item.worker,px=w.x*TILE,py=w.y*TILE;
         ctx.fillStyle="#223c3180";ctx.beginPath();ctx.ellipse(px,py-2,11,4,0,0,Math.PI*2);ctx.fill();
-        const image=getWorkerSprite(w);
-        // Atlas 48 px: linhas 0–3 = parado, linhas 4–7 = caminhada em 4 direções.
-        // A sequência não anda quando o colono está trabalhando ou esperando.
-        // Recorte exclui margem transparente do atlas; os pés tocam a sombra em py.
-        const row=(rowFor[w.facing]||0)+(w.moving?4:0);
-        const frame=w.moving?Math.floor(w.walkFrame||0)%8:0;
-        part(image,frame*48+11,row*48+12,26,24,px-20,py-34,40,40);
-        if(!valid(sprite.premium)&&!valid(sprite.worker)){ctx.fillStyle=w.color;ctx.fillRect(px-10,py-30,20,27);}
         const active=tasks.find(t=>t.id===w.task);
-        write(w.name,px,py-49,"#fff5dd",11);
-        if(active&&!w.moving&&w.progress>0){
-          ctx.fillStyle="#20362a";ctx.fillRect(px-17,py-45,34,5);
-          ctx.fillStyle="#edce83";ctx.fillRect(px-17,py-45,34*w.progress,5);
+        const working=Boolean(active&&!w.moving&&w.progress>0);
+        const direction=rowFor[w.facing]||0;
+        // Parado = quadro fixo; andando = sprites de caminhada; trabalhando =
+        // quadros completos do atlas de ferramentas, sem cortar enxada ou carga.
+        if(working&&valid(sprite.actions)){
+          const image=getWorkerSprite(w,true);
+          const actionGroup=actionRow[active.type]??0;
+          const frame=simSpeed===0?0:Math.floor(performance.now()/250)%2;
+          part(image,frame*48,(actionGroup+direction)*48,48,48,px-34,py-51,68,68);
+        }else{
+          const image=getWorkerSprite(w);
+          const row=direction+(w.moving?4:0);
+          const frame=w.moving?Math.floor(w.walkFrame||0)%8:0;
+          part(image,frame*48+11,row*48+12,26,24,px-20,py-34,40,40);
+        }
+        if(!valid(sprite.premium)&&!valid(sprite.worker)){
+          ctx.fillStyle=w.color;ctx.fillRect(px-10,py-30,20,27);
+        }
+        // Placa de identificação menor para não cobrir o personagem.
+        const name=String(w.name||"Colono").slice(0,17);
+        ctx.font="bold 10px system-ui";ctx.textAlign="center";
+        const nameWidth=Math.min(118,Math.max(32,Math.ceil(ctx.measureText(name).width)+13));
+        ctx.fillStyle="#173124de";ctx.fillRect(Math.round(px-nameWidth/2),Math.round(py-65),nameWidth,15);
+        write(name,px,py-54,"#fff4d5",10);
+        if(working){
+          // Indicador abaixo do personagem: não encobre a ferramenta nem o nome.
+          ctx.fillStyle="#142a22";ctx.fillRect(Math.round(px-17),Math.round(py+5),34,5);
+          ctx.fillStyle="#f3d28b";ctx.fillRect(Math.round(px-16),Math.round(py+6),32*Math.min(1,w.progress),3);
         }
       }
     }
