@@ -36,6 +36,7 @@ jobs:
           test -f _site/public/assets/sprout-lands/characters/worker-basic.png
           test -f _site/public/assets/sprout-lands/characters/worker-variants.png
           test -f _site/public/assets/sprout-lands/characters/worker-actions.png
+          test -f _site/public/assets/sprout-lands/characters/watering-effects.png
           test -f _site/public/assets/sprout-lands/terrain/grass.png
           test -f _site/public/assets/sprout-lands/farming/crops.png
           test -f _site/public/assets/tillfolk/menu-landscape.svg
