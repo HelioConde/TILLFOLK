@@ -337,10 +337,10 @@
     for(const item of layers){
       const {x,y,type}=item;
       if(type==="tree"){
-        // Atlas verificado por screenshots: 0–80px na linha 0 são copas com frutos;
+        // Atlas verificado por screenshots: recortes de 28px preservam copas e troncos.
         // 144,48 é a árvore grande. As variações evitam repetir a mesma textura.
-        if(item.index%3===0)part(sprite.trees,32,0,16,32,x*TILE-14,y*TILE-38,46,66);
-        else if(item.index%3===1)part(sprite.trees,80,0,16,32,x*TILE-14,y*TILE-38,46,66);
+        if(item.index%3===0)part(sprite.trees,76,0,28,32,x*TILE-14,y*TILE-38,46,66);
+        else if(item.index%3===1)part(sprite.trees,132,0,28,32,x*TILE-14,y*TILE-38,46,66);
         else part(sprite.trees,144,48,48,48,x*TILE-25,y*TILE-50,78,78);
       }else if(type==="rock"){
         // Linha 1 do atlas de coleta contém pedras; a linha 2 contém folhas.
