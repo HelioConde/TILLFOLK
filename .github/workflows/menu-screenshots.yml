@@ -1,4 +1,4 @@
-name: QA visual — menu TILLFOLK
+name: QA visual — menu e jogo TILLFOLK
 on:
   push:
     branches: [main]
@@ -8,6 +8,9 @@ on:
       - 'menu-layout.css'
       - 'src/menu-scene.js'
       - 'tests/menu.spec.cjs'
+      - 'src/game.js'
+      - 'styles.css'
+      - '.github/workflows/pages.yml'
       - '.github/workflows/menu-screenshots.yml'
   workflow_dispatch:
 permissions:
@@ -35,7 +38,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tillfolk-menu-screenshots
+          name: tillfolk-screenshots-completas
           path: screenshots/
           if-no-files-found: warn
           retention-days: 14
