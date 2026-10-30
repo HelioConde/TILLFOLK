@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./menu.css">
   <link rel="stylesheet" href="./menu-layout.css">
+  <link rel="stylesheet" href="./game-polish.css">
   <script defer src="./src/menu.js"></script>
   <script defer src="./src/menu-scene.js"></script>
   <script defer src="./src/game.js"></script>
@@ -33,7 +34,7 @@
     </header>
     <main class="game-layout">
       <section class="play-area" aria-label="Fazenda">
-        <div class="scene-head"><div><span id="mode-label" class="overline">SOBREVIVÊNCIA · DIA 1</span><h1 id="farm-title">Seu pequeno pedaço de terra</h1></div><div id="status" class="status-pill">● Fazenda em funcionamento</div></div>
+        <div class="scene-head"><div><span id="mode-label" class="overline">SOBREVIVÊNCIA · DIA 1</span><h1 id="farm-title">Seu pequeno pedaço de terra</h1></div><div class="scene-actions"><button id="focus-game" type="button" class="focus-game-btn" aria-pressed="false" title="Ampliar a fazenda e ocultar os painéis de gestão">▣ Tela de jogo</button><div id="status" class="status-pill">● Fazenda em funcionamento</div></div></div>
         <div class="canvas-scroll">
           <div class="canvas-wrap">
             <canvas id="world" width="896" height="576" aria-label="Mapa interativo da fazenda"></canvas>
