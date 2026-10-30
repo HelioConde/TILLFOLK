@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./menu.css">
   <script defer src="./src/menu.js"></script>
+  <script defer src="./src/menu-scene.js"></script>
   <script defer src="./src/game.js"></script>
 </head>
 <body>
@@ -67,7 +68,7 @@
   </div>
 
   <div id="menu" class="title-screen" aria-label="Menu principal do TILLFOLK">
-    <div class="title-landscape" aria-hidden="true"></div>
+    <canvas id="title-scene" class="title-scene-canvas" width="960" height="540" aria-hidden="true"></canvas>
     <div class="title-shading" aria-hidden="true"></div>
     <div class="title-content">
       <div class="title-topline"><span>✿ CULTIVE · RECRUTE · ORGANIZE · SOBREVIVA</span><button type="button" id="title-fullscreen" aria-label="Alternar tela cheia">⛶ Tela cheia</button></div>
@@ -86,11 +87,11 @@
         </nav>
       </section>
       <section class="title-cards" aria-label="Descubra o jogo">
-        <article><b>♟ Monte sua equipe</b><div class="title-card-art">🧑‍🌾　👩‍🌾　🧑‍🌾</div><p>Cada pessoa tem talentos únicos para fazer sua fazenda crescer.</p></article>
-        <article><b>🌱 Gerencie prioridades</b><div class="title-card-art crops">🌿　📋　🌾</div><p>Organize atividades e mantenha tudo funcionando.</p></article>
-        <article><b>⚙ Automatize sua fazenda</b><div class="title-card-art workshop">🪵　🏡　📦</div><p>Construa estruturas e automatize sua produção.</p></article>
+        <article><b>♟ Monte sua equipe</b><canvas class="title-card-preview" width="192" height="72" data-preview="workers" aria-hidden="true"></canvas><p>Cada pessoa tem talentos únicos para fazer sua fazenda crescer.</p></article>
+        <article><b>🌱 Gerencie prioridades</b><canvas class="title-card-preview" width="192" height="72" data-preview="crops" aria-hidden="true"></canvas><p>Organize atividades e mantenha tudo funcionando.</p></article>
+        <article><b>⚙ Automatize sua fazenda</b><canvas class="title-card-preview" width="192" height="72" data-preview="farm" aria-hidden="true"></canvas><p>Construa estruturas e automatize sua produção.</p></article>
       </section>
-      <footer class="title-version"><span>✿ Build v0.5</span><span>Assets: Sprout Lands — Cup Nooble</span></footer>
+      <footer class="title-version"><span>✿ Build v0.6</span><span>Assets: Sprout Lands — Cup Nooble</span></footer>
     </div>
   </div>
   <dialog id="title-settings-dialog" class="modal title-modal">
