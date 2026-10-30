@@ -41,7 +41,7 @@
 .starter-slot{position:relative}.starter-slot:before{content:"";display:block;background:linear-gradient(120deg,#659a80,#498978 48%,#77a3a2);position:absolute;left:10px;right:10px;top:42px;height:108px;border:2px solid #78b3bb;border-radius:6px;z-index:0}
 .starter-slot>*{position:relative;z-index:1}.starter-slot .starter-person{min-height:90px;align-items:center}.starter-slot .starter-portrait{border:2px solid #d3f0ca;background:#9ac6a2}
 .starter-name-input{min-width:0;max-width:185px;width:100%;font-weight:850;font-size:19px;border:1px solid #799b84;border-radius:5px;background:#1f3b31de;color:#fff4d5;padding:5px 7px}
-.starter-slot .starter-label{display:block;background:#314638;padding:8px;margin:-10px -10px 10px;border-radius:5px}
+.starter-slot > .starter-label{display:block;background:#314638;padding:8px;margin:-10px -10px 10px;border-radius:5px}
 .management-dialog{width:min(1080px,calc(100vw - 24px));max-width:1080px;background:#23392f}
 .management-tabs{display:flex;gap:7px;margin:15px 0 0;border-bottom:2px solid #6d8f6b}.management-tabs button{color:#cbdec3;background:#354e3f;border:1px solid #6b8a68;border-bottom:0;border-radius:8px 8px 0 0;padding:12px 20px;font-weight:800}
 .management-tabs button[aria-selected=true]{background:#d7e9aa;color:#2c472e;border-color:#f5edb3}
