@@ -196,7 +196,7 @@
   }
   function valid(img){return img&&img.complete&&img.naturalWidth>0;}
   function part(img,sx,sy,sw,sh,x,y,w=32,h=32){
-    if(valid(img))ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);
+    if(valid(img)||(img instanceof HTMLCanvasElement&&img.width>0&&img.height>0))ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);
   }
   function write(s,x,y,color="#fff7dd",size=11){
     ctx.font="bold "+size+"px system-ui";ctx.textAlign="center";ctx.lineWidth=3;ctx.strokeStyle="#253d30";ctx.strokeText(s,x,y);ctx.fillStyle=color;ctx.fillText(s,x,y);
