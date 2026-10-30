@@ -60,6 +60,15 @@ test('Editor touch, teclado e compatibilidade com salvamento antigo',async({page
   await startGame(page);
   await page.keyboard.press('b');
   await expect(page.locator('#construction-panel')).toBeVisible();
+  await page.waitForTimeout(120);
+  // No celular, o editor precisa apontar para a casa, nao apenas para a horta.
+  const focus=await page.evaluate(()=>{
+    const rect=document.querySelector('#world').getBoundingClientRect();
+    const worldX=6.5*32/896;
+    return rect.left+rect.width*worldX;
+  });
+  expect(focus).toBeGreaterThan(65);
+  expect(focus).toBeLessThan(325);
   await page.locator('[data-build-layer="walls"]').click();
   await expect(page.locator('[data-build-layer="walls"]')).toHaveAttribute('aria-pressed','true');
   await page.screenshot({path:'screenshots/casa-construcao-mobile-390x844.png',animations:'disabled'});
