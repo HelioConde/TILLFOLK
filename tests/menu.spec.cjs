@@ -313,3 +313,71 @@ test('Casa usa atlas original e telhas sem alongamento',async({page})=>{
   expect(menuCode).toContain('wallX+col*cell,wallY+row*cell,cell,cell');
   expect(errors).toEqual([]);
 });
+
+
+test('Terreno selvagem: nenhuma horta inicial, paisagem diversa e persistência',async({page})=>{
+  await page.setViewportSize({width:1600,height:900});
+  const problems=[];
+  page.on('pageerror',error=>problems.push(error.message));
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.locator('#new-game').click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator('#starter-confirm').click();
+  await expect(page.locator('#menu')).toBeHidden();
+  await expect(page.locator('body')).toHaveClass(/play-session/);
+  await expect(page.locator('.world-tag')).toContainText('VALE SELVAGEM');
+  const snapshot=await page.evaluate(()=>{
+    const state=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    const unique=[...new Set(state.world.objects.map(o=>o.kind))];
+    const count=type=>state.world.objects.filter(o=>o.kind===type).length;
+    const nearStart=state.world.objects.filter(o=>Math.hypot((o.x-13.6)/1.15,(o.y-9.5)/1.05)<3.75);
+    return {version:state.world.version,seed:state.world.seed,objects:state.world.objects.length,
+      water:state.world.water.length,types:unique,trees:count('tree'),
+      stones:count('boulder'),mushrooms:count('mushroom'),
+      flowers:count('flowers'),grass:count('grass'),
+      plots:state.plots.length,selected:state.plots.filter(p=>p.selected).length,
+      cultivated:state.plots.filter(p=>p.tilled||p.seeded).length,nearStart:nearStart.length};
+  });
+  expect(snapshot.version).toBe(1);
+  expect(snapshot.objects).toBeGreaterThan(90);
+  expect(snapshot.water).toBeGreaterThan(3);
+  for(const count of [snapshot.trees,snapshot.stones,snapshot.mushrooms,snapshot.flowers,snapshot.grass])
+    expect(count).toBeGreaterThan(5);
+  expect(snapshot.selected).toBe(0);
+  expect(snapshot.cultivated).toBe(0);
+  expect(snapshot.nearStart).toBe(0);
+  expect(problems).toEqual([]);
+  await page.waitForTimeout(600);
+  await page.screenshot({path:'screenshots/vale-selvagem-inicial-1600x900.png',animations:'disabled'});
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('#continue').click();
+  const restored=await page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
+  expect(restored.world.seed).toBe(snapshot.seed);
+  expect(restored.world.objects.length).toBe(snapshot.objects);
+});
+
+test('Recursos da mata: geração determinística, coleta e regeneração',async({page})=>{
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  const checks=await page.evaluate(()=>{
+    const wild=window.TillfolkWild;
+    const a=wild.create(14142,28,18),b=wild.create(14142,28,18);
+    const before=a.objects.length,tree=a.objects.find(o=>o.kind==='tree');
+    const first=wild.clear(a,tree.x,tree.y);
+    const stump=wild.at(a,tree.x,tree.y);
+    const second=wild.clear(a,tree.x,tree.y);
+    const gone=wild.at(a,tree.x,tree.y);
+    const newFlowers=wild.regrow(a,6,28,18,[]);
+    return {same:JSON.stringify(b)===JSON.stringify(wild.create(14142,28,18)),
+      before,treeWasSolid:wild.blocked(b,tree.x,tree.y,28,18),
+      first,stumpKind:stump?.kind,second,goneKind:gone?.kind||null,
+      newFlowers,lastRegrownDay:a.lastRegrownDay};
+  });
+  expect(checks.same).toBe(true);
+  expect(checks.before).toBeGreaterThan(90);
+  expect(checks.treeWasSolid).toBe(true);
+  expect(checks.first.remaining).toBe(true);
+  expect(checks.stumpKind).toBe('stump');
+  expect(checks.second.remaining).toBe(false);
+  expect(checks.goneKind).toBeNull();
+  expect(checks.lastRegrownDay).toBe(6);
+});
