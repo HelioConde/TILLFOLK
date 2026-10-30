@@ -1,0 +1,57 @@
+/* TILLFOLK v0.9: layout estável do menu. Somente o menu inicial. */
+#menu.title-screen{position:fixed;inset:0;width:100%;max-width:none;height:100dvh;margin:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;isolation:isolate}
+#menu .title-content{position:relative;display:grid;grid-template-columns:minmax(280px,392px) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"top top" "nav cards" "footer footer";gap:clamp(12px,1.8vw,25px);align-items:center;width:100%;max-width:100%;min-height:100dvh;height:auto;padding:clamp(14px,2vh,26px) clamp(18px,3vw,48px) 15px}
+#menu .title-topline{position:relative;inset:auto;grid-area:top;z-index:4;min-width:0}
+#menu .title-navigation{position:relative;inset:auto;left:auto;right:auto;top:auto;bottom:auto;transform:none;margin:0;align-self:center;justify-self:start;grid-area:nav;width:100%;max-width:392px;max-height:none;min-width:0;overflow:visible;padding:0;z-index:5}
+#menu .title-navigation h2{font-size:clamp(42px,4.35vw,68px);line-height:1.12;white-space:normal;overflow-wrap:normal}
+#menu .title-navigation>p{margin:8px 0 17px;max-width:365px;line-height:1.5}
+#menu .title-menu-actions{padding:0;gap:7px}
+#menu .title-menu-button{min-height:44px;height:clamp(44px,5.7vh,54px);min-width:0}
+#menu .title-menu-button:focus-visible{outline:3px solid #ffdc8f;outline-offset:3px}
+#menu .title-cards{position:relative;inset:auto;right:auto;left:auto;top:auto;bottom:auto;grid-area:cards;align-self:end;justify-self:end;z-index:3;width:min(100%,800px);max-width:100%;margin:0 0 clamp(10px,4vh,38px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+#menu .title-cards article{min-width:0;min-height:125px}
+#menu .title-card-preview{height:clamp(46px,7vh,70px)}
+#menu .title-version{position:relative;inset:auto;grid-area:footer;z-index:4;min-width:0;align-self:end}
+#menu .title-scene-canvas{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated;pointer-events:none;z-index:0}
+#menu .title-shading{position:fixed;inset:0;pointer-events:none;z-index:1}
+@media(max-width:1020px){
+ #menu .title-content{grid-template-columns:minmax(270px,350px) minmax(0,1fr);gap:12px}
+ #menu .title-cards{width:100%;gap:7px}
+ #menu .title-cards article{padding:9px;min-height:117px}
+ #menu .title-card-preview{height:48px}
+ #menu .title-navigation h2{font-size:clamp(43px,5.2vw,59px)}
+}
+@media(max-width:850px){
+ #menu.title-screen{height:100dvh}
+ #menu .title-content{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:100dvh;height:auto;padding:14px 16px 22px;gap:14px}
+ #menu .title-topline{position:relative;width:100%;align-self:stretch;flex:0 0 auto}
+ #menu .title-navigation{position:relative;left:auto;top:auto;transform:none;width:min(100%,440px);max-height:none;margin:14px auto 0;flex:0 0 auto;padding:0}
+ #menu .title-navigation h2,#menu .title-navigation>p,#menu .title-sprout{text-align:center}
+ #menu .title-navigation>p{margin:8px auto 16px}
+ #menu .title-divider{justify-content:center;max-width:none}
+ #menu .title-cards{position:relative;width:min(100%,690px);margin:6px auto 0;grid-template-columns:repeat(3,minmax(0,1fr));flex:0 0 auto}
+ #menu .title-version{position:relative;width:100%;margin-top:auto;flex:0 0 auto}
+ #menu .title-shading{background:linear-gradient(90deg,#0b281fe8,#122f23bd),linear-gradient(0deg,#0e271ce0,transparent)}
+}
+@media(max-width:550px){
+ #menu .title-navigation{margin-top:7px}
+ #menu .title-menu-button{height:46px}
+ #menu .title-cards{grid-template-columns:1fr;gap:6px}
+ #menu .title-cards article{min-height:0;padding:8px 10px}
+ #menu .title-card-preview{display:none}
+ #menu .title-version{font-size:9px;gap:9px;flex-wrap:wrap}
+}
+@media(max-height:700px) and (min-width:851px){
+ #menu .title-content{gap:7px;padding-top:10px;padding-bottom:8px}
+ #menu .title-navigation h2{font-size:clamp(40px,4vw,53px);margin:4px 0}
+ #menu .title-navigation>p{font-size:12px;margin:5px 0 10px}
+ #menu .title-menu-actions{gap:5px}
+ #menu .title-menu-button{height:39px;min-height:39px;font-size:14px}
+ #menu .title-cards{margin-bottom:0}
+ #menu .title-cards article{min-height:100px}
+ #menu .title-card-preview{height:42px}
+}
+@media(prefers-reduced-motion:reduce){
+ #menu .title-menu-button{transition:none}
+ #menu .title-menu-button:hover{transform:none}
+}

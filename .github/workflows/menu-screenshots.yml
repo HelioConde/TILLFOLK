@@ -1,0 +1,41 @@
+name: QA visual — menu TILLFOLK
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'menu.css'
+      - 'menu-layout.css'
+      - 'src/menu-scene.js'
+      - 'tests/menu.spec.cjs'
+      - '.github/workflows/menu-screenshots.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar Playwright
+        run: |
+          npm install --no-save @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Servir versão real do jogo
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-http.log 2>&1 &
+          sleep 2
+      - name: Capturar screenshots e validar cortes
+        run: npx playwright test tests/menu.spec.cjs --browser chromium --reporter=line
+      - name: Anexar screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-menu-screenshots
+          path: screenshots/
+          if-no-files-found: warn
+          retention-days: 14
