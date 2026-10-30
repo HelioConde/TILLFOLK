@@ -357,9 +357,10 @@
         const image=getWorkerSprite(w);
         // Atlas 48 px: linhas 0–3 = parado, linhas 4–7 = caminhada em 4 direções.
         // A sequência não anda quando o colono está trabalhando ou esperando.
+        // Recorte exclui margem transparente do atlas; os pés tocam a sombra em py.
         const row=(rowFor[w.facing]||0)+(w.moving?4:0);
         const frame=w.moving?Math.floor(w.walkFrame||0)%8:0;
-        part(image,frame*48+11,row*48+8,26,32,px-20,py-42,40,45);
+        part(image,frame*48+11,row*48+12,26,24,px-20,py-34,40,40);
         if(!valid(sprite.premium)&&!valid(sprite.worker)){ctx.fillStyle=w.color;ctx.fillRect(px-10,py-30,20,27);}
         const active=tasks.find(t=>t.id===w.task);
         write(w.name,px,py-49,"#fff5dd",11);
