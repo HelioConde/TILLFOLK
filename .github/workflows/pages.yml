@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
-          cp index.html styles.css menu.css _site/
+          cp index.html styles.css menu.css menu-layout.css _site/
           cp src/game.js src/menu.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
@@ -60,6 +60,10 @@ jobs:
           test -f _site/public/assets/sprout-lands/structures/wood-walls.png
           test -f _site/public/assets/sprout-lands/terrain/dark-soil.png
           test -f _site/menu.css
+          test -f _site/menu-layout.css
+          # O CSS de layout do menu também precisa existir no site publicado.
+          grep -q 'menu-layout.css' _site/index.html
+          grep -q 'menu-layout.css' _site/menu-layout.css || test -s _site/menu-layout.css
           test -f "_site/public/assets/Sprout Lands - UI Pack - Basic pack/fonts/pixelFont-7-8x14-sproutLands.ttf"
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
