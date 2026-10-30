@@ -350,13 +350,13 @@
       ...state.world.objects.map(object=>({type:"nature",object,depth:(object.y+.8)*TILE})),
       ...state.workers.map(worker=>({type:"worker",worker,depth:worker.y*TILE}))
     ].sort((a,b)=>a.depth-b.depth);
-    // O atlas Sprout Lands guarda o perfil voltado à DIREITA na linha 2
-    // e o perfil voltado à ESQUERDA na linha 3. A lógica de deslocamento
-    // (dx > 0 => right) já está correta; somente o recorte estava invertido.
-    // Compartilhado por idle, caminhada e animações de trabalho.
-    const rowFor={down:0,up:1,left:3,right:2};
-    // O atlas worker-actions.png tem 3 grupos de 4 direções, com 2 quadros por ação:
-    // enxada (0–3), ferramenta de corte (4–7) e transporte (8–11).
+    // IMPORTANTE: as duas spritesheets usam ordens laterais OPOSTAS.
+    // worker-variants.png: linha 2 = direita, linha 3 = esquerda.
+    // worker-actions.png:  linha 2 = esquerda, linha 3 = direita.
+    // Nunca reutilizar um mapa de direção para ambos os atlas!
+    const walkingRowFor={down:0,up:1,left:3,right:2};
+    const actionRowFor={down:0,up:1,left:2,right:3};
+    // worker-actions.png: três grupos de quatro direções (ferramenta, corte e carga).
     const actionRow={till:0,fertilize:0,sow:0,clear:4,harvest:4,carry:8};
     for(const item of layers){
       const {x,y,type}=item;
@@ -367,16 +367,17 @@
         ctx.fillStyle="#223c3180";ctx.beginPath();ctx.ellipse(px,py-2,11,4,0,0,Math.PI*2);ctx.fill();
         const active=tasks.find(t=>t.id===w.task);
         const working=Boolean(active&&!w.moving&&w.progress>0);
-        const direction=rowFor[w.facing]||0;
-        // Parado = quadro fixo; andando = sprites de caminhada; trabalhando =
-        // quadros completos do atlas de ferramentas, sem cortar enxada ou carga.
+        // A troca dos atlas não deve inverter a direção do personagem.
+        // Parado = quadro fixo; andando = caminhada; trabalhando = ação.
         if(working&&active.type!=="water"&&valid(sprite.actions)){
           const image=getWorkerSprite(w,true);
           const actionGroup=actionRow[active.type]??0;
+          const actionDirection=actionRowFor[w.facing]??0;
           const frame=simSpeed===0?0:Math.floor(performance.now()/250)%2;
-          part(image,frame*48,(actionGroup+direction)*48,48,48,px-34,py-51,68,68);
+          part(image,frame*48,(actionGroup+actionDirection)*48,48,48,px-34,py-51,68,68);
         }else{
           const image=getWorkerSprite(w);
+          const direction=walkingRowFor[w.facing]??0;
           const row=direction+(w.moving?4:0);
           const frame=w.moving?Math.floor(w.walkFrame||0)%8:0;
           part(image,frame*48+11,row*48+12,26,24,px-20,py-34,40,40);
