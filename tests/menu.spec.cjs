@@ -381,3 +381,40 @@ test('Recursos da mata: geração determinística, coleta e regeneração',async
   expect(checks.goneKind).toBeNull();
   expect(checks.lastRegrownDay).toBe(6);
 });
+
+
+test('Regressão visual — direções esquerda/direita dos sprites',async({page})=>{
+  await page.setViewportSize({width:900,height:600});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  const mapped=await page.evaluate(async()=>{
+    const source=await (await fetch('./src/game.js')).text();
+    const result=source.match(/const rowFor=\{down:(\d+),up:(\d+),left:(\d+),right:(\d+)\}/);
+    if(!result)throw new Error('Mapa direcional não encontrado');
+    const [,down,up,left,right]=result.map(Number);
+    const img=new Image();
+    img.src='./public/assets/sprout-lands/characters/worker-variants.png';
+    await img.decode();
+    const scale=5,frameWidth=26,frameHeight=24,sideWidth=290;
+    const board=document.createElement('canvas');
+    board.id='direction-atlas-qa';board.width=sideWidth*2;board.height=200;
+    board.style.cssText='position:fixed;z-index:99999;left:0;top:0;width:580px;height:200px;image-rendering:pixelated;background:#203627';
+    const ctx=board.getContext('2d');ctx.imageSmoothingEnabled=false;
+    for(const [index,label,row] of [[0,'ESQUERDA',left],[1,'DIREITA',right]]){
+      const offset=index*sideWidth;
+      ctx.fillStyle='#f2e9cf';ctx.font='bold 19px sans-serif';
+      ctx.fillText(label,offset+18,27);
+      for(let frame=0;frame<2;frame++){
+        ctx.drawImage(img,frame*48+11,(row+4)*48+12,frameWidth,frameHeight,
+          offset+18+frame*132,48,frameWidth*scale,frameHeight*scale);
+      }
+    }
+    document.body.appendChild(board);
+    return {down,up,left,right,width:img.naturalWidth,height:img.naturalHeight};
+  });
+  expect(mapped).toMatchObject({down:0,up:1,left:3,right:2});
+  expect(mapped.width).toBeGreaterThanOrEqual(96);
+  expect(mapped.height).toBeGreaterThanOrEqual(8*48);
+  await page.locator('#direction-atlas-qa').screenshot({
+    path:'screenshots/direcoes-corrigidas-esquerda-direita.png',animations:'disabled'
+  });
+});
