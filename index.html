@@ -7,6 +7,8 @@
   <meta name="description" content="TILLFOLK: administre uma fazenda, contrate trabalhadores e automatize o cultivo.">
   <title>TILLFOLK — Sua fazenda, sua equipe</title>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./menu.css">
+  <script defer src="./src/menu.js"></script>
   <script defer src="./src/game.js"></script>
 </head>
 <body>
@@ -63,22 +65,54 @@
       </aside>
     </main>
   </div>
-  <div id="menu" class="overlay">
-    <div class="menu-scrim"></div>
-    <section class="menu-card" aria-labelledby="game-title">
-      <div class="menu-leaf">✿ <span>✦</span> ✿</div>
-      <span class="overline">UM SIMULADOR DE FAZENDA E AUTOMAÇÃO</span>
-      <h2 id="game-title">TILLFOLK</h2>
-      <p class="menu-subtitle">Uma fazenda cresce melhor quando cada pessoa encontra seu talento.</p>
-      <div class="menu-actions">
-        <button id="new-game" class="large-primary">🌱 &nbsp; Nova fazenda</button>
-        <button id="continue" class="large-secondary">↻ &nbsp; Continuar</button>
-        <button id="help-btn" class="large-secondary">? &nbsp; Como jogar</button>
-      </div>
-      <p class="menu-foot">Cultive · Recrute · Organize · Sobreviva</p>
-    </section>
-  </div>
 
+  <div id="menu" class="title-screen" aria-label="Menu principal do TILLFOLK">
+    <div class="title-landscape" aria-hidden="true"></div>
+    <div class="title-shading" aria-hidden="true"></div>
+    <div class="title-content">
+      <div class="title-topline"><span>✿ CULTIVE · RECRUTE · ORGANIZE · SOBREVIVA</span><button type="button" id="title-fullscreen" aria-label="Alternar tela cheia">⛶ Tela cheia</button></div>
+      <section class="title-navigation" aria-labelledby="game-title">
+        <div class="title-sprout" aria-hidden="true">✦ 🌱 ✦</div>
+        <h2 id="game-title">TILLFOLK</h2>
+        <div class="title-divider" aria-hidden="true">✦</div>
+        <p>Uma fazenda cresce melhor quando cada pessoa encontra seu talento.</p>
+        <nav class="title-menu-actions" aria-label="Escolha uma opção">
+          <button type="button" id="new-game" class="title-menu-button primary"><span>🌱</span><strong>Nova Fazenda</strong><em>›</em></button>
+          <button type="button" id="continue" class="title-menu-button"><span>↻</span><strong>Continuar</strong></button>
+          <button type="button" id="help-btn" class="title-menu-button"><span>▤</span><strong>Como Jogar</strong></button>
+          <button type="button" id="title-settings" class="title-menu-button"><span>⚙</span><strong>Configurações</strong></button>
+          <button type="button" id="title-credits" class="title-menu-button"><span>✦</span><strong>Créditos</strong></button>
+          <button type="button" id="title-exit" class="title-menu-button"><span>⇥</span><strong>Sair</strong></button>
+        </nav>
+      </section>
+      <section class="title-cards" aria-label="Descubra o jogo">
+        <article><b>♟ Monte sua equipe</b><div class="title-card-art">🧑‍🌾　👩‍🌾　🧑‍🌾</div><p>Cada pessoa tem talentos únicos para fazer sua fazenda crescer.</p></article>
+        <article><b>🌱 Gerencie prioridades</b><div class="title-card-art crops">🌿　📋　🌾</div><p>Organize atividades e mantenha tudo funcionando.</p></article>
+        <article><b>⚙ Automatize sua fazenda</b><div class="title-card-art workshop">🪵　🏡　📦</div><p>Construa estruturas e automatize sua produção.</p></article>
+      </section>
+      <footer class="title-version"><span>✿ Build v0.5</span><span>Assets: Sprout Lands — Cup Nooble</span></footer>
+    </div>
+  </div>
+  <dialog id="title-settings-dialog" class="modal title-modal">
+    <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
+    <span class="overline">PREFERÊNCIAS</span><h2>Configurações</h2>
+    <p>Personalize a tela inicial.</p>
+    <label class="title-setting"><span><strong>Movimento do cenário</strong><small>Animação suave ao fundo do menu</small></span><input id="title-motion" type="checkbox" checked></label>
+    <button type="button" id="title-fullscreen-setting" class="large-secondary">⛶ Alternar tela cheia</button>
+  </dialog>
+  <dialog id="title-credits-dialog" class="modal title-modal">
+    <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
+    <span class="overline">SOBRE O TILLFOLK</span><h2>Créditos</h2>
+    <p>TILLFOLK é um jogo independente de gerenciamento de fazenda e trabalhadores.</p>
+    <p>Sprites e recursos visuais: <strong>Sprout Lands, por Cup Nooble</strong>. Consulte os termos originais de uso no repositório.</p>
+    <p><a href="https://github.com/HelioConde/TILLFOLK" target="_blank" rel="noopener noreferrer">Repositório e licenças</a></p>
+  </dialog>
+  <dialog id="title-exit-dialog" class="modal title-modal">
+    <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
+    <h2>Até a próxima colheita!</h2>
+    <p>O TILLFOLK funciona no navegador. Para sair, feche esta aba. Durante o jogo, seu progresso é salvo localmente.</p>
+    <button type="button" id="title-return" class="large-primary">Voltar ao menu</button>
+  </dialog>
   <dialog id="mode-dialog" class="mode-dialog" aria-labelledby="mode-title">
     <div class="dialog-topline"><span>✿ CONFIGURAR PARTIDA</span>
       <form method="dialog"><button class="modal-x" aria-label="Voltar ao menu">✕</button></form>
