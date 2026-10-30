@@ -350,7 +350,11 @@
       ...state.world.objects.map(object=>({type:"nature",object,depth:(object.y+.8)*TILE})),
       ...state.workers.map(worker=>({type:"worker",worker,depth:worker.y*TILE}))
     ].sort((a,b)=>a.depth-b.depth);
-    const rowFor={down:0,up:1,left:2,right:3};
+    // O atlas Sprout Lands guarda o perfil voltado à DIREITA na linha 2
+    // e o perfil voltado à ESQUERDA na linha 3. A lógica de deslocamento
+    // (dx > 0 => right) já está correta; somente o recorte estava invertido.
+    // Compartilhado por idle, caminhada e animações de trabalho.
+    const rowFor={down:0,up:1,left:3,right:2};
     // O atlas worker-actions.png tem 3 grupos de 4 direções, com 2 quadros por ação:
     // enxada (0–3), ferramenta de corte (4–7) e transporte (8–11).
     const actionRow={till:0,fertilize:0,sow:0,clear:4,harvest:4,carry:8};
