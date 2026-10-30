@@ -322,7 +322,7 @@
     }
     // Casa em camadas com tiles locais; referencia Slime-Harvest/HouseBuilder.
     window.TillfolkHouse.draw(ctx,sprite,part,state.house,{
-      building:selectedTool==="construir",layer:buildLayer,
+      building:selectedTool==="construir",layer:buildLayer,workers:state.workers,
       previewX:buildHover?.x,previewY:buildHover?.y,
       previewValid:buildHover?Boolean(getBuildEdit(buildHover.x,buildHover.y,eraseBuild).house):false
     });
