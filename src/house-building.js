@@ -87,6 +87,7 @@
       if (isOccupied(x,y)) return {error:"O terreno está ocupado por cultivo, árvore, objeto ou trabalhador."};
     } else {
       if (id===house.door && layer==="walls") return {error:"A entrada deve ficar livre de paredes."};
+      if (isOccupied(x,y)) return {error:"Não construa sobre plantações, objetos ou trabalhadores."};
       if (!touchesFloor(house,x,y,1,layer==="roof"?3:1))
         return {error:"Construa esta camada perto do piso da casa."};
       if (layer==="walls" && contains(house.floor,x,y) && y===9 && x===6)
@@ -113,7 +114,7 @@
       const sy=(!up&&down)?0:(!down&&up)?32:16;
       part(sprites.walls,sx,sy,16,16,x*TILE,y*TILE,TILE,TILE);
       // Uma janela usa um recorte real do mesmo atlas, nunca um retângulo desenhado.
-      if(y===9 && (x===4||x===8))part(sprites.walls,0,0,16,16,x*TILE,y*TILE,TILE,TILE);
+      if(y===9 && (x===4||x===8))part(sprites.walls,48,0,32,32,x*TILE-6,y*TILE-28,44,44);
     }
     const [doorX,doorY]=decode(house.door);
     if(floor.has(house.door)) {
