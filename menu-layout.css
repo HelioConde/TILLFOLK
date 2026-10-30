@@ -55,3 +55,5 @@
  #menu .title-menu-button{transition:none}
  #menu .title-menu-button:hover{transform:none}
 }
+/* Impede a rolagem do jogo por trás do menu, sem bloquear a rolagem do próprio menu. */
+html:has(#menu:not([hidden])),body:has(#menu:not([hidden])){height:100dvh;overflow:hidden}

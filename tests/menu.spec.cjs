@@ -2,7 +2,7 @@ const {test,expect}=require('@playwright/test');
 const screenSizes=[
  {width:1600,height:900},{width:1366,height:768},
  {width:1125,height:790},{width:1024,height:768},
- {width:800,height:900},{width:390,height:844}
+ {width:800,height:900},{width:390,height:844},{width:1366,height:600}
 ];
 test('TILLFOLK: menu visível em todas as resoluções',async({page})=>{
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
@@ -16,8 +16,9 @@ test('TILLFOLK: menu visível em todas as resoluções',async({page})=>{
       const menu=document.querySelector('#menu');
       const nav=menu.querySelector('.title-navigation').getBoundingClientRect();
       const first=menu.querySelector('#new-game').getBoundingClientRect();
+      const last=menu.querySelector('#title-exit').getBoundingClientRect();
       return {navLeft:nav.left,navRight:nav.right,navTop:nav.top,
-        firstLeft:first.left,firstRight:first.right,
+        firstLeft:first.left,firstRight:first.right,lastBottom:last.bottom,
         viewportWidth:innerWidth,htmlWidth:document.documentElement.scrollWidth};
     });
     expect(limits.navLeft).toBeGreaterThanOrEqual(0);
@@ -25,7 +26,8 @@ test('TILLFOLK: menu visível em todas as resoluções',async({page})=>{
     expect(limits.navRight).toBeLessThanOrEqual(view.width+1);
     expect(limits.firstRight).toBeLessThanOrEqual(view.width+1);
     expect(limits.htmlWidth).toBeLessThanOrEqual(view.width+1);
-    await page.screenshot({path:'screenshots/menu-'+view.width+'x'+view.height+'.png',fullPage:true,animations:'disabled'});
+    if(view.width>850) expect(limits.lastBottom).toBeLessThanOrEqual(view.height+1);
+    await page.screenshot({path:'screenshots/menu-'+view.width+'x'+view.height+'.png',fullPage:false,animations:'disabled'});
   }
   await page.setViewportSize({width:1125,height:790});
   await page.locator('#new-game').click();
