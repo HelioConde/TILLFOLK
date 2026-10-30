@@ -31,12 +31,12 @@
   const keyOf = (x,y) => x+"-"+y;
   const nearby = (x,y) => Math.abs(x-5)+Math.abs(y-8);
   const blocked = (x,y) => x<1||y<1||x>=W-1||y>=H-1||((x>=3&&x<=7)&&(y>=5&&y<=9))||trees.some(t=>t[0]===x&&t[1]===y)||rocks.some(t=>t[0]===x&&t[1]===y)||(x===20&&y===6)||(x>=4&&x<=9&&y===10);
-  let state = null, tasks = [], selectedTool = "cultivar", playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer;
+  let state = null, tasks = [], selectedTool = "cultivar", playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [];
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
     return {x,y,selected,dirty:Math.random()<.13,tilled:false,fertilized:false,seeded:false,watered:false,growth:0,produce:false};
   }
-  function reset(){
+  function reset(chosenStarters = []){
     const plots = [];
     for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)if(!blocked(x,y))plots.push(makePlot(x,y,false));
     for(let y=8;y<=10;y++)for(let x=12;x<=15;x++){
@@ -47,10 +47,14 @@
     if(seeded){seeded.tilled=true;seeded.fertilized=true;seeded.seeded=true;seeded.watered=true;seeded.growth=.75;}
     const wet=plots.find(p=>p.x===13&&p.y===8);
     if(wet){wet.tilled=true;wet.fertilized=true;wet.seeded=true;wet.watered=false;wet.growth=.1;}
+    const team = chosenStarters.slice(0,2).map((c,i)=>({
+      id:i+1,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,
+      appearance:c.appearance ?? i,x:7.1+i*.8,y:11.5,task:null,progress:0
+    }));
     state = {day:1,minutes:8*60,coins:220,seeds:18,water:30,food:8,
-      plots, workers:[{id:1,name:"Jo",skills:[],neg:[],color:"#f4e4ac",x:7.5,y:11.5,task:null,progress:0}],
-      candidates:structuredClone(initialCandidates),nextWorkerId:2,priorities:{...startPriorities},
-      journal:["O vale está pronto. Marque terrenos e forme sua equipe!"]};
+      plots, workers:team,
+      candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
+      journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     tasks=[]; simSpeed=1; updateSpeed();
   }
   function readSave(){
@@ -68,9 +72,9 @@
   function save(){if(!state||!playing)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch(e){console.warn("Não foi possível salvar:",e);}}
   function log(text){state.journal.unshift(text);state.journal.length=Math.min(5,state.journal.length);}
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
-  function start(continueSaved=false){
-    if(!continueSaved||!readSave())reset();
-    playing=true;$("#menu").hidden=true;$("#continue").disabled=false; refresh();
+  function start(continueSaved=false, chosenStarters = []){
+    if(!continueSaved||!readSave())reset(chosenStarters);
+    playing=true;$("#menu").hidden=true;$("#continue").disabled=false; refresh();save();
     notify("Sua fazenda está pronta. Os trabalhadores já estão a caminho!");
   }
   function getNext(p){
@@ -187,8 +191,10 @@
       const x=w.x*TILE,y=w.y*TILE;
       ctx.fillStyle="#2b472f90";ctx.beginPath();ctx.ellipse(x,y-2,12,5,0,0,Math.PI*2);ctx.fill();
       const t=tasks.find(t=>t.id===w.task);
-      part(sprite.worker,tick*48,0,48,48,x-19,y-38,38,38);
-      if(!valid(sprite.worker)){ctx.fillStyle=w.color;ctx.fillRect(x-9,y-24,18,22);}
+      const image = valid(sprite.premium)?sprite.premium:sprite.worker;
+      const appearance=Math.max(0,Math.min(5,w.appearance??0));
+      part(image,tick*48,valid(sprite.premium)?appearance*192:0,48,48,x-22,y-42,44,44);
+      if(!valid(image)){ctx.fillStyle=w.color;ctx.fillRect(x-9,y-24,18,22);}
       write(w.name,x,y-45,"#fff5dd",11);
       if(t&&w.progress>0){
         ctx.fillStyle="#20362a";ctx.fillRect(x-17,y-42,34,5);
@@ -243,12 +249,12 @@
     const types=Object.keys(labels),count=1+Math.floor(Math.random()*3);
     const skills=types.slice().sort(()=>Math.random()-.5).slice(0,count);
     const negative=types.filter(t=>!skills.includes(t)).sort(()=>Math.random()-.5).slice(0,Math.floor(Math.random()*4));
-    return {name:random(names)+" "+String(Math.floor(Math.random()*90)+10),skills,neg:negative,cost:65+count*10,color:random(["#f4dfad","#badbd1","#f1c4c5","#b9cdef"])};
+    return {name:random(names)+" "+String(Math.floor(Math.random()*90)+10),skills,neg:negative,cost:65+count*10,color:random(["#f4dfad","#badbd1","#f1c4c5","#b9cdef"]),appearance:Math.floor(Math.random()*6)};
   }
   function hire(i){
     const c=state.candidates[i];if(!c||state.coins<c.cost){notify("Moedas insuficientes.");return;}
     state.coins-=c.cost;
-    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,x:7.5,y:11.5,task:null,progress:0});
+    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,x:7.5,y:11.5,task:null,progress:0});
     state.candidates[i]=newCandidate();
     log(c.name+" entrou para a equipe.");
     renderCandidates();refresh();save();notify(c.name+" contratado(a)!");$("#hire-dialog").close();
@@ -286,7 +292,72 @@
   });
   $("#candidates").addEventListener("click",e=>{const b=e.target.closest("[data-hire]");if(b)hire(Number(b.dataset.hire));});
   $("#hire-btn").addEventListener("click",()=>{if(!playing)return;renderCandidates();$("#hire-dialog").showModal();});
-  $("#new-game").addEventListener("click",()=>{start(false);renderPriorityControls();});
+
+  // Tela obrigatória antes da nova partida: dois espaços de recrutamento gratuitos.
+  function randomStarter(excludeNames = []){
+    let candidate;
+    do {candidate=newCandidate();} while(excludeNames.includes(candidate.name));
+    return candidate;
+  }
+  function createStarterTeam(){
+    const first=randomStarter();
+    starters=[first,randomStarter([first.name])];
+    renderStarters();
+    $("#starter-dialog").showModal();
+  }
+  function showStarterAvatar(canvasEl,person){
+    const context=canvasEl.getContext("2d");
+    context.imageSmoothingEnabled=false;context.clearRect(0,0,84,84);
+    context.fillStyle=person.color;context.fillRect(0,0,84,84);
+    const img=valid(sprite.premium)?sprite.premium:sprite.worker;
+    if(valid(img)){
+      const row=valid(sprite.premium)?(person.appearance??0)*192:0;
+      context.drawImage(img,0,row,48,48,0,0,84,84);
+    } else {
+      context.fillStyle="#213d31";context.font="37px system-ui";context.textAlign="center";context.fillText("🐱",42,57);
+    }
+  }
+  function redrawStarterAvatars(){
+    document.querySelectorAll(".starter-portrait").forEach((el)=>{
+      const person=starters[Number(el.dataset.slot)];
+      if(person)showStarterAvatar(el,person);
+    });
+  }
+  function renderStarters(){
+    $("#starter-slots").innerHTML=starters.map((person,index)=>{
+      const count=person.skills.length;
+      const bonus=count===1?100:count===2?60:30;
+      const skills=person.skills.map(type=>'<span class="tag">✦ '+icons[type]+' '+labels[type]+'</span>').join("");
+      const negatives=person.neg.length?person.neg.map(type=>'<span class="tag negative">✕ '+labels[type]+'</span>').join(""):'<span class="tag">Nenhuma restrição</span>';
+      return '<article class="starter-slot" aria-label="Trabalhador inicial '+(index+1)+'">'+
+        '<span class="starter-label">Personagem 0'+(index+1)+' · Titular</span>'+
+        '<div class="starter-person"><canvas width="84" height="84" class="starter-portrait" data-slot="'+index+'" role="img" aria-label="Sprite do personagem '+person.name+'"></canvas>'+
+        '<div><h3>'+person.name+'</h3><small>'+count+' habilidade(s) · '+person.neg.length+' traço(s) negativo(s)</small></div></div>'+
+        '<div class="starter-section-title">Habilidades positivas</div><div class="starter-skills">'+skills+'</div>'+
+        '<div class="starter-bonus">✦ Bônus de <strong>+'+bonus+'% de velocidade</strong> nas especialidades.</div>'+
+        '<div class="starter-section-title">Atividades proibidas</div><div class="starter-negatives">'+negatives+'</div>'+
+        '<button class="starter-reroll" type="button" data-reroll="'+index+'">↻ Sortear outro personagem</button>'+
+        '</article>';
+    }).join("");
+    redrawStarterAvatars();
+  }
+  sprite.premium.addEventListener("load",redrawStarterAvatars);
+  sprite.worker.addEventListener("load",redrawStarterAvatars);
+  $("#starter-slots").addEventListener("click",event=>{
+    const btn=event.target.closest("[data-reroll]");if(!btn)return;
+    const i=Number(btn.dataset.reroll);
+    starters[i]=randomStarter(starters.filter((_,idx)=>idx!==i).map(c=>c.name));
+    renderStarters();
+  });
+  $("#starter-reroll-all").addEventListener("click",()=>{
+    const first=randomStarter();starters=[first,randomStarter([first.name])];renderStarters();
+  });
+  $("#starter-confirm").addEventListener("click",()=>{
+    if(starters.length!==2||starters[0].name===starters[1].name)return;
+    const selected=starters.map(c=>({name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance}));
+    $("#starter-dialog").close();start(false,selected);renderPriorityControls();
+  });
+  $("#new-game").addEventListener("click",createStarterTeam);
   $("#continue").addEventListener("click",()=>{start(true);renderPriorityControls();});
   $("#help-btn").addEventListener("click",()=>$("#help-dialog").showModal());
   $("#help-close").addEventListener("click",()=>$("#help-dialog").close());

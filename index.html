@@ -74,6 +74,22 @@
       <p class="menu-foot">Cultive · Recrute · Organize · Sobreviva</p>
     </section>
   </div>
+
+  <dialog id="starter-dialog" class="starter-dialog" aria-labelledby="starter-title">
+    <div class="starter-heading">
+      <div><span class="overline">FORMAÇÃO DA EQUIPE · NOVA FAZENDA</span>
+        <h2 id="starter-title">Escolha seus 2 trabalhadores iniciais</h2>
+        <p>Conheça seus primeiros colonos. Cada um possui suas próprias especialidades e atividades proibidas. Eles começarão juntos, sem custo.</p>
+      </div>
+      <form method="dialog"><button class="modal-x" aria-label="Voltar ao menu">✕</button></form>
+    </div>
+    <div class="starter-slots" id="starter-slots" aria-label="Dois candidatos iniciais"></div>
+    <div class="starter-actions">
+      <button id="starter-reroll-all" class="large-secondary" type="button">↻ Sortear os dois</button>
+      <button id="starter-confirm" class="large-primary" type="button">🌱 Começar com esta equipe</button>
+    </div>
+    <p class="starter-note">Você pode sortear um personagem de cada vez. A confirmação inicia uma nova fazenda e substitui o salvamento anterior.</p>
+  </dialog>
   <dialog id="hire-dialog" class="modal">
     <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
     <span class="overline">CASA DE RECRUTAMENTO</span><h2>Encontre sua próxima ajuda</h2>
@@ -83,7 +99,7 @@
   <dialog id="help-dialog" class="modal">
     <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
     <span class="overline">PRIMEIROS PASSOS</span><h2>Como funciona o TILLFOLK</h2>
-    <ol><li>Escolha <b>Cultivar</b> e clique nos terrenos verdes.</li><li>A lista gera automaticamente as tarefas de limpar, arar, fertilizar, semear, regar, colher e transportar.</li><li>Trabalhadores executam qualquer tarefa que não esteja proibida por seus traços negativos.</li><li>Contrate especialistas: 1 habilidade = 100% mais rapidez; 2 = 60%; 3 = 30%.</li><li>Use as prioridades e velocidades para organizar o trabalho. O jogo salva o progresso localmente.</li></ol>
+    <ol><li>Ao criar uma nova fazenda, escolha seus <b>2 trabalhadores iniciais</b> e confirme a equipe.</li><li>Escolha <b>Cultivar</b> e clique nos terrenos verdes.</li><li>A lista gera automaticamente as tarefas de limpar, arar, fertilizar, semear, regar, colher e transportar.</li><li>Trabalhadores executam qualquer tarefa que não esteja proibida por seus traços negativos.</li><li>Contrate especialistas: 1 habilidade = 100% mais rapidez; 2 = 60%; 3 = 30%.</li><li>Use as prioridades e velocidades para organizar o trabalho. O jogo salva o progresso localmente.</li></ol>
     <button id="help-close" class="large-primary">Entendi!</button>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
