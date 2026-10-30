@@ -39,6 +39,23 @@ jobs:
           test -f _site/public/assets/tillfolk/menu-landscape.svg
           test -f _site/src/menu.js
           test -f _site/src/menu-scene.js
+          # Falhar a publicação caso alguma arte utilizada na abertura esteja ausente.
+          node <<'NODE'
+          const fs = require('node:fs');
+          const code = fs.readFileSync('_site/src/menu-scene.js', 'utf8');
+          const objects = code.match(/const sources=\{([\s\S]*?)\};/);
+          if (!objects) throw new Error('Lista de sprites do menu não encontrada');
+          const files = [...objects[1].matchAll(/[a-z]+:"([^"]+\.png)"/g)].map(match => match[1]);
+          if (files.length < 14) throw new Error('Lista de sprites do menu incompleta');
+          for (const file of files) {
+            const path = '_site/public/assets/sprout-lands/' + file;
+            if (!fs.existsSync(path) || fs.statSync(path).size < 100)
+              throw new Error('Sprite ausente na publicação: ' + path);
+          }
+          const index = fs.readFileSync('_site/index.html', 'utf8');
+          if (!index.includes('./src/menu-scene.js')) throw new Error('Cena não referenciada em index.html');
+          console.log('Menu validado: ' + files.length + ' sprites presentes na publicação');
+          NODE
           test -f _site/public/assets/sprout-lands/structures/wood-roof.png
           test -f _site/public/assets/sprout-lands/structures/wood-walls.png
           test -f _site/public/assets/sprout-lands/terrain/dark-soil.png
