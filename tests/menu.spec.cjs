@@ -418,3 +418,29 @@ test('Regressão visual — direções esquerda/direita dos sprites',async({page
     path:'screenshots/direcoes-corrigidas-esquerda-direita.png',animations:'disabled'
   });
 });
+
+
+test('Obstáculo da floresta: designar limpeza sem atravessar árvores',async({page})=>{
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.locator('#new-game').click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator('#starter-confirm').click();
+  const location=await page.evaluate(()=>{
+    const state=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    const rect=document.querySelector('#world').getBoundingClientRect();
+    return state.world.objects.filter(o=>o.kind==='tree'||o.kind==='boulder')
+      .map(o=>({x:o.x,y:o.y,cx:rect.left+(o.x+.5)*rect.width/28,cy:rect.top+(o.y+.5)*rect.height/18}))
+      .filter(o=>o.cx>430&&o.cx<1250&&o.cy>180&&o.cy<685)
+      .sort((a,b)=>Math.hypot(a.x-14,a.y-9)-Math.hypot(b.x-14,b.y-9))[0]||null;
+  });
+  expect(location).not.toBeNull();
+  await page.mouse.click(location.cx,location.cy);
+  const selected=await page.evaluate(({x,y})=>{
+    const state=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    return state.plots.find(p=>p.x===x&&p.y===y)?.selected;
+  },location);
+  expect(selected).toBe(true);
+  await expect(page.locator('#task-count')).not.toHaveText('0');
+  await page.screenshot({path:'screenshots/vale-limpeza-marcada-1600x900.png',animations:'disabled'});
+});
