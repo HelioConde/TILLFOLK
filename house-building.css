@@ -1,0 +1,38 @@
+/* Editor de casas inspirado na arquitetura por camadas de Slime-Harvest.
+   UI sempre acima do mapa, sem bloquear o gameplay em fullscreen. */
+.construction-panel[hidden]{display:none!important}
+.construction-panel{
+ display:flex;flex-direction:column;gap:9px;
+ margin:10px 0 0;padding:12px 14px;
+ width:min(980px,100%);background:#152f24f5;color:#f4eed8;
+ border:2px solid #8faf78;border-radius:12px;
+ box-shadow:0 10px 30px #0a1c1590;
+}
+.construction-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.construction-heading strong{color:#f5dfaa;font:14px Sprout,monospace;letter-spacing:.7px}
+.construction-heading span{font-size:12px;color:#d7e6c3}
+.construction-heading b{color:#d8efa2}
+.construction-heading #build-exit{margin-left:auto}
+.construction-panel button{padding:9px 12px;border:1px solid #698b67;border-radius:7px;background:#2d4d39;color:#f1efdb;font-size:12px;font-weight:800;min-height:38px}
+.construction-panel button:hover{background:#456b4a}
+.construction-panel button.chosen,.construction-panel button[aria-pressed="true"]{background:#d5eba8;color:#26412b;border-color:#f1fac0}
+.construction-actions{display:flex;flex-wrap:wrap;gap:7px}
+#build-status{font-size:11px;line-height:1.5;color:#d7e5ba;min-height:17px}
+body.play-session .construction-panel{
+ position:fixed;z-index:14;left:50%;bottom:clamp(89px,11vh,112px);
+ transform:translateX(-50%);margin:0;
+ width:min(820px,calc(100vw - 24px));max-height:min(44dvh,230px);
+ overflow:auto;overscroll-behavior:contain;
+ backdrop-filter:blur(10px);
+}
+body.play-session .tooltray:has([data-tool="construir"].active){border-color:#ebdca4}
+@media(max-width:680px){
+ body.play-session .construction-panel{bottom:100px;gap:6px;padding:9px;max-height:42dvh}
+ .construction-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ .construction-panel button{padding:7px 4px;min-height:40px;font-size:10px}
+ .construction-heading strong{font-size:11px}
+ .construction-heading #build-exit{margin-left:auto}
+ #build-status{font-size:10px}
+ body.play-session .tooltray .tool{min-width:0}
+}
+@media(prefers-reduced-motion:reduce){.construction-panel *{transition:none!important;animation:none!important}}

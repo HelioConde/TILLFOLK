@@ -22,6 +22,7 @@ jobs:
         run: |
           node --check src/wild-world.js
           node --check src/game.js
+          node --check src/house-building.js
           node --check src/menu.js
           node --check src/house-renderer.js
           node --check src/menu-scene.js
@@ -30,8 +31,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
-          cp index.html styles.css menu.css menu-layout.css game-polish.css fullscreen-game.css ui-polish.css _site/
-          cp src/game.js src/wild-world.js src/menu.js src/house-renderer.js src/menu-scene.js _site/src/
+          cp index.html styles.css menu.css menu-layout.css game-polish.css fullscreen-game.css house-building.css ui-polish.css _site/
+          cp src/game.js src/wild-world.js src/house-building.js src/menu.js src/house-renderer.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
@@ -45,6 +46,8 @@ jobs:
           test -f _site/src/wild-world.js
           test -f _site/src/menu.js
           test -f _site/src/house-renderer.js
+          test -f _site/src/house-building.js
+          test -f _site/house-building.css
           test -f _site/src/menu-scene.js
           # Falhar a publicação caso alguma arte utilizada na abertura esteja ausente.
           node <<'NODE'
@@ -65,6 +68,7 @@ jobs:
           NODE
           test -f _site/public/assets/sprout-lands/structures/wood-roof.png
           test -f _site/public/assets/sprout-lands/structures/wood-walls.png
+          test -f _site/public/assets/sprout-lands/structures/wood-door.png
           test -f _site/public/assets/sprout-lands/terrain/dark-soil.png
           test -f _site/menu.css
           test -f _site/menu-layout.css
