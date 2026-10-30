@@ -21,11 +21,15 @@
         <div class="metric"><span>💧</span><small>Água</small><b id="water">30</b></div>
         <div class="metric"><span>🥕</span><small>Comida</small><b id="food">8</b></div>
       </div>
+      <div class="management-nav" role="group" aria-label="Gestão da fazenda">
+        <button id="nav-priorities" type="button">☷ Prioridades</button>
+        <button id="nav-skills" type="button">✦ Habilidades</button>
+      </div>
       <button id="menu-btn" class="icon-btn" aria-label="Voltar ao menu" title="Voltar ao menu">☰</button>
     </header>
     <main class="game-layout">
       <section class="play-area" aria-label="Fazenda">
-        <div class="scene-head"><div><span class="overline">VALE DAS PRIMEIRAS SEMENTES</span><h1>Seu pequeno pedaço de terra</h1></div><div id="status" class="status-pill">● Fazenda em funcionamento</div></div>
+        <div class="scene-head"><div><span id="mode-label" class="overline">SOBREVIVÊNCIA · DIA 1</span><h1 id="farm-title">Seu pequeno pedaço de terra</h1></div><div id="status" class="status-pill">● Fazenda em funcionamento</div></div>
         <div class="canvas-scroll">
           <div class="canvas-wrap">
             <canvas id="world" width="896" height="576" aria-label="Mapa interativo da fazenda"></canvas>
@@ -75,6 +79,27 @@
     </section>
   </div>
 
+  <dialog id="mode-dialog" class="mode-dialog" aria-labelledby="mode-title">
+    <div class="dialog-topline"><span>✿ CONFIGURAR PARTIDA</span>
+      <form method="dialog"><button class="modal-x" aria-label="Voltar ao menu">✕</button></form>
+    </div>
+    <h2 id="mode-title">Como deseja começar?</h2>
+    <p class="mode-intro">Escolha o ritmo da sua colônia. As tarefas agrícolas continuam demoradas em ambos os modos.</p>
+    <div class="mode-choices">
+      <button type="button" data-game-mode="survival" class="mode-choice">
+        <span class="mode-icon">🌾</span>
+        <strong>Sobrevivência</strong>
+        <small>Produza alimentos para sustentar seus trabalhadores. A comida é consumida a cada novo dia.</small>
+        <em>DESAFIO ORIGINAL</em>
+      </button>
+      <button type="button" data-game-mode="relaxed" class="mode-choice">
+        <span class="mode-icon">🌸</span>
+        <strong>Fazenda tranquila</strong>
+        <small>Sem consumo diário de alimentos. Concentre-se nas tarefas e nas especializações da equipe.</small>
+        <em>MODO DE APRENDIZADO</em>
+      </button>
+    </div>
+  </dialog>
   <dialog id="starter-dialog" class="starter-dialog" aria-labelledby="starter-title">
     <div class="starter-heading">
       <div><span class="overline">FORMAÇÃO DA EQUIPE · NOVA FAZENDA</span>
@@ -84,11 +109,26 @@
       <form method="dialog"><button class="modal-x" aria-label="Voltar ao menu">✕</button></form>
     </div>
     <div class="starter-slots" id="starter-slots" aria-label="Dois candidatos iniciais"></div>
+    <div class="farm-name-field"><label for="farm-name">NOME DA FAZENDA</label><input id="farm-name" type="text" maxlength="32" value="Vale do Amanhecer" autocomplete="off" spellcheck="false" aria-describedby="farm-name-hint"><small id="farm-name-hint">Você pode dar um nome ao lugar onde sua equipe vai trabalhar.</small></div>
     <div class="starter-actions">
       <button id="starter-reroll-all" class="large-secondary" type="button">↻ Sortear os dois</button>
       <button id="starter-confirm" class="large-primary" type="button">🌱 Começar com esta equipe</button>
     </div>
     <p class="starter-note">Você pode sortear um personagem de cada vez. A confirmação inicia uma nova fazenda e substitui o salvamento anterior.</p>
+  </dialog>
+  <dialog id="management-dialog" class="management-dialog" aria-labelledby="management-title">
+    <div class="dialog-topline">
+      <div><span class="overline">ORGANIZAÇÃO DOS TRABALHADORES</span>
+        <h2 id="management-title">Administração da equipe</h2>
+      </div>
+      <form method="dialog"><button class="modal-x" aria-label="Fechar gerenciamento">✕</button></form>
+    </div>
+    <div class="management-tabs" role="tablist" aria-label="Telas de gerenciamento">
+      <button type="button" role="tab" data-management-tab="priorities" aria-selected="true">☷ Prioridades</button>
+      <button type="button" role="tab" data-management-tab="skills" aria-selected="false">✦ Habilidades</button>
+    </div>
+    <div id="management-body" class="management-body" role="tabpanel"></div>
+    <p class="management-foot">As decisões são salvas automaticamente. Trabalhos proibidos nunca serão atribuídos.</p>
   </dialog>
   <dialog id="hire-dialog" class="modal">
     <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
@@ -99,7 +139,7 @@
   <dialog id="help-dialog" class="modal">
     <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
     <span class="overline">PRIMEIROS PASSOS</span><h2>Como funciona o TILLFOLK</h2>
-    <ol><li>Ao criar uma nova fazenda, escolha seus <b>2 trabalhadores iniciais</b> e confirme a equipe.</li><li>Escolha <b>Cultivar</b> e clique nos terrenos verdes.</li><li>A lista gera automaticamente as tarefas de limpar, arar, fertilizar, semear, regar, colher e transportar.</li><li>Trabalhadores executam qualquer tarefa que não esteja proibida por seus traços negativos.</li><li>Contrate especialistas: 1 habilidade = 100% mais rapidez; 2 = 60%; 3 = 30%.</li><li>Use as prioridades e velocidades para organizar o trabalho. O jogo salva o progresso localmente.</li></ol>
+    <ol><li>Escolha o modo de jogo e dê um nome à fazenda.</li><li>Ao criar uma nova fazenda, escolha seus <b>2 trabalhadores iniciais</b> e confirme a equipe.</li><li>Escolha <b>Cultivar</b> e clique nos terrenos verdes.</li><li>A lista gera automaticamente as tarefas de limpar, arar, fertilizar, semear, regar, colher e transportar.</li><li>Trabalhadores executam qualquer tarefa que não esteja proibida por seus traços negativos.</li><li>Contrate especialistas: 1 habilidade = 100% mais rapidez; 2 = 60%; 3 = 30%.</li><li>Use as prioridades e velocidades para organizar o trabalho. O jogo salva o progresso localmente.</li></ol>
     <button id="help-close" class="large-primary">Entendi!</button>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>

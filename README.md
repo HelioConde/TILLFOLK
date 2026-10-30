@@ -2,10 +2,10 @@
 
 Jogo HTML5 de **fazenda, sobrevivência e automação de trabalhadores** com visual 2D pixel art. A inspiração nas listas de tarefas de *Oxygen Not Included* está no gerenciamento, não no gênero de combate.
 
-## Protótipo v0.1 — cena inicial
+## Protótipo v0.3 — fluxo de criação e gerenciamento
 
 - Menu inicial, continuar e instruções; salvamento local pelo navegador.
-- **Nova fazenda:** seleção de exatamente 2 trabalhadores iniciais (gratuitos), com ficha de habilidades, traços negativos e sorteio individual; a partida só começa após a confirmação.
+- **Nova fazenda:** escolha do modo Sobrevivência/Fazenda Tranquila, nome da fazenda e seleção de exatamente 2 trabalhadores iniciais (gratuitos), com ficha detalhada, renomeação e sorteio individual; a partida só começa após a confirmação.
 - Cena de fazenda com sprites de grama, plantas, árvores, pedras, poço e trabalhadores de Sprout Lands.
 - Selecione **Cultivar** e clique no solo: o sistema cria uma sequência automática de tarefas.
 - Ciclo: **limpar → arar → fertilizar → semear → regar → crescer → colher → transportar**.
@@ -13,7 +13,8 @@ Jogo HTML5 de **fazenda, sobrevivência e automação de trabalhadores** com vis
 - Contratação com até **3 habilidades positivas** e **3 traços negativos** por pessoa.
 - Especialidades oferecem bônus: 1 habilidade (+100%), 2 (+60%) ou 3 (+30%).
 - Ações são demoradas para valorizar especialização e ajuda de vários trabalhadores.
-- Prioridades individuais por tipo de atividade (1–9) e velocidade de simulação 1×, 3×, 6× ou pausa.
+- Prioridades globais (1–9) e **matriz individual de prioridade por trabalhador**, respeitando restrições e especialidades, além de velocidade da simulação 1×, 3×, 6× ou pausa.
+- Tela **Habilidades** com tempos e bônus atuais de cada trabalhador; progressão avançada ainda não implementada.
 - Economia inicial simples de sementes, água, comida e moedas.
 
 ## Rodar

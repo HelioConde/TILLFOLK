@@ -21,3 +21,55 @@
 .starter-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}.starter-actions button{min-width:190px}.starter-actions .large-primary{min-width:285px}
 .starter-note{margin:12px 0 0;font-size:11px;color:#b3c8ab;line-height:1.5}
 @media(max-width:640px){.starter-slots{grid-template-columns:1fr}.starter-slot{padding:13px}.starter-person{margin:8px 0}.starter-portrait{width:70px;height:70px;flex-basis:70px}.starter-skills,.starter-negatives{min-height:0}.starter-actions{flex-direction:column}.starter-actions button,.starter-actions .large-primary{width:100%;min-width:0}.starter-dialog{max-height:92vh}}
+
+/* TILLFOLK v0.3 — fluxo de partida e telas de gestão, inspirados em simuladores de colônia */
+.management-nav{display:flex;gap:6px;margin-left:auto}.management-nav button{border:1px solid #779471;background:#344e40;color:#f4eedb;font-weight:800;border-radius:7px;padding:10px 12px;font-size:12px;white-space:nowrap}
+.management-nav button:hover{background:#507251}
+.mode-dialog,.management-dialog{width:min(850px,calc(100vw - 24px));max-width:850px;max-height:92vh;overflow:auto;background:#253d31;color:#fff5df;border:3px solid #a2ba86;border-radius:14px;padding:24px;box-shadow:0 18px 0 #11281c,0 24px 80px #000a}
+.mode-dialog::backdrop,.management-dialog::backdrop{background:#091d15d6;backdrop-filter:blur(6px)}
+.dialog-topline{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:12px}.dialog-topline span{font-size:11px;color:#c2e69a;letter-spacing:1.3px;font-weight:800}
+.mode-dialog h2,.management-dialog h2{font:clamp(23px,3vw,33px) Sprout,system-ui,sans-serif;line-height:1.35;margin:7px 0 13px;color:#f9e9b5}
+.mode-intro{color:#cbd9bd;line-height:1.65;font-size:14px;max-width:610px;margin-bottom:22px}
+.mode-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.mode-choice{display:flex;flex-direction:column;text-align:left;align-items:flex-start;gap:12px;background:#34523f;border:2px solid #61895a;border-radius:12px;padding:22px;min-height:275px;color:#fff0d0;box-shadow:inset 0 -6px #263f30;transition:transform .12s,border-color .12s}
+.mode-choice:hover,.mode-choice:focus-visible{border-color:#e5e99d;transform:translateY(-2px)}
+.mode-icon{font-size:65px;line-height:1.2;display:flex;align-items:center;justify-content:center;width:100%;height:90px;background:linear-gradient(145deg,#527f5f,#86aa72);border-radius:7px}
+.mode-choice strong{font-size:20px}.mode-choice small{color:#d2e0c9;line-height:1.6;font-size:13px}.mode-choice em{font-style:normal;color:#ffdd8b;font-weight:800;font-size:10px;letter-spacing:1px;margin-top:auto}
+.farm-name-field{margin-top:19px;display:flex;flex-direction:column;gap:7px}.farm-name-field label{color:#d2e7a6;font-size:11px;letter-spacing:1.5px;font-weight:900}
+.farm-name-field input{background:#172d21;color:#fff4d9;border:2px solid #83a076;border-radius:7px;padding:11px;font:700 15px system-ui;width:100%;max-width:390px}
+.farm-name-field small{color:#b0c5a7;font-size:11px}
+.starter-slot{position:relative}.starter-slot:before{content:"";display:block;background:linear-gradient(120deg,#659a80,#498978 48%,#77a3a2);position:absolute;left:10px;right:10px;top:42px;height:108px;border:2px solid #78b3bb;border-radius:6px;z-index:0}
+.starter-slot>*{position:relative;z-index:1}.starter-slot .starter-person{min-height:90px;align-items:center}.starter-slot .starter-portrait{border:2px solid #d3f0ca;background:#9ac6a2}
+.starter-name-input{min-width:0;max-width:185px;width:100%;font-weight:850;font-size:19px;border:1px solid #799b84;border-radius:5px;background:#1f3b31de;color:#fff4d5;padding:5px 7px}
+.starter-slot .starter-label{display:block;background:#314638;padding:8px;margin:-10px -10px 10px;border-radius:5px}
+.management-dialog{width:min(1080px,calc(100vw - 24px));max-width:1080px;background:#23392f}
+.management-tabs{display:flex;gap:7px;margin:15px 0 0;border-bottom:2px solid #6d8f6b}.management-tabs button{color:#cbdec3;background:#354e3f;border:1px solid #6b8a68;border-bottom:0;border-radius:8px 8px 0 0;padding:12px 20px;font-weight:800}
+.management-tabs button[aria-selected=true]{background:#d7e9aa;color:#2c472e;border-color:#f5edb3}
+.management-body{background:#2b4336;border:1px solid #688364;border-top:0;padding:18px;min-height:235px;border-radius:0 0 10px 10px}
+.management-explainer{font-size:12px;color:#d8e6cc;line-height:1.6;margin:0 0 13px}
+.matrix-scroll{max-width:100%;overflow:auto}.priority-matrix{border-collapse:separate;border-spacing:3px;width:100%;min-width:780px}
+.priority-matrix th{background:#506950;color:#f1f3d5;font-size:11px;padding:11px 6px;position:relative;white-space:nowrap;text-align:center}
+.priority-matrix th:first-child{text-align:left;min-width:135px}
+.priority-matrix td{background:#365240;text-align:center;padding:8px 4px;border:1px solid #517557}
+.priority-matrix td:first-child{text-align:left;font-size:13px;font-weight:800;color:#f5ebcf}
+.priority-matrix tbody tr:nth-child(even) td{background:#304b3a}
+.matrix-worker-name{display:block}.matrix-worker-info{display:block;font-size:10px;color:#b9d5b4;font-weight:500;margin-top:5px}
+.matrix-cell{display:flex;justify-content:center;align-items:center;gap:5px}
+.matrix-cell button{border:1px solid #8da883;background:#476f4e;color:#f0f8dd;font-weight:800;border-radius:4px;width:24px;height:27px}
+.matrix-cell strong{min-width:18px;color:#fff0b9;font-size:13px}
+.matrix-cell .special{color:#d0eba2}
+.matrix-cell button:disabled{opacity:.35}.matrix-forbidden{color:#f5a9a1;font-weight:800;font-size:11px}
+.matrix-legend{font-size:11px;color:#d9ebc9;margin-top:12px;line-height:1.7}
+.skills-view{display:grid;grid-template-columns:minmax(170px,220px) minmax(0,1fr);gap:16px}
+.skills-roster{display:flex;flex-direction:column;gap:8px}.skills-roster button{background:#385743;border:1px solid #6e8d67;border-radius:8px;text-align:left;color:#f7ebcc;padding:12px;line-height:1.5}
+.skills-roster button.active{background:#d8e8af;color:#2b452e;font-weight:850}
+.skills-detail{min-width:0;background:#344e3e;border-radius:9px;border:1px solid #6e916c;padding:16px}
+.skills-detail h3{margin:0 0 4px;font-size:21px;color:#f6e7bb}
+.skills-detail p{color:#c6ddbc;line-height:1.5;font-size:12px}
+.skills-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}
+.skills-grid div{background:#233e30;border-radius:7px;border:1px solid #547d55;padding:10px;font-size:12px}
+.skills-grid div strong{display:block;font-size:14px;color:#e0f5bc;margin:6px 0}
+.skills-grid .skill-locked{background:#493d37;border-color:#795c51;color:#f6beb5}
+.skills-grid .skill-locked strong{color:#ffbdb0}
+.management-foot{font-size:11px;color:#bcd2b3;line-height:1.6;margin-top:12px}
+@media(max-width:1000px){.management-nav{order:3;width:100%;justify-content:center}.topbar{flex-wrap:wrap}.metrics{order:4}}@media(max-width:650px){.mode-choices{grid-template-columns:1fr}.mode-choice{min-height:0}.mode-icon{height:66px;font-size:40px}.skills-view{grid-template-columns:1fr}.skills-roster{flex-direction:row;flex-wrap:wrap}.management-dialog,.mode-dialog{padding:15px}.starter-slot:before{height:98px}.management-nav{gap:4px}.management-nav button{flex:1}}

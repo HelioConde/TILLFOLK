@@ -31,12 +31,12 @@
   const keyOf = (x,y) => x+"-"+y;
   const nearby = (x,y) => Math.abs(x-5)+Math.abs(y-8);
   const blocked = (x,y) => x<1||y<1||x>=W-1||y>=H-1||((x>=3&&x<=7)&&(y>=5&&y<=9))||trees.some(t=>t[0]===x&&t[1]===y)||rocks.some(t=>t[0]===x&&t[1]===y)||(x===20&&y===6)||(x>=4&&x<=9&&y===10);
-  let state = null, tasks = [], selectedTool = "cultivar", playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [];
+  let state = null, tasks = [], selectedTool = "cultivar", playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
     return {x,y,selected,dirty:Math.random()<.13,tilled:false,fertilized:false,seeded:false,watered:false,growth:0,produce:false};
   }
-  function reset(chosenStarters = []){
+  function reset(chosenStarters = [], config = {}){
     const plots = [];
     for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)if(!blocked(x,y))plots.push(makePlot(x,y,false));
     for(let y=8;y<=10;y++)for(let x=12;x<=15;x++){
@@ -49,9 +49,9 @@
     if(wet){wet.tilled=true;wet.fertilized=true;wet.seeded=true;wet.watered=false;wet.growth=.1;}
     const team = chosenStarters.slice(0,2).map((c,i)=>({
       id:i+1,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,
-      appearance:c.appearance ?? i,x:7.1+i*.8,y:11.5,task:null,progress:0
+      appearance:c.appearance ?? i,personalPriority:{},x:7.1+i*.8,y:11.5,task:null,progress:0
     }));
-    state = {day:1,minutes:8*60,coins:220,seeds:18,water:30,food:8,
+    state = {day:1,minutes:8*60,coins:220,seeds:18,water:30,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
       plots, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
@@ -62,8 +62,10 @@
       const s=JSON.parse(localStorage.getItem(SAVE_KEY));
       if(!s||!Array.isArray(s.plots)||!Array.isArray(s.workers))return false;
       state=s;
+      state.mode=state.mode||"survival";
+      state.farmName=state.farmName||"Minha Fazenda";
       state.priorities={...startPriorities,...s.priorities};
-      state.workers.forEach(w=>{w.task=null;w.progress=0;w.x=Number.isFinite(w.x)?w.x:7.5;w.y=Number.isFinite(w.y)?w.y:11.5;});
+      state.workers.forEach(w=>{w.task=null;w.progress=0;w.personalPriority=w.personalPriority||{};w.x=Number.isFinite(w.x)?w.x:7.5;w.y=Number.isFinite(w.y)?w.y:11.5;});
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
       state.journal=Array.isArray(s.journal)?s.journal:[];
       tasks=[];simSpeed=1;updateSpeed();return true;
@@ -72,8 +74,8 @@
   function save(){if(!state||!playing)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch(e){console.warn("Não foi possível salvar:",e);}}
   function log(text){state.journal.unshift(text);state.journal.length=Math.min(5,state.journal.length);}
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
-  function start(continueSaved=false, chosenStarters = []){
-    if(!continueSaved||!readSave())reset(chosenStarters);
+  function start(continueSaved=false, chosenStarters = [], config = {}){
+    if(!continueSaved||!readSave())reset(chosenStarters,config);
     playing=true;$("#menu").hidden=true;$("#continue").disabled=false; refresh();save();
     notify("Sua fazenda está pronta. Os trabalhadores já estão a caminho!");
   }
@@ -101,9 +103,14 @@
   function assign(w){
     if(w.task)return;
     const available=tasks.filter(t=>!t.assigned&&!w.neg.includes(t.type));
-    available.sort((a,b)=> (state.priorities[b.type]-state.priorities[a.type])||
-      (bonus(w,b.type)-bonus(w,a.type))||
-      (Math.abs(w.x-(a.x+.5))+Math.abs(w.y-(a.y+.5)) - Math.abs(w.x-(b.x+.5))-Math.abs(w.y-(b.y+.5))));
+    const priorityScore=t=>{
+      const global=state.priorities[t.type]||5;
+      const individual=w.personalPriority?.[t.type]??5;
+      const expertise=bonus(w,t.type);
+      const distance=Math.abs(w.x-(t.x+.5))+Math.abs(w.y-(t.y+.5));
+      return global*20+individual*14+expertise*9-distance*.3;
+    };
+    available.sort((a,b)=>priorityScore(b)-priorityScore(a));
     if(available.length){w.task=available[0].id;w.progress=0;available[0].assigned=w.id;}
   }
   function finish(w,t){
@@ -124,7 +131,7 @@
     if(!playing||simSpeed===0)return;
     const scaled=Math.min(dt,.07)*simSpeed;
     state.minutes+=scaled*1.25;
-    if(state.minutes>=1440){state.minutes-=1440;state.day++;state.food=Math.max(0,state.food-state.workers.length);log("Um novo dia começou. A equipe consumiu alimentos.");if(state.food===0)log("Atenção: sem comida para a equipe!");}
+    if(state.minutes>=1440){state.minutes-=1440;state.day++;if(state.mode==="survival"){state.food=Math.max(0,state.food-state.workers.length);log("Um novo dia começou. A equipe consumiu alimentos.");if(state.food===0)log("Atenção: sem comida para a equipe!");}else{log("Um novo dia começou na fazenda tranquila.");}}
     for(const p of state.plots)if(p.seeded&&p.watered&&p.growth<1)p.growth=Math.min(1,p.growth+scaled/180);
     recalcTasks();
     for(const w of state.workers)assign(w);
@@ -209,6 +216,8 @@
     const m=Math.floor(state.minutes);set("#clock",String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
     for(const key of ["coins","seeds","water","food"])set("#"+key,state[key]);
     set("#worker-count",state.workers.length);set("#task-count",tasks.length);
+    set("#farm-title",state.farmName||"Minha Fazenda");
+    set("#mode-label",(state.mode==="relaxed"?"FAZENDA TRANQUILA":"SOBREVIVÊNCIA")+" · DIA "+state.day);
     $("#status").textContent=simSpeed===0?"Ⅱ Simulação pausada":"● Fazenda em funcionamento";
     $("#workers").innerHTML=state.workers.map(w=>{
       const t=tasks.find(t=>t.id===w.task);
@@ -216,14 +225,15 @@
       const positive=w.skills.length?w.skills.map(s=>'<span class="tag">✦ '+labels[s]+'</span>').join(""):'<span class="tag">Generalista</span>';
       const neg=w.neg.map(s=>'<span class="tag negative">✕ '+labels[s]+'</span>').join("");
       const factor=w.skills.length===1?"+100%":w.skills.length===2?"+60%":w.skills.length===3?"+30%":"sem bônus";
-      return '<div class="worker"><div class="worker-head"><div class="portrait" style="background:'+w.color+';display:grid;place-items:center;font-size:23px">🐱</div><div><div class="worker-name">'+w.name+'</div><div class="worker-job">'+title+'</div></div></div><div class="tags">'+positive+neg+'</div><div class="worker-bar"><i style="width:'+(w.progress*100)+'%"></i></div><div class="worker-role">Especialização: '+factor+'</div></div>';
+      return '<div class="worker"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+title+'</div></div></div><div class="tags">'+positive+neg+'</div><div class="worker-bar"><i style="width:'+(w.progress*100)+'%"></i></div><div class="worker-role">Especialização: '+factor+'</div></div>';
     }).join("");
     const list=tasks.slice().sort((a,b)=>state.priorities[b.type]-state.priorities[a.type]);
     $("#tasks").innerHTML=list.length?list.slice(0,8).map(t=>{
       const w=state.workers.find(w=>w.id===t.assigned);
-      return '<div class="task"><div>'+icons[t.type]+' '+labels[t.type]+'<small>Terreno '+(t.x+1)+', '+(t.y+1)+'</small></div><b>'+(w?w.name:"Aguardando")+' · P'+state.priorities[t.type]+'</b></div>';
+      return '<div class="task"><div>'+icons[t.type]+' '+labels[t.type]+'<small>Terreno '+(t.x+1)+', '+(t.y+1)+'</small></div><b>'+(w?escapeHtml(w.name):"Aguardando")+' · P'+state.priorities[t.type]+'</b></div>';
     }).join("")+(list.length>8?'<div class="empty">+ '+(list.length-8)+' outras tarefas na fila</div>':""):'<div class="empty">Fila vazia. Marque mais terrenos para cultivar.</div>';
-    $("#journal").innerHTML=state.journal.map(s=>'<div class="log">✧ '+s+'</div>').join("");
+    $("#journal").innerHTML=state.journal.map(s=>'<div class="log">✧ '+escapeHtml(s)+'</div>').join("");
+    drawSidebarAvatars();
   }
   function renderPriorityControls(){
     $("#priorities").innerHTML=Object.keys(labels).map(type=>{
@@ -234,6 +244,13 @@
     document.querySelectorAll("[data-speed]").forEach(b=>{
       const on=Number(b.dataset.speed)===simSpeed;b.classList.toggle("chosen",on);b.setAttribute("aria-pressed",String(on));
     });
+  }
+  function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+  function drawSidebarAvatars(){
+    for(const avatar of document.querySelectorAll(".worker-avatar")){
+      const worker=state.workers.find(w=>w.id===Number(avatar.dataset.workerAvatar));
+      if(worker)showStarterAvatar(avatar,worker);
+    }
   }
   function htmlTags(person){
     const special=person.skills.length===1?"100%":person.skills.length===2?"60%":person.skills.length===3?"30%":"0%";
@@ -254,7 +271,7 @@
   function hire(i){
     const c=state.candidates[i];if(!c||state.coins<c.cost){notify("Moedas insuficientes.");return;}
     state.coins-=c.cost;
-    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,x:7.5,y:11.5,task:null,progress:0});
+    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},x:7.5,y:11.5,task:null,progress:0});
     state.candidates[i]=newCandidate();
     log(c.name+" entrou para a equipe.");
     renderCandidates();refresh();save();notify(c.name+" contratado(a)!");$("#hire-dialog").close();
@@ -312,9 +329,11 @@
     const img=valid(sprite.premium)?sprite.premium:sprite.worker;
     if(valid(img)){
       const row=valid(sprite.premium)?(person.appearance??0)*192:0;
-      context.drawImage(img,0,row,48,48,0,0,84,84);
+      const width=canvasEl.width,height=canvasEl.height;
+      context.drawImage(img,0,row,48,48,0,0,width,height);
     } else {
-      context.fillStyle="#213d31";context.font="37px system-ui";context.textAlign="center";context.fillText("🐱",42,57);
+      const width=canvasEl.width,height=canvasEl.height;
+      context.fillStyle="#213d31";context.font="bold "+Math.floor(height*.43)+"px system-ui";context.textAlign="center";context.fillText("🐱",width/2,height*.68);
     }
   }
   function redrawStarterAvatars(){
@@ -332,7 +351,7 @@
       return '<article class="starter-slot" aria-label="Trabalhador inicial '+(index+1)+'">'+
         '<span class="starter-label">Personagem 0'+(index+1)+' · Titular</span>'+
         '<div class="starter-person"><canvas width="84" height="84" class="starter-portrait" data-slot="'+index+'" role="img" aria-label="Sprite do personagem '+person.name+'"></canvas>'+
-        '<div><h3>'+person.name+'</h3><small>'+count+' habilidade(s) · '+person.neg.length+' traço(s) negativo(s)</small></div></div>'+
+        '<div><label for="starter-name-'+index+'" class="starter-label">Nome</label><input class="starter-name-input" id="starter-name-'+index+'" data-starter-name="'+index+'" maxlength="18" value="'+escapeHtml(person.name)+'" autocomplete="off" spellcheck="false"><small>'+count+' habilidade(s) · '+person.neg.length+' traço(s) negativo(s)</small></div></div>'+
         '<div class="starter-section-title">Habilidades positivas</div><div class="starter-skills">'+skills+'</div>'+
         '<div class="starter-bonus">✦ Bônus de <strong>+'+bonus+'% de velocidade</strong> nas especialidades.</div>'+
         '<div class="starter-section-title">Atividades proibidas</div><div class="starter-negatives">'+negatives+'</div>'+
@@ -349,15 +368,107 @@
     starters[i]=randomStarter(starters.filter((_,idx)=>idx!==i).map(c=>c.name));
     renderStarters();
   });
+  $("#starter-slots").addEventListener("change",event=>{
+    const field=event.target.closest("[data-starter-name]");
+    if(!field)return;
+    const index=Number(field.dataset.starterName);
+    const requested=field.value.trim().slice(0,18);
+    const validName=requested||starters[index].name;
+    const other=starters[1-index];
+    if(other&&validName.toLocaleLowerCase()===other.name.toLocaleLowerCase()){
+      notify("Os dois trabalhadores precisam ter nomes diferentes.");
+      field.value=starters[index].name;
+      return;
+    }
+    starters[index].name=validName;field.value=validName;
+  });
   $("#starter-reroll-all").addEventListener("click",()=>{
     const first=randomStarter();starters=[first,randomStarter([first.name])];renderStarters();
   });
   $("#starter-confirm").addEventListener("click",()=>{
     if(starters.length!==2||starters[0].name===starters[1].name)return;
     const selected=starters.map(c=>({name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance}));
-    $("#starter-dialog").close();start(false,selected);renderPriorityControls();
+    const farmName=$("#farm-name").value.trim().slice(0,32)||"Vale do Amanhecer";
+    $("#starter-dialog").close();start(false,selected,{mode:pendingMode,farmName});renderPriorityControls();
   });
-  $("#new-game").addEventListener("click",createStarterTeam);
+
+  // Gerenciamento inspirado no fluxo de simulações de colônia, com regras próprias.
+  function openManagement(tab){
+    if(!playing)return;
+    managementTab=tab;
+    managementWorker=state.workers.some(w=>w.id===managementWorker)?managementWorker:state.workers[0]?.id??null;
+    speedBeforeManagement=simSpeed;
+    simSpeed=0;updateSpeed();refresh();
+    renderManagement();
+    $("#management-dialog").showModal();
+  }
+  function renderManagement(){
+    document.querySelectorAll("[data-management-tab]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.managementTab===managementTab)));
+    const target=$("#management-body");
+    if(managementTab==="priorities"){
+      const types=Object.keys(labels);
+      target.innerHTML='<p class="management-explainer">Defina as atividades preferidas de cada trabalhador (1–9). As prioridades globais continuam valendo para toda a fazenda. A especialidade aumenta a velocidade; traços negativos bloqueiam completamente a tarefa.</p>'+
+        '<div class="matrix-scroll"><table class="priority-matrix"><thead><tr><th>Trabalhador</th>'+
+        types.map(type=>'<th>'+icons[type]+' '+labels[type]+'</th>').join("")+
+        '</tr></thead><tbody>'+state.workers.map(w=>
+          '<tr><td><span class="matrix-worker-name">'+escapeHtml(w.name)+'</span><span class="matrix-worker-info">'+(w.skills.length?'+ '+(w.skills.length===1?'100':w.skills.length===2?'60':'30')+'% especialização':'Generalista')+'</span></td>'+
+          types.map(type=>{
+            if(w.neg.includes(type))return '<td><span class="matrix-forbidden" title="Proibido por traço negativo">✕ Bloqueado</span></td>';
+            const priority=w.personalPriority?.[type]??5;
+            const special=w.skills.includes(type);
+            return '<td><div class="matrix-cell">'+
+              '<button type="button" data-worker-priority="'+w.id+'" data-work-type="'+type+'" data-work-delta="-1" aria-label="Diminuir '+labels[type]+' de '+escapeHtml(w.name)+'" '+(priority<=1?'disabled':'')+'>−</button>'+
+              '<strong class="'+(special?'special':'')+'">'+priority+(special?' ✦':'')+'</strong>'+
+              '<button type="button" data-worker-priority="'+w.id+'" data-work-type="'+type+'" data-work-delta="1" aria-label="Aumentar '+labels[type]+' de '+escapeHtml(w.name)+'" '+(priority>=9?'disabled':'')+'>+</button>'+
+              '</div></td>';
+          }).join("")+'</tr>').join("")+'</tbody></table></div>'+
+          '<p class="matrix-legend">✦ Especialidade · ✕ Atividade proibida · 9 = preferência máxima. Os trabalhadores podem realizar todas as atividades não proibidas.</p>';
+    } else {
+      const worker=state.workers.find(w=>w.id===managementWorker)||state.workers[0];
+      if(!worker){target.innerHTML='<p>Sem trabalhadores. Contrate uma equipe.</p>';return;}
+      const percentage=worker.skills.length===1?100:worker.skills.length===2?60:worker.skills.length===3?30:0;
+      target.innerHTML='<p class="management-explainer">Especialidades são bônus de eficiência e não desbloqueios de atividades. Quanto menos especialidades, mais rápido o trabalhador executa cada uma delas.</p>'+
+        '<div class="skills-view"><nav class="skills-roster" aria-label="Selecionar trabalhador">'+
+        state.workers.map(w=>'<button type="button" data-select-worker="'+w.id+'" class="'+(worker.id===w.id?'active':'')+'">'+escapeHtml(w.name)+'<br><small>'+w.skills.length+' especialidades</small></button>').join("")+
+        '</nav><section class="skills-detail"><h3>✦ '+escapeHtml(worker.name)+'</h3>'+
+        '<p>'+worker.skills.length+' habilidade(s) positiva(s) · '+worker.neg.length+' restrição(ões) · bônus de +'+percentage+'% nas especialidades.</p>'+
+        '<div class="skills-grid">'+Object.keys(labels).map(type=>{
+          const forbidden=worker.neg.includes(type),special=worker.skills.includes(type);
+          const label=forbidden?'Bloqueado':special?'+'+percentage+'% de velocidade':'Velocidade normal';
+          const time=forbidden?'—':Math.ceil(baseTime[type]/bonus(worker,type))+' s / ação';
+          return '<div class="'+(forbidden?'skill-locked':'')+'"><span>'+icons[type]+' '+labels[type]+'</span><strong>'+label+'</strong><small>'+time+'</small></div>';
+        }).join("")+'</div>'+
+        '<p>A progressão e a árvore de habilidades poderão ser adicionadas futuramente. Nesta versão, as especialidades são definidas no recrutamento.</p></section></div>';
+    }
+  }
+  $("#management-body").addEventListener("click",e=>{
+    const inc=e.target.closest("[data-worker-priority]");
+    if(inc){
+      const worker=state.workers.find(w=>w.id===Number(inc.dataset.workerPriority));
+      if(!worker)return;
+      const type=inc.dataset.workType;
+      if(!Object.hasOwn(labels,type)||worker.neg.includes(type))return;
+      worker.personalPriority=worker.personalPriority||{};
+      worker.personalPriority[type]=Math.max(1,Math.min(9,(worker.personalPriority[type]??5)+Number(inc.dataset.workDelta)));
+      renderManagement();save();return;
+    }
+    const selector=e.target.closest("[data-select-worker]");
+    if(selector){managementWorker=Number(selector.dataset.selectWorker);renderManagement();}
+  });
+  document.querySelectorAll("[data-management-tab]").forEach(btn=>btn.addEventListener("click",()=>{managementTab=btn.dataset.managementTab;renderManagement();}));
+  $("#nav-priorities").addEventListener("click",()=>openManagement("priorities"));
+  $("#nav-skills").addEventListener("click",()=>openManagement("skills"));
+  $("#management-dialog").addEventListener("close",()=>{
+    if(playing){simSpeed=speedBeforeManagement;updateSpeed();refresh();save();}
+  });
+  $("#new-game").addEventListener("click",()=>$("#mode-dialog").showModal());
+  $("#mode-dialog").addEventListener("click",event=>{
+    const btn=event.target.closest("[data-game-mode]");
+    if(!btn)return;
+    pendingMode=btn.dataset.gameMode;
+    $("#mode-dialog").close();
+    createStarterTeam();
+  });
   $("#continue").addEventListener("click",()=>{start(true);renderPriorityControls();});
   $("#help-btn").addEventListener("click",()=>$("#help-dialog").showModal());
   $("#help-close").addEventListener("click",()=>$("#help-dialog").close());
