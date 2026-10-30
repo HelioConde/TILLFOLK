@@ -27,3 +27,11 @@ A interface utiliza Sprout Lands (créditos: Cup Nooble) e um visual de administ
 
 ## QA visual / Playwright
 Capturas reais do repositório nos tamanhos 1600×900, 1366×768, 1125×790, 1024×768, 800×900 e 390×844. Critérios: menu dentro da viewport, rolagem horizontal ausente, Nova Fazenda clicável e modais funcionando.
+
+
+## Polimento v1.0 — implementação
+- Tokens de espaçamento e foco ativos em ui-polish.css.
+- Foco acessível, contraste e respeito a movimento reduzido.
+- A interface da fazenda preserva o mapa 896x576, ajustado sem distorção em desktop via ResizeObserver e game-polish.css.
+- A sidebar pode rolar independentemente; ferramentas precisam permanecer visíveis em 1600x900 e 1366x768.
+- Screenshots de menu e jogo gerados pelo workflow QA visual.

@@ -158,3 +158,29 @@ test('Movimento reduzido e preferência de animação persistida',async({page})=
   await expect(page.locator('#menu')).toHaveClass(/no-title-motion/);
   await expect(page.locator('#title-fullscreen')).toHaveAttribute('aria-pressed','false');
 });
+
+
+test('Desktop: ferramentas e canvas visíveis sem rolagem no modo normal',async({page})=>{
+  for(const view of [{width:1600,height:900},{width:1366,height:768}]){
+    await page.setViewportSize(view);
+    await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+    await page.locator('#new-game').click();
+    await page.locator('[data-game-mode="relaxed"]').click();
+    await page.locator('#starter-confirm').click();
+    await expect(page.locator('#menu')).toBeHidden();
+    await expect(page.locator('.tooltray')).toBeVisible();
+    await page.waitForTimeout(350);
+    const layout=await page.evaluate(()=>{
+      const rect=(s)=>document.querySelector(s).getBoundingClientRect();
+      const tools=rect('.tooltray'),canvas=rect('#world'),map=rect('.canvas-scroll');
+      return {toolBottom:tools.bottom,mapBottom:map.bottom,canvasWidth:canvas.width,
+        canvasHeight:canvas.height,viewHeight:innerHeight,viewWidth:innerWidth};
+    });
+    expect(layout.toolBottom).toBeLessThanOrEqual(view.height+2);
+    expect(layout.mapBottom).toBeLessThanOrEqual(view.height+2);
+    expect(layout.canvasWidth).toBeGreaterThan(300);
+    expect(layout.canvasHeight).toBeGreaterThan(180);
+    expect(Math.abs(layout.canvasWidth/layout.canvasHeight-896/576)).toBeLessThan(.025);
+    await page.screenshot({path:'screenshots/jogo-ajustado-'+view.width+'x'+view.height+'.png',animations:'disabled'});
+  }
+});

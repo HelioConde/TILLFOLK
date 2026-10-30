@@ -3,6 +3,29 @@
   const TILE = 32, W = 28, H = 18, SAVE_KEY = "tillfolk-v01";
   const canvas = document.querySelector("#world"), ctx = canvas.getContext("2d");
   const $ = (s) => document.querySelector(s);
+  function fitWorldCanvas(){
+    // Ajuste do palco apenas em desktops altos; celulares conservam scroll/pan.
+    const desktop=window.matchMedia("(min-width: 1181px) and (min-height: 700px)").matches;
+    if(!desktop || document.body.classList.contains("focus-game")){
+      canvas.style.removeProperty("width");
+      canvas.style.removeProperty("height");
+      return;
+    }
+    const area=$(".canvas-wrap");
+    if(!area)return;
+    const rect=area.getBoundingClientRect();
+    if(rect.width<50||rect.height<50)return;
+    const scale=Math.min(rect.width/canvas.width,rect.height/canvas.height);
+    const width=Math.max(1,Math.floor(canvas.width*scale));
+    const height=Math.max(1,Math.floor(canvas.height*scale));
+    if(canvas.style.width!==width+"px")canvas.style.width=width+"px";
+    if(canvas.style.height!==height+"px")canvas.style.height=height+"px";
+  }
+  window.addEventListener("resize",fitWorldCanvas);
+  if("ResizeObserver" in window){
+    new ResizeObserver(fitWorldCanvas).observe(document.querySelector(".canvas-wrap"));
+  }
+
   ctx.imageSmoothingEnabled = false;
   const A = "./public/assets/sprout-lands/";
   const spriteUrls = {
@@ -662,5 +685,6 @@
     }
     draw();requestAnimationFrame(loop);
   }
+  requestAnimationFrame(fitWorldCanvas);
   requestAnimationFrame(loop);
 })();
