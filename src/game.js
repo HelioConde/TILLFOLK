@@ -491,7 +491,7 @@
       y:Math.floor((event.clientY-rect.top)/rect.height*H)};
   }
   function isBuildCellBusy(x,y){
-    if(trees.some(t=>t[0]===x&&t[1]===y)||rocks.some(t=>t[0]===x&&t[1]===y)||(x===20&&y===6))return true;
+    if(trees.some(t=>t[0]===x&&t[1]===y)||rocks.some(t=>t[0]===x&&t[1]===y)||decor.some(t=>t[0]===x&&t[1]===y)||(x===20&&y===6))return true;
     if(state.workers.some(w=>Math.max(Math.abs(Math.floor(w.x)-x),Math.abs(Math.floor(w.y)-y))<=1))return true;
     return state.plots.some(p=>p.x===x&&p.y===y&&(p.selected||p.tilled||p.seeded||p.produce));
   }
