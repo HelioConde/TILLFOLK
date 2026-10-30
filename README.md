@@ -57,3 +57,9 @@ Polimento de contraste, tokens globais e foco visual no arquivo ui-polish.css.
 O jogo recebe inert enquanto o menu está aberto, preservando a navegação por teclado.
 A configuração de movimento reduzido controla a animação do cenário. Sem banco de dados: salvamento com localStorage.
 Playwright valida telas, comportamento do menu e salvamento através do GitHub Actions.
+
+### Casa de referência Slime-Harvest
+O cenário do menu usa o renderizador de camadas src/house-renderer.js, baseado no
+construtor do projeto Slime-Harvest (scripts/building/house_builder.gd).
+As cinco faixas do telhado e as peças originais de fachada, porta, janela e chaminé
+são desenhadas sem deformação. O mapa inicial da fazenda segue sem construções prontas.

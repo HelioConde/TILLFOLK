@@ -23,6 +23,7 @@ jobs:
           node --check src/wild-world.js
           node --check src/game.js
           node --check src/menu.js
+          node --check src/house-renderer.js
           node --check src/menu-scene.js
       - name: Montar site estático mínimo
         shell: bash
@@ -30,7 +31,7 @@ jobs:
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
           cp index.html styles.css menu.css menu-layout.css game-polish.css fullscreen-game.css ui-polish.css _site/
-          cp src/game.js src/wild-world.js src/menu.js src/menu-scene.js _site/src/
+          cp src/game.js src/wild-world.js src/menu.js src/house-renderer.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
@@ -43,6 +44,7 @@ jobs:
           test -f _site/public/assets/tillfolk/menu-landscape.svg
           test -f _site/src/wild-world.js
           test -f _site/src/menu.js
+          test -f _site/src/house-renderer.js
           test -f _site/src/menu-scene.js
           # Falhar a publicação caso alguma arte utilizada na abertura esteja ausente.
           node <<'NODE'
@@ -58,7 +60,7 @@ jobs:
               throw new Error('Sprite ausente na publicação: ' + path);
           }
           const index = fs.readFileSync('_site/index.html', 'utf8');
-          if (!index.includes('./src/menu-scene.js')) throw new Error('Cena não referenciada em index.html');
+          if (!index.includes('./src/menu-scene.js') || !index.includes('./src/house-renderer.js')) throw new Error('Cena ou montagem da casa ausente em index.html');
           console.log('Menu validado: ' + files.length + ' sprites presentes na publicação');
           NODE
           test -f _site/public/assets/sprout-lands/structures/wood-roof.png

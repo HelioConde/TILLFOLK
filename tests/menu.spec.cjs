@@ -309,8 +309,9 @@ test('Casa usa atlas original e telhas sem alongamento',async({page})=>{
   fs.writeFileSync('screenshots/casa-canvas-960x540.png',Buffer.from(png,'base64'));
   await page.screenshot({path:'screenshots/casa-menu-1600x900.png',animations:'disabled'});
   const menuCode=fs.readFileSync('src/menu-scene.js','utf8');
-  expect(menuCode).toContain('roofX+col*cell,roofY+row*cell,cell,cell');
-  expect(menuCode).toContain('wallX+col*cell,wallY+row*cell,cell,cell');
+  expect(menuCode).toContain('builder.draw(ctx,{roof:imgs.roof,walls:imgs.walls,door:imgs.door}');
+  const builderCode=fs.readFileSync('src/house-renderer.js','utf8');
+  expect(builderCode).toContain('const ridge=Math.floor((height-1)/2)');
   expect(errors).toEqual([]);
 });
 
@@ -443,4 +444,29 @@ test('Obstáculo da floresta: designar limpeza sem atravessar árvores',async({p
   expect(selected).toBe(true);
   await expect(page.locator('#task-count')).not.toHaveText('0');
   await page.screenshot({path:'screenshots/vale-limpeza-marcada-1600x900.png',animations:'disabled'});
+});
+
+
+test('Casa Slime-Harvest: 5 faixas originais, escala 2x, captura real',async({page})=>{
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  const result=await page.evaluate(()=>{
+    const h=window.TillfolkHouse;
+    if(!h)throw new Error("Renderizador Slime-Harvest não carregou");
+    return {
+      center:Array.from({length:5},(_,row)=>h.roofAtlas(3,row)),
+      left:Array.from({length:5},(_,row)=>h.roofAtlas(0,row)),
+      right:Array.from({length:5},(_,row)=>h.roofAtlas(6,row)),
+      dimensions:h.dimensions(2)
+    };
+  });
+  expect(result.center).toEqual([[1,0],[1,1],[1,2],[1,3],[1,4]]);
+  expect(result.left.map(t=>t[0])).toEqual([0,0,0,0,0]);
+  expect(result.right.map(t=>t[0])).toEqual([2,2,2,2,2]);
+  expect(result.dimensions).toEqual({width:224,height:288,cell:32});
+  const fs=require('node:fs');
+  fs.mkdirSync('screenshots',{recursive:true});
+  const data=await page.locator('#title-scene').evaluate(c=>c.toDataURL('image/png').split(',')[1]);
+  fs.writeFileSync('screenshots/slime-harvest-casa-canvas-960x540.png',Buffer.from(data,'base64'));
+  await page.screenshot({path:'screenshots/slime-harvest-casa-menu-1600x900.png',animations:'disabled'});
 });

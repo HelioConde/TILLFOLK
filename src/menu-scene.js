@@ -50,27 +50,11 @@
     }
   }
   function farmhouse(){
-    // Construção Sprout Lands: escala uniforme 2x, tiles inteiros.
-    const cell=32,wallX=657,roofY=160,wallY=roofY+80,roofX=wallX-16;
-    // Base da fachada (6 colunas e 3 linhas de blocos 16x16).
-    for(let row=0;row<3;row++)for(let col=0;col<6;col++){
-      stamp("walls",16,16,16,16,wallX+col*cell,wallY+row*cell,cell,cell);
-    }
-    // Telhado: cada recorte 16x16 é pintado como 32x32; nunca 41x20.
-    for(let row=0;row<3;row++)for(let col=0;col<7;col++){
-      const sx=col===0?48:col===6?96:col%2===0?80:64;
-      stamp("roof",sx,32+row*16,16,16,roofX+col*cell,roofY+row*cell,cell,cell);
-    }
-    // Duas janelas completas: recorte 32x32 -> destino 64x64.
-    stamp("walls",48,0,32,32,wallX+8,wallY+8,64,64);
-    stamp("walls",48,0,32,32,wallX+120,wallY+8,64,64);
-    // Porta do pack original: recorte 16x32 -> destino 32x64.
-    stamp("door",64,0,16,32,wallX+80,wallY+32,32,64);
-    // Decoração usando objetos disponíveis no projeto.
-    stamp("furniture",0,16,16,16,wallX-24,wallY+79,28,28);
-    stamp("furniture",32,16,16,16,wallX+184,wallY+79,28,28);
-    stamp("chest",0,0,32,32,wallX-58,wallY+67,35,35);
-    stamp("chest",48,0,32,32,wallX+216,wallY+69,33,33);
+    const builder=window.TillfolkHouse;
+    if(!builder)return;
+    // Tiles Slime-Harvest: uma única escala para paredes, telhado, porta e janela.
+    return builder.draw(ctx,{roof:imgs.roof,walls:imgs.walls,door:imgs.door},
+      628,115,{scale:2});
   }
   function bed(x,y,row,stage=3){
     for(let col=0;col<11;col++){

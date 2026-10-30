@@ -39,3 +39,12 @@ Capturas reais do repositório nos tamanhos 1600×900, 1366×768, 1125×790, 102
 
 ### Construções sem distorção — v1.1
 Casa do menu e do mapa desenhada com escala 2× exata: cada tile 16×16 ocupa 32×32 pixels, janelas 32×32 ocupam 64×64 e a porta 16×32 ocupa 32×64. Usar o atlas Sprout Lands; proibir esticar telhas horizontalmente. Playwright captura o canvas da casa e valida a existência dos sprites.
+
+## Construção em camadas inspirada diretamente no Slime-Harvest
+- Origem: HelioConde/Slime-Harvest, scripts/building/house_builder.gd.
+- O src/house-renderer.js reproduz as regras _roof_atlas, _wall_atlas, _add_front_windows e _add_roof_chimney para fachadas retangulares.
+- Telhado com cinco faixas distintas, cantos laterais, cumeeira, beiral e chaminé.
+- Porta usa o quadro fechado 5 do AutomaticDoor; janelas originais do atlas de paredes.
+- Escala inteira 2x, nenhum sprite alongado horizontalmente.
+- O mundo inicial do TILLFOLK continua vazio, sem casa preexistente. Apenas a casa ilustrativa do menu foi redesenhada.
+- Playwright registra screenshot 1600x900 e captura do canvas 960x540.
