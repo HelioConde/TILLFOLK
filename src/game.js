@@ -3,7 +3,27 @@
   const TILE = 32, W = 28, H = 18, SAVE_KEY = "tillfolk-v01";
   const canvas = document.querySelector("#world"), ctx = canvas.getContext("2d");
   const $ = (s) => document.querySelector(s);
+  let worldPanX=0,worldPanY=0,panPointer=null,suppressMapClick=false;
+  function clampWorldPan(){
+    if(!document.body.classList.contains("play-session"))return;
+    const view=$(".canvas-scroll").getBoundingClientRect();
+    const boundsX=Math.max(0,(canvas.getBoundingClientRect().width-view.width)/2);
+    const boundsY=Math.max(0,(canvas.getBoundingClientRect().height-view.height)/2);
+    worldPanX=Math.max(-boundsX,Math.min(boundsX,worldPanX));
+    worldPanY=Math.max(-boundsY,Math.min(boundsY,worldPanY));
+    canvas.style.setProperty("--pan-x",worldPanX+"px");
+    canvas.style.setProperty("--pan-y",worldPanY+"px");
+  }
   function fitWorldCanvas(){
+    if(document.body.classList.contains("play-session")){
+      const view=$(".canvas-scroll").getBoundingClientRect();
+      if(view.width<1||view.height<1)return;
+      const scale=Math.max(view.width/canvas.width,view.height/canvas.height);
+      canvas.style.width=Math.ceil(canvas.width*scale)+2+"px";
+      canvas.style.height=Math.ceil(canvas.height*scale)+2+"px";
+      clampWorldPan();
+      return;
+    }
     // Ajuste do palco apenas em desktops altos; celulares conservam scroll/pan.
     const desktop=window.matchMedia("(min-width: 1181px) and (min-height: 700px)").matches;
     if(!desktop || document.body.classList.contains("focus-game")){
@@ -176,12 +196,10 @@
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
   function start(continueSaved=false, chosenStarters = [], config = {}){
     if(!continueSaved||!readSave())reset(chosenStarters,config);
-    playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false; refresh();save();
-    // Exibir a horta primeiro nos celulares, sem mudar a escala do pixel art.
-    if(window.innerWidth<=610){
-      const viewport=document.querySelector(".canvas-scroll");
-      requestAnimationFrame(()=>{viewport.scrollLeft=Math.max(0,(viewport.scrollWidth-viewport.clientWidth)/2);});
-    }
+    playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false;
+    document.body.classList.add("play-session","focus-game");
+    worldPanX=0;worldPanY=0;closeDrawer();refresh();save();
+    requestAnimationFrame(fitWorldCanvas);
     notify("Sua fazenda está pronta. Os trabalhadores já estão a caminho!");
   }
   function getNext(p){
@@ -401,6 +419,7 @@
     const m=Math.floor(state.minutes);set("#clock",String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
     for(const key of ["coins","seeds","water","food"])set("#"+key,state[key]);
     set("#worker-count",state.workers.length);set("#task-count",tasks.length);
+    set("#hud-workers",state.workers.length);set("#hud-tasks",tasks.length);
     set("#farm-title",state.farmName||"Minha Fazenda");
     set("#mode-label",(state.mode==="relaxed"?"FAZENDA TRANQUILA":"SOBREVIVÊNCIA")+" · DIA "+state.day);
     $("#status").textContent=simSpeed===0?"Ⅱ Simulação pausada":"● Fazenda em funcionamento";
@@ -469,7 +488,32 @@
       " · "+(p.produce?"Colheita no chão":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural")+
       (task?" · Próxima tarefa: "+labels[task]:"");
   }
+  // Segure Shift e arraste no desktop; no celular, arraste com o dedo para explorar.
+  // O cálculo da célula utiliza o retângulo real do canvas expandido/cortado.
+  canvas.addEventListener("pointerdown",event=>{
+    if(!playing||!document.body.classList.contains("play-session"))return;
+    suppressMapClick=false;
+    if(event.pointerType!=="touch"&&!event.shiftKey&&event.button!==1)return;
+    panPointer={id:event.pointerId,x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false};
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener("pointermove",event=>{
+    if(!panPointer||panPointer.id!==event.pointerId)return;
+    const dx=event.clientX-panPointer.lastX,dy=event.clientY-panPointer.lastY;
+    if(Math.hypot(event.clientX-panPointer.x,event.clientY-panPointer.y)>6)panPointer.moved=true;
+    if(panPointer.moved){worldPanX+=dx;worldPanY+=dy;clampWorldPan();}
+    panPointer.lastX=event.clientX;panPointer.lastY=event.clientY;
+  });
+  function finishMapPan(event){
+    if(!panPointer||panPointer.id!==event.pointerId)return;
+    suppressMapClick=panPointer.moved;
+    if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
+    panPointer=null;
+  }
+  canvas.addEventListener("pointerup",finishMapPan);
+  canvas.addEventListener("pointercancel",finishMapPan);
   canvas.addEventListener("click",event=>{
+    if(suppressMapClick){suppressMapClick=false;return;}
     if(!playing||!state)return;
     const rect=canvas.getBoundingClientRect(),x=Math.floor((event.clientX-rect.left)/rect.width*W),y=Math.floor((event.clientY-rect.top)/rect.height*H);
     const p=findPlot(x,y);
@@ -701,9 +745,57 @@
   $("#continue").addEventListener("click",()=>{start(true);renderPriorityControls();});
   $("#help-btn").addEventListener("click",()=>$("#help-dialog").showModal());
   $("#help-close").addEventListener("click",()=>$("#help-dialog").close());
-  $("#menu-btn").addEventListener("click",()=>{save();playing=false;$(".app-shell").inert=true;$("#menu").hidden=false;$("#continue").disabled=!localStorage.getItem(SAVE_KEY);$("#new-game").focus({preventScroll:true});});
+  const sidebar=$("#farm-sidebar"),backdrop=$("#drawer-backdrop");
+  let drawerReturnFocus=null;
+  function closeDrawer(){
+    document.body.classList.remove("drawer-open");
+    sidebar.inert=true;sidebar.setAttribute("aria-hidden","true");backdrop.hidden=true;
+    $("#open-workers").setAttribute("aria-expanded","false");
+    $("#open-tasks").setAttribute("aria-expanded","false");
+  }
+  function openDrawer(section){
+    if(!playing)return;
+    drawerReturnFocus=document.activeElement;
+    document.body.classList.add("drawer-open");sidebar.inert=false;
+    sidebar.setAttribute("aria-hidden","false");backdrop.hidden=false;
+    $("#open-workers").setAttribute("aria-expanded","true");
+    $("#open-tasks").setAttribute("aria-expanded","true");
+    requestAnimationFrame(()=>{
+      sidebar.scrollTop=section==="tasks"?$("#tasks").getBoundingClientRect().top-sidebar.getBoundingClientRect().top+sidebar.scrollTop-90:0;
+      $("#drawer-close").focus({preventScroll:true});
+    });
+  }
+  $("#open-workers").addEventListener("click",()=>openDrawer("workers"));
+  $("#open-tasks").addEventListener("click",()=>openDrawer("tasks"));
+  function dismissDrawer(){closeDrawer();if(drawerReturnFocus?.isConnected)drawerReturnFocus.focus({preventScroll:true});}
+  $("#drawer-close").addEventListener("click",dismissDrawer);
+  backdrop.addEventListener("click",dismissDrawer);
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("drawer-open")){dismissDrawer();}});
+  $("#menu-btn").addEventListener("click",()=>{
+    save();playing=false;closeDrawer();
+    document.body.classList.remove("play-session","focus-game");
+    canvas.style.removeProperty("--pan-x");canvas.style.removeProperty("--pan-y");
+    if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
+    $(".app-shell").inert=true;$("#menu").hidden=false;
+    $("#continue").disabled=!localStorage.getItem(SAVE_KEY);
+    $("#new-game").focus({preventScroll:true});
+    requestAnimationFrame(fitWorldCanvas);
+  });
   $("#continue").disabled=!localStorage.getItem(SAVE_KEY);
-  $("#focus-game").addEventListener("click",()=>{const focused=document.body.classList.toggle("focus-game");$("#focus-game").setAttribute("aria-pressed",String(focused));$("#focus-game").textContent=focused?"▤ Mostrar gestão":"▣ Tela de jogo";});
+  $("#focus-game").setAttribute("aria-pressed","false");
+  $("#focus-game").addEventListener("click",async()=>{
+    try{
+      if(document.fullscreenElement)await document.exitFullscreen();
+      else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();
+      else notify("Use F11 no navegador para ativar a tela cheia.");
+    }catch{notify("O navegador bloqueou a tela cheia. Experimente F11.");}
+  });
+  document.addEventListener("fullscreenchange",()=>{
+    const full=Boolean(document.fullscreenElement);
+    $("#focus-game").setAttribute("aria-pressed",String(full));
+    $("#focus-game").textContent=full?"⛶ Sair da tela cheia":"⛶ Tela cheia";
+    requestAnimationFrame(fitWorldCanvas);
+  });
   $(".app-shell").inert=!$("#menu").hidden;
   reset();renderPriorityControls();recalcTasks();refresh();
   function loop(now){
