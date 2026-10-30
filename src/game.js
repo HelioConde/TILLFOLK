@@ -509,7 +509,19 @@
     $("#build-erase").classList.toggle("chosen",eraseBuild);
     $("#build-roof").textContent=state.house.roofHidden?"◉ Mostrar telhado":"◌ Ocultar telhado";
   }
+  let cameraPanBeforeBuilding=null;
+  function focusHouseCamera(){
+    if(!playing||!document.body.classList.contains("play-session"))return;
+    const viewport=$(".canvas-scroll").getBoundingClientRect(),bounds=canvas.getBoundingClientRect();
+    if(bounds.width<=viewport.width+80)return; // Desktop: a casa ja esta visivel.
+    const houseX=(6.5*TILE/canvas.width)*bounds.width;
+    worldPanX+=viewport.left+viewport.width*.5-(bounds.left+houseX);
+    clampWorldPan();
+  }
   function setTool(next){
+    const entering=next==="construir"&&selectedTool!=="construir";
+    const leaving=selectedTool==="construir"&&next!=="construir";
+    if(entering)cameraPanBeforeBuilding={x:worldPanX,y:worldPanY};
     selectedTool=next;
     document.querySelectorAll("[data-tool]").forEach(btn=>{
       const on=btn.dataset.tool===next;
@@ -518,7 +530,13 @@
     $("#construction-panel").hidden=next!=="construir";
     $("#tile-tooltip").hidden=true;
     buildHover=null;
-    if(next==="construir")updateBuildPanel();
+    if(next==="construir"){
+      updateBuildPanel();
+      if(entering)requestAnimationFrame(focusHouseCamera);
+    } else if(leaving && cameraPanBeforeBuilding){
+      worldPanX=cameraPanBeforeBuilding.x;worldPanY=cameraPanBeforeBuilding.y;
+      cameraPanBeforeBuilding=null;clampWorldPan();
+    }
   }
   function paintHouse(x,y,erase=eraseBuild){
     if(!playing||selectedTool!=="construir")return;
