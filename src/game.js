@@ -51,7 +51,7 @@
   const spriteUrls = {
     grass:A+"terrain/grass.png", dirt:A+"terrain/tilled-dirt.png", soil:A+"terrain/soil.png",
     crops:A+"farming/crops.png", trees:A+"environment/trees-and-bushes.png",
-    worker:A+"characters/worker-basic.png", premium:A+"characters/worker-variants.png", actions:A+"characters/worker-actions.png",
+    worker:A+"characters/worker-basic.png", premium:A+"characters/worker-variants.png", actions:A+"characters/worker-actions.png", wateringFx:A+"characters/watering-effects.png",
     well:A+"structures/water-well.png", fences:A+"structures/fences.png",
     roof:A+"structures/wood-roof.png",walls:A+"structures/wood-walls.png",furniture:A+"structures/furniture.png",chest:A+"structures/chest.png",paths:A+"structures/paths.png",fenceGates:A+"structures/fence-gates.png",
     rocks:A+"environment/forageables.png"
@@ -358,7 +358,7 @@
     const rowFor={down:0,up:1,left:2,right:3};
     // O atlas worker-actions.png tem 3 grupos de 4 direções, com 2 quadros por ação:
     // enxada (0–3), ferramenta de corte (4–7) e transporte (8–11).
-    const actionRow={till:0,fertilize:0,sow:0,clear:4,harvest:4,water:8,carry:8};
+    const actionRow={till:0,fertilize:0,sow:0,clear:4,harvest:4,carry:8};
     for(const item of layers){
       const {x,y,type}=item;
       if(type==="tree"){
@@ -384,7 +384,7 @@
         const direction=rowFor[w.facing]||0;
         // Parado = quadro fixo; andando = sprites de caminhada; trabalhando =
         // quadros completos do atlas de ferramentas, sem cortar enxada ou carga.
-        if(working&&valid(sprite.actions)){
+        if(working&&active.type!=="water"&&valid(sprite.actions)){
           const image=getWorkerSprite(w,true);
           const actionGroup=actionRow[active.type]??0;
           const frame=simSpeed===0?0:Math.floor(performance.now()/250)%2;
@@ -397,6 +397,11 @@
         }
         if(!valid(sprite.premium)&&!valid(sprite.worker)){
           ctx.fillStyle=w.color;ctx.fillRect(px-10,py-30,20,27);
+        }
+        // A irrigação usa as gotas verdes do atlas local; não mostra pedras como água.
+        if(working&&active.type==="water"&&valid(sprite.wateringFx)){
+          const fxFrame=simSpeed===0?0:Math.floor(performance.now()/150)%9;
+          part(sprite.wateringFx,fxFrame*48,0,48,48,px+4,py-24,48,48);
         }
         // Placa de identificação menor para não cobrir o personagem.
         const name=String(w.name||"Colono").slice(0,17);
