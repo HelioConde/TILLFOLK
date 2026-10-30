@@ -126,7 +126,7 @@
   const decor = [[10,2],[11,3],[16,3],[18,4],[2,8],[5,15],[10,15],[24,10],[18,16],[22,9]];
   const keyOf = (x,y) => x+"-"+y;
   const nearby = (x,y) => Math.abs(x-5)+Math.abs(y-8);
-  const blocked = (x,y) => x<1||y<1||x>=W-1||y>=H-1||((x>=3&&x<=7)&&(y>=5&&y<=9))||trees.some(t=>t[0]===x&&t[1]===y)||rocks.some(t=>t[0]===x&&t[1]===y)||(x===20&&y===6)||(x>=4&&x<=9&&y===10);
+  const blocked = (x,y) => x<1||y<1||x>=W-1||y>=H-1||((x>=3&&x<=9)&&(y>=5&&y<=9))||(state&&state.house&&window.TillfolkHouse.occupied(state.house,x,y))||trees.some(t=>t[0]===x&&t[1]===y)||rocks.some(t=>t[0]===x&&t[1]===y)||(x===20&&y===6)||(x>=4&&x<=9&&y===10);
   // Caminhos em grade impedem que colonos atravessem a casa, árvores e objetos.
   // Só a navegação usa esta malha; o cultivo continua seguindo as regras existentes.
   const directions=[[1,0],[-1,0],[0,1],[0,-1]];
@@ -151,12 +151,13 @@
     }
     return result.reverse();
   }
-  let state = null, tasks = [], selectedTool = "cultivar", playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
+  let state = null, tasks = [], selectedTool = "cultivar", buildLayer = "floor", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
     return {x,y,selected,dirty:Math.random()<.13,tilled:false,fertilized:false,seeded:false,watered:false,growth:0,produce:false};
   }
   function reset(chosenStarters = [], config = {}){
+    state = null; // Nao herdar colisoes da partida anterior.
     const plots = [];
     for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)if(!blocked(x,y))plots.push(makePlot(x,y,false));
     for(let y=8;y<=10;y++)for(let x=12;x<=15;x++){
@@ -172,7 +173,7 @@
       appearance:c.appearance ?? i,personalPriority:{},x:7.5+i,y:11.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
     }));
     state = {day:1,minutes:8*60,coins:220,seeds:18,water:30,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
-      plots, workers:team,
+      plots, workers:team,house:window.TillfolkHouse.initial(),
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     tasks=[]; simSpeed=1; updateSpeed();
@@ -182,6 +183,7 @@
       const s=JSON.parse(localStorage.getItem(SAVE_KEY));
       if(!s||!Array.isArray(s.plots)||!Array.isArray(s.workers))return false;
       state=s;
+      state.house=window.TillfolkHouse.normalize(s.house); // Migracao de saves antigos.
       state.mode=state.mode||"survival";
       state.farmName=state.farmName||"Minha Fazenda";
       state.priorities={...startPriorities,...s.priorities};
@@ -196,6 +198,7 @@
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
   function start(continueSaved=false, chosenStarters = [], config = {}){
     if(!continueSaved||!readSave())reset(chosenStarters,config);
+    houseHistory=[];buildHover=null;setTool("cultivar");
     playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false;
     document.body.classList.add("play-session","focus-game");
     worldPanX=0;worldPanY=0;closeDrawer();refresh();save();
@@ -317,22 +320,12 @@
       part(sprite.fences,0,0,16,16,11*TILE-11,y*TILE,24,32);
       part(sprite.fences,0,0,16,16,16*TILE+13,y*TILE,24,32);
     }
-    // Casa no mapa: mesma escala 2x e tiles originais sem deformação.
-    const unit=32,wallX=3*TILE+16,roofY=5*TILE,wallY=roofY+65;
-    for(let row=0;row<3;row++)for(let col=0;col<4;col++){
-      part(sprite.walls,16,16,16,16,wallX+col*unit,wallY+row*unit,unit,unit);
-    }
-    for(let row=0;row<3;row++)for(let col=0;col<5;col++){
-      const sx=col===0?48:col===4?96:col%2===0?80:64;
-      part(sprite.roof,sx,32+row*16,16,16,
-        wallX-16+col*unit,roofY+row*unit,unit,unit);
-    }
-    part(sprite.walls,16,0,16,32,wallX+8,wallY+16,32,64);
-    part(sprite.walls,16,0,16,32,wallX+88,wallY+16,32,64);
-    part(sprite.door,64,0,16,32,wallX+48,wallY+32,32,64);
-    part(sprite.furniture,0,16,16,16,wallX-12,wallY+82,32,32);
-    part(sprite.chest,0,0,32,32,wallX+124,wallY+80,32,32);
-    write("CASA",wallX+64,wallY+108,"#fff6ce",11);
+    // Casa em camadas com tiles locais; referencia Slime-Harvest/HouseBuilder.
+    window.TillfolkHouse.draw(ctx,sprite,part,state.house,{
+      building:selectedTool==="construir",layer:buildLayer,
+      previewX:buildHover?.x,previewY:buildHover?.y,
+      previewValid:buildHover?Boolean(getBuildEdit(buildHover.x,buildHover.y,eraseBuild).house):false
+    });
     // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
     for(const p of state.plots){
       if(!p.selected)continue;
@@ -492,6 +485,91 @@
       " · "+(p.produce?"Colheita no chão":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural")+
       (task?" · Próxima tarefa: "+labels[task]:"");
   }
+  function buildCellFromEvent(event){
+    const rect=canvas.getBoundingClientRect();
+    return {x:Math.floor((event.clientX-rect.left)/rect.width*W),
+      y:Math.floor((event.clientY-rect.top)/rect.height*H)};
+  }
+  function isBuildCellBusy(x,y){
+    if(trees.some(t=>t[0]===x&&t[1]===y)||rocks.some(t=>t[0]===x&&t[1]===y)||(x===20&&y===6))return true;
+    if(state.workers.some(w=>Math.max(Math.abs(Math.floor(w.x)-x),Math.abs(Math.floor(w.y)-y))<=1))return true;
+    return state.plots.some(p=>p.x===x&&p.y===y&&(p.selected||p.tilled||p.seeded||p.produce));
+  }
+  function getBuildEdit(x,y,erase){
+    return window.TillfolkHouse.edit(state.house,buildLayer,x,y,erase,isBuildCellBusy);
+  }
+  function updateBuildPanel(){
+    if(!state)return;
+    $("#build-stock").textContent=String(window.TillfolkHouse.MAX_FLOORS-state.house.floor.length);
+    document.querySelectorAll("[data-build-layer]").forEach(btn=>{
+      const on=btn.dataset.buildLayer===buildLayer;
+      btn.classList.toggle("chosen",on);btn.setAttribute("aria-pressed",String(on));
+    });
+    $("#build-erase").setAttribute("aria-pressed",String(eraseBuild));
+    $("#build-erase").classList.toggle("chosen",eraseBuild);
+    $("#build-roof").textContent=state.house.roofHidden?"◉ Mostrar telhado":"◌ Ocultar telhado";
+  }
+  function setTool(next){
+    selectedTool=next;
+    document.querySelectorAll("[data-tool]").forEach(btn=>{
+      const on=btn.dataset.tool===next;
+      btn.classList.toggle("active",on);btn.setAttribute("aria-pressed",String(on));
+    });
+    $("#construction-panel").hidden=next!=="construir";
+    $("#tile-tooltip").hidden=true;
+    buildHover=null;
+    if(next==="construir")updateBuildPanel();
+  }
+  function paintHouse(x,y,erase=eraseBuild){
+    if(!playing||selectedTool!=="construir")return;
+    const result=getBuildEdit(x,y,erase);
+    if(!result.house){$("#build-status").textContent=result.error;return;}
+    houseHistory.push(JSON.stringify({house:state.house,plots:state.plots}));
+    if(houseHistory.length>30)houseHistory.shift();
+    state.house=result.house;
+    if(buildLayer==="floor"){
+      if(!erase)state.plots=state.plots.filter(p=>p.x!==x||p.y!==y);
+      else if(!blocked(x,y)&&!state.plots.some(p=>p.x===x&&p.y===y))state.plots.push(makePlot(x,y));
+    }
+    recalcTasks();refresh();save();updateBuildPanel();
+    $("#build-status").textContent=(erase?"Removido: ":"Construído: ")+
+      ({floor:"piso",walls:"parede",roof:"telhado"})[buildLayer]+" em "+(x+1)+", "+(y+1)+".";
+  }
+  document.querySelectorAll("[data-build-layer]").forEach(btn=>btn.addEventListener("click",()=>{
+    buildLayer=btn.dataset.buildLayer;updateBuildPanel();
+    $("#build-status").textContent="Camada: "+btn.textContent.trim()+". Clique para construir ou use o botão direito para apagar.";
+  }));
+  $("#build-erase").addEventListener("click",()=>{
+    eraseBuild=!eraseBuild;updateBuildPanel();
+    $("#build-status").textContent=eraseBuild?"Toque no mapa para apagar peças.":"Toque no mapa para construir.";
+  });
+  $("#build-roof").addEventListener("click",()=>{
+    state.house.roofHidden=!state.house.roofHidden;updateBuildPanel();save();
+  });
+  $("#build-undo").addEventListener("click",()=>{
+    const snapshot=houseHistory.pop();
+    if(!snapshot){$("#build-status").textContent="Nenhuma mudança para desfazer.";return;}
+    const previous=JSON.parse(snapshot);
+    state.house=window.TillfolkHouse.normalize(previous.house);
+    state.plots=previous.plots;recalcTasks();refresh();save();updateBuildPanel();
+    $("#build-status").textContent="Última alteração desfeita.";
+  });
+  $("#build-exit").addEventListener("click",()=>setTool("cultivar"));
+  canvas.addEventListener("contextmenu",event=>{
+    if(!playing||selectedTool!=="construir")return;
+    event.preventDefault();const p=buildCellFromEvent(event);paintHouse(p.x,p.y,true);
+  });
+  canvas.addEventListener("pointerleave",()=>{buildHover=null;});
+  document.addEventListener("keydown",event=>{
+    if(!playing||event.target.closest("input,textarea,select,[contenteditable]")||document.querySelector("dialog[open]"))return;
+    const k=event.key.toLowerCase();
+    if(k==="b"){setTool(selectedTool==="construir"?"cultivar":"construir");return;}
+    if(selectedTool!=="construir")return;
+    if(k==="escape"){setTool("cultivar");return;}
+    if(["1","2","3"].includes(k)){buildLayer=["floor","walls","roof"][Number(k)-1];updateBuildPanel();}
+    if(k==="r"){state.house.roofHidden=!state.house.roofHidden;updateBuildPanel();save();}
+    if((event.ctrlKey||event.metaKey)&&k==="z"){event.preventDefault();$("#build-undo").click();}
+  });
   // Segure Shift e arraste no desktop; no celular, arraste com o dedo para explorar.
   // O cálculo da célula utiliza o retângulo real do canvas expandido/cortado.
   canvas.addEventListener("pointerdown",event=>{
@@ -502,6 +580,7 @@
     canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener("pointermove",event=>{
+    if(playing&&selectedTool==="construir"&&!panPointer)buildHover=buildCellFromEvent(event);
     if(!panPointer||panPointer.id!==event.pointerId)return;
     const dx=event.clientX-panPointer.lastX,dy=event.clientY-panPointer.lastY;
     if(Math.hypot(event.clientX-panPointer.x,event.clientY-panPointer.y)>6)panPointer.moved=true;
@@ -520,6 +599,7 @@
     if(suppressMapClick){suppressMapClick=false;return;}
     if(!playing||!state)return;
     const rect=canvas.getBoundingClientRect(),x=Math.floor((event.clientX-rect.left)/rect.width*W),y=Math.floor((event.clientY-rect.top)/rect.height*H);
+    if(selectedTool==="construir"){paintHouse(x,y);return;}
     const p=findPlot(x,y);
     if(!p){notify("Este espaço está ocupado ou fora da área cultivável.");return;}
     if(selectedTool==="inspecionar"){inspect(p);return;}
@@ -528,11 +608,7 @@
     if(!p.selected)for(const w of state.workers)if(w.task&&w.task.startsWith(keyOf(x,y)+":")){w.task=null;w.progress=0;}
     recalcTasks();refresh();save();
   });
-  document.querySelectorAll("[data-tool]").forEach(b=>b.addEventListener("click",()=>{
-    selectedTool=b.dataset.tool;
-    document.querySelectorAll("[data-tool]").forEach(x=>{const on=x===b;x.classList.toggle("active",on);x.setAttribute("aria-pressed",String(on));});
-    $("#tile-tooltip").hidden=true;
-  }));
+  document.querySelectorAll("[data-tool]").forEach(b=>b.addEventListener("click",()=>setTool(b.dataset.tool)));
   document.querySelectorAll("[data-speed]").forEach(b=>b.addEventListener("click",()=>{simSpeed=Number(b.dataset.speed);updateSpeed();refresh();}));
   $("#priorities").addEventListener("click",e=>{
     const btn=e.target.closest("[data-priority]");if(!btn||!state)return;
@@ -776,7 +852,7 @@
   backdrop.addEventListener("click",dismissDrawer);
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("drawer-open")){dismissDrawer();}});
   $("#menu-btn").addEventListener("click",()=>{
-    save();playing=false;closeDrawer();
+    save();playing=false;closeDrawer();setTool("cultivar");
     document.body.classList.remove("play-session","focus-game");
     canvas.style.removeProperty("--pan-x");canvas.style.removeProperty("--pan-y");
     if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
