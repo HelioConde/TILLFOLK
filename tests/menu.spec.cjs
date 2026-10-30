@@ -227,3 +227,37 @@ test('Celular: a horta é o foco inicial da nova fazenda',async({page})=>{
   expect(position.left).toBeGreaterThan(0);
   await page.screenshot({path:'screenshots/jogo-mobile-inicio-390x844.png',animations:'disabled'});
 });
+
+
+// Captura de regressão: somente sprites originais de /public/assets/sprout-lands.
+test('Ações reais dos trabalhadores — quadros do atlas local e captura',async({page})=>{
+  await page.setViewportSize({width:1600,height:900});
+  const failures=[];
+  page.on('pageerror',error=>failures.push(error.message));
+  page.on('response',response=>{
+    if(response.status()>=400 && /worker-actions|worker-variants/.test(response.url()))
+      failures.push('Sprite indisponível: '+response.url());
+  });
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  const frames=await page.evaluate(async()=>{
+    const files=['characters/worker-actions.png','characters/worker-variants.png'];
+    return await Promise.all(files.map(async file=>{
+      const image=new Image();
+      image.src='./public/assets/sprout-lands/'+file;
+      await image.decode();
+      return {file,width:image.naturalWidth,height:image.naturalHeight};
+    }));
+  });
+  expect(frames[0].width).toBe(96);
+  expect(frames[0].height).toBe(576);
+  expect(frames[1].width).toBeGreaterThan(95);
+  await page.locator('#new-game').click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator('#starter-confirm').click();
+  await expect(page.locator('#worker-count')).toHaveText('2');
+  await page.locator('[data-speed="6"]').click();
+  await page.waitForTimeout(3800);
+  await page.screenshot({path:'screenshots/colonos-trabalhando-1600x900.png',animations:'disabled'});
+  await page.locator('#world').screenshot({path:'screenshots/colonos-trabalhando-mapa.png',animations:'disabled'});
+  expect(failures).toEqual([]);
+});
