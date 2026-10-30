@@ -1,5 +1,7 @@
 name: QA visual — menu e jogo TILLFOLK
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
     paths:
@@ -10,6 +12,9 @@ on:
       - 'src/menu.js'
       - 'src/menu-scene.js'
       - 'src/game.js'
+      - 'src/house-building.js'
+      - 'house-building.css'
+      - 'tests/house.spec.cjs'
       - 'styles.css'
       - 'game-polish.css'
       - 'fullscreen-game.css'
@@ -37,7 +42,7 @@ jobs:
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-http.log 2>&1 &
           sleep 2
       - name: Capturar screenshots e validar cortes
-        run: npx playwright test tests/menu.spec.cjs --browser chromium --reporter=line
+        run: npx playwright test tests/menu.spec.cjs tests/house.spec.cjs --browser chromium --reporter=line
       - name: Anexar screenshots
         if: always()
         uses: actions/upload-artifact@v4
