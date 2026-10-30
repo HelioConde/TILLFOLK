@@ -10,7 +10,7 @@
     crops:A+"farming/crops.png", trees:A+"environment/trees-and-bushes.png",
     worker:A+"characters/worker-basic.png", premium:A+"characters/worker-variants.png",
     well:A+"structures/water-well.png", fences:A+"structures/fences.png",
-    roof:A+"structures/wood-roof.png",walls:A+"structures/wood-walls.png",furniture:A+"structures/furniture.png",chest:A+"structures/chest.png",
+    roof:A+"structures/wood-roof.png",walls:A+"structures/wood-walls.png",furniture:A+"structures/furniture.png",chest:A+"structures/chest.png",paths:A+"structures/paths.png",fenceGates:A+"structures/fence-gates.png",
     rocks:A+"environment/forageables.png"
   };
   const sprite = {};
@@ -80,6 +80,30 @@
   const keyOf = (x,y) => x+"-"+y;
   const nearby = (x,y) => Math.abs(x-5)+Math.abs(y-8);
   const blocked = (x,y) => x<1||y<1||x>=W-1||y>=H-1||((x>=3&&x<=7)&&(y>=5&&y<=9))||trees.some(t=>t[0]===x&&t[1]===y)||rocks.some(t=>t[0]===x&&t[1]===y)||(x===20&&y===6)||(x>=4&&x<=9&&y===10);
+  // Caminhos em grade impedem que colonos atravessem a casa, árvores e objetos.
+  // Só a navegação usa esta malha; o cultivo continua seguindo as regras existentes.
+  const directions=[[1,0],[-1,0],[0,1],[0,-1]];
+  function routeBetween(fromX,fromY,toX,toY){
+    const start=[Math.floor(fromX),Math.floor(fromY)],goal=[toX,toY];
+    const id=(x,y)=>x+","+y, origin=id(...start), destination=id(...goal);
+    if(blocked(toX,toY))return [];
+    if(origin===destination)return [{x:toX+.5,y:toY+.5}];
+    const queue=[start],previous=new Map([[origin,null]]);
+    for(let head=0;head<queue.length&&!previous.has(destination);head++){
+      const [x,y]=queue[head];
+      for(const [dx,dy] of directions){
+        const nx=x+dx,ny=y+dy,key=id(nx,ny);
+        if(previous.has(key)||blocked(nx,ny))continue;
+        previous.set(key,id(x,y));queue.push([nx,ny]);
+      }
+    }
+    if(!previous.has(destination))return [];
+    const result=[];
+    for(let key=destination;key!==origin;key=previous.get(key)){
+      const [x,y]=key.split(",").map(Number);result.push({x:x+.5,y:y+.5});
+    }
+    return result.reverse();
+  }
   let state = null, tasks = [], selectedTool = "cultivar", playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
@@ -98,7 +122,7 @@
     if(wet){wet.tilled=true;wet.fertilized=true;wet.seeded=true;wet.watered=false;wet.growth=.1;}
     const team = chosenStarters.slice(0,2).map((c,i)=>({
       id:i+1,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,
-      appearance:c.appearance ?? i,personalPriority:{},x:7.1+i*.8,y:11.5,task:null,progress:0
+      appearance:c.appearance ?? i,personalPriority:{},x:7.5+i,y:11.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
     }));
     state = {day:1,minutes:8*60,coins:220,seeds:18,water:30,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
       plots, workers:team,
@@ -114,7 +138,7 @@
       state.mode=state.mode||"survival";
       state.farmName=state.farmName||"Minha Fazenda";
       state.priorities={...startPriorities,...s.priorities};
-      state.workers.forEach(w=>{w.task=null;w.progress=0;w.personalPriority=w.personalPriority||{};w.x=Number.isFinite(w.x)?w.x:7.5;w.y=Number.isFinite(w.y)?w.y:11.5;});
+      state.workers.forEach(w=>{w.task=null;w.progress=0;w.personalPriority=w.personalPriority||{};w.x=Number.isFinite(w.x)?w.x:7.5;w.y=Number.isFinite(w.y)?w.y:11.5;w.route=[];w.routeTask=null;w.facing=w.facing||"down";w.moving=false;w.walkFrame=0;});
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
       state.journal=Array.isArray(s.journal)?s.journal:[];
       tasks=[];simSpeed=1;updateSpeed();return true;
@@ -160,7 +184,7 @@
       return global*20+individual*14+expertise*9-distance*.3;
     };
     available.sort((a,b)=>priorityScore(b)-priorityScore(a));
-    if(available.length){w.task=available[0].id;w.progress=0;available[0].assigned=w.id;}
+    if(available.length){w.task=available[0].id;w.progress=0;w.routeTask=null;w.route=[];available[0].assigned=w.id;}
   }
   function finish(w,t){
     const p=state.plots.find(p=>p.x===t.x&&p.y===t.y);
@@ -185,18 +209,36 @@
     recalcTasks();
     for(const w of state.workers)assign(w);
     for(const w of state.workers){
+      w.moving=false;
       if(!w.task)continue;
       const t=tasks.find(t=>t.id===w.task);
-      if(!t){w.task=null;w.progress=0;continue;}
-      const tx=t.x+.5,ty=t.y+.5,dx=tx-w.x,dy=ty-w.y,d=Math.hypot(dx,dy);
-      if(d>.09){const s=Math.min(d,scaled*2.6);w.x+=dx/d*s;w.y+=dy/d*s;continue;}
-      w.x=tx;w.y=ty;w.progress+=scaled*bonus(w,t.type)/baseTime[t.type];
-      if(w.progress>=1){finish(w,t);w.task=null;w.progress=0;recalcTasks();}
+      if(!t){w.task=null;w.progress=0;w.route=[];continue;}
+      if(w.routeTask!==w.task){
+        w.route=routeBetween(w.x,w.y,t.x,t.y);
+        w.routeTask=w.task;
+      }
+      const target=w.route?.[0]||{x:t.x+.5,y:t.y+.5};
+      const dx=target.x-w.x,dy=target.y-w.y,d=Math.hypot(dx,dy);
+      if(d>.055){
+        if(Math.abs(dx)>Math.abs(dy))w.facing=dx>0?"right":"left";
+        else w.facing=dy>0?"down":"up";
+        const distance=Math.min(d,scaled*2.65);
+        w.x+=dx/d*distance;w.y+=dy/d*distance;
+        w.moving=true;w.walkFrame=(w.walkFrame||0)+distance*4.5;
+        continue;
+      }
+      w.x=target.x;w.y=target.y;
+      if(w.route?.length){w.route.shift();continue;}
+      w.progress+=scaled*bonus(w,t.type)/baseTime[t.type];
+      if(w.progress>=1){finish(w,t);w.task=null;w.progress=0;w.route=[];w.routeTask=null;recalcTasks();}
     }
   }
   function valid(img){return img&&img.complete&&img.naturalWidth>0;}
   function part(img,sx,sy,sw,sh,x,y,w=32,h=32){
-    if(valid(img)||(img instanceof HTMLCanvasElement&&img.width>0&&img.height>0))ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);
+    if(!img||!(valid(img)||(img instanceof HTMLCanvasElement&&img.width>0&&img.height>0)))return;
+    const width=img.naturalWidth||img.width,height=img.naturalHeight||img.height;
+    if(sx<0||sy<0||sw<=0||sh<=0||sx+sw>width||sy+sh>height)return;
+    ctx.drawImage(img,sx,sy,sw,sh,Math.round(x),Math.round(y),Math.round(w),Math.round(h));
   }
   function write(s,x,y,color="#fff7dd",size=11){
     ctx.font="bold "+size+"px system-ui";ctx.textAlign="center";ctx.lineWidth=3;ctx.strokeStyle="#253d30";ctx.strokeText(s,x,y);ctx.fillStyle=color;ctx.fillText(s,x,y);
@@ -210,9 +252,20 @@
       part(sprite.grass,r*16,80,16,16,xx,yy);
       if((x*31+y*17)%19===0){ctx.fillStyle="#d8e3a0";ctx.fillRect(xx+8,yy+9,2,2);ctx.fillRect(xx+11,yy+12,2,2);}
     }
-    // Casa e caminho feitos com o mesmo atlas da tela inicial, na escala do mundo.
-    for(let y=10;y<=13;y++)for(let x=4;x<=9;x++){
+    // Pátio e caminhos de terra: o jogador lê o acesso à casa, à horta e ao poço.
+    const pathTiles=new Set();
+    for(let y=10;y<=13;y++)for(let x=4;x<=9;x++)pathTiles.add(keyOf(x,y));
+    for(let x=9;x<=19;x++)pathTiles.add(keyOf(x,12));
+    for(let y=7;y<=12;y++)pathTiles.add(keyOf(19,y));
+    for(const key of pathTiles){
+      const [x,y]=key.split("-").map(Number);
       part(sprite.soil,0,80,16,16,x*TILE,y*TILE,TILE,TILE);
+    }
+    // A borda da horta delimita o espaço cultivável sem bloquear cliques.
+    for(let x=11;x<=16;x++)part(sprite.fences,32,0,16,16,x*TILE,7*TILE-14,32,26);
+    for(let y=8;y<=11;y++){
+      part(sprite.fences,0,0,16,16,11*TILE-11,y*TILE,24,32);
+      part(sprite.fences,0,0,16,16,16*TILE+13,y*TILE,24,32);
     }
     const hx=3*TILE,hy=5*TILE;
     for(let row=0;row<6;row++)for(let col=0;col<9;col++){
@@ -231,15 +284,7 @@
     part(sprite.furniture,0,16,16,16,hx-11,hy+121,26,26);
     part(sprite.chest,0,0,32,32,hx+161,hy+119,30,31);
     write("CASA",hx+80,hy+153,"#fff6ce",11);
-    // Objetos naturais dos sprites.
-    for(const [x,y] of trees){
-      part(sprite.trees,144,48,48,48,x*TILE-25,y*TILE-50,78,78);
-      if(!valid(sprite.trees)){ctx.fillStyle="#517e4b";ctx.beginPath();ctx.arc(x*TILE+16,y*TILE+9,19,0,Math.PI*2);ctx.fill();}
-    }
-    for(const [x,y] of rocks){part(sprite.rocks,16,32,16,16,x*TILE,y*TILE,32,32);}
-    for(const [x,y] of decor){part(sprite.rocks,16,0,16,16,x*TILE+6,y*TILE+5,22,22);}
-    part(sprite.well,0,0,32,32,20*TILE-16,6*TILE-16,64,64);
-    write("POÇO",20*TILE+16,7*TILE+30,"#fff6ce",10);
+    // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
     for(const p of state.plots){
       if(!p.selected)continue;
       const x=p.x*TILE,y=p.y*TILE;
@@ -252,19 +297,42 @@
       if(!p.tilled){ctx.strokeStyle="#ecdf96";ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.strokeRect(x+3,y+3,26,26);ctx.setLineDash([]);}
       if(p.watered&&p.seeded){ctx.fillStyle="#6cc8e5";ctx.fillRect(x+2,y+26,4,3);}
     }
-    // Personagens animados com sprites originais.
-    const tick=Math.floor(performance.now()/230)%4;
-    for(const w of state.workers){
-      const x=w.x*TILE,y=w.y*TILE;
-      ctx.fillStyle="#2b472f90";ctx.beginPath();ctx.ellipse(x,y-2,12,5,0,0,Math.PI*2);ctx.fill();
-      const t=tasks.find(t=>t.id===w.task);
-      const image=getWorkerSprite(w);
-      part(image,tick*48+11,10,26,27,x-19,y-37,38,38);
-      if(!valid(sprite.premium)&&!valid(sprite.worker)){ctx.fillStyle=w.color;ctx.fillRect(x-9,y-24,18,22);}
-      write(w.name,x,y-45,"#fff5dd",11);
-      if(t&&w.progress>0){
-        ctx.fillStyle="#20362a";ctx.fillRect(x-17,y-42,34,5);
-        ctx.fillStyle="#edce83";ctx.fillRect(x-17,y-42,34*w.progress,5);
+    // Profundidade natural: árvores cobrem personagens atrás delas e vice-versa.
+    const layers=[
+      ...trees.map(([x,y])=>({type:"tree",x,y,depth:(y+1)*TILE+7})),
+      ...rocks.map(([x,y])=>({type:"rock",x,y,depth:(y+1)*TILE})),
+      ...decor.map(([x,y])=>({type:"decor",x,y,depth:(y+1)*TILE})),
+      {type:"well",x:20,y:6,depth:7*TILE},
+      ...state.workers.map(worker=>({type:"worker",worker,depth:worker.y*TILE}))
+    ].sort((a,b)=>a.depth-b.depth);
+    const rowFor={down:0,up:1,left:2,right:3};
+    for(const item of layers){
+      const {x,y,type}=item;
+      if(type==="tree"){
+        part(sprite.trees,144,48,48,48,x*TILE-25,y*TILE-50,78,78);
+      }else if(type==="rock"){
+        part(sprite.rocks,16,32,16,16,x*TILE,y*TILE,32,32);
+      }else if(type==="decor"){
+        part(sprite.rocks,16,0,16,16,x*TILE+6,y*TILE+5,22,22);
+      }else if(type==="well"){
+        part(sprite.well,0,0,32,32,20*TILE-16,6*TILE-16,64,64);
+        write("POÇO",20*TILE+16,7*TILE+30,"#fff6ce",10);
+      }else{
+        const w=item.worker,px=w.x*TILE,py=w.y*TILE;
+        ctx.fillStyle="#223c3180";ctx.beginPath();ctx.ellipse(px,py-2,11,4,0,0,Math.PI*2);ctx.fill();
+        const image=getWorkerSprite(w);
+        // Atlas 48 px: linhas 0–3 = parado, linhas 4–7 = caminhada em 4 direções.
+        // A sequência não anda quando o colono está trabalhando ou esperando.
+        const row=(rowFor[w.facing]||0)+(w.moving?4:0);
+        const frame=w.moving?Math.floor(w.walkFrame||0)%8:0;
+        part(image,frame*48+11,row*48+8,26,32,px-20,py-42,40,45);
+        if(!valid(sprite.premium)&&!valid(sprite.worker)){ctx.fillStyle=w.color;ctx.fillRect(px-10,py-30,20,27);}
+        const active=tasks.find(t=>t.id===w.task);
+        write(w.name,px,py-49,"#fff5dd",11);
+        if(active&&!w.moving&&w.progress>0){
+          ctx.fillStyle="#20362a";ctx.fillRect(px-17,py-45,34,5);
+          ctx.fillStyle="#edce83";ctx.fillRect(px-17,py-45,34*w.progress,5);
+        }
       }
     }
   }
@@ -330,7 +398,7 @@
   function hire(i){
     const c=state.candidates[i];if(!c||state.coins<c.cost){notify("Moedas insuficientes.");return;}
     state.coins-=c.cost;
-    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},x:7.5,y:11.5,task:null,progress:0});
+    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},x:7.5,y:11.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0});
     state.candidates[i]=newCandidate();
     log(c.name+" entrou para a equipe.");
     renderCandidates();refresh();save();notify(c.name+" contratado(a)!");$("#hire-dialog").close();
@@ -577,6 +645,7 @@
   $("#help-close").addEventListener("click",()=>$("#help-dialog").close());
   $("#menu-btn").addEventListener("click",()=>{save();playing=false;$("#menu").hidden=false;$("#continue").disabled=!localStorage.getItem(SAVE_KEY);});
   $("#continue").disabled=!localStorage.getItem(SAVE_KEY);
+  $("#focus-game").addEventListener("click",()=>{const focused=document.body.classList.toggle("focus-game");$("#focus-game").setAttribute("aria-pressed",String(focused));$("#focus-game").textContent=focused?"▤ Mostrar gestão":"▣ Tela de jogo";});
   reset();renderPriorityControls();recalcTasks();refresh();
   function loop(now){
     const dt=last?Math.min((now-last)/1000,.07):0;last=now;
