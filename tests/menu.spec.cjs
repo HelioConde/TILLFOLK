@@ -56,7 +56,7 @@ test('Cena jogável: fotografar mundo, movimentação e atlas dos colonos', asyn
   await page.locator('#starter-confirm').click();
   await expect(page.locator('#menu')).toBeHidden();
   await expect(page.locator('#world')).toBeVisible();
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(3200);
   await page.screenshot({path:'screenshots/jogo-1366x768.png',animations:'disabled'});
   await page.setViewportSize({width:1600,height:900});
   await page.waitForTimeout(400);
@@ -101,7 +101,7 @@ test('Fazenda jogável: capturas do HUD, sprites e fluxo de cultivo',async({page
   await page.locator('#starter-confirm').click();
   await expect(page.locator('#menu')).toBeHidden();
   await expect(page.locator('#world')).toBeVisible();
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(3200);
   const pixels=await page.locator('#world').evaluate(canvas=>{
     const ctx=canvas.getContext('2d');
     const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
