@@ -1,174 +1,168 @@
 "use strict";
-// Cena composta exclusivamente com imagens pixel art já disponíveis no repositório.
-// Nenhuma imagem gerada ou desenho vetorial substitui os sprites originais.
+/* TILLFOLK — cenário do menu criado só com sprites já licenciados do projeto. */
 (() => {
-  const main=document.querySelector("#title-scene"),host=document.querySelector("#menu");
-  if(!main||!host)return;
-  const ctx=main.getContext("2d",{alpha:false}), W=960,H=540, TILE=16;
-  ctx.imageSmoothingEnabled=false;
-  const base="./public/assets/sprout-lands/";
-  const images={
-    grass:base+"terrain/grass.png",
-    soil:base+"terrain/soil.png",
-    till:base+"terrain/tilled-dirt.png",
-    crops:base+"farming/crops.png",
-    trees:base+"environment/trees-and-bushes.png",
-    well:base+"structures/water-well.png",
-    fences:base+"structures/fences.png",
-    chest:base+"structures/chest.png",
-    barn:base+"structures/barn.png",
-    chicken:base+"animals/chicken.png",
-    worker:base+"characters/worker-variants.png",
-    roof:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/Building parts/Wooden_House_Roof_Tilset.png",
-    walls:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/Building parts/Wooden_House_Walls_Tilset.png",
-    furniture:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/Building parts/Basic_Furniture.png",
-    paths:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/Building parts/Paths.png"
+  const canvas=document.querySelector("#title-scene");
+  const menu=document.querySelector("#menu");
+  if(!canvas||!menu)return;
+  const ctx=canvas.getContext("2d",{alpha:false});
+  const W=960,H=540,asset="./public/assets/sprout-lands/";
+  const sources={
+    grass:"terrain/grass.png",soil:"terrain/soil.png",
+    dark:"terrain/dark-soil.png",till:"terrain/tilled-dirt.png",
+    crops:"farming/crops.png",trees:"environment/trees-and-bushes.png",
+    well:"structures/water-well.png",fences:"structures/fences.png",
+    chest:"structures/chest.png",barn:"structures/barn.png",
+    roof:"structures/wood-roof.png",walls:"structures/wood-walls.png",
+    furniture:"structures/furniture.png",paths:"structures/paths.png",
+    chicken:"animals/chicken.png",worker:"characters/worker-variants.png"
   };
-  const sprites={};
-  for(const [key,url] of Object.entries(images)){
-    const img=new Image();sprites[key]=img;
-    img.addEventListener("load",render);
-    img.addEventListener("error",()=>console.warn("Sprite indisponível no menu:",url));
-    img.src=url;
+  const imgs={};
+  let loaded=0,failures=[];
+  const all=Object.keys(sources);
+  for(const [id,file] of Object.entries(sources)){
+    const img=new Image();
+    img.onload=()=>{loaded++;render();};
+    img.onerror=()=>{failures.push(file);console.warn("TILLFOLK: sprite não carregado:",file);render();};
+    img.src=asset+file;imgs[id]=img;
   }
-  const ready=(name)=>sprites[name]?.complete&&sprites[name].naturalWidth>0;
-  function stamp(name,sx,sy,sw,sh,x,y,w=sw,h=sh,context=ctx){
-    if(!ready(name))return;
-    const source=sprites[name];
-    if(sx<0||sy<0||sx+sw>source.naturalWidth||sy+sh>source.naturalHeight)return;
-    context.drawImage(source,sx,sy,sw,sh,Math.round(x),Math.round(y),Math.round(w),Math.round(h));
+  function ready(id){return imgs[id]?.complete&&imgs[id].naturalWidth>0;}
+  function stamp(id,sx,sy,sw,sh,x,y,w=sw,h=sh,target=ctx){
+    if(!ready(id))return;
+    const img=imgs[id];
+    if(sx<0||sy<0||sx+sw>img.naturalWidth||sy+sh>img.naturalHeight)return;
+    target.drawImage(img,sx,sy,sw,sh,Math.round(x),Math.round(y),Math.round(w),Math.round(h));
   }
-  function turf(x,y,variation=0){stamp("grass",(variation%6)*16,80,16,16,x,y);}
-  function dirt(x,y){stamp("soil",0,80,16,16,x,y);}
-  function farmTile(x,y){stamp("till",0,80,16,16,x,y);}
-  function tree(x,y,kind=0,size=1){
-    // Árvores frutíferas, arbustos e árvores grandes do atlas Sprout Lands.
-    if(kind===2)stamp("trees",144,48,48,48,x-20*size,y-54*size,78*size,78*size);
-    else if(kind===1)stamp("trees",32,0,32,32,x-14*size,y-28*size,43*size,43*size);
-    else stamp("trees",0,0,32,32,x-15*size,y-30*size,43*size,43*size);
+  const grass=(x,y,n)=>stamp("grass",((n%6)+6)%6*16,80,16,16,x,y,16,16);
+  const soil=(x,y)=>stamp("soil",0,80,16,16,x,y,16,16);
+  function earth(x,y){stamp(ready("dark")?"dark":"soil",0,80,16,16,x,y,16,16);}
+  function tree(x,y,kind=0,scale=1){
+    if(kind===2){stamp("trees",144,48,48,48,x-25*scale,y-48*scale,72*scale,72*scale);return;}
+    const sx=[0,16,32,48,64,80][(kind+6)%6];
+    stamp("trees",sx,0,16,32,x-8*scale,y-30*scale,27*scale,43*scale);
   }
-  function fenceHoriz(x,y,length){
-    for(let a=0;a<length;a++)stamp("fences",32,0,16,16,x+a*16,y,16,16);
-  }
-  function fenceVert(x,y,length){
-    for(let a=0;a<length;a++)stamp("fences",0,0,16,16,x,y+a*16,16,16);
-  }
-  function house(){
-    const x=643,y=144,w=200,h=129;
-    // Mosaico de telhas, paredes, janelas e objetos do pacote premium.
-    for(let row=0;row<5;row++){
-      for(let col=0;col<9;col++){
-        stamp("walls",16,16,16,16,x+col*24,y+55+row*16,24,16);
-      }
-    }
-    for(let j=0;j<3;j++)for(let i=0;i<4;i++)
-      stamp("roof",48,32,32,16,x-12+i*56,y+j*20,58,24);
-    for(let i=0;i<4;i++)stamp("roof",48,48,32,16,x-12+i*56,y+55,58,19);
-    stamp("walls",0,0,32,32,x+16,y+76,48,48);
-    stamp("walls",0,0,32,32,x+142,y+76,48,48);
-    stamp("walls",48,16,32,32,x+91,y+78,43,52);
-    // Flores, vasos e móveis são recortes do pacote original.
-    stamp("furniture",0,16,16,16,x+3,y+119,28,28);
-    stamp("furniture",32,16,16,16,x+176,y+120,28,28);
-    stamp("chest",0,0,32,32,x-46,y+118,42,42);
-    stamp("chest",32,0,32,32,x+205,y+121,38,38);
-    stamp("furniture",96,32,16,16,x+122,y+139,26,26);
-    return {x,y,w,h};
-  }
-  const crops=[
-    [3,0],[3,32],[3,48],[3,64],[3,80],[3,128],
-    [3,144],[3,160],[3,176],[3,192],[3,208]
-  ];
-  function plotRow(x,y,length,type=1,stage=3){
-    for(let i=0;i<length;i++){
-      farmTile(x+i*20,y);farmTile(x+i*20,y+16);
-      stamp("crops",Math.min(stage,3)*16,(type%11)*16,16,16,x+i*20,y-7,20,22);
+  function lane(x0,y0,width,height,texture="soil"){
+    for(let y=y0;y<y0+height;y+=16)for(let x=x0;x<x0+width;x+=16){
+      stamp(texture,0,80,16,16,x,y,16,16);
     }
   }
-  function drawFarm(){
-    ctx.fillStyle="#a9cf7a";ctx.fillRect(0,0,W,H);
-    for(let j=0;j<34;j++)for(let i=0;i<60;i++){
-      const k=((i*17+j*31+(i*j)%11)%12);
-      turf(i*16,j*16,k>8?5:k%5);
+  function farmhouse(){
+    const x=657,y=150;
+    // Paredes, portas e janelas do atlas original Sprout Lands.
+    for(let row=0;row<6;row++)for(let col=0;col<11;col++){
+      stamp("walls",16,16,16,16,x+col*18,y+58+row*16,18,16);
     }
-    // Caminhos arenosos usando os tiles reais de solo do Sprout Lands.
-    for(let j=18;j<31;j++)for(let i=31;i<58;i++){
-      const path=Math.abs(i-45-Math.sin(j*.44)*3)<3 || (j>=23&&j<=25);
-      if(path)dirt(i*16,j*16);
+    for(let j=0;j<4;j++)for(let i=0;i<6;i++){
+      // Mosaico de telhado real (folha de telhas, 112×80).
+      stamp("roof",48+(i%4)*16,32+(j%3)*16,16,16,x-17+i*39,y+j*18,41,20);
     }
-    // Canteiros e plantio de culturas distintas.
-    for(let row=0;row<4;row++) plotRow(440,310+row*38,12,[2,3,4,7][row],row===0?3:row===1?2:3);
-    for(let row=0;row<3;row++)plotRow(440,198+row*26,7,5+row,3);
-    fenceHoriz(427,290,17);fenceHoriz(428,470,17);fenceVert(427,290,12);
-    fenceVert(706,299,7);
-    for(let i=0;i<13;i++){stamp("furniture",64,16,16,16,430+i*15,284,12,12);}
-    house();
-    for(const [x,y,t,s] of [
-      [400,115,2,1.25],[474,113,0,1],[550,101,1,1.18],
-      [859,143,2,1.22],[915,194,1,1.1],[876,377,0,1.5],
-      [830,470,2,1.18],[380,480,2,1.35],[269,370,1,1.25],
-      [210,90,0,1.4],[298,160,1,.9],[923,68,2,.9],
-      [568,488,0,.8],[608,495,1,.74]])tree(x,y,t,s);
-    stamp("well",0,0,32,32,784,382,71,71);
-    stamp("chest",0,0,32,32,770,317,40,40);
-    stamp("furniture",48,32,16,16,826,319,28,28);
-    stamp("chicken",0,0,16,16,722,457,22,22);
-    for(let i=0;i<9;i++){
-      stamp("paths",0,0,16,16,604+i*18,489+(i%3)*4,24,24);
+    for(let i=0;i<6;i++)stamp("roof",48+(i%4)*16,64,16,16,x-17+i*39,y+61,41,22);
+    // Fachada e entrada.
+    stamp("walls",0,0,32,32,x+10,y+90,42,44);
+    stamp("walls",48,0,32,32,x+141,y+92,42,44);
+    stamp("walls",48,32,16,16,x+88,y+101,39,47);
+    stamp("furniture",0,16,16,16,x-13,y+136,26,26);
+    stamp("furniture",32,16,16,16,x+201,y+136,26,26);
+    stamp("chest",0,0,32,32,x-55,y+128,35,37);
+    stamp("chest",48,0,32,32,x+210,y+132,34,33);
+  }
+  function bed(x,y,row,stage=3){
+    for(let col=0;col<11;col++){
+      for(let dy=0;dy<2;dy++)earth(x+col*18,y+dy*14);
+      stamp("crops",Math.min(stage,4)*16,Math.min(14,row)*16,16,16,x+col*18,y-5,21,26);
     }
-    // Personagens originais do Sprout Lands, sem emojis ou avatares gerados.
-    const t=Math.floor(performance.now()/300)%3;
-    const walk=(x,y,appearance=0)=>{
-      const img=sprites.worker;
-      if(!ready("worker"))return;
-      const maxRows=Math.floor(img.naturalHeight/192);
-      stamp("worker",t*48,Math.min(appearance,maxRows-1)*192,48,48,x-27,y-62,60,60);
-    };
-    walk(570,360,0);walk(734,358,1);
-    // Pequenas flores originais como decoração orgânica.
-    for(let i=0;i<28;i++){
-      const x=378+(i*71)%561,y=84+(i*49)%423;
-      if(x>437&&x<699&&y>298&&y<470)continue;
-      stamp("grass",((i%3)+3)*16,80,16,16,x,y,16,16);
+  }
+  function fence(x,y,count,vertical=false){
+    for(let i=0;i<count;i++){
+      stamp("fences",vertical?0:32,0,16,16,x+(vertical?0:i*16),y+(vertical?i*16:0),16,16);
     }
+  }
+  function walking(x,y,index=0,frame=0,target=ctx,w=56,h=56){
+    if(!ready("worker"))return;
+    const img=imgs.worker;
+    const appearance=Math.min(index,Math.max(0,Math.floor(img.naturalHeight/192)-1));
+    stamp("worker",frame*48,appearance*192,48,48,x,y,w,h,target);
+  }
+  function paint(){
+    ctx.imageSmoothingEnabled=false;
+    // Todos os pixels do fundo são tiles do pack original.
+    ctx.fillStyle="#aad282";ctx.fillRect(0,0,W,H);
+    for(let iy=0;iy<34;iy++)for(let ix=0;ix<60;ix++){
+      const p=(ix*13+iy*7+(ix*iy)%11)%12;
+      grass(ix*16,iy*16,p<8?p%3:3+p%3);
+    }
+    // Trilha ligando a casa, o poço e a horta.
+    for(let y=235;y<540;y+=16)for(let x=480;x<925;x+=16){
+      const shift=Math.round(Math.sin(y/57)*24), center=695+shift;
+      if(Math.abs(x-center)<49 ||(y>305&&y<340&&x>550&&x<855))soil(x,y);
+    }
+    // Bosque e árvores frutíferas ao fundo.
+    for(const [x,y,k,s] of [
+      [394,132,2,1.6],[446,119,1,1.4],[493,112,0,1.5],
+      [547,124,2,1.12],[613,104,3,1.3],[690,112,4,1.1],
+      [806,110,2,1.3],[879,134,3,1.5],[938,119,2,1.5],
+      [402,250,0,1.1],[447,252,2,.95],[933,263,1,1.3]
+    ])tree(x,y,k,s);
+    farmhouse();
+    // Ferramentas e depósito.
+    stamp("well",0,0,32,32,823,326,80,80);
+    stamp("chest",0,0,32,32,757,309,46,46);
+    stamp("furniture",16,16,16,16,887,320,30,30);
+    stamp("furniture",48,32,16,16,750,282,28,28);
+    // Horta com várias fases de crescimento.
+    for(let row=0;row<5;row++)bed(462,322+row*32,[0,1,3,5,8][row],Math.min(4,row+1));
+    fence(448,304,15);fence(446,488,15);
+    fence(447,305,12,true);fence(687,349,9,true);
+    // Plantação de flores e arbustos à beira da casa.
+    for(let i=0;i<8;i++){
+      stamp("crops",64,0,16,16,650+i*24,296,22,27);
+    }
+    for(let i=0;i<7;i++)stamp("furniture",48,16,16,16,692+i*28,293,22,24);
+    // Funcionários e animais: frames reais, sem emojis.
+    const frame=Math.floor(performance.now()/260)%4;
+    walking(521,370,0,frame,ctx,68,68);
+    walking(716,398,1,frame,ctx,64,64);
+    stamp("chicken",0,0,16,16,804,464,31,31);
+    for(const [x,y,k,s] of [
+      [377,455,2,1.3],[412,524,0,1.1],[883,505,2,1.3],
+      [930,445,4,1.3],[600,532,0,.82]
+    ])tree(x,y,k,s);
   }
   function preview(canvas){
     const c=canvas.getContext("2d");c.imageSmoothingEnabled=false;
-    c.fillStyle="#9cc882";c.fillRect(0,0,192,72);
-    const kind=canvas.dataset.preview;
-    const s=(name,sx,sy,sw,sh,x,y,w,h)=>stamp(name,sx,sy,sw,sh,x,y,w,h,c);
-    if(kind==="workers"){
-      for(let i=0;i<3;i++)s("worker",0,i*192,48,48,18+i*60,7,53,60);
-      s("fences",32,0,16,16,0,51,192,21);
-    } else if(kind==="crops"){
-      for(let x=0;x<192;x+=16){s("till",0,80,16,16,x,37,16,16);s("till",0,80,16,16,x,53,16,16);}
-      for(let i=0;i<9;i++)s("crops",48,(i%5)*16,16,16,i*21,18,21,26);
+    c.fillStyle="#aed581";c.fillRect(0,0,192,72);
+    const t=(id,sx,sy,sw,sh,x,y,w,h)=>stamp(id,sx,sy,sw,sh,x,y,w,h,c);
+    const which=canvas.dataset.preview;
+    if(which==="workers"){
+      for(let x=0;x<192;x+=16)t("grass",0,80,16,16,x,56,16,16);
+      for(let i=0;i<3;i++)walking(10+i*62,4,i,0,c,62,63);
+    }else if(which==="crops"){
+      for(let x=0;x<192;x+=16){t("dark",0,80,16,16,x,38,16,16);t("dark",0,80,16,16,x,54,16,16);}
+      for(let i=0;i<9;i++)t("crops",64,(i%5)*16,16,16,3+i*21,13,23,30);
     }else{
-      s("well",0,0,32,32,20,10,62,62);
-      s("chest",0,0,32,32,111,35,38,38);
-      s("furniture",96,32,16,16,159,40,28,28);
-      s("trees",0,0,32,32,107,-6,43,43);
+      for(let x=0;x<192;x+=16)t("grass",0,80,16,16,x,55,16,16);
+      t("well",0,0,32,32,17,5,65,65);
+      t("chest",0,0,32,32,101,35,37,37);
+      t("furniture",96,32,16,16,146,34,31,32);
     }
   }
-  let last=0;
-  function render(time=0){
-    if(!host.hidden){
-      if(!time||time-last>120){
-        ctx.imageSmoothingEnabled=false;
-        drawFarm();
-        document.querySelectorAll(".title-card-preview").forEach(preview);
-        last=time||performance.now();
-      }
-    }
+  let latest=-1;
+  function render(t){
+    if(menu.hidden)return;
+    // Reconstruir a cena somente quando os sprites terminarem de carregar
+    // ou quando o frame dos personagens mudar.
+    const frame=Math.floor((t||performance.now())/260);
+    if(frame===latest && loaded!==all.length)return;
+    latest=frame;
+    paint();
+    document.querySelectorAll(".title-card-preview").forEach(preview);
   }
-  // Animação dos personagens discreta, suspensa quando a aba fica oculta.
   function loop(t){
-    const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if(!document.hidden && !host.hidden && !reduced)render(t);
+    if(!document.hidden && !menu.hidden &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches)render(t);
     requestAnimationFrame(loop);
   }
-  window.addEventListener("pageshow",()=>render());
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)render();});
-  requestAnimationFrame(loop);
+  window.addEventListener("pageshow",()=>render());
   render();
+  requestAnimationFrame(loop);
 })();

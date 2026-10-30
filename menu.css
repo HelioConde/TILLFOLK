@@ -98,3 +98,9 @@
  .title-topline>span{font-size:8px}
  .title-menu-button{height:48px;font-size:15px}
 }
+
+/* Evita que o fundo sem assets se sobreponha à nova composição de sprites. */
+.title-scene-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover;image-rendering:pixelated;z-index:0;pointer-events:none}
+.title-shading{pointer-events:none}
+.title-content{z-index:2}
+.title-card-preview{image-rendering:pixelated}

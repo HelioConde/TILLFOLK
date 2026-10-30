@@ -22,13 +22,14 @@ jobs:
         run: |
           node --check src/game.js
           node --check src/menu.js
+          node --check src/menu-scene.js
       - name: Montar site estático mínimo
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
           cp index.html styles.css menu.css _site/
-          cp src/game.js src/menu.js _site/src/
+          cp src/game.js src/menu.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
@@ -37,6 +38,10 @@ jobs:
           test -f _site/public/assets/sprout-lands/farming/crops.png
           test -f _site/public/assets/tillfolk/menu-landscape.svg
           test -f _site/src/menu.js
+          test -f _site/src/menu-scene.js
+          test -f _site/public/assets/sprout-lands/structures/wood-roof.png
+          test -f _site/public/assets/sprout-lands/structures/wood-walls.png
+          test -f _site/public/assets/sprout-lands/terrain/dark-soil.png
           test -f _site/menu.css
           test -f "_site/public/assets/Sprout Lands - UI Pack - Basic pack/fonts/pixelFont-7-8x14-sproutLands.ttf"
       - name: Configurar GitHub Pages
