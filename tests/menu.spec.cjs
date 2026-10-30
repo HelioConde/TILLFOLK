@@ -201,7 +201,7 @@ test('Atlas visual: cultivos, árvores, objetos e ações dos colonos',async({pa
       const canvas=document.createElement('canvas');
       const factor=Math.min(3,1100/img.width,900/img.height);
       canvas.width=Math.round(img.width*factor);canvas.height=Math.round(img.height*factor);
-      canvas.id='asset-inspection';canvas.style.cssText='image-rendering:pixelated;max-width:none;width:'+canvas.width+'px;height:'+canvas.height+'px';
+      canvas.id='asset-inspection';canvas.style.cssText='position:fixed;top:0;left:0;z-index:99999;pointer-events:none;image-rendering:pixelated;max-width:none;width:'+canvas.width+'px;height:'+canvas.height+'px';
       const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
       ctx.fillStyle='#d9d8c0';ctx.fillRect(0,0,canvas.width,canvas.height);
       ctx.drawImage(img,0,0,canvas.width,canvas.height);
