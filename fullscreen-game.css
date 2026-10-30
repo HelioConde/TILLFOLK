@@ -115,7 +115,7 @@ body.play-session .drawer-heading {
 body.play-session .drawer-heading strong{font:16px Sprout,system-ui,sans-serif;color:#f2eccb}
 body.play-session #drawer-close{border:1px solid #91a87c;color:#f4ebda;background:#33533c;padding:9px 12px;border-radius:6px;min-height:40px}
 body.play-session #drawer-backdrop:not([hidden]){
- display:block;position:fixed;inset:0;z-index:30;
+ display:block;position:fixed;inset:0;right:min(410px,100vw);z-index:30;
  border:0;background:#06170dac;backdrop-filter:blur(2px);cursor:default;
 }
 body.play-session #toast{z-index:55;bottom:90px}
