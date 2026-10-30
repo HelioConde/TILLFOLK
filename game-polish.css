@@ -1,0 +1,61 @@
+/* TILLFOLK — palco de jogo e HUD: tokens Taste Skill, foco visível e pixel art. */
+:root {--game-space-1:4px;--game-space-2:8px;--game-space-3:12px;--game-space-4:16px;--game-space-6:24px;--game-accent:#c7e9a3;--game-focus:#f7d58a;--game-frame:#304f3e}
+html {scrollbar-color:#638263 #192d24}
+body {background:radial-gradient(circle at 48% 0%,#244231 0,#14261e 65%)}
+.topbar {min-height:76px;display:grid;grid-template-columns:minmax(185px,235px) minmax(0,1fr) auto 46px;gap:clamp(8px,1.1vw,16px);align-items:center;padding:10px clamp(12px,2vw,24px)}
+.brand {font-size:23px;letter-spacing:0}.brand-icon {width:40px;height:40px;border-radius:8px}
+.metrics {justify-content:center;gap:5px}.metric {min-width:0;gap:5px;padding:7px 8px;white-space:nowrap;border-radius:7px}
+.metric span {font-size:14px}.metric small {font-size:9px;letter-spacing:.3px}.metric b {font-size:13px}
+.management-nav {flex-shrink:0}.management-nav button {font-size:11px;padding:8px 9px;white-space:nowrap}
+.game-layout {grid-template-columns:minmax(0,1fr) minmax(285px,310px);align-items:start;gap:12px;padding:14px clamp(12px,1.5vw,22px)}
+.play-area,.sidebar {min-width:0}.scene-head {min-height:49px;margin-bottom:9px;gap:8px}.scene-head h1 {font-size:clamp(19px,1.6vw,25px)}
+.scene-actions {display:flex;align-items:center;gap:8px}
+.focus-game-btn {border:1px solid #a4c18c;border-radius:7px;background:#304d3c;color:#e5f4d5;min-height:37px;padding:8px 12px;font-size:12px;font-weight:800;white-space:nowrap}
+.focus-game-btn:hover {background:#3d674c}
+.focus-game-btn:focus-visible {outline:3px solid var(--game-focus);outline-offset:3px}
+.status-pill {padding:8px;font-size:10px}
+.canvas-scroll {border:5px solid #334e38;border-radius:7px;background:#142519;box-shadow:0 0 0 1px #8da86f,0 9px 0 #0d2015,0 18px 30px #0004;overflow:auto}
+.canvas-wrap {min-width:630px;background:#8fb65c;isolation:isolate}
+.canvas-wrap:after {content:"";position:absolute;inset:0;border:inset 5px #284e3644;pointer-events:none}
+#world {width:100%;height:auto;aspect-ratio:896 / 576;image-rendering:pixelated;image-rendering:crisp-edges}
+.world-tag {top:10px;left:10px;border-radius:4px;box-shadow:0 2px #11271a87;background:#172b22ec;font-size:9px;padding:8px 9px}
+.tile-tooltip {max-width:270px;line-height:1.35}
+.tooltray {margin-top:14px;gap:8px;padding:9px 10px;background:#1d352a;border-color:#547453;border-radius:8px}
+.tool {min-width:91px;padding:7px 9px;gap:0;border-radius:6px}.tool span {font-size:18px}.tool b{font-size:11px}.tool small{font-size:9px}
+.tool-list {gap:5px}.speed-wrap button {min-width:36px;border-radius:5px}
+.hint-bar {padding:9px 12px;margin-top:10px;font-size:12px}
+.panel {border-radius:8px}.sidebar {gap:10px}.sidebar .panel {box-shadow:0 4px #0d251a}
+body.focus-game .topbar {min-height:60px}
+body.focus-game .game-layout {display:block;min-height:0;padding:10px clamp(10px,2vw,24px)}
+body.focus-game .sidebar,body.focus-game .hint-bar,body.focus-game .footnote {display:none}
+body.focus-game .scene-head {max-width:1260px;margin:0 auto 8px}
+body.focus-game .canvas-scroll {width:min(100%,calc((100dvh - 215px)*896 / 576),1260px);margin:0 auto}
+body.focus-game .canvas-wrap {min-width:0}
+body.focus-game .tooltray {max-width:1260px;margin:10px auto 0}
+body.focus-game .focus-game-btn {background:#d6edb2;color:#25432d}
+@media(max-width:1180px){
+ .topbar {grid-template-columns:1fr auto auto;gap:9px}
+ .metrics {grid-column:1/-1;grid-row:2;justify-content:center;order:4}
+ .topbar .management-nav {grid-column:2;grid-row:1}
+ .topbar #menu-btn {grid-column:3;grid-row:1}
+ .game-layout {grid-template-columns:minmax(0,1fr) 285px}
+}
+@media(max-width:980px){
+ .game-layout {grid-template-columns:minmax(0,1fr)}
+ .sidebar {display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .scene-head {flex-wrap:wrap}.status-pill {display:none}
+}
+@media(max-width:610px){
+ .topbar {display:flex;flex-wrap:wrap;min-height:0;padding:10px}
+ .topbar .brand {font-size:18px}
+ .topbar .management-nav {margin-left:auto}
+ .topbar .management-nav button {padding:7px;font-size:10px}
+ .metrics {order:5;width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+ .metric small {display:none}.scene-head {align-items:center;flex-direction:row}
+ .game-layout {padding:10px}.canvas-wrap {min-width:700px}
+ body.focus-game .canvas-scroll {width:100%}
+ body.focus-game .canvas-wrap {min-width:0}
+ .sidebar {grid-template-columns:1fr}.world-tag {font-size:8px;max-width:calc(100% - 15px)}
+ .speed-wrap {width:100%;justify-content:center}.tool-list {width:100%;justify-content:center}
+}
+@media(prefers-reduced-motion:reduce) {.canvas-scroll,.tooltray,.focus-game-btn {transition:none!important}}
