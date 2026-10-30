@@ -125,3 +125,36 @@ test('Fazenda jogável: capturas do HUD, sprites e fluxo de cultivo',async({page
   }
   expect(assetErrors).toEqual([]);
 });
+
+
+test('Menu acessível: foco isolado, retorno e continuar usando armazenamento local',async({page})=>{
+  await page.setViewportSize({width:1125,height:790});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await expect(page.locator('.app-shell')).toHaveAttribute('inert','');
+  await page.locator('#new-game').click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator('#starter-confirm').click();
+  await expect(page.locator('#menu')).toBeHidden();
+  await expect(page.locator('.app-shell')).not.toHaveAttribute('inert','');
+  await page.locator('#menu-btn').click();
+  await expect(page.locator('.app-shell')).toHaveAttribute('inert','');
+  await expect(page.locator('#new-game')).toBeFocused();
+  await expect(page.locator('#continue')).toBeEnabled();
+  await page.reload({waitUntil:'networkidle'});
+  await expect(page.locator('#continue')).toBeEnabled();
+  await page.locator('#continue').click();
+  await expect(page.locator('#menu')).toBeHidden();
+});
+
+test('Movimento reduzido e preferência de animação persistida',async({page})=>{
+  await page.setViewportSize({width:1024,height:768});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.locator('#title-settings').click();
+  await page.locator('#title-motion').uncheck();
+  await expect(page.locator('#menu')).toHaveClass(/no-title-motion/);
+  await expect(page.locator('#title-motion')).toHaveAttribute('aria-checked','false');
+  await page.locator('#title-settings-dialog .modal-x').click();
+  await page.reload({waitUntil:'networkidle'});
+  await expect(page.locator('#menu')).toHaveClass(/no-title-motion/);
+  await expect(page.locator('#title-fullscreen')).toHaveAttribute('aria-pressed','false');
+});

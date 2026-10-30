@@ -6,6 +6,8 @@ on:
       - 'index.html'
       - 'menu.css'
       - 'menu-layout.css'
+      - 'ui-polish.css'
+      - 'src/menu.js'
       - 'src/menu-scene.js'
       - 'src/game.js'
       - 'styles.css'

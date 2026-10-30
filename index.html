@@ -9,13 +9,14 @@
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./menu.css">
   <link rel="stylesheet" href="./menu-layout.css">
+  <link rel="stylesheet" href="./ui-polish.css">
   <link rel="stylesheet" href="./game-polish.css">
   <script defer src="./src/menu.js"></script>
   <script defer src="./src/menu-scene.js"></script>
   <script defer src="./src/game.js"></script>
 </head>
 <body>
-  <div class="app-shell">
+  <div class="app-shell" inert>
     <header class="topbar">
       <div class="brand"><span class="brand-icon">✿</span><span>TILLFOLK<small>colônia & cultivo</small></span></div>
       <div class="metrics">
@@ -48,7 +49,7 @@
             <button class="tool" data-tool="remover" aria-pressed="false"><span>✕</span><b>Cancelar</b><small>Parar cultivo</small></button>
             <button class="tool" data-tool="inspecionar" aria-pressed="false"><span>⌕</span><b>Inspecionar</b><small>Ver estado</small></button>
           </div>
-          <div class="speed-wrap"><span>VELOCIDADE</span><button data-speed="0" title="Pausar">Ⅱ</button><button data-speed="1" class="chosen">1×</button><button data-speed="3">3×</button><button data-speed="6">6×</button></div>
+          <div class="speed-wrap" role="group" aria-label="Velocidade da simulação"><span>VELOCIDADE</span><button type="button" data-speed="0" aria-label="Pausar simulação" title="Pausar">Ⅱ</button><button type="button" data-speed="1" class="chosen" aria-label="Velocidade normal, 1 vez">1×</button><button type="button" data-speed="3" aria-label="Velocidade rápida, 3 vezes">3×</button><button type="button" data-speed="6" aria-label="Velocidade muito rápida, 6 vezes">6×</button></div>
         </div>
         <div class="hint-bar"><span>💡</span><p><strong>Como começar:</strong> selecione <em>Cultivar</em> e clique em vários espaços do gramado. Os trabalhadores organizam as etapas sem ordens individuais.</p></div>
         <div class="footnote">Assets: Sprout Lands © Cup Nooble · Protótipo inicial TILLFOLK</div>
@@ -73,7 +74,7 @@
     <canvas id="title-scene" class="title-scene-canvas" width="960" height="540" aria-hidden="true"></canvas>
     <div class="title-shading" aria-hidden="true"></div>
     <div class="title-content">
-      <div class="title-topline"><span>✿ CULTIVE · RECRUTE · ORGANIZE · SOBREVIVA</span><button type="button" id="title-fullscreen" aria-label="Alternar tela cheia">⛶ Tela cheia</button></div>
+      <div class="title-topline"><span>✿ CULTIVE · RECRUTE · ORGANIZE · SOBREVIVA</span><button type="button" id="title-fullscreen" aria-label="Alternar tela cheia" aria-pressed="false">⛶ Tela cheia</button></div>
       <section class="title-navigation" aria-labelledby="game-title">
         <div class="title-sprout" aria-hidden="true">✦ 🌱 ✦</div>
         <h2 id="game-title">TILLFOLK</h2>
@@ -93,7 +94,7 @@
         <article><b>🌱 Gerencie prioridades</b><canvas class="title-card-preview" width="192" height="72" data-preview="crops" aria-hidden="true"></canvas><p>Organize atividades e mantenha tudo funcionando.</p></article>
         <article><b>⚙ Automatize sua fazenda</b><canvas class="title-card-preview" width="192" height="72" data-preview="farm" aria-hidden="true"></canvas><p>Construa estruturas e automatize sua produção.</p></article>
       </section>
-      <footer class="title-version"><span>✿ Build v0.9</span><span>Assets: Sprout Lands — Cup Nooble</span></footer>
+      <footer class="title-version"><span>✿ Build v1.0</span><span>Assets: Sprout Lands — Cup Nooble</span></footer>
     </div>
   </div>
   <dialog id="title-settings-dialog" class="modal title-modal">

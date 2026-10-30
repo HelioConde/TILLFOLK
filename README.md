@@ -50,3 +50,10 @@ Depois acesse http://localhost:8080. Não há dependências nem banco de dados. 
 - A construção na cena jogável agora utiliza os tiles de paredes e telhado do pacote, em vez de primitivas vetoriais.
 - Recrutamento com barra de ações sempre disponível e rolagem interna por ficha no desktop.
 - Menu principal protegido contra corte horizontal e adaptado ao viewport.
+
+
+## Interface v1.0
+Polimento de contraste, tokens globais e foco visual no arquivo ui-polish.css.
+O jogo recebe inert enquanto o menu está aberto, preservando a navegação por teclado.
+A configuração de movimento reduzido controla a animação do cenário. Sem banco de dados: salvamento com localStorage.
+Playwright valida telas, comportamento do menu e salvamento através do GitHub Actions.

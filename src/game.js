@@ -149,7 +149,7 @@
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
   function start(continueSaved=false, chosenStarters = [], config = {}){
     if(!continueSaved||!readSave())reset(chosenStarters,config);
-    playing=true;$("#menu").hidden=true;$("#continue").disabled=false; refresh();save();
+    playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false; refresh();save();
     notify("Sua fazenda está pronta. Os trabalhadores já estão a caminho!");
   }
   function getNext(p){
@@ -643,9 +643,10 @@
   $("#continue").addEventListener("click",()=>{start(true);renderPriorityControls();});
   $("#help-btn").addEventListener("click",()=>$("#help-dialog").showModal());
   $("#help-close").addEventListener("click",()=>$("#help-dialog").close());
-  $("#menu-btn").addEventListener("click",()=>{save();playing=false;$("#menu").hidden=false;$("#continue").disabled=!localStorage.getItem(SAVE_KEY);});
+  $("#menu-btn").addEventListener("click",()=>{save();playing=false;$(".app-shell").inert=true;$("#menu").hidden=false;$("#continue").disabled=!localStorage.getItem(SAVE_KEY);$("#new-game").focus({preventScroll:true});});
   $("#continue").disabled=!localStorage.getItem(SAVE_KEY);
   $("#focus-game").addEventListener("click",()=>{const focused=document.body.classList.toggle("focus-game");$("#focus-game").setAttribute("aria-pressed",String(focused));$("#focus-game").textContent=focused?"▤ Mostrar gestão":"▣ Tela de jogo";});
+  $(".app-shell").inert=!$("#menu").hidden;
   reset();renderPriorityControls();recalcTasks();refresh();
   function loop(now){
     const dt=last?Math.min((now-last)/1000,.07):0;last=now;

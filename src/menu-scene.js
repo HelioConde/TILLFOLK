@@ -164,19 +164,22 @@
     if(menu.hidden)return;
     // Reconstruir a cena somente quando os sprites terminarem de carregar
     // ou quando o frame dos personagens mudar.
-    const frame=Math.floor((t||performance.now())/260);
-    if(frame===latest && loaded!==all.length)return;
+    const paused=menu.classList.contains("no-title-motion") || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const frame=paused?0:Math.floor((t||performance.now())/260);
+    if(frame===latest && loaded===all.length)return;
     latest=frame;
     paint();
     document.querySelectorAll(".title-card-preview,.mode-art").forEach(preview);
   }
   function loop(t){
     if(!document.hidden && !menu.hidden &&
-      !window.matchMedia("(prefers-reduced-motion: reduce)").matches)render(t);
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches &&
+      !menu.classList.contains("no-title-motion"))render(t);
     requestAnimationFrame(loop);
   }
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)render();});
   window.addEventListener("pageshow",()=>render());
+  document.querySelector("#title-motion")?.addEventListener("change",()=>{latest=-1;render();});
   render();
   requestAnimationFrame(loop);
 })();

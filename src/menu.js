@@ -6,7 +6,7 @@
   function show(id){const d=$(id);if(!d.open)d.showModal();}
   let motion=!window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   try{const saved=localStorage.getItem(key);if(saved!==null)motion=saved==="true";}catch{}
-  function sync(){menu.classList.toggle("no-title-motion",!motion);$("#title-motion").checked=motion;}
+  function sync(){menu.classList.toggle("no-title-motion",!motion);$("#title-motion").checked=motion;$("#title-motion").setAttribute("aria-checked",String(motion));}
   sync();
   $("#title-motion").addEventListener("change",e=>{
     motion=e.target.checked;sync();
@@ -17,6 +17,9 @@
     if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
     else{document.documentElement.requestFullscreen().catch(()=>{});}
   }
+  function syncFullscreen(){const active=!!document.fullscreenElement;const el=$("#title-fullscreen");el.setAttribute("aria-pressed",String(active));el.textContent=active?"⛶ Sair da tela cheia":"⛶ Tela cheia";}
+  document.addEventListener("fullscreenchange",syncFullscreen);
+  syncFullscreen();
   $("#title-fullscreen").addEventListener("click",fullscreen);
   $("#title-fullscreen-setting").addEventListener("click",fullscreen);
   $("#title-settings").addEventListener("click",()=>show("#title-settings-dialog"));
