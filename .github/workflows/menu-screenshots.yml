@@ -12,11 +12,9 @@ on:
       - 'src/game.js'
       - 'styles.css'
       - 'game-polish.css'
+      - 'fullscreen-game.css'
       - '.github/workflows/pages.yml'
       - 'tests/menu.spec.cjs'
-      - 'src/game.js'
-      - 'styles.css'
-      - '.github/workflows/pages.yml'
       - '.github/workflows/menu-screenshots.yml'
   workflow_dispatch:
 permissions:
