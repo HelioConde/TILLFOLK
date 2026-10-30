@@ -69,8 +69,10 @@
         </div>
         <div class="panel journal-panel"><span class="overline">DIÁRIO DA FAZENDA</span><div id="journal" class="journal"></div></div>
       </aside>
+      <!-- O backdrop pertence ao mesmo contexto de empilhamento do painel.
+           Assim, nunca intercepta o botão Fechar, que fica acima dele. -->
+      <button id="drawer-backdrop" type="button" aria-label="Fechar painel lateral" hidden></button>
     </main>
-    <button id="drawer-backdrop" type="button" aria-label="Fechar painel lateral" hidden></button>
   </div>
 
   <div id="menu" class="title-screen" aria-label="Menu principal do TILLFOLK">
