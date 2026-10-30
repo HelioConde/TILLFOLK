@@ -184,3 +184,46 @@ test('Desktop: ferramentas e canvas visíveis sem rolagem no modo normal',async(
     await page.screenshot({path:'screenshots/jogo-ajustado-'+view.width+'x'+view.height+'.png',animations:'disabled'});
   }
 });
+
+
+test('Atlas visual: cultivos, árvores, objetos e ações dos colonos',async({page})=>{
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  const sheets=[
+    ['cultivos','farming/crops.png'],
+    ['coleta','environment/forageables.png'],
+    ['arvores','environment/trees-and-bushes.png'],
+    ['acoes','characters/worker-actions.png']
+  ];
+  for(const [name,file] of sheets){
+    const dimensions=await page.evaluate(async filename=>{
+      const img=new Image();img.src='./public/assets/sprout-lands/'+filename;
+      await img.decode();
+      const canvas=document.createElement('canvas');
+      const factor=Math.min(3,1100/img.width,900/img.height);
+      canvas.width=Math.round(img.width*factor);canvas.height=Math.round(img.height*factor);
+      canvas.id='asset-inspection';canvas.style.cssText='image-rendering:pixelated;max-width:none;width:'+canvas.width+'px;height:'+canvas.height+'px';
+      const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
+      ctx.fillStyle='#d9d8c0';ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      document.body.appendChild(canvas);
+      return {width:img.width,height:img.height};
+    },file);
+    expect(dimensions.width).toBeGreaterThan(0);
+    await page.locator('#asset-inspection').screenshot({path:'screenshots/atlas-'+name+'.png'});
+    await page.locator('#asset-inspection').evaluate(el=>el.remove());
+  }
+});
+
+test('Celular: a horta é o foco inicial da nova fazenda',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.locator('#new-game').click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator('#starter-confirm').click();
+  await expect(page.locator('#world')).toBeVisible();
+  await page.waitForTimeout(500);
+  const position=await page.locator('.canvas-scroll').evaluate(el=>({left:el.scrollLeft,max:el.scrollWidth-el.clientWidth}));
+  expect(position.max).toBeGreaterThan(0);
+  expect(position.left).toBeGreaterThan(0);
+  await page.screenshot({path:'screenshots/jogo-mobile-inicio-390x844.png',animations:'disabled'});
+});
