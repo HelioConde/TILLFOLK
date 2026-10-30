@@ -158,3 +158,13 @@ body.play-session.drawer-open #toast{bottom:20px}
 @media(prefers-reduced-motion:reduce){
  body.play-session .sidebar{transition:none!important}
 }
+
+/* A floresta ocupa a tela; a coleta fica nos painéis de gestão, não cobre o jogo. */
+body.play-session .wild-inventory{
+ display:flex;flex-wrap:wrap;gap:7px;padding:10px 12px;
+ background:#264536;border:1px solid #5c815e;border-radius:8px;
+ color:#f1eaca;font-size:12px;line-height:1.8;
+}
+body.play-session .inventory-panel {flex:none}
+body.play-session #world{cursor:crosshair}
+body.play-session .world-tag{background:#152e22e6;color:#e5f1ce}
