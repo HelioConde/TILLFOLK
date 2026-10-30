@@ -54,7 +54,7 @@
     if(!builder)return;
     // Tiles Slime-Harvest: uma única escala para paredes, telhado, porta e janela.
     return builder.draw(ctx,{roof:imgs.roof,walls:imgs.walls,door:imgs.door},
-      628,115,{scale:2});
+      628,78,{scale:2});
   }
   function bed(x,y,row,stage=3){
     for(let col=0;col<11;col++){
@@ -96,18 +96,18 @@
     farmhouse();
     // Ferramentas e depósito.
     stamp("well",0,0,32,32,823,326,80,80);
-    stamp("chest",0,0,32,32,757,309,46,46);
+    stamp("chest",0,0,32,32,560,332,42,42);
     stamp("furniture",16,16,16,16,887,320,30,30);
-    stamp("furniture",48,32,16,16,750,282,28,28);
+    stamp("furniture",48,32,16,16,590,333,28,28);
     // Horta com várias fases de crescimento.
     for(let row=0;row<5;row++)bed(462,322+row*32,[0,1,3,5,8][row],Math.min(4,row+1));
     fence(448,304,15);fence(446,488,15);
     fence(447,305,12,true);fence(687,349,9,true);
     // Plantação de flores e arbustos à beira da casa.
     for(let i=0;i<8;i++){
-      stamp("crops",64,0,16,16,650+i*24,296,22,27);
+      stamp("crops",64,0,16,16,646+i*24,374,22,27);
     }
-    for(let i=0;i<7;i++)stamp("furniture",48,16,16,16,692+i*28,293,22,24);
+    for(let i=0;i<7;i++)stamp("furniture",48,16,16,16,695+i*27,384,22,24);
     // Funcionários e animais: frames reais, sem emojis.
     const frame=Math.floor(performance.now()/260)%4;
     walking(521,370,0,frame,ctx,68,68);
