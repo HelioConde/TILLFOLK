@@ -61,12 +61,16 @@ test('Cena jogável: fotografar mundo, movimentação e atlas dos colonos', asyn
   await page.setViewportSize({width:1600,height:900});
   await page.waitForTimeout(400);
   await page.screenshot({path:'screenshots/jogo-1600x900.png',animations:'disabled'});
-  await page.locator('#focus-game').click();
-  await expect(page.locator('body')).toHaveClass(/focus-game/);
+  // O jogo é fullscreen por padrão; os painéis abrem em uma gaveta.
+  await expect(page.locator('body')).toHaveClass(/play-session/);
   await expect(page.locator('.sidebar')).toBeHidden();
   await page.screenshot({path:'screenshots/jogo-imersivo-1600x900.png',animations:'disabled'});
-  await page.locator('#focus-game').click();
+  await page.locator('#open-workers').click();
+  await expect(page.locator('body')).toHaveClass(/drawer-open/);
   await expect(page.locator('.sidebar')).toBeVisible();
+  await page.screenshot({path:'screenshots/jogo-gestao-1600x900.png',animations:'disabled'});
+  await page.locator('#drawer-close').click();
+  await expect(page.locator('.sidebar')).toBeHidden();
   await page.locator('#world').click({position:{x:570,y:340}});
   await page.waitForTimeout(600);
   await page.screenshot({path:'screenshots/jogo-cultivo-1600x900.png',animations:'disabled'});
@@ -222,9 +226,18 @@ test('Celular: a horta é o foco inicial da nova fazenda',async({page})=>{
   await page.locator('#starter-confirm').click();
   await expect(page.locator('#world')).toBeVisible();
   await page.waitForTimeout(500);
-  const position=await page.locator('.canvas-scroll').evaluate(el=>({left:el.scrollLeft,max:el.scrollWidth-el.clientWidth}));
-  expect(position.max).toBeGreaterThan(0);
-  expect(position.left).toBeGreaterThan(0);
+  // No modo fullscreen não existe mais scrollLeft: pan é aplicado ao canvas.
+  const position=await page.evaluate(()=>{
+    const view=document.querySelector('.canvas-scroll').getBoundingClientRect();
+    const map=document.querySelector('#world').getBoundingClientRect();
+    return {viewWidth:view.width,viewHeight:view.height,mapWidth:map.width,mapHeight:map.height,
+      coversView:map.left<=view.left+1&&map.right>=view.right-1&&
+        map.top<=view.top+1&&map.bottom>=view.bottom-1};
+  });
+  expect(position.viewWidth).toBe(390);
+  expect(position.mapWidth).toBeGreaterThanOrEqual(position.viewWidth);
+  expect(position.mapHeight).toBeGreaterThanOrEqual(position.viewHeight);
+  expect(position.coversView).toBe(true);
   await page.screenshot({path:'screenshots/jogo-mobile-inicio-390x844.png',animations:'disabled'});
 });
 
