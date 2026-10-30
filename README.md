@@ -1,29 +1,42 @@
 # TILLFOLK 🌱
 
-Jogo web de fazenda, sobrevivência e automação de trabalhadores, desenvolvido com HTML5 e JavaScript.
+Jogo HTML5 de **fazenda, sobrevivência e automação de trabalhadores** com visual 2D pixel art. A inspiração nas listas de tarefas de *Oxygen Not Included* está no gerenciamento, não no gênero de combate.
 
-## Visão
+## Protótipo v0.1 — cena inicial
 
-- A fazenda evolui por meio de atividades demoradas: limpar, arar, fertilizar, plantar, regar, colher e transportar.
-- Trabalhadores contratados escolhem tarefas automaticamente conforme prioridades e especializações.
-- Cada trabalhador pode ter até **3 habilidades positivas** e **3 traços negativos**.
-- Todos podem realizar tarefas não proibidas; especialistas executam mais rapidamente suas respectivas atividades.
-- Menos especialidades significa maior bônus individual; o jogador precisa equilibrar especialistas e generalistas.
+- Menu inicial, continuar e instruções; salvamento local pelo navegador.
+- Cena de fazenda com sprites de grama, plantas, árvores, pedras, poço e trabalhadores de Sprout Lands.
+- Selecione **Cultivar** e clique no solo: o sistema cria uma sequência automática de tarefas.
+- Ciclo: **limpar → arar → fertilizar → semear → regar → crescer → colher → transportar**.
+- Trabalhadores escolhem tarefas autonomamente considerando prioridades e restrições.
+- Contratação com até **3 habilidades positivas** e **3 traços negativos** por pessoa.
+- Especialidades oferecem bônus: 1 habilidade (+100%), 2 (+60%) ou 3 (+30%).
+- Ações são demoradas para valorizar especialização e ajuda de vários trabalhadores.
+- Prioridades individuais por tipo de atividade (1–9) e velocidade de simulação 1×, 3×, 6× ou pausa.
+- Economia inicial simples de sementes, água, comida e moedas.
 
-## Sprites
+## Rodar
 
-O projeto usa uma **seleção de sprites** do pacote **Sprout Lands – Premium**, de **Cup Nooble**, dentro de `public/assets/sprout-lands/`. O pacote premium original **não** deve ser redistribuído como um conjunto de assets independente.
+Abra o arquivo [index.html](./index.html) em um navegador moderno, ou use um servidor estático:
 
-**Créditos obrigatórios:** Assets — Sprout Lands, by Cup Nooble.
+\`\`\`bash
+python -m http.server 8080
+\`\`\`
 
-Os sprites podem ser usados em jogos comerciais e não comerciais e projetos de código aberto, mediante créditos e inclusão dos termos originais. A licença proíbe redistribuir/revender o pacote de assets em si e usá-lo para NFTs ou treinamento de IA. Confira os termos completos em `licenses/sprout-lands-premium.txt` após a importação.
+Depois acesse http://localhost:8080. Não há dependências nem banco de dados. O jogo pode ser publicado com **GitHub Pages** usando a pasta raiz da branch \`main\`.
 
-### Como importar
+### Estrutura principal
 
-1. Baixe legalmente o arquivo ZIP original do pacote Sprout Lands Premium e mantenha-o em `Downloads` (ou informe seu caminho).
-2. Tenha Git for Windows instalado e autenticado no GitHub.
-3. Clone o repositório: `git clone https://github.com/HelioConde/TILLFOLK.git`.
-4. No PowerShell, execute `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\TILLFOLK\tools\import-sprites.ps1` a partir da pasta em que clonou o projeto.
-5. O importador seleciona 28 sprites úteis ao jogo, preserva os termos da licença, cria commit e envia ao GitHub.
+- \`index.html\`: cenário visual, HUD, menu e janelas.
+- \`styles.css\`: interface responsiva com tipografia Sprout Lands UI Basic.
+- \`src/game.js\`: simulação, renderização em canvas, automação, recrutamento e salvamento.
+- \`public/assets/sprout-lands/\`: sprites selecionados para a fazenda.
+- \`public/assets/Sprout Lands - UI Pack - Basic pack/\`: fonte e elementos da UI original.
 
-O importador pode receber `-ZipPath "C:\caminho\arquivo.zip"` e `-RepoPath "C:\caminho\TILLFOLK"`. Ele **não** publica o ZIP completo nem os arquivos `.aseprite` ou previews.
+## Estado de desenvolvimento
+
+**Protótipo de mecânicas**, não jogo concluído. A construção, personagens mais elaborados, navegação com obstáculos, sistemas de comida/necessidades detalhados, IA avançada, animações direcionais e balanceamento serão desenvolvidos em etapas. O crescimento acontece ao longo de tempo simulado.
+
+## Créditos e licença
+
+**Assets — Sprout Lands, por Cup Nooble.** Veja [licenças](./licenses/sprout-lands-premium.txt) e [créditos](./docs/ASSET_CREDITS.md). Os materiais premium não podem ser revendidos ou distribuídos como pacote independente de assets. Proibido uso para treinamento de IA conforme licença do autor.
