@@ -45,3 +45,35 @@ test('Foco de teclado e movimento reduzido',async({page})=>{
   const focus=await page.locator('#new-game').evaluate(el=>getComputedStyle(el).outlineStyle);
   expect(focus).not.toBe('none');
 });
+
+test('Cena jogável: fotografar mundo, movimentação e atlas dos colonos', async ({page}) => {
+  await page.setViewportSize({width:1366,height:768});
+  const errors=[];
+  page.on('pageerror',err=>errors.push(String(err)));
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.locator('#new-game').click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator('#starter-confirm').click();
+  await expect(page.locator('#menu')).toBeHidden();
+  await expect(page.locator('#world')).toBeVisible();
+  await page.waitForTimeout(700);
+  await page.screenshot({path:'screenshots/jogo-1366x768.png',animations:'disabled'});
+  await page.setViewportSize({width:1600,height:900});
+  await page.waitForTimeout(400);
+  await page.screenshot({path:'screenshots/jogo-1600x900.png',animations:'disabled'});
+  const asset=await page.evaluate(async()=>{
+    const image=new Image(); image.src='./public/assets/sprout-lands/characters/worker-variants.png';
+    await image.decode();
+    const tile=48, cols=Math.min(8,Math.floor(image.width/tile)), rows=Math.min(16,Math.floor(image.height/tile));
+    const board=document.createElement('canvas');board.width=cols*tile*3;board.height=rows*tile*3;
+    const cx=board.getContext('2d');cx.imageSmoothingEnabled=false;
+    for(let y=0;y<rows;y++)for(let x=0;x<cols;x++)cx.drawImage(image,x*tile,y*tile,tile,tile,x*tile*3,y*tile*3,tile*3,tile*3);
+    board.id='atlas-debug';board.style.cssText='position:fixed;top:0;left:0;z-index:99999;max-width:none;width:'+board.width+'px;height:'+board.height+'px';
+    document.body.appendChild(board);
+    return {width:image.width,height:image.height,cols,rows};
+  });
+  await page.locator('#atlas-debug').screenshot({path:'screenshots/atlas-personagens.png'});
+  await page.locator('#atlas-debug').evaluate(el=>el.remove());
+  expect(asset.cols).toBeGreaterThan(1);
+  expect(errors).toEqual([]);
+});
