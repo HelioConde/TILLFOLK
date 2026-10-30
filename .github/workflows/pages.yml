@@ -21,6 +21,7 @@ jobs:
       - name: Verificar JavaScript
         run: |
           node --check src/game.js
+          node --check src/house-building.js
           node --check src/menu.js
           node --check src/menu-scene.js
       - name: Montar site estático mínimo
@@ -28,8 +29,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
-          cp index.html styles.css menu.css menu-layout.css game-polish.css fullscreen-game.css ui-polish.css _site/
-          cp src/game.js src/menu.js src/menu-scene.js _site/src/
+          cp index.html styles.css menu.css menu-layout.css game-polish.css fullscreen-game.css house-building.css ui-polish.css _site/
+          cp src/game.js src/house-building.js src/menu.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
@@ -40,6 +41,8 @@ jobs:
           test -f _site/public/assets/sprout-lands/terrain/grass.png
           test -f _site/public/assets/sprout-lands/farming/crops.png
           test -f _site/public/assets/tillfolk/menu-landscape.svg
+          test -f _site/src/house-building.js
+          test -f _site/house-building.css
           test -f _site/src/menu.js
           test -f _site/src/menu-scene.js
           # Falhar a publicação caso alguma arte utilizada na abertura esteja ausente.
@@ -61,9 +64,12 @@ jobs:
           NODE
           test -f _site/public/assets/sprout-lands/structures/wood-roof.png
           test -f _site/public/assets/sprout-lands/structures/wood-walls.png
+          test -f _site/public/assets/sprout-lands/structures/wood-door.png
           test -f _site/public/assets/sprout-lands/terrain/dark-soil.png
           test -f _site/menu.css
           test -f _site/menu-layout.css
+          grep -q 'src/house-building.js' _site/index.html
+          grep -q 'house-building.css' _site/index.html
           # O CSS de layout do menu também precisa existir no site publicado.
           grep -q 'menu-layout.css' _site/index.html
           grep -q 'menu-layout.css' _site/menu-layout.css || test -s _site/menu-layout.css
