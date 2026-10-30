@@ -1,6 +1,8 @@
 "use strict";
 (() => {
   const TILE = 32, W = 28, H = 18, SAVE_KEY = "tillfolk-v01";
+  const World=window.TillfolkWild;
+  if(!World)throw new Error("Carregue src/wild-world.js antes do motor TILLFOLK.");
   const canvas = document.querySelector("#world"), ctx = canvas.getContext("2d");
   const $ = (s) => document.querySelector(s);
   let worldPanX=0,worldPanY=0,panPointer=null,suppressMapClick=false;
@@ -121,58 +123,58 @@
     {name:"Bento",skills:["till","sow","harvest"],neg:["fertilize"],cost:80,color:"#d3d6fc"},
     {name:"Lina",skills:["carry","fertilize"],neg:[],cost:90,color:"#ffcfc5"}
   ];
-  const trees = [[3,2],[22,2],[24,4],[2,13],[25,14],[22,16],[7,2],[19,13],[3,16]];
-  const rocks = [[5,13],[20,11],[25,8]];
-  const decor = [[10,2],[11,3],[16,3],[18,4],[2,8],[5,15],[10,15],[24,10],[18,16],[22,9]];
-  const keyOf = (x,y) => x+"-"+y;
-  const nearby = (x,y) => Math.abs(x-5)+Math.abs(y-8);
-  const blocked = (x,y) => x<1||y<1||x>=W-1||y>=H-1||((x>=3&&x<=7)&&(y>=5&&y<=9))||trees.some(t=>t[0]===x&&t[1]===y)||rocks.some(t=>t[0]===x&&t[1]===y)||(x===20&&y===6)||(x>=4&&x<=9&&y===10);
+  const keyOf=(x,y)=>x+"-"+y;
+  const blocked=(x,y)=>World.blocked(state?.world,x,y,W,H);
   // Caminhos em grade impedem que colonos atravessem a casa, árvores e objetos.
   // Só a navegação usa esta malha; o cultivo continua seguindo as regras existentes.
   const directions=[[1,0],[-1,0],[0,1],[0,-1]];
   function routeBetween(fromX,fromY,toX,toY){
-    const start=[Math.floor(fromX),Math.floor(fromY)],goal=[toX,toY];
-    const id=(x,y)=>x+","+y, origin=id(...start), destination=id(...goal);
-    if(blocked(toX,toY))return [];
-    if(origin===destination)return [{x:toX+.5,y:toY+.5}];
+    // O lenhador fica ao LADO da árvore/pedra; nunca pisa dentro do obstáculo.
+    const start=[Math.floor(fromX),Math.floor(fromY)],id=(x,y)=>x+","+y;
+    const origin=id(...start);
+    const goals=blocked(toX,toY)?directions.map(([dx,dy])=>[toX+dx,toY+dy])
+      .filter(([x,y])=>!blocked(x,y)):[[toX,toY]];
+    if(!goals.length)return [];
+    const destinations=new Set(goals.map(([x,y])=>id(x,y)));
     const queue=[start],previous=new Map([[origin,null]]);
-    for(let head=0;head<queue.length&&!previous.has(destination);head++){
+    let reached=destinations.has(origin)?origin:null;
+    for(let head=0;head<queue.length&&reached===null;head++){
       const [x,y]=queue[head];
       for(const [dx,dy] of directions){
         const nx=x+dx,ny=y+dy,key=id(nx,ny);
         if(previous.has(key)||blocked(nx,ny))continue;
         previous.set(key,id(x,y));queue.push([nx,ny]);
+        if(destinations.has(key)){reached=key;break;}
       }
     }
-    if(!previous.has(destination))return [];
-    const result=[];
-    for(let key=destination;key!==origin;key=previous.get(key)){
-      const [x,y]=key.split(",").map(Number);result.push({x:x+.5,y:y+.5});
+    if(reached===null)return [];
+    const path=[];
+    for(let current=reached;current!==origin;current=previous.get(current)){
+      const [x,y]=current.split(",").map(Number);path.push({x:x+.5,y:y+.5});
     }
-    return result.reverse();
+    path.reverse();
+    if(!path.length){const [x,y]=reached.split(",").map(Number);path.push({x:x+.5,y:y+.5});}
+    return path;
   }
   let state = null, tasks = [], selectedTool = "cultivar", playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
-    return {x,y,selected,dirty:Math.random()<.13,tilled:false,fertilized:false,seeded:false,watered:false,growth:0,produce:false};
+    return {x,y,selected,dirty:false,tilled:false,fertilized:false,seeded:false,watered:false,growth:0,produce:false};
   }
   function reset(chosenStarters = [], config = {}){
-    const plots = [];
-    for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)if(!blocked(x,y))plots.push(makePlot(x,y,false));
-    for(let y=8;y<=10;y++)for(let x=12;x<=15;x++){
-      const p=plots.find(p=>p.x===x&&p.y===y);
-      if(p){p.selected=true;p.dirty=false;}
+    // O jogador recebe uma clareira e recursos naturais, não uma fazenda pronta.
+    const seed=Math.floor(Math.random()*0xFFFFFFFF)>>>0;
+    const world=World.create(seed,W,H);
+    const plots=[];
+    for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+      if(!World.waterAt(world,x,y))plots.push(makePlot(x,y,false));
     }
-    const seeded=plots.find(p=>p.x===12&&p.y===8);
-    if(seeded){seeded.tilled=true;seeded.fertilized=true;seeded.seeded=true;seeded.watered=true;seeded.growth=.75;}
-    const wet=plots.find(p=>p.x===13&&p.y===8);
-    if(wet){wet.tilled=true;wet.fertilized=true;wet.seeded=true;wet.watered=false;wet.growth=.1;}
     const team = chosenStarters.slice(0,2).map((c,i)=>({
       id:i+1,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,
-      appearance:c.appearance ?? i,personalPriority:{},x:7.5+i,y:11.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
+      appearance:c.appearance ?? i,personalPriority:{},x:13.5+i,y:9.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
     }));
     state = {day:1,minutes:8*60,coins:220,seeds:18,water:30,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
-      plots, workers:team,
+      plots,world,inventory:{wood:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     tasks=[]; simSpeed=1; updateSpeed();
@@ -182,10 +184,18 @@
       const s=JSON.parse(localStorage.getItem(SAVE_KEY));
       if(!s||!Array.isArray(s.plots)||!Array.isArray(s.workers))return false;
       state=s;
+      // Salvamentos antigos continuam válidos: a geração não apaga cultivos já feitos.
+      if(!state.world){
+        state.world=World.create((Date.now()>>>0),W,H,[
+          ...state.plots.filter(p=>p.selected||p.tilled||p.seeded),
+          ...state.workers.map(w=>({x:Math.floor(w.x),y:Math.floor(w.y)}))
+        ]);
+      }
+      state.inventory=state.inventory||{wood:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0};
       state.mode=state.mode||"survival";
       state.farmName=state.farmName||"Minha Fazenda";
       state.priorities={...startPriorities,...s.priorities};
-      state.workers.forEach(w=>{w.task=null;w.progress=0;w.personalPriority=w.personalPriority||{};w.x=Number.isFinite(w.x)?w.x:7.5;w.y=Number.isFinite(w.y)?w.y:11.5;w.route=[];w.routeTask=null;w.facing=w.facing||"down";w.moving=false;w.walkFrame=0;});
+      state.workers.forEach(w=>{w.task=null;w.progress=0;w.personalPriority=w.personalPriority||{};w.x=Number.isFinite(w.x)?w.x:13.5;w.y=Number.isFinite(w.y)?w.y:9.5;w.route=[];w.routeTask=null;w.facing=w.facing||"down";w.moving=false;w.walkFrame=0;});
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
       state.journal=Array.isArray(s.journal)?s.journal:[];
       tasks=[];simSpeed=1;updateSpeed();return true;
@@ -200,12 +210,12 @@
     document.body.classList.add("play-session","focus-game");
     worldPanX=0;worldPanY=0;closeDrawer();refresh();save();
     requestAnimationFrame(fitWorldCanvas);
-    notify("Sua fazenda está pronta. Os trabalhadores já estão a caminho!");
+    notify("Um vale selvagem à sua espera! Marque a vegetação para limpar e cultivar.");
   }
   function getNext(p){
     if(!p.selected)return null;
     if(p.produce)return "carry";
-    if(p.dirty)return "clear";
+    if(p.dirty||World.at(state.world,p.x,p.y))return "clear";
     if(!p.tilled)return "till";
     if(!p.fertilized)return "fertilize";
     if(!p.seeded)return state.seeds>0?"sow":null;
@@ -225,7 +235,7 @@
   function bonus(w,type){return w.skills.includes(type)?(w.skills.length===1?2:w.skills.length===2?1.6:1.3):1;}
   function assign(w){
     if(w.task)return;
-    const available=tasks.filter(t=>!t.assigned&&!w.neg.includes(t.type));
+    const available=tasks.filter(t=>!t.assigned&&!w.neg.includes(t.type)&&routeBetween(w.x,w.y,t.x,t.y).length>0);
     const priorityScore=t=>{
       const global=state.priorities[t.type]||5;
       const individual=w.personalPriority?.[t.type]??5;
@@ -240,7 +250,20 @@
     const p=state.plots.find(p=>p.x===t.x&&p.y===t.y);
     if(!p)return;
     switch(t.type){
-      case "clear":p.dirty=false;state.coins+=2;break;
+      case "clear":{
+        const obj=World.at(state.world,p.x,p.y);
+        if(obj){
+          const kind=obj.kind, result=World.clear(state.world,p.x,p.y);
+          const types={tree:"wood",stump:"wood",log:"wood",boulder:"stone",
+            mushroom:"mushroom",flowers:"flower",herbs:"herbs",grass:"grass",thicket:"wood",twig:"wood"};
+          const amount={tree:3,stump:2,log:2,boulder:3}[kind]||1;
+          const resource=types[kind]||"grass";
+          state.inventory[resource]=(state.inventory[resource]||0)+amount;
+          if(result.resource)log(w.name+" coletou "+result.resource+".");
+          p.dirty=result.remaining;
+        }else p.dirty=false;
+        state.coins+=2;break;
+      }
       case "till":p.tilled=true;break;
       case "fertilize":p.fertilized=true;break;
       case "sow":if(state.seeds<=0)return;p.seeded=true;p.growth=0;state.seeds--;break;
@@ -254,7 +277,16 @@
     if(!playing||simSpeed===0)return;
     const scaled=Math.min(dt,.07)*simSpeed;
     state.minutes+=scaled*1.25;
-    if(state.minutes>=1440){state.minutes-=1440;state.day++;if(state.mode==="survival"){state.food=Math.max(0,state.food-state.workers.length);log("Um novo dia começou. A equipe consumiu alimentos.");if(state.food===0)log("Atenção: sem comida para a equipe!");}else{log("Um novo dia começou na fazenda tranquila.");}}
+    if(state.minutes>=1440){
+      state.minutes-=1440;state.day++;
+      const births=World.regrow(state.world,state.day,W,H,state.plots);
+      if(births>0)log("A natureza renovou "+births+" pequenos elementos do vale.");
+      if(state.mode==="survival"){
+        state.food=Math.max(0,state.food-state.workers.length);
+        log("Um novo dia começou. A equipe consumiu alimentos.");
+        if(state.food===0)log("Atenção: sem comida para a equipe!");
+      }else log("Um novo dia começou na fazenda tranquila.");
+    }
     for(const p of state.plots)if(p.seeded&&p.watered&&p.growth<1)p.growth=Math.min(1,p.growth+scaled/180);
     recalcTasks();
     for(const w of state.workers)assign(w);
@@ -265,9 +297,10 @@
       if(!t){w.task=null;w.progress=0;w.route=[];continue;}
       if(w.routeTask!==w.task){
         w.route=routeBetween(w.x,w.y,t.x,t.y);
+        w.workGoal=w.route[w.route.length-1]||null;
         w.routeTask=w.task;
       }
-      const target=w.route?.[0]||{x:t.x+.5,y:t.y+.5};
+      const target=w.route?.[0]||w.workGoal||{x:t.x+.5,y:t.y+.5};
       const dx=target.x-w.x,dy=target.y-w.y,d=Math.hypot(dx,dy);
       if(d>.055){
         if(Math.abs(dx)>Math.abs(dy))w.facing=dx>0?"right":"left";
@@ -280,7 +313,7 @@
       w.x=target.x;w.y=target.y;
       if(w.route?.length){w.route.shift();continue;}
       w.progress+=scaled*bonus(w,t.type)/baseTime[t.type];
-      if(w.progress>=1){finish(w,t);w.task=null;w.progress=0;w.route=[];w.routeTask=null;recalcTasks();}
+      if(w.progress>=1){finish(w,t);w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;recalcTasks();}
     }
   }
   function valid(img){return img&&img.complete&&img.naturalWidth>0;}
@@ -296,43 +329,8 @@
   function draw(){
     if(!state)return;
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-      const xx=x*TILE,yy=y*TILE,r=(x*17+y*13)%5;
-      ctx.fillStyle=r===0?"#a6cf7a":"#abd482";ctx.fillRect(xx,yy,TILE,TILE);
-      part(sprite.grass,r*16,80,16,16,xx,yy);
-      if((x*31+y*17)%19===0){ctx.fillStyle="#d8e3a0";ctx.fillRect(xx+8,yy+9,2,2);ctx.fillRect(xx+11,yy+12,2,2);}
-    }
-    // Pátio e caminhos de terra: o jogador lê o acesso à casa, à horta e ao poço.
-    const pathTiles=new Set();
-    for(let y=10;y<=13;y++)for(let x=4;x<=9;x++)pathTiles.add(keyOf(x,y));
-    for(let x=9;x<=19;x++)pathTiles.add(keyOf(x,12));
-    for(let y=7;y<=12;y++)pathTiles.add(keyOf(19,y));
-    for(const key of pathTiles){
-      const [x,y]=key.split("-").map(Number);
-      part(sprite.soil,0,80,16,16,x*TILE,y*TILE,TILE,TILE);
-    }
-    // A borda da horta delimita o espaço cultivável sem bloquear cliques.
-    for(let x=11;x<=16;x++)part(sprite.fences,32,0,16,16,x*TILE,7*TILE-14,32,26);
-    for(let y=8;y<=11;y++){
-      part(sprite.fences,0,0,16,16,11*TILE-11,y*TILE,24,32);
-      part(sprite.fences,0,0,16,16,16*TILE+13,y*TILE,24,32);
-    }
-    // Casa no mapa: mesma escala 2x e tiles originais sem deformação.
-    const unit=32,wallX=3*TILE+16,roofY=5*TILE,wallY=roofY+65;
-    for(let row=0;row<3;row++)for(let col=0;col<4;col++){
-      part(sprite.walls,16,16,16,16,wallX+col*unit,wallY+row*unit,unit,unit);
-    }
-    for(let row=0;row<3;row++)for(let col=0;col<5;col++){
-      const sx=col===0?48:col===4?96:col%2===0?80:64;
-      part(sprite.roof,sx,32+row*16,16,16,
-        wallX-16+col*unit,roofY+row*unit,unit,unit);
-    }
-    part(sprite.walls,16,0,16,32,wallX+8,wallY+16,32,64);
-    part(sprite.walls,16,0,16,32,wallX+88,wallY+16,32,64);
-    part(sprite.door,64,0,16,32,wallX+48,wallY+32,32,64);
-    part(sprite.furniture,0,16,16,16,wallX-12,wallY+82,32,32);
-    part(sprite.chest,0,0,32,32,wallX+124,wallY+80,32,32);
-    write("CASA",wallX+64,wallY+108,"#fff6ce",11);
+    // Nada pré-construído: a paisagem vem do seed salvo com a partida.
+    World.drawGround(ctx,sprite,state.world,W,H,TILE,part);
     // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
     for(const p of state.plots){
       if(!p.selected)continue;
@@ -342,16 +340,13 @@
       if(p.fertilized){ctx.fillStyle="#6c7652";ctx.fillRect(x+4,y+8,3,3);ctx.fillRect(x+25,y+22,2,2);}
       if(p.seeded)part(sprite.crops,Math.min(4,Math.floor(p.growth*5))*16,0,16,16,x,y,32,32);
       if(p.produce)part(sprite.crops,48,16,16,16,x,y,32,32);
-      if(p.dirty)part(sprite.rocks,0,16,16,16,x,y,32,32);
+      if(p.dirty&&!World.at(state.world,p.x,p.y))part(sprite.rocks,0,16,16,16,x,y,32,32);
       if(!p.tilled){ctx.strokeStyle="#ecdf96";ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.strokeRect(x+3,y+3,26,26);ctx.setLineDash([]);}
       if(p.watered&&p.seeded){ctx.fillStyle="#6cc8e5";ctx.fillRect(x+2,y+26,4,3);}
     }
     // Profundidade natural: árvores cobrem personagens atrás delas e vice-versa.
     const layers=[
-      ...trees.map(([x,y],index)=>({type:"tree",x,y,index,depth:(y+1)*TILE+7})),
-      ...rocks.map(([x,y])=>({type:"rock",x,y,depth:(y+1)*TILE})),
-      ...decor.map(([x,y],index)=>({type:"decor",x,y,index,depth:(y+1)*TILE})),
-      {type:"well",x:20,y:6,depth:7*TILE},
+      ...state.world.objects.map(object=>({type:"nature",object,depth:(object.y+.8)*TILE})),
       ...state.workers.map(worker=>({type:"worker",worker,depth:worker.y*TILE}))
     ].sort((a,b)=>a.depth-b.depth);
     const rowFor={down:0,up:1,left:2,right:3};
@@ -360,21 +355,8 @@
     const actionRow={till:0,fertilize:0,sow:0,clear:4,harvest:4,carry:8};
     for(const item of layers){
       const {x,y,type}=item;
-      if(type==="tree"){
-        // Atlas de árvores organizado em células de 32px: recortar exatamente na grade.
-        // 144,48 é a árvore grande. As variações evitam repetir a mesma textura.
-        if(item.index%3===0)part(sprite.trees,80,0,32,32,x*TILE-14,y*TILE-38,46,66);
-        else if(item.index%3===1)part(sprite.trees,144,0,32,32,x*TILE-14,y*TILE-38,46,66);
-        else part(sprite.trees,144,48,48,48,x*TILE-25,y*TILE-50,78,78);
-      }else if(type==="rock"){
-        // Linha 1 do atlas de coleta contém pedras; a linha 2 contém folhas.
-        part(sprite.rocks,48,16,16,16,x*TILE,y*TILE,32,32);
-      }else if(type==="decor"){
-        const [sx,sy]=[[0,64],[48,64],[80,64]][item.index%3];
-        part(sprite.rocks,sx,sy,16,16,x*TILE+6,y*TILE+5,22,22);
-      }else if(type==="well"){
-        part(sprite.well,0,0,32,32,20*TILE-16,6*TILE-16,64,64);
-        write("POÇO",20*TILE+16,7*TILE+30,"#fff6ce",10);
+      if(type==="nature"){
+        World.drawObject(ctx,item.object,sprite,TILE,part);
       }else{
         const w=item.worker,px=w.x*TILE,py=w.y*TILE;
         ctx.fillStyle="#223c3180";ctx.beginPath();ctx.ellipse(px,py-2,11,4,0,0,Math.PI*2);ctx.fill();
@@ -415,6 +397,7 @@
         }
       }
     }
+    World.drawAmbient(ctx,state.world,performance.now(),TILE);
   }
   function refresh(){
     if(!state)return;
@@ -479,7 +462,7 @@
   function hire(i){
     const c=state.candidates[i];if(!c||state.coins<c.cost){notify("Moedas insuficientes.");return;}
     state.coins-=c.cost;
-    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},x:7.5,y:11.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0});
+    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},x:13.5,y:9.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0});
     state.candidates[i]=newCandidate();
     log(c.name+" entrou para a equipe.");
     renderCandidates();refresh();save();notify(c.name+" contratado(a)!");$("#hire-dialog").close();
@@ -489,7 +472,7 @@
     const task=getNext(p);
     $("#tile-tooltip").hidden=false;
     $("#tile-tooltip").textContent="Terreno "+(p.x+1)+", "+(p.y+1)+" · "+(p.selected?"Cultivo ativo":"Disponível")+
-      " · "+(p.produce?"Colheita no chão":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural")+
+      " · "+(World.at(state.world,p.x,p.y)?.kind|| (p.produce?"Colheita no chão":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural"))+
       (task?" · Próxima tarefa: "+labels[task]:"");
   }
   // Segure Shift e arraste no desktop; no celular, arraste com o dedo para explorar.
@@ -521,9 +504,10 @@
     if(!playing||!state)return;
     const rect=canvas.getBoundingClientRect(),x=Math.floor((event.clientX-rect.left)/rect.width*W),y=Math.floor((event.clientY-rect.top)/rect.height*H);
     const p=findPlot(x,y);
-    if(!p){notify("Este espaço está ocupado ou fora da área cultivável.");return;}
+    if(!p){notify("Água ou limite do vale: escolha uma área de terra.");return;}
     if(selectedTool==="inspecionar"){inspect(p);return;}
     p.selected=(selectedTool==="cultivar");
+    if(p.selected){p.dirty=Boolean(World.at(state.world,x,y))||p.dirty;}
     $("#tile-tooltip").hidden=true;
     if(!p.selected)for(const w of state.workers)if(w.task&&w.task.startsWith(keyOf(x,y)+":")){w.task=null;w.progress=0;}
     recalcTasks();refresh();save();
