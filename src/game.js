@@ -403,6 +403,15 @@
       }
     }
     World.drawAmbient(ctx,state.world,performance.now(),TILE);
+    // Uma marca acima da copa confirma que a limpeza foi enfileirada.
+    for(const plot of state.plots){
+      if(!plot.selected||!World.at(state.world,plot.x,plot.y))continue;
+      const px=plot.x*TILE,py=plot.y*TILE;
+      ctx.strokeStyle="#fff2a8";ctx.lineWidth=2;ctx.setLineDash([4,3]);
+      ctx.strokeRect(px+2,py+2,TILE-4,TILE-4);ctx.setLineDash([]);
+      ctx.fillStyle="#274e36ec";ctx.fillRect(px+21,py+20,11,11);
+      ctx.fillStyle="#ffe7a1";ctx.fillRect(px+24,py+23,5,5);
+    }
   }
   function refresh(){
     if(!state)return;
