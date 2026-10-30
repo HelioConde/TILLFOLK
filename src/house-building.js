@@ -3,6 +3,7 @@
    Slime-Harvest/scripts/building/house_builder.gd. Sem assets novos. */
 (() => {
   const TILE = 32, WIDTH = 28, HEIGHT = 18, MAX_FLOORS = 25;
+  let doorOpenness=0,doorTimestamp=0;
   const key = (x,y) => x + "-" + y;
   const decode = value => value.split("-").map(Number);
   const inside = (x,y) => x >= 2 && x < WIDTH-2 && y >= 2 && y < HEIGHT-2;
@@ -116,7 +117,16 @@
     }
     const [doorX,doorY]=decode(house.door);
     if(floor.has(house.door)) {
-      part(sprites.walls,48,32,16,16,doorX*TILE,doorY*TILE,TILE,TILE);
+      // Animação da porta já existente no pacote: seis frames (aberta -> fechada).
+      const residents=Array.isArray(options.workers)?options.workers:[];
+      const nearby=residents.some(w=>Math.hypot(w.x-doorX-.5,w.y-doorY-.5)<2);
+      const target=nearby?1:0;
+      const now=performance.now();
+      const elapsed=doorTimestamp?Math.min(.08,(now-doorTimestamp)/1000):0;
+      doorTimestamp=now;
+      doorOpenness+=Math.sign(target-doorOpenness)*Math.min(Math.abs(target-doorOpenness),elapsed*3);
+      const frame=5-Math.round(doorOpenness*5);
+      part(sprites.door,frame*16,0,16,32,doorX*TILE,doorY*TILE-TILE,TILE,TILE*2);
       if(!building) {
         part(sprites.furniture,0,16,16,16,(doorX-2)*TILE,(doorY+1)*TILE,24,24);
         part(sprites.chest,0,0,32,32,(doorX+2)*TILE,(doorY+1)*TILE,30,30);
