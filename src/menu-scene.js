@@ -138,6 +138,20 @@
     }else if(which==="crops"){
       for(let x=0;x<192;x+=16){t("dark",0,80,16,16,x,38,16,16);t("dark",0,80,16,16,x,54,16,16);}
       for(let i=0;i<9;i++)t("crops",64,(i%5)*16,16,16,3+i*21,13,23,30);
+    }else if(which==="mode-survival"){
+      // Faixas de cultivo e colheita em um cenário com árvores ao fundo.
+      for(let x=0;x<192;x+=16)for(let y=0;y<72;y+=16)t("grass",0,80,16,16,x,y,16,16);
+      for(let x=24;x<178;x+=16){t("dark",0,80,16,16,x,42,16,16);t("dark",0,80,16,16,x,58,16,16);}
+      for(let x=27;x<177;x+=23)t("crops",48,3*16,16,16,x,24,22,27);
+      walking(53,7,0,0,c,51,57);
+      t("chest",0,0,32,32,138,20,42,43);
+    }else if(which==="mode-relaxed"){
+      for(let x=0;x<192;x+=16)for(let y=0;y<72;y+=16)t("grass",16,80,16,16,x,y,16,16);
+      t("trees",144,48,48,48,90,-3,78,78);
+      t("trees",16,0,16,32,14,3,46,66);
+      for(let x=28;x<99;x+=17)t("crops",64,0,16,16,x,38,20,29);
+      t("well",0,0,32,32,135,27,43,43);
+      walking(65,12,1,0,c,51,57);
     }else{
       for(let x=0;x<192;x+=16)t("grass",0,80,16,16,x,55,16,16);
       t("well",0,0,32,32,17,5,65,65);
@@ -154,7 +168,7 @@
     if(frame===latest && loaded!==all.length)return;
     latest=frame;
     paint();
-    document.querySelectorAll(".title-card-preview").forEach(preview);
+    document.querySelectorAll(".title-card-preview,.mode-art").forEach(preview);
   }
   function loop(t){
     if(!document.hidden && !menu.hidden &&

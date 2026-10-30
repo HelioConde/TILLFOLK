@@ -6,7 +6,7 @@ Jogo HTML5 de **fazenda, sobrevivência e automação de trabalhadores** com vis
 
 - Menu inicial com **cenário panorâmico montado diretamente dos sprites de Sprout Lands** (tiles, telhas, paredes, árvores, trabalhadores, plantações, cercas e poço), botões HTML funcionais, tela cheia e cartões com sprites. `src/menu-scene.js` é testado e empacotado no GitHub Actions; os sprites necessários estão selecionados dentro do diretório `public/assets/sprout-lands`, sem depender de pacotes inteiros.
 - Continuar e instruções; salvamento local pelo navegador.
-- **Nova fazenda:** escolha do modo Sobrevivência/Fazenda Tranquila, nome da fazenda e seleção de exatamente 2 trabalhadores iniciais gratuitos. A tela agora apresenta personagens ampliados em pixel art, explicação individual de habilidades/traços, eficiência, atividades permitidas e tempos de execução por tarefa. Permite renomear e sortear individualmente ou em conjunto; a partida só começa após confirmação.
+- **Nova fazenda:** seleção de modos com prévias feitas de sprites originais, escolha do modo Sobrevivência/Fazenda Tranquila, nome da fazenda e seleção de exatamente 2 trabalhadores iniciais gratuitos. A tela agora apresenta personagens ampliados em pixel art, explicação individual de habilidades/traços, eficiência, atividades permitidas e tempos de execução por tarefa. Permite renomear e sortear individualmente ou em conjunto; a partida só começa após confirmação.
 - Cena de fazenda com sprites de grama, plantas, árvores, pedras, poço e trabalhadores de Sprout Lands.
 - Selecione **Cultivar** e clique no solo: o sistema cria uma sequência automática de tarefas.
 - Ciclo: **limpar → arar → fertilizar → semear → regar → crescer → colher → transportar**.
