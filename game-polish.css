@@ -95,3 +95,13 @@ body.focus-game .focus-game-btn {background:#d6edb2;color:#25432d}
    min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin
  }
 }
+
+/* Moldura lateral escura quando a proporção do mapa deixa espaço. */
+@media(min-width:1181px) and (min-height:700px){
+ body:not(.focus-game) .canvas-wrap{
+   background:repeating-linear-gradient(90deg,#1c3428 0 13px,#213d2e 13px 26px);
+ }
+ body:not(.focus-game) #world{
+   box-shadow:0 0 0 3px #a8ca89,0 0 0 6px #102c1c,0 9px 22px #020e0a99;
+ }
+}
