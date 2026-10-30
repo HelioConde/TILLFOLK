@@ -43,3 +43,10 @@ Depois acesse http://localhost:8080. Não há dependências nem banco de dados. 
 ## Créditos e licença
 
 **Assets — Sprout Lands, por Cup Nooble.** Veja [licenças](./licenses/sprout-lands-premium.txt) e [créditos](./docs/ASSET_CREDITS.md). Os materiais premium não podem ser revendidos ou distribuídos como pacote independente de assets. Proibido uso para treinamento de IA conforme licença do autor.
+
+## Ajustes v0.8
+
+- Sprites de trabalhadores com **paletas de cores distintas** por candidato, respeitando os frames originais de Sprout Lands; no sorteio inicial, cada um tem aparência diferente.
+- A construção na cena jogável agora utiliza os tiles de paredes e telhado do pacote, em vez de primitivas vetoriais.
+- Recrutamento com barra de ações sempre disponível e rolagem interna por ficha no desktop.
+- Menu principal protegido contra corte horizontal e adaptado ao viewport.

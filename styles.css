@@ -139,3 +139,36 @@ html,body{min-width:320px}
 @media(min-height:870px){.starter-info-scroll{max-height:370px}.starter-stage{height:186px}.starter-stage .starter-portrait{height:180px}}
 @media(max-width:680px){.starter-slots{grid-template-columns:1fr}.starter-info-scroll{max-height:unset;overflow:visible}.starter-dialog{max-height:calc(100dvh - 12px);padding:14px}.recruitment-instructions span{flex:1 1 auto}.starter-stage{height:155px}.starter-stage .starter-portrait{width:200px;height:152px}}
 @media(max-width:980px){.game-layout{grid-template-columns:minmax(0,1fr)}}
+
+
+/* v0.8 — interface de seleção permanece utilizável em qualquer altura de tela. */
+html,body{max-width:100%;overflow-x:clip}
+.app-shell{max-width:100%;overflow-x:clip}
+.starter-dialog[open]{
+  display:flex;flex-direction:column;overflow:hidden;
+  width:min(1180px,calc(100vw - 20px));max-width:1180px;
+  height:min(790px,calc(100dvh - 18px));max-height:calc(100dvh - 18px);
+  padding:clamp(12px,1.7vw,22px);
+}
+.starter-heading,.recruitment-instructions,.farm-name-field,.starter-actions,.starter-note{flex:0 0 auto}
+.starter-heading h2{font-size:clamp(21px,2.5vw,29px)}
+.starter-heading p{margin-bottom:7px}
+.recruitment-instructions{margin-bottom:9px}
+.starter-slots{flex:1 1 auto;min-height:0;overflow:hidden;gap:14px}
+.starter-slot{min-height:0}
+.starter-stage{height:clamp(92px,16dvh,148px);flex-shrink:0}
+.starter-stage .starter-portrait{height:100%;width:auto;max-width:200px}
+.starter-person{flex-shrink:0;padding-top:8px;padding-bottom:7px}
+.recruit-summary{flex-shrink:0}
+.starter-info-scroll{flex:1 1 auto;min-height:45px;max-height:none;overflow-y:auto;overscroll-behavior:contain}
+.starter-slot .starter-reroll{flex-shrink:0}
+.farm-name-field{margin-top:9px}
+.starter-actions{margin-top:9px}
+.starter-note{margin-top:6px}
+@media (max-width:680px){
+ .starter-dialog[open]{display:block;width:calc(100vw - 12px);height:auto;max-height:calc(100dvh - 12px);overflow-y:auto;padding:12px}
+ .starter-slots{display:grid;grid-template-columns:1fr;overflow:visible}
+ .starter-info-scroll{overflow:visible;max-height:none}
+ .starter-stage{height:135px}
+ .starter-actions{position:sticky;bottom:0;background:#233c30;padding:10px 0;margin-top:6px;z-index:4}
+}

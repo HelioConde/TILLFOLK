@@ -6,16 +6,65 @@
   ctx.imageSmoothingEnabled = false;
   const A = "./public/assets/sprout-lands/";
   const spriteUrls = {
-    grass:A+"terrain/grass.png", dirt:A+"terrain/tilled-dirt.png",
+    grass:A+"terrain/grass.png", dirt:A+"terrain/tilled-dirt.png", soil:A+"terrain/soil.png",
     crops:A+"farming/crops.png", trees:A+"environment/trees-and-bushes.png",
     worker:A+"characters/worker-basic.png", premium:A+"characters/worker-variants.png",
     well:A+"structures/water-well.png", fences:A+"structures/fences.png",
+    roof:A+"structures/wood-roof.png",walls:A+"structures/wood-walls.png",furniture:A+"structures/furniture.png",chest:A+"structures/chest.png",
     rocks:A+"environment/forageables.png"
   };
   const sprite = {};
   for (const [key,url] of Object.entries(spriteUrls)) {
     const img = new Image(); img.src = url; sprite[key] = img;
   }
+
+  // Variações de paleta feitas sobre os mesmos frames originais, sem adicionar imagens.
+  // O atlas base possui corpo creme e contorno roxo; apenas essas cores são alteradas.
+  const workerPalettes=[
+    {outline:[92,78,146],shade:[118,109,170],body:[243,242,192],light:[221,213,222],accent:[232,181,172]},
+    {outline:[112,69,56],shade:[161,102,69],body:[249,210,152],light:[247,222,182],accent:[219,137,116]},
+    {outline:[52,104,85],shade:[89,148,117],body:[243,232,166],light:[214,238,190],accent:[226,162,138]},
+    {outline:[62,84,140],shade:[107,136,183],body:[236,244,212],light:[198,222,239],accent:[227,159,151]},
+    {outline:[151,71,111],shade:[194,117,144],body:[255,224,196],light:[246,204,221],accent:[233,147,149]},
+    {outline:[75,86,98],shade:[112,130,138],body:[230,214,180],light:[204,221,205],accent:[225,158,125]},
+    {outline:[117,90,56],shade:[175,136,73],body:[252,236,169],light:[250,213,176],accent:[232,160,104]},
+    {outline:[69,118,115],shade:[95,157,154],body:[231,244,206],light:[208,231,219],accent:[234,174,151]}
+  ];
+  const workerPaletted=new Map();
+  function workerAppearanceId(person){return Math.abs(Math.trunc(Number(person?.appearance)||0))%workerPalettes.length;}
+  function getWorkerSprite(person){
+    const original=valid(sprite.premium)?sprite.premium:sprite.worker;
+    if(!valid(original))return original;
+    const paletteId=workerAppearanceId(person);
+    if(paletteId===0)return original;
+    if(workerPaletted.has(paletteId))return workerPaletted.get(paletteId);
+    const off=document.createElement("canvas");
+    off.width=original.naturalWidth;off.height=original.naturalHeight;
+    const context=off.getContext("2d",{willReadFrequently:true});
+    context.imageSmoothingEnabled=false;context.drawImage(original,0,0);
+    try{
+      const frame=context.getImageData(0,0,off.width,off.height),pixels=frame.data;
+      const target=workerPalettes[paletteId];
+      const replacements=[
+        [[92,78,146],target.outline],[[118,109,170],target.shade],
+        [[243,242,192],target.body],[[221,213,222],target.light],
+        [[232,181,172],target.accent]
+      ];
+      for(let i=0;i<pixels.length;i+=4){
+        if(pixels[i+3]===0)continue;
+        for(const [source,shade] of replacements){
+          if(Math.abs(pixels[i]-source[0])<3&&Math.abs(pixels[i+1]-source[1])<3&&Math.abs(pixels[i+2]-source[2])<3){
+            pixels[i]=shade[0];pixels[i+1]=shade[1];pixels[i+2]=shade[2];break;
+          }
+        }
+      }
+      context.putImageData(frame,0,0);
+    }catch(err){console.warn("Paleta original mantida:",err);}
+    workerPaletted.set(paletteId,off);
+    return off;
+  }
+  sprite.premium.addEventListener("load",()=>{workerPaletted.clear();redrawStarterAvatars();});
+  sprite.worker.addEventListener("load",()=>{workerPaletted.clear();redrawStarterAvatars();});
   const labels = {clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar"};
   const icons = {clear:"🪓",till:"⛏️",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦"};
   const baseTime = {clear:120,till:90,fertilize:60,sow:60,water:90,harvest:120,carry:60};
@@ -161,16 +210,27 @@
       part(sprite.grass,r*16,80,16,16,xx,yy);
       if((x*31+y*17)%19===0){ctx.fillStyle="#d8e3a0";ctx.fillRect(xx+8,yy+9,2,2);ctx.fillRect(xx+11,yy+12,2,2);}
     }
-    // A casa e o caminho de entrada são o ponto de encontro da equipe.
-    for(let y=10;y<=13;y++)for(let x=4;x<=9;x++){ctx.fillStyle="#c7ad7b";ctx.fillRect(x*TILE+3,y*TILE+3,TILE-6,TILE-6);}
-    ctx.fillStyle="#765744";ctx.fillRect(3*TILE,5*TILE,5*TILE,4*TILE);
-    ctx.fillStyle="#d8b78a";ctx.fillRect(3*TILE+9,5*TILE+25,5*TILE-18,4*TILE-26);
-    ctx.fillStyle="#965f55";ctx.beginPath();ctx.moveTo(3*TILE-10,5*TILE+29);ctx.lineTo(5.5*TILE,4*TILE);ctx.lineTo(8*TILE+10,5*TILE+29);ctx.closePath();ctx.fill();
-    ctx.fillStyle="#b97e66";ctx.beginPath();ctx.moveTo(3*TILE,5*TILE+23);ctx.lineTo(5.5*TILE,4*TILE+11);ctx.lineTo(8*TILE,5*TILE+23);ctx.closePath();ctx.fill();
-    ctx.fillStyle="#533e36";ctx.fillRect(5*TILE,7*TILE,25,2*TILE);
-    ctx.fillStyle="#f5cf8f";ctx.fillRect(4*TILE,6*TILE,24,24);
-    ctx.fillStyle="#735849";ctx.fillRect(4*TILE+7,6*TILE+6,10,12);
-    write("CASA",5.5*TILE,9*TILE+16,"#fff6ce",11);
+    // Casa e caminho feitos com o mesmo atlas da tela inicial, na escala do mundo.
+    for(let y=10;y<=13;y++)for(let x=4;x<=9;x++){
+      part(sprite.soil,0,80,16,16,x*TILE,y*TILE,TILE,TILE);
+    }
+    const hx=3*TILE,hy=5*TILE;
+    for(let row=0;row<6;row++)for(let col=0;col<9;col++){
+      part(sprite.walls,16,16,16,16,hx+col*18,hy+52+row*16,18,16);
+    }
+    // Peças do telhado: telhas do pacote Sprout Lands, sem triângulos de Canvas.
+    for(let row=0;row<4;row++)for(let col=0;col<5;col++){
+      part(sprite.roof,48+(col%4)*16,32+(row%3)*16,16,16,hx-13+col*35,hy+row*17,37,19);
+    }
+    for(let col=0;col<5;col++){
+      part(sprite.roof,48+(col%4)*16,64,16,16,hx-13+col*35,hy+60,37,19);
+    }
+    part(sprite.walls,0,0,32,32,hx+10,hy+91,40,43);
+    part(sprite.walls,48,0,32,32,hx+118,hy+91,40,43);
+    part(sprite.walls,48,32,16,16,hx+68,hy+102,29,43);
+    part(sprite.furniture,0,16,16,16,hx-11,hy+121,26,26);
+    part(sprite.chest,0,0,32,32,hx+161,hy+119,30,31);
+    write("CASA",hx+80,hy+153,"#fff6ce",11);
     // Objetos naturais dos sprites.
     for(const [x,y] of trees){
       part(sprite.trees,144,48,48,48,x*TILE-25,y*TILE-50,78,78);
@@ -198,10 +258,9 @@
       const x=w.x*TILE,y=w.y*TILE;
       ctx.fillStyle="#2b472f90";ctx.beginPath();ctx.ellipse(x,y-2,12,5,0,0,Math.PI*2);ctx.fill();
       const t=tasks.find(t=>t.id===w.task);
-      const image = valid(sprite.premium)?sprite.premium:sprite.worker;
-      const appearance=Math.max(0,Math.min(5,w.appearance??0));
-      part(image,tick*48,valid(sprite.premium)?appearance*192:0,48,48,x-22,y-42,44,44);
-      if(!valid(image)){ctx.fillStyle=w.color;ctx.fillRect(x-9,y-24,18,22);}
+      const image=getWorkerSprite(w);
+      part(image,tick*48+11,10,26,27,x-19,y-37,38,38);
+      if(!valid(sprite.premium)&&!valid(sprite.worker)){ctx.fillStyle=w.color;ctx.fillRect(x-9,y-24,18,22);}
       write(w.name,x,y-45,"#fff5dd",11);
       if(t&&w.progress>0){
         ctx.fillStyle="#20362a";ctx.fillRect(x-17,y-42,34,5);
@@ -266,7 +325,7 @@
     const types=Object.keys(labels),count=1+Math.floor(Math.random()*3);
     const skills=types.slice().sort(()=>Math.random()-.5).slice(0,count);
     const negative=types.filter(t=>!skills.includes(t)).sort(()=>Math.random()-.5).slice(0,Math.floor(Math.random()*4));
-    return {name:random(names)+" "+String(Math.floor(Math.random()*90)+10),skills,neg:negative,cost:65+count*10,color:random(["#f4dfad","#badbd1","#f1c4c5","#b9cdef"]),appearance:Math.floor(Math.random()*6)};
+    return {name:random(names)+" "+String(Math.floor(Math.random()*90)+10),skills,neg:negative,cost:65+count*10,color:random(["#f4dfad","#badbd1","#f1c4c5","#b9cdef"]),appearance:Math.floor(Math.random()*workerPalettes.length)};
   }
   function hire(i){
     const c=state.candidates[i];if(!c||state.coins<c.cost){notify("Moedas insuficientes.");return;}
@@ -311,14 +370,15 @@
   $("#hire-btn").addEventListener("click",()=>{if(!playing)return;renderCandidates();$("#hire-dialog").showModal();});
 
   // Tela obrigatória antes da nova partida: dois espaços de recrutamento gratuitos.
-  function randomStarter(excludeNames = []){
+  function randomStarter(excludeNames = [], excludeAppearances = []){
     let candidate;
-    do {candidate=newCandidate();} while(excludeNames.includes(candidate.name));
+    do {candidate=newCandidate();}
+    while(excludeNames.includes(candidate.name)||excludeAppearances.includes(candidate.appearance));
     return candidate;
   }
   function createStarterTeam(){
     const first=randomStarter();
-    starters=[first,randomStarter([first.name])];
+    starters=[first,randomStarter([first.name],[first.appearance])];
     renderStarters();
     $("#starter-dialog").showModal();
   }
@@ -329,13 +389,11 @@
     const context=canvasEl.getContext("2d");if(!context)return;
     const width=canvasEl.width,height=canvasEl.height;
     context.imageSmoothingEnabled=false;context.clearRect(0,0,width,height);
-    const img=valid(sprite.premium)?sprite.premium:sprite.worker;
-    if(valid(img)){
-      const appearance=Math.max(0,Math.min(5,person.appearance??0));
-      const spriteY=valid(sprite.premium)?appearance*192:0;
+    const img=getWorkerSprite(person);
+    if(valid(sprite.premium)||valid(sprite.worker)){
       const side=Math.min(width*.78,height*.94);
-      // O corpo ocupa apenas x=17..31 e y=16..32 dentro de cada quadro.
-      context.drawImage(img,11,spriteY+10,26,27,(width-side)/2,height-side,side,side);
+      // A aparência vem de variações de paleta, não de linhas de animação.
+      context.drawImage(img,11,10,26,27,(width-side)/2,height-side,side,side);
     }else{
       context.fillStyle=person.color||"#9bc78d";
       context.fillRect(width*.3,height*.25,width*.4,height*.5);
@@ -406,12 +464,11 @@
     if(!person.skills.includes(type))return 1;
     return person.skills.length===1?2:person.skills.length===2?1.6:1.3;
   }
-  sprite.premium.addEventListener("load",redrawStarterAvatars);
-  sprite.worker.addEventListener("load",redrawStarterAvatars);
+  // Atualização dos avatares ao carregar atlas feita pelo sistema de paletas.
   $("#starter-slots").addEventListener("click",event=>{
     const btn=event.target.closest("[data-reroll]");if(!btn)return;
     const i=Number(btn.dataset.reroll);
-    starters[i]=randomStarter(starters.filter((_,idx)=>idx!==i).map(c=>c.name));
+    starters[i]=randomStarter(starters.filter((_,idx)=>idx!==i).map(c=>c.name),starters.filter((_,idx)=>idx!==i).map(c=>c.appearance));
     renderStarters();
   });
   $("#starter-slots").addEventListener("change",event=>{
@@ -429,7 +486,7 @@
     starters[index].name=validName;field.value=validName;
   });
   $("#starter-reroll-all").addEventListener("click",()=>{
-    const first=randomStarter();starters=[first,randomStarter([first.name])];renderStarters();
+    const first=randomStarter();starters=[first,randomStarter([first.name],[first.appearance])];renderStarters();
   });
   $("#starter-confirm").addEventListener("click",()=>{
     if(starters.length!==2||starters[0].name===starters[1].name)return;
