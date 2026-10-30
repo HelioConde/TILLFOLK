@@ -322,43 +322,89 @@
     renderStarters();
     $("#starter-dialog").showModal();
   }
+  // Os sprites Sprout Lands possuem quadros de 48px com margem transparente.
+  // Recortar essa margem deixa o trabalhador bem maior, sem suavizar pixels.
   function showStarterAvatar(canvasEl,person){
-    const context=canvasEl.getContext("2d");
-    context.imageSmoothingEnabled=false;context.clearRect(0,0,84,84);
-    context.fillStyle=person.color;context.fillRect(0,0,84,84);
+    if(!canvasEl)return;
+    const context=canvasEl.getContext("2d");if(!context)return;
+    const width=canvasEl.width,height=canvasEl.height;
+    context.imageSmoothingEnabled=false;context.clearRect(0,0,width,height);
     const img=valid(sprite.premium)?sprite.premium:sprite.worker;
     if(valid(img)){
-      const row=valid(sprite.premium)?(person.appearance??0)*192:0;
-      const width=canvasEl.width,height=canvasEl.height;
-      context.drawImage(img,0,row,48,48,0,0,width,height);
-    } else {
-      const width=canvasEl.width,height=canvasEl.height;
-      context.fillStyle="#213d31";context.font="bold "+Math.floor(height*.43)+"px system-ui";context.textAlign="center";context.fillText("🐱",width/2,height*.68);
+      const appearance=Math.max(0,Math.min(5,person.appearance??0));
+      const spriteY=valid(sprite.premium)?appearance*192:0;
+      const side=Math.min(width*.78,height*.94);
+      // O corpo ocupa apenas x=17..31 e y=16..32 dentro de cada quadro.
+      context.drawImage(img,11,spriteY+10,26,27,(width-side)/2,height-side,side,side);
+    }else{
+      context.fillStyle=person.color||"#9bc78d";
+      context.fillRect(width*.3,height*.25,width*.4,height*.5);
+      context.fillStyle="#1e3529";context.textAlign="center";
+      context.font="bold "+Math.floor(height*.23)+"px system-ui";
+      context.fillText("✿",width/2,height*.55);
     }
   }
   function redrawStarterAvatars(){
-    document.querySelectorAll(".starter-portrait").forEach((el)=>{
-      const person=starters[Number(el.dataset.slot)];
+    document.querySelectorAll(".starter-portrait,.worker-avatar").forEach(el=>{
+      const person=el.dataset.slot!==undefined
+        ?starters[Number(el.dataset.slot)]
+        :state?.workers?.find(w=>w.id===Number(el.dataset.workerAvatar));
       if(person)showStarterAvatar(el,person);
     });
   }
+  const activityDetails={
+    clear:"Retira pedras e obstáculos, liberando novos espaços para o plantio.",
+    till:"Prepara a terra com uma enxada para receber as próximas sementes.",
+    fertilize:"Enriquece o solo antes da semeadura, preparando-o para cultivo.",
+    sow:"Planta sementes em um terreno preparado.",
+    water:"Mantém as plantações irrigadas durante o crescimento.",
+    harvest:"Recolhe culturas maduras assim que ficam prontas.",
+    carry:"Leva os produtos colhidos ao armazém e libera o canteiro."
+  };
   function renderStarters(){
+    const tasks=Object.keys(labels);
     $("#starter-slots").innerHTML=starters.map((person,index)=>{
-      const count=person.skills.length;
-      const bonus=count===1?100:count===2?60:30;
-      const skills=person.skills.map(type=>'<span class="tag">✦ '+icons[type]+' '+labels[type]+'</span>').join("");
-      const negatives=person.neg.length?person.neg.map(type=>'<span class="tag negative">✕ '+labels[type]+'</span>').join(""):'<span class="tag">Nenhuma restrição</span>';
+      const count=person.skills.length,bonus=count===1?100:count===2?60:count===3?30:0;
+      const kind=count===1?"Especialista":count===2?"Multitalento":count===3?"Versátil":"Generalista";
+      const positive=person.skills.length?person.skills.map(type=>
+        '<div class="recruit-trait positive"><span class="recruit-trait-icon">'+icons[type]+'</span><div><strong>'+labels[type]+'</strong><small>'+activityDetails[type]+'</small></div><b>+'+bonus+'%</b></div>'
+      ).join(""):'<p class="recruit-empty">Nenhuma especialidade: executa todas as tarefas permitidas na velocidade normal.</p>';
+      const negative=person.neg.length?person.neg.map(type=>
+        '<div class="recruit-trait forbidden"><span class="recruit-trait-icon">✕</span><div><strong>Não pode '+labels[type].toLowerCase()+'</strong><small>'+activityDetails[type]+'</small></div></div>'
+      ).join(""):'<p class="recruit-empty positive-note">✓ Sem restrições. Pode realizar todas as atividades da fazenda.</p>';
+      const permitted=tasks.length-person.neg.length;
+      const workTable=tasks.map(type=>{
+        const forbidden=person.neg.includes(type);
+        const duration=forbidden?'Proibido':Math.round(baseTime[type]/bonusForCandidate(person,type))+'s';
+        const active=person.skills.includes(type);
+        return '<div class="recruit-work-row '+(forbidden?'work-forbidden':active?'work-bonus':'')+'"><span>'+icons[type]+' '+labels[type]+'</span><b>'+duration+'</b></div>';
+      }).join("");
       return '<article class="starter-slot" aria-label="Trabalhador inicial '+(index+1)+'">'+
-        '<span class="starter-label">Personagem 0'+(index+1)+' · Titular</span>'+
-        '<div class="starter-person"><canvas width="84" height="84" class="starter-portrait" data-slot="'+index+'" role="img" aria-label="Sprite do personagem '+person.name+'"></canvas>'+
-        '<div><label for="starter-name-'+index+'" class="starter-label">Nome</label><input class="starter-name-input" id="starter-name-'+index+'" data-starter-name="'+index+'" maxlength="18" value="'+escapeHtml(person.name)+'" autocomplete="off" spellcheck="false"><small>'+count+' habilidade(s) · '+person.neg.length+' traço(s) negativo(s)</small></div></div>'+
-        '<div class="starter-section-title">Habilidades positivas</div><div class="starter-skills">'+skills+'</div>'+
-        '<div class="starter-bonus">✦ Bônus de <strong>+'+bonus+'% de velocidade</strong> nas especialidades.</div>'+
-        '<div class="starter-section-title">Atividades proibidas</div><div class="starter-negatives">'+negatives+'</div>'+
+        '<div class="starter-card-top"><span>PERSONAGEM 0'+(index+1)+'</span><span class="starter-kind">'+kind+'</span></div>'+
+        '<div class="starter-stage"><div class="starter-stage-top">✦ NOVO TRABALHADOR <span>DISPONÍVEL</span></div>'+
+        '<canvas width="200" height="152" class="starter-portrait" data-slot="'+index+'" role="img" aria-label="Sprite ampliado de '+escapeHtml(person.name)+'"></canvas>'+
+        '<span class="starter-stage-bottom">✦ PRONTO PARA TRABALHAR ✦</span></div>'+
+        '<div class="starter-person"><div class="starter-name-wrap"><label for="starter-name-'+index+'">NOME DO PERSONAGEM <span>✎ EDITÁVEL</span></label>'+
+        '<input class="starter-name-input" id="starter-name-'+index+'" data-starter-name="'+index+'" maxlength="18" value="'+escapeHtml(person.name)+'" autocomplete="off" spellcheck="false">'+
+        '<small>'+count+' especialidade'+(count===1?'':'s')+' · '+person.neg.length+' restrição'+(person.neg.length===1?'':'ões')+'</small></div></div>'+
+        '<div class="recruit-summary"><div><span>BÔNUS DE TRABALHO</span><strong>+'+bonus+'%</strong></div><div><span>TAREFAS PERMITIDAS</span><strong>'+permitted+' / '+tasks.length+'</strong></div></div>'+
+        '<div class="starter-info-scroll">'+
+        '<div class="starter-section-title">✦ HABILIDADES POSITIVAS</div>'+
+        '<div class="starter-skills">'+positive+'</div>'+
+        '<div class="starter-section-title">✕ TRAÇOS NEGATIVOS</div>'+
+        '<div class="starter-negatives">'+negative+'</div>'+
+        '<details class="starter-activity-details"><summary>◷ Comparar tempo em todas as atividades</summary>'+
+        '<p>Tempo em velocidade 1×, sem contar deslocamento. Uma tarefa proibida não poderá ser executada por este trabalhador.</p>'+
+        '<div class="recruit-work-grid">'+workTable+'</div></details>'+
+        '</div>'+
         '<button class="starter-reroll" type="button" data-reroll="'+index+'">↻ Sortear outro personagem</button>'+
         '</article>';
     }).join("");
     redrawStarterAvatars();
+  }
+  function bonusForCandidate(person,type){
+    if(!person.skills.includes(type))return 1;
+    return person.skills.length===1?2:person.skills.length===2?1.6:1.3;
   }
   sprite.premium.addEventListener("load",redrawStarterAvatars);
   sprite.worker.addEventListener("load",redrawStarterAvatars);

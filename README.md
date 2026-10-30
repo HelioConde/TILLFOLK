@@ -5,7 +5,7 @@ Jogo HTML5 de **fazenda, sobrevivência e automação de trabalhadores** com vis
 ## Protótipo v0.3 — fluxo de criação e gerenciamento
 
 - Menu inicial, continuar e instruções; salvamento local pelo navegador.
-- **Nova fazenda:** escolha do modo Sobrevivência/Fazenda Tranquila, nome da fazenda e seleção de exatamente 2 trabalhadores iniciais (gratuitos), com ficha detalhada, renomeação e sorteio individual; a partida só começa após a confirmação.
+- **Nova fazenda:** escolha do modo Sobrevivência/Fazenda Tranquila, nome da fazenda e seleção de exatamente 2 trabalhadores iniciais gratuitos. A tela agora apresenta personagens ampliados em pixel art, explicação individual de habilidades/traços, eficiência, atividades permitidas e tempos de execução por tarefa. Permite renomear e sortear individualmente ou em conjunto; a partida só começa após confirmação.
 - Cena de fazenda com sprites de grama, plantas, árvores, pedras, poço e trabalhadores de Sprout Lands.
 - Selecione **Cultivar** e clique no solo: o sistema cria uma sequência automática de tarefas.
 - Ciclo: **limpar → arar → fertilizar → semear → regar → crescer → colher → transportar**.

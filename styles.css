@@ -73,3 +73,69 @@
 .skills-grid .skill-locked strong{color:#ffbdb0}
 .management-foot{font-size:11px;color:#bcd2b3;line-height:1.6;margin-top:12px}
 @media(max-width:1000px){.management-nav{order:3;width:100%;justify-content:center}.topbar{flex-wrap:wrap}.metrics{order:4}}@media(max-width:650px){.mode-choices{grid-template-columns:1fr}.mode-choice{min-height:0}.mode-icon{height:66px;font-size:40px}.skills-view{grid-template-columns:1fr}.skills-roster{flex-direction:row;flex-wrap:wrap}.management-dialog,.mode-dialog{padding:15px}.starter-slot:before{height:98px}.management-nav{gap:4px}.management-nav button{flex:1}}
+
+
+/* Recrutamento v0.4: fichas completas e personagens em destaque */
+html,body{min-width:320px}
+.app-shell{max-width:none;width:100%;min-height:100dvh;margin:0}
+.game-layout{min-height:calc(100dvh - 83px);grid-template-columns:minmax(0,1fr) minmax(315px,340px)}
+.starter-dialog{width:min(1220px,calc(100vw - 24px));max-width:1220px;max-height:calc(100dvh - 20px);padding:clamp(12px,2.3vw,26px);border-color:#a6bf83}
+.starter-heading h2{font:clamp(22px,2.8vw,31px) Sprout,system-ui,sans-serif;line-height:1.25;letter-spacing:.5px;margin:5px 0 7px}
+.starter-heading p{max-width:900px;margin-bottom:11px}
+.recruitment-instructions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:15px}
+.recruitment-instructions span{background:#304e39;border:1px solid #648b5f;border-radius:6px;padding:7px 10px;color:#bbd3b2;font-size:10px;letter-spacing:1px}
+.recruitment-instructions strong{color:#f3ead3;margin-left:7px;font-size:11px;letter-spacing:0}
+.starter-slots{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+.starter-slot{display:flex;flex-direction:column;min-width:0;gap:0;padding:0;background:#2b4837;overflow:hidden;border-radius:12px}
+.starter-slot:before{display:none}
+.starter-slot>*{position:relative;z-index:1}
+.starter-card-top{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;gap:8px;font-size:10px;font-weight:900;letter-spacing:1.3px;background:#6b4f55;color:#fff3df}
+.starter-kind{background:#b9d48e;color:#263e2e;border-radius:5px;padding:4px 7px;font-size:10px;letter-spacing:0}
+.starter-stage{height:156px;background:linear-gradient(180deg,#709d86,#4b806d);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:3px solid #a6d8a5}
+.starter-stage:before{content:"";position:absolute;inset:0;opacity:.5;background-image:linear-gradient(#c4ead43d 1px,transparent 1px),linear-gradient(90deg,#c4ead43d 1px,transparent 1px);background-size:34px 34px;pointer-events:none}
+.starter-stage:after{content:"";position:absolute;bottom:-15px;left:16%;width:68%;height:39px;background:#365d43a3;border-radius:50%;filter:blur(4px);pointer-events:none}
+.starter-stage-top,.starter-stage-bottom{position:absolute;z-index:2;color:#f3efce;background:#294936ba;font-size:9px;font-weight:850;letter-spacing:1.6px;padding:4px 7px;border-radius:4px}
+.starter-stage-top{left:10px;top:9px}.starter-stage-top span{color:#d1ef9c;margin-left:7px}
+.starter-stage-bottom{right:10px;bottom:9px}
+.starter-stage .starter-portrait{display:block;position:relative;z-index:2;width:200px;height:152px;flex:none;border:0;background:transparent;image-rendering:pixelated;border-radius:0;object-fit:contain}
+.starter-person{margin:0;padding:11px 14px 10px;display:block;min-height:0}
+.starter-name-wrap{width:100%;display:flex;flex-direction:column;gap:4px}
+.starter-name-wrap label{display:flex;justify-content:space-between;gap:9px;font-size:10px;color:#cce4aa;font-weight:900;letter-spacing:.9px}
+.starter-name-wrap label span{font-size:9px;color:#9fcaaf;letter-spacing:.5px}
+.starter-person .starter-name-input{max-width:100%;font-size:18px;background:#1d382bc9;border:1px solid #729875;padding:7px 9px;border-radius:6px}
+.starter-person .starter-name-wrap small{font-size:10px;color:#bfceb6}
+.recruit-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:0 14px 5px}
+.recruit-summary div{padding:7px 10px;background:#213a2d;border:1px solid #537755;border-radius:6px;display:flex;flex-direction:column;gap:4px}
+.recruit-summary span{color:#accca6;font-size:9px;font-weight:750;letter-spacing:1px}
+.recruit-summary strong{color:#f5ecbb;font-size:17px}
+.starter-info-scroll{flex:1;overflow:auto;min-height:0;max-height:252px;scrollbar-color:#78926a transparent;padding:0 14px 3px}
+.starter-section-title{font-size:11px;margin:12px 0 7px;color:#f1e9c8;letter-spacing:1.1px}
+.recruit-trait{display:flex;align-items:flex-start;gap:9px;border-radius:6px;padding:8px;margin:6px 0;border:1px solid #668f63;background:#355640;color:#f6efd9}
+.recruit-trait.positive{background:#395d44}
+.recruit-trait.forbidden{background:#51433c;border-color:#8c6955}
+.recruit-trait-icon{width:30px;height:30px;display:grid;place-items:center;flex:none;background:#6c9068;border-radius:5px;font-size:17px}
+.recruit-trait.forbidden .recruit-trait-icon{background:#80534b;color:#ffe0d8}
+.recruit-trait>div{flex:1;min-width:0}
+.recruit-trait strong{display:block;font-size:12px;color:#f4eed5}
+.recruit-trait small{display:block;font-size:10px;line-height:1.45;color:#c9d5bf;margin-top:3px}
+.recruit-trait.forbidden small{color:#ebc9c0}
+.recruit-trait>b{font-size:12px;color:#cef4a2;white-space:nowrap}
+.recruit-empty{padding:8px;border:1px dashed #7d8764;border-radius:5px;font-size:11px;color:#e8c9b8;line-height:1.5}
+.recruit-empty.positive-note{color:#c7ebbc}
+.starter-activity-details{margin:10px 0 8px;padding:8px;background:#20392c;border:1px solid #537756;border-radius:7px}
+.starter-activity-details summary{font-weight:800;font-size:11px;cursor:pointer;color:#ddf1be;line-height:1.6}
+.starter-activity-details>p{margin:7px 0;font-size:10px;color:#b9d1b1;line-height:1.4}
+.recruit-work-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.recruit-work-row{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:6px;background:#35533d;border-radius:5px;font-size:10px}
+.recruit-work-row b{font-size:11px;color:#f9e6ac}
+.recruit-work-row.work-bonus b{color:#ceefa2}
+.recruit-work-row.work-forbidden{color:#eebdb2}.recruit-work-row.work-forbidden b{color:#f5b9a9}
+.starter-slot .starter-reroll{width:calc(100% - 28px);margin:9px 14px 12px;flex:none;background:#46694e}
+.farm-name-field{margin-top:12px;gap:4px}
+.farm-name-field input{max-width:100%;padding:8px 10px;font-size:14px}
+.starter-actions{margin-top:11px}
+.starter-actions button{padding:11px}
+.starter-note{font-size:10px;margin:9px 0 0}
+@media(min-height:870px){.starter-info-scroll{max-height:370px}.starter-stage{height:186px}.starter-stage .starter-portrait{height:180px}}
+@media(max-width:680px){.starter-slots{grid-template-columns:1fr}.starter-info-scroll{max-height:unset;overflow:visible}.starter-dialog{max-height:calc(100dvh - 12px);padding:14px}.recruitment-instructions span{flex:1 1 auto}.starter-stage{height:155px}.starter-stage .starter-portrait{width:200px;height:152px}}
+@media(max-width:980px){.game-layout{grid-template-columns:minmax(0,1fr)}}
