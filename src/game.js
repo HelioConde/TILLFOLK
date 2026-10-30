@@ -320,16 +320,16 @@
       if(p.tilled)part(sprite.dirt,0,80,16,16,x,y);
       if(p.fertilized){ctx.fillStyle="#6c7652";ctx.fillRect(x+4,y+8,3,3);ctx.fillRect(x+25,y+22,2,2);}
       if(p.seeded)part(sprite.crops,Math.min(4,Math.floor(p.growth*5))*16,0,16,16,x,y,32,32);
-      if(p.produce)part(sprite.crops,64,16,16,16,x,y,32,32);
-      if(p.dirty)part(sprite.rocks,16,0,16,16,x,y,32,32);
+      if(p.produce)part(sprite.crops,48,16,16,16,x,y,32,32);
+      if(p.dirty)part(sprite.rocks,0,16,16,16,x,y,32,32);
       if(!p.tilled){ctx.strokeStyle="#ecdf96";ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.strokeRect(x+3,y+3,26,26);ctx.setLineDash([]);}
       if(p.watered&&p.seeded){ctx.fillStyle="#6cc8e5";ctx.fillRect(x+2,y+26,4,3);}
     }
     // Profundidade natural: árvores cobrem personagens atrás delas e vice-versa.
     const layers=[
-      ...trees.map(([x,y])=>({type:"tree",x,y,depth:(y+1)*TILE+7})),
+      ...trees.map(([x,y],index)=>({type:"tree",x,y,index,depth:(y+1)*TILE+7})),
       ...rocks.map(([x,y])=>({type:"rock",x,y,depth:(y+1)*TILE})),
-      ...decor.map(([x,y])=>({type:"decor",x,y,depth:(y+1)*TILE})),
+      ...decor.map(([x,y],index)=>({type:"decor",x,y,index,depth:(y+1)*TILE})),
       {type:"well",x:20,y:6,depth:7*TILE},
       ...state.workers.map(worker=>({type:"worker",worker,depth:worker.y*TILE}))
     ].sort((a,b)=>a.depth-b.depth);
@@ -337,11 +337,17 @@
     for(const item of layers){
       const {x,y,type}=item;
       if(type==="tree"){
-        part(sprite.trees,144,48,48,48,x*TILE-25,y*TILE-50,78,78);
+        // Atlas verificado por screenshots: 0–80px na linha 0 são copas com frutos;
+        // 144,48 é a árvore grande. As variações evitam repetir a mesma textura.
+        if(item.index%3===0)part(sprite.trees,32,0,16,32,x*TILE-14,y*TILE-38,46,66);
+        else if(item.index%3===1)part(sprite.trees,80,0,16,32,x*TILE-14,y*TILE-38,46,66);
+        else part(sprite.trees,144,48,48,48,x*TILE-25,y*TILE-50,78,78);
       }else if(type==="rock"){
-        part(sprite.rocks,16,32,16,16,x*TILE,y*TILE,32,32);
+        // Linha 1 do atlas de coleta contém pedras; a linha 2 contém folhas.
+        part(sprite.rocks,48,16,16,16,x*TILE,y*TILE,32,32);
       }else if(type==="decor"){
-        part(sprite.rocks,16,0,16,16,x*TILE+6,y*TILE+5,22,22);
+        const [sx,sy]=[[0,64],[48,64],[80,64]][item.index%3];
+        part(sprite.rocks,sx,sy,16,16,x*TILE+6,y*TILE+5,22,22);
       }else if(type==="well"){
         part(sprite.well,0,0,32,32,20*TILE-16,6*TILE-16,64,64);
         write("POÇO",20*TILE+16,7*TILE+30,"#fff6ce",10);
