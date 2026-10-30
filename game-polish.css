@@ -29,7 +29,7 @@ body.focus-game .topbar {min-height:60px}
 body.focus-game .game-layout {display:block;min-height:0;padding:10px clamp(10px,2vw,24px)}
 body.focus-game .sidebar,body.focus-game .hint-bar,body.focus-game .footnote {display:none}
 body.focus-game .scene-head {max-width:1260px;margin:0 auto 8px}
-body.focus-game .canvas-scroll {width:min(100%,calc((100dvh - 215px)*896 / 576),1260px);margin:0 auto}
+body.focus-game .canvas-scroll {width:min(100%,calc((100dvh - 300px)*896 / 576),1260px);margin:0 auto}
 body.focus-game .canvas-wrap {min-width:0}
 body.focus-game .tooltray {max-width:1260px;margin:10px auto 0}
 body.focus-game .focus-game-btn {background:#d6edb2;color:#25432d}
@@ -52,10 +52,14 @@ body.focus-game .focus-game-btn {background:#d6edb2;color:#25432d}
  .topbar .management-nav button {padding:7px;font-size:10px}
  .metrics {order:5;width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
  .metric small {display:none}.scene-head {align-items:center;flex-direction:row}
- .game-layout {padding:10px}.canvas-wrap {min-width:700px}
+ .game-layout {padding:10px}.canvas-wrap {min-width:560px}
  body.focus-game .canvas-scroll {width:100%}
  body.focus-game .canvas-wrap {min-width:0}
  .sidebar {grid-template-columns:1fr}.world-tag {font-size:8px;max-width:calc(100% - 15px)}
  .speed-wrap {width:100%;justify-content:center}.tool-list {width:100%;justify-content:center}
 }
 @media(prefers-reduced-motion:reduce) {.canvas-scroll,.tooltray,.focus-game-btn {transition:none!important}}
+
+/* Mensagens de jogo sem bloquear ferramentas em telas estreitas. */
+#toast {max-width:min(320px,calc(100vw - 24px));font-size:12px}
+@media(max-width:610px){.canvas-scroll{scrollbar-width:thin}.scene-actions{gap:4px}.focus-game-btn{padding:7px 9px}}
