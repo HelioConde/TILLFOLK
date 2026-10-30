@@ -61,6 +61,15 @@ test('Cena jogável: fotografar mundo, movimentação e atlas dos colonos', asyn
   await page.setViewportSize({width:1600,height:900});
   await page.waitForTimeout(400);
   await page.screenshot({path:'screenshots/jogo-1600x900.png',animations:'disabled'});
+  await page.locator('#focus-game').click();
+  await expect(page.locator('body')).toHaveClass(/focus-game/);
+  await expect(page.locator('.sidebar')).toBeHidden();
+  await page.screenshot({path:'screenshots/jogo-imersivo-1600x900.png',animations:'disabled'});
+  await page.locator('#focus-game').click();
+  await expect(page.locator('.sidebar')).toBeVisible();
+  await page.locator('#world').click({position:{x:570,y:340}});
+  await page.waitForTimeout(600);
+  await page.screenshot({path:'screenshots/jogo-cultivo-1600x900.png',animations:'disabled'});
   const asset=await page.evaluate(async()=>{
     const image=new Image(); image.src='./public/assets/sprout-lands/characters/worker-variants.png';
     await image.decode();
