@@ -77,3 +77,42 @@ test('Cena jogável: fotografar mundo, movimentação e atlas dos colonos', asyn
   expect(asset.cols).toBeGreaterThan(1);
   expect(errors).toEqual([]);
 });
+
+test('Fazenda jogável: capturas do HUD, sprites e fluxo de cultivo',async({page})=>{
+  const assetErrors=[];
+  page.on('response',response=>{
+    if(response.status()>=400&&/\\.(png|css|js|ttf|svg)(\\?|$)/i.test(response.url()))
+      assetErrors.push(response.status()+' '+response.url());
+  });
+  await page.setViewportSize({width:1600,height:900});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.locator('#new-game').click();
+  await page.locator('[data-game-mode="survival"]').click();
+  await expect(page.locator('#starter-dialog')).toBeVisible();
+  await page.locator('#starter-confirm').click();
+  await expect(page.locator('#menu')).toBeHidden();
+  await expect(page.locator('#world')).toBeVisible();
+  await page.waitForTimeout(800);
+  const pixels=await page.locator('#world').evaluate(canvas=>{
+    const ctx=canvas.getContext('2d');
+    const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    let nonzero=0,bright=0;
+    for(let i=0;i<data.length;i+=160){if(data[i+3]>0)nonzero++;if(data[i]>110)bright++;}
+    return {nonzero,bright};
+  });
+  expect(pixels.nonzero).toBeGreaterThan(100);
+  expect(pixels.bright).toBeGreaterThan(100);
+  await page.screenshot({path:'screenshots/jogo-1600x900.png',animations:'disabled'});
+  const canvas=page.locator('#world');
+  const r=await canvas.boundingBox();
+  await page.mouse.click(r.x+r.width*(15.5/28),r.y+r.height*(11.5/18));
+  await expect(page.locator('#task-count')).not.toHaveText('0');
+  await page.screenshot({path:'screenshots/jogo-tarefa-1600x900.png',animations:'disabled'});
+  for(const view of [{width:1125,height:790},{width:390,height:844}]){
+    await page.setViewportSize(view);
+    await page.waitForTimeout(400);
+    await expect(page.locator('#world')).toBeVisible();
+    await page.screenshot({path:'screenshots/jogo-'+view.width+'x'+view.height+'.png',animations:'disabled'});
+  }
+  expect(assetErrors).toEqual([]);
+});
