@@ -1,0 +1,10 @@
+TILLFOLK - IMPORTADOR DE SPRITES
+
+1. Mantenha o ZIP original do Sprout Lands Premium na pasta Downloads.
+2. Tenha Git for Windows instalado e autenticado no GitHub.
+3. Execute upload_sprites.cmd (clique duplo).
+4. O script clona o repositorio e publica apenas os 28 PNGs do jogo
+   junto com os termos de licenca do autor Cup Nooble.
+
+Alternativa: envie pelo site GitHub as pastas 'public' e 'licenses' deste kit.
+Nao publique o pacote premium completo como colecao avulsa de sprites.
