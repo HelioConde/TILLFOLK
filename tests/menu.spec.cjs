@@ -196,7 +196,8 @@ test('Atlas visual: cultivos, árvores, objetos e ações dos colonos',async({pa
     ['cultivos','farming/crops.png'],
     ['coleta','environment/forageables.png'],
     ['arvores','environment/trees-and-bushes.png'],
-    ['acoes','characters/worker-actions.png']
+    ['acoes','characters/worker-actions.png'],
+    ['irrigacao','characters/watering-effects.png']
   ];
   for(const [name,file] of sheets){
     const dimensions=await page.evaluate(async filename=>{
@@ -253,7 +254,7 @@ test('Ações reais dos trabalhadores — quadros do atlas local e captura',asyn
   });
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
   const frames=await page.evaluate(async()=>{
-    const files=['characters/worker-actions.png','characters/worker-variants.png'];
+    const files=['characters/worker-actions.png','characters/worker-variants.png','characters/watering-effects.png'];
     return await Promise.all(files.map(async file=>{
       const image=new Image();
       image.src='./public/assets/sprout-lands/'+file;
@@ -264,6 +265,8 @@ test('Ações reais dos trabalhadores — quadros do atlas local e captura',asyn
   expect(frames[0].width).toBe(96);
   expect(frames[0].height).toBe(576);
   expect(frames[1].width).toBeGreaterThan(95);
+  expect(frames[2].width).toBe(432);
+  expect(frames[2].height).toBe(144);
   await page.locator('#new-game').click();
   await page.locator('[data-game-mode="relaxed"]').click();
   await page.locator('#starter-confirm').click();
