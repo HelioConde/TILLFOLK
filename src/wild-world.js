@@ -34,11 +34,12 @@
       else if(roll < .085+woody*.19)kind="thicket";
       else if(roll < .135+woody*.13)kind="boulder";
       else if(roll < .155+woody*.06)kind="log";
-      else if(roll < .23+woody*.17)kind=moisture<4?"mushroom":"mushroom";
+      else if(roll < .23+woody*.17)kind=moisture<5?"mushroom":random()>.38?"mushroom":"herbs";
       else if(roll < .38+woody*.10)kind="flowers";
       else if(roll < .48+woody*.13)kind="grass";
       else if(roll < .53)kind="herbs";
       else if(roll < .56)kind="twig";
+      if(moisture<=1&&solidKinds.has(kind))kind=random()<.45?"mushroom":"grass";
       if(kind){
         world.objects.push({x,y,kind,variant:Math.floor(random()*7),age:0});
         used.add(key(x,y));
@@ -112,12 +113,24 @@
         ctx.fillStyle="#d3e89a";ctx.fillRect(tileX+7,tileY+9,2,2);
       }
     }
+    const waters=new Set((world?.water||[]).map(t=>key(t.x,t.y)));
     for(const tile of world?.water||[]){
-      const x=tile.x*size,y=tile.y*size;
-      ctx.fillStyle="#517f87";ctx.fillRect(x,y,size,size);
-      part(sprites.water,0,0,16,16,x,y,size,size);
-      ctx.fillStyle="#81c5c3";
-      if(noise(world.seed,tile.x,tile.y)>.5)ctx.fillRect(x+12,y+8,9,2);
+      const x=tile.x*size,y=tile.y*size,v=noise(world.seed,tile.x,tile.y);
+      ctx.fillStyle="#588b8b";ctx.fillRect(x,y,size,size);
+      // Não usar o tile como um bloco retangular de cor chapada: margens naturais.
+      ctx.fillStyle="#6fa8a0";
+      if(!waters.has(key(tile.x,tile.y-1)))ctx.fillRect(x,y,size,5);
+      if(!waters.has(key(tile.x,tile.y+1)))ctx.fillRect(x,y+size-5,size,5);
+      if(!waters.has(key(tile.x-1,tile.y)))ctx.fillRect(x,y,5,size);
+      if(!waters.has(key(tile.x+1,tile.y)))ctx.fillRect(x+size-5,y,5,size);
+      ctx.fillStyle="#98cfc4";
+      if(v>.34)ctx.fillRect(x+8,y+9,9,2);
+      if(v>.66)ctx.fillRect(x+19,y+21,7,2);
+      if(v>.72){
+        // Vitória-régia e junco em tons do próprio cenário.
+        ctx.fillStyle="#527d48";ctx.fillRect(x+6,y+17,13,5);
+        ctx.fillStyle="#84b963";ctx.fillRect(x+8,y+16,10,3);
+      }
     }
   }
   function drawObject(ctx,obj,sprites,size,part){
@@ -177,6 +190,15 @@
       ctx.fillStyle=i%2?"#f3e39d":"#e5a7da";
       ctx.fillRect(x,y,3,3);ctx.fillRect(x+5,y,3,3);
       ctx.fillStyle="#463b4b";ctx.fillRect(x+4,y+1,1,4);
+    }
+    // Pequenos sapos nas bordas da lagoa; efeito visual, não obstáculo.
+    const border=world.water.filter(p=>!waterAt(world,p.x-1,p.y)||!waterAt(world,p.x+1,p.y));
+    for(let i=0;i<Math.min(2,border.length);i++){
+      const tile=border[Math.floor(i*(border.length/2))];
+      const x=tile.x*size+7,y=tile.y*size+18;
+      ctx.fillStyle="#416d48";ctx.fillRect(x,y,8,7);
+      ctx.fillStyle="#97c67d";ctx.fillRect(x+1,y,6,5);
+      ctx.fillStyle="#244934";ctx.fillRect(x+2,y+1,1,1);ctx.fillRect(x+5,y+1,1,1);
     }
   }
   window.TillfolkWild=Object.freeze({create,at,waterAt,blocked,clear,regrow,drawGround,drawObject,drawAmbient});
