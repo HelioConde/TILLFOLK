@@ -53,7 +53,7 @@
     crops:A+"farming/crops.png", trees:A+"environment/trees-and-bushes.png",
     worker:A+"characters/worker-basic.png", premium:A+"characters/worker-variants.png", actions:A+"characters/worker-actions.png", wateringFx:A+"characters/watering-effects.png",
     well:A+"structures/water-well.png", fences:A+"structures/fences.png",
-    roof:A+"structures/wood-roof.png",walls:A+"structures/wood-walls.png",furniture:A+"structures/furniture.png",chest:A+"structures/chest.png",paths:A+"structures/paths.png",fenceGates:A+"structures/fence-gates.png",
+    roof:A+"structures/wood-roof.png",walls:A+"structures/wood-walls.png",door:A+"structures/wood-door.png",furniture:A+"structures/furniture.png",chest:A+"structures/chest.png",paths:A+"structures/paths.png",fenceGates:A+"structures/fence-gates.png",
     rocks:A+"environment/forageables.png"
   };
   const sprite = {};
@@ -317,23 +317,22 @@
       part(sprite.fences,0,0,16,16,11*TILE-11,y*TILE,24,32);
       part(sprite.fences,0,0,16,16,16*TILE+13,y*TILE,24,32);
     }
-    const hx=3*TILE,hy=5*TILE;
-    for(let row=0;row<6;row++)for(let col=0;col<9;col++){
-      part(sprite.walls,16,16,16,16,hx+col*18,hy+52+row*16,18,16);
+    // Casa no mapa: mesma escala 2x e tiles originais sem deformação.
+    const unit=32,wallX=3*TILE+16,roofY=5*TILE,wallY=roofY+65;
+    for(let row=0;row<3;row++)for(let col=0;col<4;col++){
+      part(sprite.walls,16,16,16,16,wallX+col*unit,wallY+row*unit,unit,unit);
     }
-    // Peças do telhado: telhas do pacote Sprout Lands, sem triângulos de Canvas.
-    for(let row=0;row<4;row++)for(let col=0;col<5;col++){
-      part(sprite.roof,48+(col%4)*16,32+(row%3)*16,16,16,hx-13+col*35,hy+row*17,37,19);
+    for(let row=0;row<3;row++)for(let col=0;col<5;col++){
+      const sx=col===0?48:col===4?96:col%2===0?80:64;
+      part(sprite.roof,sx,32+row*16,16,16,
+        wallX-16+col*unit,roofY+row*unit,unit,unit);
     }
-    for(let col=0;col<5;col++){
-      part(sprite.roof,48+(col%4)*16,64,16,16,hx-13+col*35,hy+60,37,19);
-    }
-    part(sprite.walls,0,0,32,32,hx+10,hy+91,40,43);
-    part(sprite.walls,48,0,32,32,hx+118,hy+91,40,43);
-    part(sprite.walls,48,32,16,16,hx+68,hy+102,29,43);
-    part(sprite.furniture,0,16,16,16,hx-11,hy+121,26,26);
-    part(sprite.chest,0,0,32,32,hx+161,hy+119,30,31);
-    write("CASA",hx+80,hy+153,"#fff6ce",11);
+    part(sprite.walls,16,0,16,32,wallX+8,wallY+16,32,64);
+    part(sprite.walls,16,0,16,32,wallX+88,wallY+16,32,64);
+    part(sprite.door,64,0,16,32,wallX+48,wallY+32,32,64);
+    part(sprite.furniture,0,16,16,16,wallX-12,wallY+82,32,32);
+    part(sprite.chest,0,0,32,32,wallX+124,wallY+80,32,32);
+    write("CASA",wallX+64,wallY+108,"#fff6ce",11);
     // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
     for(const p of state.plots){
       if(!p.selected)continue;

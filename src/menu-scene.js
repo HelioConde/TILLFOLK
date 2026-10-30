@@ -13,6 +13,7 @@
     well:"structures/water-well.png",fences:"structures/fences.png",
     chest:"structures/chest.png",barn:"structures/barn.png",
     roof:"structures/wood-roof.png",walls:"structures/wood-walls.png",
+    door:"structures/wood-door.png",
     furniture:"structures/furniture.png",paths:"structures/paths.png",
     chicken:"animals/chicken.png",worker:"characters/worker-variants.png"
   };
@@ -49,24 +50,27 @@
     }
   }
   function farmhouse(){
-    const x=657,y=150;
-    // Paredes, portas e janelas do atlas original Sprout Lands.
-    for(let row=0;row<6;row++)for(let col=0;col<11;col++){
-      stamp("walls",16,16,16,16,x+col*18,y+58+row*16,18,16);
+    // Construção Sprout Lands: escala uniforme 2x, tiles inteiros.
+    const cell=32,wallX=657,roofY=160,wallY=roofY+80,roofX=wallX-16;
+    // Base da fachada (6 colunas e 3 linhas de blocos 16x16).
+    for(let row=0;row<3;row++)for(let col=0;col<6;col++){
+      stamp("walls",16,16,16,16,wallX+col*cell,wallY+row*cell,cell,cell);
     }
-    for(let j=0;j<4;j++)for(let i=0;i<6;i++){
-      // Mosaico de telhado real (folha de telhas, 112×80).
-      stamp("roof",48+(i%4)*16,32+(j%3)*16,16,16,x-17+i*39,y+j*18,41,20);
+    // Telhado: cada recorte 16x16 é pintado como 32x32; nunca 41x20.
+    for(let row=0;row<3;row++)for(let col=0;col<7;col++){
+      const sx=col===0?48:col===6?96:col%2===0?80:64;
+      stamp("roof",sx,32+row*16,16,16,roofX+col*cell,roofY+row*cell,cell,cell);
     }
-    for(let i=0;i<6;i++)stamp("roof",48+(i%4)*16,64,16,16,x-17+i*39,y+61,41,22);
-    // Fachada e entrada.
-    stamp("walls",0,0,32,32,x+10,y+90,42,44);
-    stamp("walls",48,0,32,32,x+141,y+92,42,44);
-    stamp("walls",48,32,16,16,x+88,y+101,39,47);
-    stamp("furniture",0,16,16,16,x-13,y+136,26,26);
-    stamp("furniture",32,16,16,16,x+201,y+136,26,26);
-    stamp("chest",0,0,32,32,x-55,y+128,35,37);
-    stamp("chest",48,0,32,32,x+210,y+132,34,33);
+    // Duas janelas completas: recorte 32x32 -> destino 64x64.
+    stamp("walls",48,0,32,32,wallX+8,wallY+8,64,64);
+    stamp("walls",48,0,32,32,wallX+120,wallY+8,64,64);
+    // Porta do pack original: recorte 16x32 -> destino 32x64.
+    stamp("door",64,0,16,32,wallX+80,wallY+32,32,64);
+    // Decoração usando objetos disponíveis no projeto.
+    stamp("furniture",0,16,16,16,wallX-24,wallY+79,28,28);
+    stamp("furniture",32,16,16,16,wallX+184,wallY+79,28,28);
+    stamp("chest",0,0,32,32,wallX-58,wallY+67,35,35);
+    stamp("chest",48,0,32,32,wallX+216,wallY+69,33,33);
   }
   function bed(x,y,row,stage=3){
     for(let col=0;col<11;col++){

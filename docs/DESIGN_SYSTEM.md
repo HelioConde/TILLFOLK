@@ -35,3 +35,7 @@ Capturas reais do repositório nos tamanhos 1600×900, 1366×768, 1125×790, 102
 - A interface da fazenda preserva o mapa 896x576, ajustado sem distorção em desktop via ResizeObserver e game-polish.css.
 - A sidebar pode rolar independentemente; ferramentas precisam permanecer visíveis em 1600x900 e 1366x768.
 - Screenshots de menu e jogo gerados pelo workflow QA visual.
+
+
+### Construções sem distorção — v1.1
+Casa do menu e do mapa desenhada com escala 2× exata: cada tile 16×16 ocupa 32×32 pixels, janelas 32×32 ocupam 64×64 e a porta 16×32 ocupa 32×64. Usar o atlas Sprout Lands; proibir esticar telhas horizontalmente. Playwright captura o canvas da casa e valida a existência dos sprites.

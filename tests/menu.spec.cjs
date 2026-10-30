@@ -277,3 +277,39 @@ test('Ações reais dos trabalhadores — quadros do atlas local e captura',asyn
   await page.locator('#world').screenshot({path:'screenshots/colonos-trabalhando-mapa.png',animations:'disabled'});
   expect(failures).toEqual([]);
 });
+
+
+test('Casa usa atlas original e telhas sem alongamento',async({page})=>{
+  await page.setViewportSize({width:1600,height:900});
+  const errors=[];
+  page.on('response',response=>{
+    if(response.status()>=400 && /wood-(roof|walls|door)\.png/.test(response.url()))
+      errors.push(response.status()+' '+response.url());
+  });
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await expect(page.locator('#menu')).toBeVisible();
+  const dims=await page.evaluate(async()=>{
+    const names=['wood-roof.png','wood-walls.png','wood-door.png'];
+    return await Promise.all(names.map(async name=>{
+      const img=new Image();
+      img.src='./public/assets/sprout-lands/structures/'+name;
+      await img.decode();
+      return [name,img.naturalWidth,img.naturalHeight];
+    }));
+  });
+  expect(dims).toEqual([
+    ['wood-roof.png',112,80],
+    ['wood-walls.png',80,48],
+    ['wood-door.png',288,32]
+  ]);
+  const fs=require('node:fs');
+  fs.mkdirSync('screenshots',{recursive:true});
+  const png=await page.locator('#title-scene').evaluate(
+    canvas=>canvas.toDataURL('image/png').split(',')[1]);
+  fs.writeFileSync('screenshots/casa-canvas-960x540.png',Buffer.from(png,'base64'));
+  await page.screenshot({path:'screenshots/casa-menu-1600x900.png',animations:'disabled'});
+  const menuCode=fs.readFileSync('src/menu-scene.js','utf8');
+  expect(menuCode).toContain('roofX+col*cell,roofY+row*cell,cell,cell');
+  expect(menuCode).toContain('wallX+col*cell,wallY+row*cell,cell,cell');
+  expect(errors).toEqual([]);
+});
