@@ -10,6 +10,7 @@ on:
       - 'src/menu.js'
       - 'src/menu-scene.js'
       - 'src/game.js'
+      - 'src/wild-world.js'
       - 'styles.css'
       - 'game-polish.css'
       - 'fullscreen-game.css'
