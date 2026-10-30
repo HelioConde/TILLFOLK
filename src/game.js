@@ -279,6 +279,7 @@
     state.minutes+=scaled*1.25;
     if(state.minutes>=1440){
       state.minutes-=1440;state.day++;
+      if(state.world?.water?.length)state.water=Math.min(100,state.water+3);
       const births=World.regrow(state.world,state.day,W,H,state.plots);
       if(births>0)log("A natureza renovou "+births+" pequenos elementos do vale.");
       if(state.mode==="survival"){
@@ -407,6 +408,15 @@
     for(const key of ["coins","seeds","water","food"])set("#"+key,state[key]);
     set("#worker-count",state.workers.length);set("#task-count",tasks.length);
     set("#hud-workers",state.workers.length);set("#hud-tasks",tasks.length);
+    const stock=state.inventory||{};
+    $("#inventory").textContent=[
+      "🪵 Madeira "+(stock.wood||0),
+      "🪨 Pedra "+(stock.stone||0),
+      "🍄 Cogumelos "+(stock.mushroom||0),
+      "🌸 Flores "+(stock.flower||0),
+      "🌿 Ervas "+(stock.herbs||0),
+      "🌾 Fibras "+(stock.grass||0)
+    ].join(" · ");
     set("#farm-title",state.farmName||"Minha Fazenda");
     set("#mode-label",(state.mode==="relaxed"?"FAZENDA TRANQUILA":"SOBREVIVÊNCIA")+" · DIA "+state.day);
     $("#status").textContent=simSpeed===0?"Ⅱ Simulação pausada":"● Fazenda em funcionamento";
@@ -470,9 +480,13 @@
   function findPlot(x,y){return state.plots.find(p=>p.x===x&&p.y===y);}
   function inspect(p){
     const task=getNext(p);
+    const names={tree:"Árvore",boulder:"Pedra",log:"Tronco",thicket:"Arbusto",
+      stump:"Toco",mushroom:"Cogumelos",flowers:"Flores",grass:"Grama",
+      herbs:"Ervas",twig:"Galhos"};
+    const object=World.at(state.world,p.x,p.y);
     $("#tile-tooltip").hidden=false;
     $("#tile-tooltip").textContent="Terreno "+(p.x+1)+", "+(p.y+1)+" · "+(p.selected?"Cultivo ativo":"Disponível")+
-      " · "+(World.at(state.world,p.x,p.y)?.kind|| (p.produce?"Colheita no chão":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural"))+
+      " · "+(object?(names[object.kind]||"Recurso natural"):(p.produce?"Colheita no chão":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural"))+
       (task?" · Próxima tarefa: "+labels[task]:"");
   }
   // Segure Shift e arraste no desktop; no celular, arraste com o dedo para explorar.
