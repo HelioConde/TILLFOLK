@@ -1,0 +1,4 @@
+# Do not commit paid source packs or creative source files as stand-alone assets
+*.zip
+**/source-packs/
+*.aseprite
