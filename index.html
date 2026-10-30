@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./menu-layout.css">
   <link rel="stylesheet" href="./ui-polish.css">
   <link rel="stylesheet" href="./game-polish.css">
+  <link rel="stylesheet" href="./fullscreen-game.css">
   <script defer src="./src/menu.js"></script>
   <script defer src="./src/menu-scene.js"></script>
   <script defer src="./src/game.js"></script>
@@ -31,11 +32,12 @@
         <button id="nav-priorities" type="button">☷ Prioridades</button>
         <button id="nav-skills" type="button">✦ Habilidades</button>
       </div>
+      <div class="hud-panels" role="group" aria-label="Painéis de gerenciamento"><button id="open-workers" type="button" aria-controls="farm-sidebar" aria-expanded="false">♟ Equipe <span id="hud-workers">2</span></button><button id="open-tasks" type="button" aria-controls="farm-sidebar" aria-expanded="false">☷ Tarefas <span id="hud-tasks">0</span></button></div>
       <button id="menu-btn" class="icon-btn" aria-label="Voltar ao menu" title="Voltar ao menu">☰</button>
     </header>
     <main class="game-layout">
       <section class="play-area" aria-label="Fazenda">
-        <div class="scene-head"><div><span id="mode-label" class="overline">SOBREVIVÊNCIA · DIA 1</span><h1 id="farm-title">Seu pequeno pedaço de terra</h1></div><div class="scene-actions"><button id="focus-game" type="button" class="focus-game-btn" aria-pressed="false" title="Ampliar a fazenda e ocultar os painéis de gestão">▣ Tela de jogo</button><div id="status" class="status-pill">● Fazenda em funcionamento</div></div></div>
+        <div class="scene-head"><div><span id="mode-label" class="overline">SOBREVIVÊNCIA · DIA 1</span><h1 id="farm-title">Seu pequeno pedaço de terra</h1></div><div class="scene-actions"><button id="focus-game" type="button" class="focus-game-btn" aria-pressed="false" title="Alternar a tela cheia do navegador">⛶ Tela cheia</button><div id="status" class="status-pill">● Fazenda em funcionamento</div></div></div>
         <div class="canvas-scroll">
           <div class="canvas-wrap">
             <canvas id="world" width="896" height="576" aria-label="Mapa interativo da fazenda"></canvas>
@@ -54,7 +56,7 @@
         <div class="hint-bar"><span>💡</span><p><strong>Como começar:</strong> selecione <em>Cultivar</em> e clique em vários espaços do gramado. Os trabalhadores organizam as etapas sem ordens individuais.</p></div>
         <div class="footnote">Assets: Sprout Lands © Cup Nooble · Protótipo inicial TILLFOLK</div>
       </section>
-      <aside class="sidebar">
+      <aside class="sidebar" id="farm-sidebar" aria-label="Painel de trabalhadores e tarefas" aria-hidden="true" inert><div class="drawer-heading"><strong>Gestão da fazenda</strong><button type="button" id="drawer-close" aria-label="Fechar painel de gestão">✕ Fechar</button></div>
         <div class="panel worker-panel">
           <div class="panel-top"><div><span class="overline">PESSOAS DA FAZENDA</span><h2>Trabalhadores <span id="worker-count">1</span></h2></div><button id="hire-btn" class="small-primary">+ Contratar</button></div>
           <div id="workers" class="workers"></div>
@@ -69,6 +71,7 @@
       </aside>
     </main>
   </div>
+  <button id="drawer-backdrop" type="button" aria-label="Fechar painel lateral" hidden></button>
 
   <div id="menu" class="title-screen" aria-label="Menu principal do TILLFOLK">
     <canvas id="title-scene" class="title-scene-canvas" width="960" height="540" aria-hidden="true"></canvas>
