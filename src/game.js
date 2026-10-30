@@ -150,6 +150,11 @@
   function start(continueSaved=false, chosenStarters = [], config = {}){
     if(!continueSaved||!readSave())reset(chosenStarters,config);
     playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false; refresh();save();
+    // Exibir a horta primeiro nos celulares, sem mudar a escala do pixel art.
+    if(window.innerWidth<=610){
+      const viewport=document.querySelector(".canvas-scroll");
+      requestAnimationFrame(()=>{viewport.scrollLeft=Math.max(0,(viewport.scrollWidth-viewport.clientWidth)/2);});
+    }
     notify("Sua fazenda está pronta. Os trabalhadores já estão a caminho!");
   }
   function getNext(p){
