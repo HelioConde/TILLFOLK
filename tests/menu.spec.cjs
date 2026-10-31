@@ -637,6 +637,7 @@ test('Recrutamento v2: resumo legível, rodapé fixo e screenshots desktop/mobil
       return {dialogLeft:dialog.left,dialogRight:dialog.right,dialogTop:dialog.top,dialogBottom:dialog.bottom,
         headingHeight:heading.height,footerHeight:footer.height,
         footerBottom:footer.bottom,ctaBottom:cta.bottom,inputBottom:input.bottom,
+        actionsDirection:getComputedStyle(document.querySelector('.starter-actions')).flexDirection,
         contentOverflow:getComputedStyle(content).overflowY,cardCount:cards.length,cards,
         pageWidth:document.documentElement.scrollWidth};
     });
@@ -648,6 +649,10 @@ test('Recrutamento v2: resumo legível, rodapé fixo e screenshots desktop/mobil
     expect(measured.ctaBottom).toBeLessThanOrEqual(measured.footerBottom+1);
     expect(measured.inputBottom).toBeLessThanOrEqual(measured.footerBottom+1);
     expect(measured.contentOverflow).toBe('auto');
+    if(size.width===390){
+      expect(measured.actionsDirection).toBe('row');
+      expect(measured.footerHeight).toBeLessThan(195);
+    }
     expect(measured.cards.every(c=>c.summaryVisible&&c.sectionHeight>40)).toBe(true);
     await page.screenshot({path:'screenshots/recrutamento-v2-'+size.width+'x'+size.height+'.png',animations:'disabled'});
     if(size.width===390){
