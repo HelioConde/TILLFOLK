@@ -437,6 +437,15 @@
       previewX:buildHover?.x,previewY:buildHover?.y,
       previewValid:buildHover?Boolean(getBuildEdit(buildHover.x,buildHover.y,eraseBuild).house):false
     });
+    // Cabanas 2x2 são estruturas independentes, concluídas pelos trabalhadores.
+    for(const home of state.homes.filter(h=>!h.legacy)){
+      const x=home.x*TILE,y=home.y*TILE;
+      part(sprite.walls,16,16,16,16,x+4,y+22,56,41);
+      part(sprite.roof,16,0,16,16,x-5,y-14,74,50);
+      part(sprite.roof,32,16,16,16,x+27,y-9,38,36);
+      part(sprite.door,0,0,16,32,x+21,y+28,22,34);
+      if(home.residentId==null)write("LIVRE",x+32,y-19,"#e5f7ae",9);
+    }
     // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
     for(const p of state.plots){
       if(!p.selected&&!p.tilled&&!p.seeded&&!p.produce)continue;
@@ -469,7 +478,8 @@
     // Profundidade natural: árvores cobrem personagens atrás delas e vice-versa.
     const layers=[
       ...state.world.objects.map(object=>({type:"nature",object,depth:(object.y+.8)*TILE})),
-      ...state.workers.map(worker=>({type:"worker",worker,depth:worker.y*TILE}))
+      ...state.workers.map(worker=>({type:"worker",worker,depth:worker.y*TILE})),
+      ...state.animals.map(animal=>({type:"animal",animal,depth:animal.y*TILE}))
     ].sort((a,b)=>a.depth-b.depth);
     // IMPORTANTE: as spritesheets de caminhada e ferramentas usam ordens laterais opostas.
     // Caminhada: linha 2 = direita, 3 = esquerda; trabalho: linha 2 = esquerda, 3 = direita.
@@ -481,6 +491,10 @@
       const {x,y,type}=item;
       if(type==="nature"){
         World.drawObject(ctx,item.object,sprite,TILE,part);
+      }else if(type==="animal"){
+        const a=item.animal,x=a.x*TILE,y=a.y*TILE;
+        part(sprite.cow,0,0,32,32,x-20,y-32,40,38);
+        if(a.manure>0)write("💩 "+a.manure,x+5,y-33,"#f3dcb0",10);
       }else{
         const w=item.worker,px=w.x*TILE,py=w.y*TILE;
         ctx.fillStyle="#223c3180";ctx.beginPath();ctx.ellipse(px,py-2,11,4,0,0,Math.PI*2);ctx.fill();
@@ -531,6 +545,7 @@
     const m=Math.floor(state.minutes);set("#clock",String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
     for(const key of ["coins","seeds","water","food"])set("#"+key,state[key]);
     set("#worker-count",state.workers.length);set("#task-count",tasks.length);
+    if($("#homes-count"))$("#homes-count").textContent=state.homes.length+"/"+state.workers.length;
     set("#hud-workers",state.workers.length);set("#hud-tasks",tasks.length);
     $("#order-count").textContent=String(tasks.length);
     const stock=state.inventory||{};
@@ -540,7 +555,9 @@
       "🍄 Cogumelos "+(stock.mushroom||0),
       "🌸 Flores "+(stock.flower||0),
       "🌿 Ervas "+(stock.herbs||0),
-      "🌾 Fibras "+(stock.grass||0)
+      "🌾 Fibras "+(stock.grass||0),
+      "💩 Esterco "+(stock.manure||0),
+      "⌂ Moradias "+state.homes.length+" / "+state.workers.length
     ].join(" · ");
     set("#farm-title",state.farmName||"Minha Fazenda");
     set("#mode-label",(state.mode==="relaxed"?"FAZENDA TRANQUILA":"SOBREVIVÊNCIA")+" · DIA "+state.day);
@@ -584,8 +601,13 @@
     return '<div class="tags">'+(person.skills.map(s=>'<span class="tag">✦ '+labels[s]+'</span>').join("")||'<span class="tag">Generalista</span>')+person.neg.map(s=>'<span class="tag negative">✕ '+labels[s]+'</span>').join("")+'</div><p>Bônus em cada habilidade: +'+special+'. '+person.neg.length+' restrições.</p>';
   }
   function renderCandidates(){
+    const vacant=housingVacancy();
+    $("#housing-status").textContent=vacant>0
+      ?"✅ "+state.homes.length+" casas, "+state.workers.length+" moradores: "+vacant+" vaga(s) livre(s)."
+      :"🏠 Casas concluídas: "+state.homes.length+". Trabalhadores: "+state.workers.length+
+      ". Construa mais "+(state.workers.length+1-state.homes.length)+" casa(s) com a ordem Construir casa para liberar o próximo ajudante.";
     $("#candidates").innerHTML=state.candidates.map((c,i)=>{
-      return '<div class="candidate"><div class="candidate-head"><h3>🌿 '+c.name+'</h3><b>🪙 '+c.cost+'</b></div>'+htmlTags(c)+'<button class="small-primary" data-hire="'+i+'" '+(state.coins<c.cost?"disabled":"")+'>Contratar trabalhador</button></div>';
+      return '<div class="candidate"><div class="candidate-head"><h3>🌿 '+c.name+'</h3><b>🪙 '+c.cost+'</b></div>'+htmlTags(c)+'<button class="small-primary" data-hire="'+i+'" '+(state.coins<c.cost||vacant<1?"disabled":"")+'>Contratar trabalhador</button></div>';
     }).join("");
   }
   const names=["Nico","Cora","Tito","Eva","Bia","Theo","Léo","Sol","Ravi","Mel","Ivo","Lua","Dora","Zeca"];
@@ -596,9 +618,13 @@
     return {name:random(names)+" "+String(Math.floor(Math.random()*90)+10),skills,neg:negative,cost:65+count*10,color:random(["#f4dfad","#badbd1","#f1c4c5","#b9cdef"]),appearance:Math.floor(Math.random()*workerPalettes.length)};
   }
   function hire(i){
-    const c=state.candidates[i];if(!c||state.coins<c.cost){notify("Moedas insuficientes.");return;}
+    const c=state.candidates[i];
+    if(!c)return;
+    if(housingVacancy()<1){notify("Construa uma casa livre para o novo ajudante.");return;}
+    if(state.coins<c.cost){notify("Moedas insuficientes.");return;}
     state.coins-=c.cost;
     state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},x:13.5,y:9.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0});
+    assignHomes();
     state.candidates[i]=newCandidate();
     log(c.name+" entrou para a equipe.");
     renderCandidates();refresh();save();notify(c.name+" contratado(a)!");$("#hire-dialog").close();
@@ -657,6 +683,7 @@
     if(!state)return;
     $("#build-stock").textContent=String(state.inventory?.wood||0);
     $("#build-floor-count").textContent=String(state.house.floor.length);
+    if($("#build-homes-count"))$("#build-homes-count").textContent=String(state.homes.length);
     document.querySelectorAll("[data-build-layer]").forEach(btn=>{
       const on=btn.dataset.buildLayer===buildLayer;
       btn.classList.toggle("chosen",on);btn.setAttribute("aria-pressed",String(on));
