@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="./game-interface.css?v=20261031">
   <link rel="stylesheet" href="./top-speed.css?v=20261031-mobile-brand-clock">
   <link rel="stylesheet" href="./tutorial-missions.css?v=20261031-missoes1">
-  <link rel="stylesheet" href="./hud-settings.css?v=20261031-alinhamento-preferencias">
+  <link rel="stylesheet" href="./hud-settings.css?v=20261031-icones-centrados">
   <script defer src="./src/menu.js?v=20261031-sync-preferencias"></script>
   <script defer src="./src/tutorial.js?v=20261031-fim-escolhas"></script>
   <script defer src="./src/house-renderer.js"></script>
@@ -97,11 +97,11 @@
         </section>
         <div class="tooltray">
           <div class="tool-list" role="group" aria-label="Ferramentas do mapa">
-            <button class="tool active" data-tool="universal" aria-pressed="true"><span>✦</span><b>Universal</b><small>Próxima tarefa</small></button>
-            <button class="tool" id="orders-btn" type="button" aria-pressed="false" aria-expanded="false" aria-controls="orders-panel"><span>☷</span><b>Ordens</b><small id="order-selected">Especificar</small></button>
-            <button class="tool" data-tool="remover" aria-pressed="false"><span>✕</span><b>Cancelar</b><small>Ordens pendentes</small></button>
-            <button class="tool" data-tool="inspecionar" aria-pressed="false"><span>⌕</span><b>Inspecionar</b><small>Ver estado</small></button>
-            <button class="tool" data-tool="construir" aria-pressed="false"><span>⌂</span><b>Construir</b><small>Editar casa</small></button>
+            <button class="tool active" data-tool="universal" aria-pressed="true"><span aria-hidden="true"><i class="tool-glyph">✦</i></span><b>Universal</b><small>Próxima tarefa</small></button>
+            <button class="tool" id="orders-btn" type="button" aria-pressed="false" aria-expanded="false" aria-controls="orders-panel"><span aria-hidden="true"><i class="tool-glyph">☷</i></span><b>Ordens</b><small id="order-selected">Especificar</small></button>
+            <button class="tool" data-tool="remover" aria-pressed="false"><span aria-hidden="true"><i class="tool-glyph">✕</i></span><b>Cancelar</b><small>Ordens pendentes</small></button>
+            <button class="tool" data-tool="inspecionar" aria-pressed="false"><span aria-hidden="true"><i class="tool-glyph">⌕</i></span><b>Inspecionar</b><small>Ver estado</small></button>
+            <button class="tool" data-tool="construir" aria-pressed="false"><span aria-hidden="true"><i class="tool-glyph">⌂</i></span><b>Construir</b><small>Editar casa</small></button>
           </div>
           
         </div>
