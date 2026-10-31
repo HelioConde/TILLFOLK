@@ -21,6 +21,9 @@ jobs:
       - name: Verificar JavaScript
         run: |
           node --check src/biomes.js
+          node --check src/terrain-autotile.js
+          node --test tests/terrain-autotile.test.cjs
+          node --test tests/terrain-editor.test.cjs
           node --check src/wild-world.js
           node --check src/game.js
           node --check src/crop-catalog.js
@@ -45,7 +48,7 @@ jobs:
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
           cp index.html crop-workshop.css tutorial-missions.css styles.css menu.css menu-layout.css menu-refinement.css game-hud.css sprout-ui.css game-refinement.css camera-ui.css top-speed.css game-interface.css game-polish.css fullscreen-game.css house-building.css hud-settings.css task-orders.css team-ux.css ui-polish.css _site/
-          cp src/crafting.js src/crop-catalog.js src/missions.js src/biomes.js src/game.js src/wild-world.js src/blueprints.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
+          cp src/terrain-autotile.js src/crafting.js src/crop-catalog.js src/missions.js src/biomes.js src/game.js src/wild-world.js src/blueprints.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
           mkdir -p _site/public/assets/assets
@@ -56,6 +59,7 @@ jobs:
           cp "public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items/tools and meterials.png" "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items/"
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
           cp "public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles/Grass_Tile_Layers_MAPEAR.html" _site/mapear_grama.html
+          cp terrain-editor.html _site/terrain-editor.html
           test -f _site/public/assets/sprout-lands/characters/worker-basic.png
           test -f _site/public/assets/sprout-lands/characters/worker-variants.png
           test -f _site/public/assets/sprout-lands/characters/worker-actions.png
@@ -64,6 +68,9 @@ jobs:
           test -f _site/public/assets/sprout-lands/farming/crops.png
           test -f _site/public/assets/tillfolk/menu-landscape.svg
           test -f _site/src/biomes.js
+          test -f _site/src/terrain-autotile.js
+          test -f _site/terrain-editor.html
+          grep -q 'terrain-autotile.js' _site/terrain-editor.html
           test -f _site/src/wild-world.js
           test -f _site/src/menu.js
           test -f _site/src/missions.js
