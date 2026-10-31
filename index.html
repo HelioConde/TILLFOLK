@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="./game-polish.css">
   <link rel="stylesheet" href="./fullscreen-game.css">
   <link rel="stylesheet" href="./house-building.css">
+  <link rel="stylesheet" href="./team-ux.css?v=2">
   <script defer src="./src/menu.js"></script>
   <script defer src="./src/house-renderer.js"></script>
   <script defer src="./src/menu-scene.js"></script>
@@ -163,22 +164,29 @@
       </button>
     </div>
   </dialog>
-  <dialog id="starter-dialog" class="starter-dialog" aria-labelledby="starter-title">
-    <div class="starter-heading">
-      <div><span class="overline">FORMAÇÃO DA EQUIPE · NOVA FAZENDA</span>
-        <h2 id="starter-title">Monte sua primeira equipe</h2>
-        <p>Escolha dois trabalhadores para começar. Compare as habilidades, as atividades que não podem realizar e o tempo que levam para executar cada trabalho. Os dois são gratuitos.</p>
+  <dialog id="starter-dialog" class="starter-dialog" aria-labelledby="starter-title" aria-describedby="starter-description">
+    <header class="starter-heading">
+      <div><span class="overline">NOVA FAZENDA · ESCOLHA SUA EQUIPE</span>
+        <h2 id="starter-title">Escolha seus 2 trabalhadores</h2>
+        <p id="starter-description">Compare as especialidades e o que cada pessoa não pode fazer. Os dois são gratuitos.</p>
       </div>
-      <form method="dialog"><button class="modal-x" aria-label="Voltar ao menu">✕</button></form>
+      <form method="dialog"><button class="modal-x" type="submit" aria-label="Voltar ao menu">✕</button></form>
+    </header>
+    <div class="starter-content">
+      <div class="starter-slots" id="starter-slots" aria-label="Comparação dos dois trabalhadores iniciais"></div>
     </div>
-    <div class="recruitment-instructions"><span>01 <strong>Conheça a equipe</strong></span><span>02 <strong>Compare os talentos</strong></span><span>03 <strong>Comece sua fazenda</strong></span></div>
-    <div class="starter-slots" id="starter-slots" aria-label="Dois candidatos iniciais"></div>
-    <div class="farm-name-field"><label for="farm-name">✎ NOME DA FAZENDA</label><input id="farm-name" type="text" maxlength="32" value="Vale do Amanhecer" autocomplete="off" spellcheck="false" aria-describedby="farm-name-hint"><small id="farm-name-hint">Você pode dar um nome ao lugar onde sua equipe vai trabalhar.</small></div>
-    <div class="starter-actions">
-      <button id="starter-reroll-all" class="large-secondary" type="button">↻ Sortear os dois</button>
-      <button id="starter-confirm" class="large-primary" type="button">🌱 Começar com esta equipe</button>
-    </div>
-    <p class="starter-note">Dica: um trabalhador com apenas uma habilidade executa essa atividade até duas vezes mais rápido que um generalista. O sorteio não custa moedas. Ao confirmar, uma nova partida substituirá o salvamento anterior.</p>
+    <footer class="starter-footer">
+      <div class="farm-name-field">
+        <label for="farm-name">✎ NOME DA FAZENDA</label>
+        <input id="farm-name" type="text" maxlength="32" value="Vale do Amanhecer" autocomplete="off" spellcheck="false" aria-describedby="farm-name-hint">
+        <small id="farm-name-hint">Você pode mudar esse nome antes de começar.</small>
+      </div>
+      <div class="starter-actions">
+        <button id="starter-reroll-all" class="large-secondary" type="button">↻ Sortear os dois</button>
+        <button id="starter-confirm" class="large-primary" type="button">🌱 Começar com esta equipe</button>
+      </div>
+      <p class="starter-note">Especialistas com uma única habilidade são mais rápidos nessa atividade. Começar uma nova fazenda substitui o salvamento atual.</p>
+    </footer>
   </dialog>
   <dialog id="management-dialog" class="management-dialog" aria-labelledby="management-title">
     <div class="dialog-topline">
