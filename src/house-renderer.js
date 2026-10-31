@@ -51,7 +51,23 @@
       stats.drawn++;
     }
 
-    // Fachada e chão/paredes como camadas independentes da cobertura.
+    // Telhado descido em três tiles ORIGINAIS (3×16px de mundo).
+    // Desenhar antes da fachada preserva a junção com as paredes:
+    // o beiral fica atrás da parede, em vez de cobrir janelas/porta.
+    const roofDrop=3*TILE;
+    if(roofVisible){
+      for(let row=0;row<ROOF_ROWS;row++){
+        for(let col=0;col<ROOF_COLS;col++){
+          const [sx,sy]=roofAtlas(col,row);
+          stamp("roof",sx,sy,originX+col*cell,originY+roofDrop+row*cell);
+          stats.roof++;
+        }
+      }
+      stamp("roof",5,0,originX+3*cell,originY+roofDrop+2*cell);
+      stats.chimneys++;
+    }
+
+    // Paredes montadas na mesma grade 2x, sobre a parte inferior da cobertura.
     for(let row=0;row<WALL_ROWS;row++){
       for(let col=0;col<WALL_COLS;col++){
         const [sx,sy]=wallAtlas(col,row);
@@ -59,28 +75,15 @@
         stats.walls++;
       }
     }
-    // Janelas alinhadas na segunda fileira: acima do rodapé, sob o beiral.
+    // Janelas descidas exatamente uma célula renderizada (32px em 2x).
     for(const col of [1,3]){
-      stamp("walls",3,2,facadeX+col*cell,facadeY+2*cell);
+      stamp("walls",3,2,facadeX+col*cell,facadeY+3*cell);
       stats.windows++;
     }
-    // AutomaticDoor do Slime-Harvest utiliza o frame 5, em (80,0).
+    // A porta permanece na entrada, na última fileira da fachada.
     stamp("door",5,0,facadeX+2*cell,facadeY+3*cell);
     stats.doors++;
 
-    if(roofVisible){
-      // Cinco faixas originais: topo, inclinação, cumeeira, inclinação e beiral.
-      for(let row=0;row<ROOF_ROWS;row++){
-        for(let col=0;col<ROOF_COLS;col++){
-          const [sx,sy]=roofAtlas(col,row);
-          stamp("roof",sx,sy,originX+col*cell,originY+row*cell);
-          stats.roof++;
-        }
-      }
-      // Chaminé sobre uma telha já colocada, igual à sobreposição Godot.
-      stamp("roof",5,0,originX+3*cell,originY+2*cell);
-      stats.chimneys++;
-    }
     return {...stats,...dimensions(scale),x:originX,y:originY,scale};
   }
 
