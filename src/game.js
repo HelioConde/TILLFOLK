@@ -1,7 +1,8 @@
 "use strict";
 (() => {
   const TILE = 32, W = 80, H = 50, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01";
-  const World=window.TillfolkWild,Orders=window.TillfolkOrders;
+  const World=window.TillfolkWild,Orders=window.TillfolkOrders,Prologue=window.TillfolkPrologue;
+  if(!Prologue)throw new Error("Carregue prologue.js antes de game.js.");
   if(!Orders)throw new Error("Carregue src/task-orders.js antes do motor TILLFOLK.");
   Orders.setBounds(W,H);
   window.TillfolkHouseBuilder.setBounds(W,H);
@@ -464,10 +465,10 @@
     }
     const team = chosenStarters.slice(0,2).map((c,i)=>({
       id:i+1,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,
-      appearance:c.appearance ?? i,personalPriority:{},x:W/2-.5+i,y:H/2-.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
+      appearance:c.appearance ?? i,equippedTool:null,personalPriority:{},x:W/2-.5+i,y:H/2-.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
     }));
     state = {day:1,minutes:8*60,seeds:0,water:0,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
-      plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),homes:[],animals:[],inventory:{wood:15,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
+      plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),homes:[],animals:[],inventory:{wood:0,twigs:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0},tools:{},prologue:Prologue.initial(),workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     tasks=[]; simSpeed=1; updateSpeed();
@@ -513,6 +514,12 @@
       World.stripFruitTrees(state.world);
       state.inventory=state.inventory||{wood:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0};
       state.inventory.manure=Math.max(0,Number(state.inventory.manure)||0);
+      // Saves antigos mantêm as ferramentas antes disponíveis gratuitamente.
+      if(!s.tools&&!s.prologue){
+        state.tools=Object.fromEntries(Object.keys(Prologue.RECIPES).map(id=>[id,1]));
+        state.prologue={stage:Prologue.CHAPTERS.length,done:true};
+      }
+      Prologue.normalize(state);
       state.homes=Array.isArray(s.homes)?s.homes.filter(h=>Number.isInteger(h.x)&&Number.isInteger(h.y)&&h.x>=2&&h.y>=2):[];
       // Construções legadas com piso, parede e telhado passam a valer como moradia.
       if(!state.homes.some(h=>h.legacy)&&state.house.floor.length>=2&&state.house.walls.length>0&&state.house.roof.length>0){
@@ -540,7 +547,8 @@
         w.carryingWater=false;w.carryingManure=false;w.supplyStage=null;w.supplyTarget=null;
         w.task=null;w.progress=0;w.personalPriority=w.personalPriority||{};
         w.x=Number.isFinite(w.x)?w.x:state.spawn.x;w.y=Number.isFinite(w.y)?w.y:state.spawn.y;
-        w.route=[];w.routeTask=null;w.facing=w.facing||"down";w.moving=false;w.walkFrame=0;
+        w.route=[];w.routeTask=null;w.equippedTool=null;
+        w.facing=w.facing||"down";w.moving=false;w.walkFrame=0;
       });
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
       state.candidates.forEach(homageSavedName);
@@ -551,6 +559,87 @@
   function save(){if(!state||!playing)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch(e){console.warn("Não foi possível salvar:",e);}}
   function log(text){state.journal.unshift(text);state.journal.length=Math.min(5,state.journal.length);}
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
+  function announceMission(previous){
+    if(state.prologue.stage<=previous)return;
+    if(state.prologue.done)notify("🏅 Prólogo concluído! A fazenda agora é sua.");
+    else notify("✓ Missão concluída! Próximo objetivo: "+Prologue.CHAPTERS[state.prologue.stage].title+".");
+  }
+  function recordPrologue(action,amount=1){
+    const previous=state.prologue.stage;
+    Prologue.event(state,action,amount);
+    announceMission(previous);
+  }
+  function renderPrologue(){
+    if(!state)return;
+    const info=Prologue.snapshot(state),mission=info.mission;
+    $("#prologue-step").textContent=info.done?"✓ PRÓLOGO CONCLUÍDO":"PRÓLOGO · MISSÃO "+(info.stage+1)+"/"+info.total;
+    $("#prologue-title").textContent=mission?mission.icon+" "+mission.title:"🏅 Você aprendeu a sobreviver!";
+    $("#prologue-summary").textContent=mission?mission.short:"A campanha terminou. Agora explore o vale e expanda sua colônia livremente.";
+    $("#prologue-description").textContent=mission?mission.detail:"Você domina a coleta, a fabricação, o plantio, a água, a colheita e a construção. Nenhuma nova missão será gerada.";
+    const goalsHtml=info.done?
+      '<div class="prologue-goal done">✓ Todas as 10 missões concluídas</div>':
+      info.progress.map(goal=>'<div class="prologue-goal '+(goal.value===goal.max?'done':'')+'"><span>'+
+      (goal.value===goal.max?'✓ ':'○ ')+goal.label+'</span><b>'+goal.value+'/'+goal.max+'</b></div>').join("");
+    $("#prologue-goals").innerHTML=goalsHtml;
+    $("#prologue-dialog-goals").innerHTML=goalsHtml;
+    $("#prologue-dialog-step").textContent=$("#prologue-step").textContent;
+    $("#prologue-dialog-title").textContent=$("#prologue-title").textContent;
+    $("#prologue-dialog-description").textContent=$("#prologue-description").textContent;
+    $("#prologue-card").title=mission?mission.detail:"O tutorial está concluído. Você pode continuar jogando livremente.";
+    $("#prologue-tool-count").textContent=Object.values(state.tools).filter(Boolean).length+"/"+Object.keys(Prologue.RECIPES).length;
+  }
+  const recipeResourceLabel={twigs:"Gravetos",stone:"Pedras",wood:"Madeira"};
+  function renderWorkshop(){
+    if(!state)return;
+    $("#workshop-stock").innerHTML=[["twigs","🪵"],["stone","🪨"],["wood","🌳"]]
+      .map(([resource,icon])=>'<span>'+icon+' '+recipeResourceLabel[resource]+': '+(state.inventory[resource]||0)+'</span>').join("");
+    $("#workshop-recipes").innerHTML=Object.entries(Prologue.RECIPES).map(([id,recipe])=>{
+      const made=!!state.tools[id];
+      const cost=Object.entries(recipe.cost).map(([resource,qty])=>qty+' '+recipeResourceLabel[resource].toLowerCase()).join(' · ');
+      const missing=Object.entries(recipe.cost).filter(([resource,qty])=>(state.inventory[resource]||0)<qty);
+      return '<article class="workshop-recipe"><h3>'+recipe.icon+' '+recipe.label+'</h3><p>'+recipe.help+
+        '</p><small>Custo: '+cost+'</small><button type="button" data-craft-tool="'+id+'" '+
+        (made||missing.length?'disabled':'')+'>'+(made?'✓ Fabricada':missing.length?'Recursos insuficientes':'Fabricar')+'</button></article>';
+    }).join("");
+  }
+  $("#prologue-open").addEventListener("click",()=>{
+    if(window.matchMedia("(max-width:520px)").matches){
+      $("#prologue-dialog").showModal();
+      $("#prologue-open").setAttribute("aria-controls","prologue-dialog");
+      $("#prologue-open").setAttribute("aria-expanded","true");
+      return;
+    }
+    const el=$("#prologue-details"),expanded=el.hidden;
+    el.hidden=!expanded;
+    $("#prologue-open").setAttribute("aria-controls","prologue-details");
+    $("#prologue-open").setAttribute("aria-expanded",String(expanded));
+    $("#prologue-open").textContent=expanded?"▴ Recolher":"▣ Detalhes";
+  });
+  $("#prologue-dialog").addEventListener("close",()=>{
+    $("#prologue-open").setAttribute("aria-expanded","false");
+    $("#prologue-open").textContent="▣ Detalhes";
+  });
+  $("#prologue-dialog-craft").addEventListener("click",()=>{
+    $("#prologue-dialog").close();
+    $("#workshop-open").click();
+  });
+  $("#workshop-open").addEventListener("click",()=>{
+    if(!playing)return;
+    renderWorkshop();$("#workshop-message").textContent="Fabrique uma ferramenta quando tiver todos os recursos.";
+    $("#workshop-dialog").showModal();
+  });
+  $("#workshop-recipes").addEventListener("click",event=>{
+    const button=event.target.closest("[data-craft-tool]");
+    if(!button||!state)return;
+    const previous=state.prologue.stage;
+    const result=Prologue.craft(state,button.dataset.craftTool);
+    if(result.ok)announceMission(previous);
+    $("#workshop-message").textContent=result.message;
+    $("#workshop-message").dataset.error=String(!result.ok);
+    if(result.ok){
+      log(result.message);recalcTasks();refresh();save();renderWorkshop();
+    }
+  });
   function start(continueSaved=false, chosenStarters = [], config = {}){
     if(!continueSaved||!readSave())reset(chosenStarters,config);
     houseHistory=[];buildHover=null;areaSelection=null;selectionPointer=null;setTool("universal");
@@ -692,7 +781,7 @@
     const p=findPlot(t.x,t.y);
     if(t.type==="collectWater"){
       if(!World.waterAt(state.world,t.x,t.y))return false;
-      state.water+=4;log(w.name+" buscou 4 baldes de água na lagoa.");return true;
+      state.water+=4;recordPrologue("collectWater");log(w.name+" buscou 4 baldes de água na lagoa.");return true;
     }
     if(t.type==="collectManure"){
       const animal=state.animals.find(a=>Math.floor(a.x)===t.x&&Math.floor(a.y)===t.y&&a.manure>0);
@@ -703,6 +792,7 @@
     if(t.type==="buildHome"){
       if(state.inventory.wood<HOME_WOOD_COST||!homeSiteValid(t.x,t.y))return false;
       state.inventory.wood-=HOME_WOOD_COST;
+      recordPrologue("buildHome");
       state.homes.push({x:t.x,y:t.y,residentId:null,legacy:false});
       for(const [hx,hy] of homeTiles(t.x,t.y)){
         state.plots=state.plots.filter(plot=>plot.x!==hx||plot.y!==hy);
@@ -717,13 +807,17 @@
         const obj=World.at(state.world,p.x,p.y);
         if(obj){
           const kind=obj.kind, result=World.clear(state.world,p.x,p.y);
-          const types={tree:"wood",stump:"wood",log:"wood",boulder:"stone",
-            mushroom:"mushroom",flowers:"flower",herbs:"herbs",grass:"grass",thicket:"wood",twig:"wood"};
+          const types={tree:"wood",stump:"wood",log:"wood",boulder:"stone",pebble:"stone",
+            mushroom:"mushroom",flowers:"flower",herbs:"herbs",grass:"grass",thicket:"wood",twig:"twigs"};
           const amount={tree:3,stump:2,log:2,boulder:3}[kind]||1;
           const resource=types[kind]||"grass";
           state.inventory[resource]=(state.inventory[resource]||0)+amount;
+          if(kind==="twig")recordPrologue("twig",amount);
+          if(kind==="pebble")recordPrologue("pebble",amount);
+          if(kind==="grass")recordPrologue("grass",amount);
+          if(resource==="wood")recordPrologue("wood",amount);
           // Grama alta tem chance de soltar uma semente. Não existe semente infinita.
-          if(kind==="grass"&&Math.random()<.25){state.seeds++;log(w.name+" encontrou uma semente ao cortar grama!");}
+          if(kind==="grass"&&Math.random()<.25){state.seeds++;recordPrologue("seed");log(w.name+" encontrou uma semente ao cortar grama!");}
           if(result.resource)log(w.name+" coletou "+result.resource+".");
           p.dirty=result.remaining;
           if(result.remaining)complete=false; // Continuar a mesma ordem até retirar o toco.
@@ -744,6 +838,8 @@
       case "harvest":p.produce=true;p.seeded=false;p.watered=false;p.growth=0;break;
       case "carry":p.produce=false;p.fertilized=false;state.food+=3;state.seeds++;log(w.name+" armazenou a colheita (+3 comida, +1 semente).");break;
     }
+    if(complete&&["till","sow","water","harvest","carry"].includes(t.type))
+      recordPrologue(t.type);
     if(complete&&t.type!=="carry"&&t.type!=="harvest")log(w.name+" terminou: "+labels[t.type].toLowerCase()+".");
     return complete;
   }
@@ -839,13 +935,17 @@
         w.routeTask=null;w.route=[];w.workGoal=null;
         log(w.name+" pegou esterco e está levando até a plantação.");continue;
       }
-      w.progress+=scaled*bonus(w,t.type)/baseTime[t.type];
+      const loose=World.at(state.world,t.x,t.y)?.kind;
+      const duration=t.type==="clear"&&["twig","pebble"].includes(loose)?18:
+        t.type==="clear"&&loose==="grass"?45:baseTime[t.type];
+      w.progress+=scaled*bonus(w,t.type)/duration;
       if(w.progress>=1){
         const complete=finish(w,t);
         if(complete)showMapFeedback(t.x,t.y,"#ddf2a2");
         if(complete)state.orders=state.orders.filter(order=>order.id!==t.id);
         w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
         recalcTasks();
+        if(complete)save();
       }
     }
   }
@@ -961,7 +1061,9 @@
         const working=Boolean(active&&!w.moving&&w.progress>0);
         // A troca dos atlas não deve inverter a direção do personagem.
         // Parado = quadro fixo; andando = caminhada; trabalhando = ação.
-        if(working&&active.type!=="water"&&valid(sprite.actions)){
+        const collectingByHand=active?.type==="clear"&&
+          !Prologue.toolForOrder("clear",World.at(state.world,active.x,active.y)).length;
+        if(working&&!collectingByHand&&active.type!=="water"&&valid(sprite.actions)){
           const image=getWorkerSprite(w,true);
           const actionGroup=actionRow[active.type]??0;
           const actionDirection=actionRowFor[w.facing]??0;
@@ -1047,10 +1149,11 @@
     if(manureOrderButton)manureOrderButton.hidden=state.animals.length===0;
     if($("#homes-count"))$("#homes-count").textContent=state.homes.length+"/"+state.workers.length;
     set("#hud-workers",state.workers.length);set("#hud-tasks",tasks.length);
+    renderPrologue();
     $("#order-count").textContent=String(tasks.length);
     const stock=state.inventory||{};
     const inventoryItems=[
-      ["wood","🪵","Madeira"],["stone","🪨","Pedra"],
+      ["wood","🪵","Madeira"],["twigs","🌿","Gravetos"],["stone","🪨","Pedra"],
       ["mushroom","🍄","Cogumelos"],["flower","🌸","Flores"],
       ["herbs","🌿","Ervas"],["grass","🌾","Fibras"],
       ["manure","💩","Esterco"]
@@ -1074,8 +1177,11 @@
         t?labels[t.type]+" em ("+(t.x+1)+", "+(t.y+1)+")":idleReason(w);
       const positive=w.skills.length?w.skills.map(s=>'<span class="tag">✦ '+labels[s]+'</span>').join(""):'<span class="tag">Generalista</span>';
       const neg=w.neg.map(s=>'<span class="tag negative">✕ '+labels[s]+'</span>').join("");
+      const assignedTool=t?Prologue.toolForOrder(t.type,World.at(state.world,t.x,t.y))[0]:null;
+      const equipment=assignedTool&&state.tools[assignedTool]
+        ?'<span class="tag">🔧 '+Prologue.RECIPES[assignedTool].label+'</span>':"";
       const factor=w.skills.length===1?"+100%":w.skills.length===2?"+60%":w.skills.length===3?"+30%":"sem bônus";
-      return '<div class="worker" data-worker-state="'+(w.moving?"moving":t?"working":"idle")+'"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div class="worker-identity"><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+escapeHtml(title)+'</div><span class="worker-status">'+(w.moving?"➤ Caminhando":t?"● Em atividade":tasks.length?"⏳ Aguardando ordens compatíveis":"● Disponível")+'</span></div></div><div class="tags">'+positive+neg+'</div><div class="worker-bar" role="progressbar" aria-label="Progresso de '+escapeHtml(w.name)+'" aria-valuenow="'+Math.round(w.progress*100)+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+(w.progress*100)+'%"></i></div><div class="worker-role">Especialização: '+factor+'</div></div>';
+      return '<div class="worker" data-worker-state="'+(w.moving?"moving":t?"working":"idle")+'"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div class="worker-identity"><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+escapeHtml(title)+'</div><span class="worker-status">'+(w.moving?"➤ Caminhando":t?"● Em atividade":tasks.length?"⏳ Aguardando ordens compatíveis":"● Disponível")+'</span></div></div><div class="tags">'+positive+neg+equipment+'</div><div class="worker-bar" role="progressbar" aria-label="Progresso de '+escapeHtml(w.name)+'" aria-valuenow="'+Math.round(w.progress*100)+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+(w.progress*100)+'%"></i></div><div class="worker-role">Especialização: '+factor+'</div></div>';
     }).join("");
     // Ordens ativas/prontas ficam em destaque; dependências aguardando são
     // recolhidas para não ocupar toda a tela com tarefas impossíveis agora.
@@ -1617,7 +1723,10 @@
   }
   function createStarterTeam(){
     const first=randomStarter();
-    starters=[first,randomStarter([first.name],[first.appearance])];
+    let other=randomStarter([first.name],[first.appearance]);
+    for(let attempt=0;attempt<20&&first.neg.includes("clear")&&other.neg.includes("clear");attempt++)
+      other=randomStarter([first.name],[first.appearance]);
+    starters=[first,other];
     renderStarters();
     $("#starter-dialog").showModal();
   }
@@ -1793,6 +1902,9 @@
   });
   $("#starter-confirm").addEventListener("click",()=>{
     if(starters.length!==2||starters[0].name===starters[1].name)return;
+    if(starters.every(person=>person.neg.includes("clear"))){
+      notify("Escolha pelo menos um trabalhador que possa Limpar e recolher recursos.");return;
+    }
     const selected=starters.map(c=>({name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance}));
     const farmName=$("#farm-name").value.trim().slice(0,32)||"Vale do Amanhecer";
     $("#starter-dialog").close();start(false,selected,{mode:pendingMode,farmName});renderPriorityControls();
