@@ -127,7 +127,7 @@ test("UI mobile: missão pode expandir e oficina não corta a tela",async({page}
   await page.screenshot({path:"screenshots/tutorial-primeira-missao-390x844.png",animations:"disabled"});
   await page.locator("#prologue-open").click();
   await expect(page.locator("#prologue-dialog")).toBeVisible();
-  await expect(page.locator("#prologue-dialog-description")).toContainText("gravat");
+  await expect(page.locator("#prologue-dialog-description")).toContainText("gravetos");
   await page.screenshot({path:"screenshots/tutorial-missao-detalhes-390x844.png",animations:"disabled"});
   await page.locator("#prologue-dialog-craft").click();
   await expect(page.locator("#workshop-dialog")).toBeVisible();
