@@ -33,6 +33,36 @@ test("work station exibe artes e receitas mesmo antes da construção",async({pa
  await expect(page.locator("#workshop-recipes button")).toHaveCount(19);
  await expect(page.locator('[data-craft-tool="axe"]')).toBeDisabled();
  await expect(page.locator("#workshop-status")).toContainText("10 gravetos");
+ // Verifica pixels reais da spritesheet, não imagens geradas ou ícones inventados.
+ const originalSprites=await page.evaluate(async()=>{
+   const Crafting=window.TillfolkCrafting;
+   const atlas=new Image();
+   atlas.src=Crafting.ITEMS_SPRITE;
+   await atlas.decode();
+   const keys=["axe","stoneAxe","hoe","wateringCan"];
+   const matched=[];
+   for(const key of keys){
+     const frame=Crafting.itemFrame(key);
+     const canvas=document.querySelector('[data-craft-tool="'+key+'"] canvas');
+     if(!frame||!canvas)return {matched,missing:key};
+     const expected=document.createElement("canvas");
+     expected.width=48;expected.height=48;
+     const g=expected.getContext("2d");g.imageSmoothingEnabled=false;
+     g.drawImage(atlas,frame.x,frame.y,frame.w,frame.h,3,3,42,42);
+     const actual=canvas.getContext("2d").getImageData(0,0,48,48).data;
+     const should=g.getImageData(0,0,48,48).data;
+     if(actual.length!==should.length||!actual.every((value,index)=>value===should[index]))
+       return {matched,missing:key};
+     matched.push(key);
+   }
+   return {matched,missing:null,atlasSize:[atlas.naturalWidth,atlas.naturalHeight]};
+ });
+ expect(originalSprites).toEqual({
+   matched:["axe","stoneAxe","hoe","wateringCan"],missing:null,atlasSize:[64,48]
+ });
+ await expect(page.locator('[data-craft-tool="shovel"] .workstation-art-note')).toBeVisible();
+ await expect(page.locator('[data-craft-tool="pickaxe"] .workstation-art-note')).toBeVisible();
+
  const actual=await page.locator(".farm-item-atlas").evaluate(img=>({width:img.naturalWidth,height:img.naturalHeight}));
  expect(actual.width).toBeGreaterThan(0);
  await page.screenshot({path:"screenshots/workstation-mobile-390x844.png",animations:"disabled"});
