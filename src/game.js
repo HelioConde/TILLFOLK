@@ -867,7 +867,11 @@
         w.routeTask=null;w.route=[];w.workGoal=null;
         log(w.name+" pegou esterco e está levando até a plantação.");continue;
       }
-      w.progress+=scaled*bonus(w,t.type)/baseTime[t.type];
+      const loose=World.at(state.world,t.x,t.y)?.kind;
+      // Pegar gravetos e pedrinhas com as mãos é mais rápido que derrubar árvores.
+      const duration=t.type==="clear"&&["twig","pebble"].includes(loose)?18:
+        t.type==="clear"&&loose==="grass"?45:baseTime[t.type];
+      w.progress+=scaled*bonus(w,t.type)/duration;
       if(w.progress>=1){
         const complete=finish(w,t);
         if(complete)showMapFeedback(t.x,t.y,"#ddf2a2");
@@ -983,7 +987,9 @@
         const working=Boolean(active&&!w.moving&&w.progress>0);
         // A troca dos atlas não deve inverter a direção do personagem.
         // Parado = quadro fixo; andando = caminhada; trabalhando = ação.
-        if(working&&active.type!=="water"&&valid(sprite.actions)){
+        const collectingByHand=active?.type==="clear"&&
+          !Prologue.toolForOrder("clear",World.at(state.world,active.x,active.y)).length;
+        if(working&&!collectingByHand&&active.type!=="water"&&valid(sprite.actions)){
           const image=getWorkerSprite(w,true);
           const actionGroup=actionRow[active.type]??0;
           const actionDirection=actionRowFor[w.facing]??0;
@@ -1097,8 +1103,11 @@
         t?labels[t.type]+" em ("+(t.x+1)+", "+(t.y+1)+")":idleReason(w);
       const positive=w.skills.length?w.skills.map(s=>'<span class="tag">✦ '+labels[s]+'</span>').join(""):'<span class="tag">Generalista</span>';
       const neg=w.neg.map(s=>'<span class="tag negative">✕ '+labels[s]+'</span>').join("");
+      const assignedTool=t?Prologue.toolForOrder(t.type,World.at(state.world,t.x,t.y))[0]:null;
+      const equipment=assignedTool&&state.tools[assignedTool]
+        ?'<span class="tag">🔧 '+Prologue.RECIPES[assignedTool].label+'</span>':"";
       const factor=w.skills.length===1?"+100%":w.skills.length===2?"+60%":w.skills.length===3?"+30%":"sem bônus";
-      return '<div class="worker" data-worker-state="'+(w.moving?"moving":t?"working":"idle")+'"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div class="worker-identity"><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+escapeHtml(title)+'</div><span class="worker-status">'+(w.moving?"➤ Caminhando":t?"● Em atividade":tasks.length?"⏳ Aguardando ordens compatíveis":"● Disponível")+'</span></div></div><div class="tags">'+positive+neg+'</div><div class="worker-bar" role="progressbar" aria-label="Progresso de '+escapeHtml(w.name)+'" aria-valuenow="'+Math.round(w.progress*100)+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+(w.progress*100)+'%"></i></div><div class="worker-role">Especialização: '+factor+'</div></div>';
+      return '<div class="worker" data-worker-state="'+(w.moving?"moving":t?"working":"idle")+'"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div class="worker-identity"><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+escapeHtml(title)+'</div><span class="worker-status">'+(w.moving?"➤ Caminhando":t?"● Em atividade":tasks.length?"⏳ Aguardando ordens compatíveis":"● Disponível")+'</span></div></div><div class="tags">'+positive+neg+equipment+'</div><div class="worker-bar" role="progressbar" aria-label="Progresso de '+escapeHtml(w.name)+'" aria-valuenow="'+Math.round(w.progress*100)+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+(w.progress*100)+'%"></i></div><div class="worker-role">Especialização: '+factor+'</div></div>';
     }).join("");
     // Ordens ativas/prontas ficam em destaque; dependências aguardando são
     // recolhidas para não ocupar toda a tela com tarefas impossíveis agora.
