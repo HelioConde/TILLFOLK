@@ -1340,11 +1340,71 @@
     if(state.workers.some(w=>Math.max(Math.abs(Math.floor(w.x)-x),Math.abs(Math.floor(w.y)-y))<=1))return true;
     return state.plots.some(p=>p.x===x&&p.y===y&&(p.selected||p.tilled||p.seeded||p.produce));
   }
+  function canPlanField(x,y){
+    if(x<1||y<1||x>=W-1||y>=H-1)return {error:"Deixe uma margem livre no mapa."};
+    const p=findPlot(x,y);
+    if(!p||!World.terrainAt(state.world,x,y).farmable)return {error:"Este terreno não aceita plantação."};
+    if(World.waterAt(state.world,x,y)||World.at(state.world,x,y)||p.dirty||
+       occupiedByHome(x,y)||window.TillfolkHouseBuilder.occupied(state.house,x,y))
+      return {error:"Limpe obstáculos antes de planejar o canteiro."};
+    if(p.seeded||p.produce)return {error:"Este canteiro já está cultivado."};
+    if(state.orders.some(o=>o.type==="buildHome"&&homeTiles(o.x,o.y).some(([hx,hy])=>hx===x&&hy===y)))
+      return {error:"Há uma cabana planejada nesse terreno."};
+    return {house:true};
+  }
   function getBuildEdit(x,y,erase){
+    if(!Number.isInteger(x)||!Number.isInteger(y)||x<1||y<1||x>=W-1||y>=H-1)
+      return {error:"Escolha uma área dentro do vale."};
+    if(buildLayer==="field")return canPlanField(x,y);
+    if(buildLayer==="home")return homeSiteValid(x,y)?
+      {house:true}:{error:"A cabana exige 2×2 livres e terreno firme."};
     if(!World.terrainAt(state.world,x,y).buildable)
       return {error:"Este bioma não permite construir nesta área."};
     if(!erase&&(state.inventory?.wood||0)<1)return {error:"Madeira insuficiente! Use os trabalhadores para recolher madeira."};
     return window.TillfolkHouseBuilder.edit(state.house,buildLayer,x,y,erase,isBuildCellBusy);
+  }
+  function pushBuildHistory(){
+    houseHistory.push(JSON.stringify({
+      house:state.house,plots:state.plots,wood:state.inventory.wood,orders:state.orders
+    }));
+    if(houseHistory.length>30)houseHistory.shift();
+  }
+  // Cada canteiro é uma solicitação EXPLÍCITA do jogador para arar e semear.
+  // As ordens seguem a fila existente, inclusive a espera por sementes.
+  // Nenhuma irrigação/colheita futura é criada automaticamente.
+  function queueFieldBlueprint(x,y){
+    const check=canPlanField(x,y);
+    if(!check.house)return {count:0,error:check.error};
+    const p=findPlot(x,y);
+    let count=0;
+    for(const type of p.tilled?["sow"]:["till","sow"]){
+      if(state.orders.some(o=>o.type===type&&o.x===x&&o.y===y))continue;
+      const result=Orders.add(state.orders,type,x,y,p,World.at(state.world,x,y),state);
+      if(result.order){state.orders.push(result.order);count++;}
+    }
+    return {count,error:count?null:"Canteiro já está planejado."};
+  }
+  function applyBuildingArea(from,to,cancel=false){
+    const x0=Math.max(1,Math.min(from.x,to.x)),x1=Math.min(W-2,Math.max(from.x,to.x));
+    const y0=Math.max(1,Math.min(from.y,to.y)),y1=Math.min(H-2,Math.max(from.y,to.y));
+    const area=(x1-x0+1)*(y1-y0+1);
+    if(area>120){$("#build-status").textContent="Selecione no máximo 120 canteiros por vez.";return;}
+    let total=0;
+    if(!cancel)pushBuildHistory();
+    const ids=[];
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+      if(cancel){
+        for(const o of state.orders)
+          if(o.x===x&&o.y===y&&["till","sow"].includes(o.type))ids.push(o.id);
+      }else total+=queueFieldBlueprint(x,y).count;
+    }
+    if(cancel&&ids.length){removeOrders([...new Set(ids)]);total=ids.length;}
+    else if(total){recalcTasks();refresh();save();}
+    else if(!cancel)houseHistory.pop();
+    buildHover=null;
+    $("#build-status").textContent=total?
+      (cancel?total+" ordens de canteiro canceladas.":total+" ordens de canteiro planejadas."):
+      "Nenhum canteiro válido nesta área.";
   }
   function updateBuildPanel(){
     if(!state)return;
@@ -1355,6 +1415,9 @@
       const on=btn.dataset.buildLayer===buildLayer;
       btn.classList.toggle("chosen",on);btn.setAttribute("aria-pressed",String(on));
     });
+    const plans=buildLayer==="home"||buildLayer==="field";
+    $("#build-erase").disabled=plans;
+    $("#build-erase").title=plans?"Clique direito cancela os blueprints planejados.":"Apagar peças da construção";
     $("#build-erase").setAttribute("aria-pressed",String(eraseBuild));
     $("#build-erase").classList.toggle("chosen",eraseBuild);
     $("#build-roof").textContent=state.house.roofHidden?"◉ Mostrar telhado":"◌ Ocultar telhado";
@@ -1404,8 +1467,27 @@
     if(!playing||selectedTool!=="construir")return;
     const result=getBuildEdit(x,y,erase);
     if(!result.house){$("#build-status").textContent=result.error;return;}
-    houseHistory.push(JSON.stringify({house:state.house,plots:state.plots,wood:state.inventory.wood}));
-    if(houseHistory.length>30)houseHistory.shift();
+    if(buildLayer==="field"){
+      pushBuildHistory();
+      const plan=queueFieldBlueprint(x,y);
+      if(!plan.count){houseHistory.pop();$("#build-status").textContent=plan.error;return;}
+      recalcTasks();refresh();save();
+      buildHover=null;
+      $("#build-status").textContent="🌱 Canteiro planejado: arar e semear. A equipe executará as ordens.";
+      return;
+    }
+    if(buildLayer==="home"){
+      const test=Orders.add(state.orders,"buildHome",x,y,findPlot(x,y),
+        World.at(state.world,x,y),state);
+      if(!test.order){$("#build-status").textContent=test.error;return;}
+      pushBuildHistory();
+      state.orders.push(test.order);
+      recalcTasks();refresh();save();
+      buildHover=null;
+      $("#build-status").textContent="🏠 Cabana 2×2 planejada: aguardando equipe e 8 madeiras.";
+      return;
+    }
+    pushBuildHistory();
     state.house=result.house;
     state.inventory.wood=Math.max(0,state.inventory.wood+(erase?1:-1));
     syncLegacyHome();
@@ -1419,8 +1501,13 @@
       ({floor:"piso",walls:"parede",roof:"telhado"})[buildLayer]+" em "+(x+1)+", "+(y+1)+".";
   }
   document.querySelectorAll("[data-build-layer]").forEach(btn=>btn.addEventListener("click",()=>{
-    buildLayer=btn.dataset.buildLayer;updateBuildPanel();
-    $("#build-status").textContent="Camada: "+btn.textContent.trim()+". Clique para construir ou use o botão direito para apagar.";
+    buildLayer=btn.dataset.buildLayer;
+    eraseBuild=false;buildHover=null;updateBuildPanel();
+    $("#build-status").textContent=buildLayer==="home"?
+      "Cabana: prévia azul 2×2. Clique para atribuir à equipe; botão direito cancela.":
+      buildLayer==="field"?
+        "Plantação: prévia azul. Clique ou arraste para criar canteiros (arar + semear).":
+        "Camada: "+btn.textContent.trim()+". Clique para construir ou use o botão direito para apagar.";
   }));
   $("#build-erase").addEventListener("click",()=>{
     eraseBuild=!eraseBuild;updateBuildPanel();
@@ -1436,6 +1523,7 @@
     state.house=window.TillfolkHouseBuilder.normalize(previous.house);
     syncLegacyHome();
     state.plots=previous.plots;state.inventory.wood=previous.wood;
+    if(previous.orders)state.orders=previous.orders;
     state.workers.forEach(w=>{w.route=[];w.routeTask=null;});
     recalcTasks();refresh();save();updateBuildPanel();
     $("#build-status").textContent="Última alteração desfeita.";
@@ -1447,7 +1535,18 @@
     if(suppressRightContext){suppressRightContext=false;return;}
     const {x,y}=buildCellFromEvent(event);
     if(x<0||y<0||x>=W||y>=H)return;
-    if(selectedTool==="construir"){paintHouse(x,y,true);return;}
+    if(selectedTool==="construir"){
+      if(buildLayer==="field"||buildLayer==="home"){
+        const ids=state.orders.filter(o=>buildLayer==="field"?
+          o.x===x&&o.y===y&&["till","sow"].includes(o.type):
+          o.type==="buildHome"&&homeTiles(o.x,o.y).some(([hx,hy])=>hx===x&&hy===y))
+          .map(o=>o.id);
+        if(ids.length){removeOrders(ids);$("#build-status").textContent="Blueprint cancelado.";}
+        else $("#build-status").textContent="Nenhum blueprint nesse terreno.";
+        return;
+      }
+      paintHouse(x,y,true);return;
+    }
     // Clique direito sempre cancela as ordens do terreno, não importa a
     // ferramenta selecionada. Cultivo concluído e árvores nunca são apagados.
     const ids=state.orders.filter(o=>o.x===x&&o.y===y).map(o=>o.id);
@@ -1470,7 +1569,8 @@
   // Shift+arrastar ou botão central sempre move a câmera.
   // No celular, ativar Área faz o dedo selecionar; desativar volta ao pan.
   function canSelectArea(){
-    return selectedTool==="universal"||selectedTool==="remover"||Orders.TYPES.includes(selectedTool);
+    return (selectedTool==="construir"&&buildLayer==="field")||
+      selectedTool==="universal"||selectedTool==="remover"||Orders.TYPES.includes(selectedTool);
   }
   function pointerTile(event){
     const p=buildCellFromEvent(event);
@@ -1565,7 +1665,9 @@
       // Um único toque continua produzindo o clique convencional.
       if(moved&&!cancel&&selection){
         selection.to=pointerTile(event);
-        applyToArea(selection.from,selection.to,selectionPointer.cancel);
+        if(selectedTool==="construir"&&buildLayer==="field")
+          applyBuildingArea(selection.from,selection.to,selectionPointer.cancel);
+        else applyToArea(selection.from,selection.to,selectionPointer.cancel);
         if(selectionPointer.cancel)suppressRightContext=true;
         suppressMapClick=true;
       }
