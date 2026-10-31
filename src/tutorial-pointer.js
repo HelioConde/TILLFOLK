@@ -182,7 +182,9 @@
     const cropPlot=p=>!p.dirty&&!wild.waterAt(state.world,p.x,p.y)&&
       !wild.at(state.world,p.x,p.y)&&wild.terrainAt(state.world,p.x,p.y).farmable;
     const selectUniversal=()=>{
-      if(["universal","till","sow","water","harvest","carry"].includes(selectedTool))return false;
+      // A missão deve apontar para a ferramenta correta, não para o solo com
+      // uma ordem diferente selecionada (ex.: Semear na etapa Arar).
+      if(selectedTool==="universal"||selectedTool===quest.key)return false;
       targetButton('.tool[data-tool="universal"]',"Selecione Universal");return true;
     };
     if(quest.key==="till"){
