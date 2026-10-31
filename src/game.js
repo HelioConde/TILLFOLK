@@ -156,8 +156,18 @@
       if(vacant){vacant.residentId=worker.id;taken.add(worker.id);}
     }
   }
-  function housingVacancy(){
+  function syncLegacyHome(){
+    if(!state)return;
+    const completed=state.house.floor.length>=2&&state.house.walls.length>0&&state.house.roof.length>0;
+    const present=state.homes.find(h=>h.legacy);
+    if(completed&&!present){
+      const [x,y]=state.house.anchor.split("-").map(Number);
+      state.homes.push({x,y,residentId:null,legacy:true});
+    }else if(!completed&&present)state.homes=state.homes.filter(h=>!h.legacy);
     assignHomes();
+  }
+  function housingVacancy(){
+    syncLegacyHome();
     return Math.max(0,state.homes.length-state.workers.length);
   }
   const keyOf=(x,y)=>x+"-"+y;
@@ -737,6 +747,7 @@
     if(houseHistory.length>30)houseHistory.shift();
     state.house=result.house;
     state.inventory.wood=Math.max(0,state.inventory.wood+(erase?1:-1));
+    syncLegacyHome();
     if(buildLayer==="floor"){
       if(!erase)state.plots=state.plots.filter(p=>p.x!==x||p.y!==y);
       else if(!blocked(x,y)&&!state.plots.some(p=>p.x===x&&p.y===y))state.plots.push(makePlot(x,y));
@@ -762,6 +773,7 @@
     if(!snapshot){$("#build-status").textContent="Nenhuma mudança para desfazer.";return;}
     const previous=JSON.parse(snapshot);
     state.house=window.TillfolkHouseBuilder.normalize(previous.house);
+    syncLegacyHome();
     state.plots=previous.plots;state.inventory.wood=previous.wood;
     state.workers.forEach(w=>{w.route=[];w.routeTask=null;});
     recalcTasks();refresh();save();updateBuildPanel();
