@@ -7,6 +7,17 @@
   const canvas = document.querySelector("#world"), ctx = canvas.getContext("2d");
   const $ = (s) => document.querySelector(s);
   let worldPanX=0,worldPanY=0,panPointer=null,suppressMapClick=false;
+  let cameraZoom=1,lastMinimapFrame=-1000;
+  const minimap=document.querySelector("#minimap"),miniCtx=minimap?.getContext("2d");
+  if(miniCtx)miniCtx.imageSmoothingEnabled=false;
+  const zoomSteps=[1,1.25,1.5,1.75,2,2.25];
+  function zoomIndex(){return zoomSteps.reduce((best,z,i)=>Math.abs(z-cameraZoom)<Math.abs(zoomSteps[best]-cameraZoom)?i:best,0);}
+  function syncCameraButtons(){
+    const percent=$("#zoom-value");
+    if(percent)percent.textContent=Math.round(cameraZoom*100)+"%";
+    $("#zoom-out").disabled=cameraZoom<=zoomSteps[0];
+    $("#zoom-in").disabled=cameraZoom>=zoomSteps.at(-1);
+  }
   let hoveredTile=null;
   const feedbackParticles=[];
   const reducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -29,7 +40,7 @@
     if(document.body.classList.contains("play-session")){
       const view=$(".canvas-scroll").getBoundingClientRect();
       if(view.width<1||view.height<1)return;
-      const scale=Math.max(view.width/canvas.width,view.height/canvas.height);
+      const scale=Math.max(view.width/canvas.width,view.height/canvas.height)*cameraZoom;
       canvas.style.width=Math.ceil(canvas.width*scale)+2+"px";
       canvas.style.height=Math.ceil(canvas.height*scale)+2+"px";
       clampWorldPan();
@@ -52,6 +63,95 @@
     if(canvas.style.width!==width+"px")canvas.style.width=width+"px";
     if(canvas.style.height!==height+"px")canvas.style.height=height+"px";
   }
+  function setCameraZoom(value){
+    if(!playing||!document.body.classList.contains("play-session"))return;
+    const next=zoomSteps.reduce((a,b)=>Math.abs(b-value)<Math.abs(a-value)?b:a);
+    const oldRect=canvas.getBoundingClientRect(),centerX=.5-worldPanX/Math.max(1,oldRect.width),
+      centerY=.5-worldPanY/Math.max(1,oldRect.height);
+    cameraZoom=next;
+    fitWorldCanvas();
+    const rect=canvas.getBoundingClientRect();
+    worldPanX=(.5-centerX)*rect.width;worldPanY=(.5-centerY)*rect.height;
+    clampWorldPan();syncCameraButtons();
+  }
+  function focusCameraAt(x,y){
+    if(!playing)return;
+    const rect=canvas.getBoundingClientRect();
+    worldPanX=(.5-x/W)*rect.width;
+    worldPanY=(.5-y/H)*rect.height;
+    clampWorldPan();
+  }
+  function resetCamera(){
+    cameraZoom=1;worldPanX=0;worldPanY=0;
+    fitWorldCanvas();clampWorldPan();syncCameraButtons();
+  }
+  function paintMinimap(){
+    if(!playing||!state||!minimap||!miniCtx||minimap.hidden)return;
+    const w=minimap.width,h=minimap.height;
+    miniCtx.clearRect(0,0,w,h);
+    miniCtx.imageSmoothingEnabled=false;
+    miniCtx.drawImage(canvas,0,0,w,h);
+    // Marcadores de ordens: amarelo = pronta, marrom = dependência pendente.
+    for(const job of tasks){
+      miniCtx.fillStyle=job.status==="ready"?"#ffe5a1":"#aa7057";
+      miniCtx.fillRect(Math.round((job.x+.5)*w/W)-2,Math.round((job.y+.5)*h/H)-2,4,4);
+    }
+    for(const worker of state.workers){
+      miniCtx.fillStyle="#faf0cc";
+      const x=Math.round(worker.x*w/W),y=Math.round(worker.y*h/H);
+      miniCtx.fillRect(x-2,y-2,5,5);
+      miniCtx.fillStyle="#34472e";miniCtx.fillRect(x-1,y-1,3,3);
+    }
+    // Janela real da câmera; visível mesmo em zoom máximo.
+    const image=canvas.getBoundingClientRect(),view=$(".canvas-scroll").getBoundingClientRect();
+    const x=Math.max(0,(view.left-image.left)/image.width*w),
+      y=Math.max(0,(view.top-image.top)/image.height*h),
+      right=Math.min(w,(view.right-image.left)/image.width*w),
+      bottom=Math.min(h,(view.bottom-image.top)/image.height*h);
+    miniCtx.fillStyle="#fff0bf22";
+    miniCtx.fillRect(x,y,Math.max(0,right-x),Math.max(0,bottom-y));
+    miniCtx.strokeStyle="#fff3cf";miniCtx.lineWidth=2;
+    miniCtx.strokeRect(Math.round(x)+1,Math.round(y)+1,
+      Math.max(0,Math.round(right-x)-2),Math.max(0,Math.round(bottom-y)-2));
+  }
+  $("#zoom-in").addEventListener("click",()=>setCameraZoom(zoomSteps[Math.min(zoomSteps.length-1,zoomIndex()+1)]));
+  $("#zoom-out").addEventListener("click",()=>setCameraZoom(zoomSteps[Math.max(0,zoomIndex()-1)]));
+  $("#zoom-reset").addEventListener("click",resetCamera);
+  $("#minimap-toggle").addEventListener("click",()=>{
+    minimap.hidden=!minimap.hidden;
+    $("#minimap-toggle").setAttribute("aria-expanded",String(!minimap.hidden));
+    $("#minimap-toggle").textContent=minimap.hidden?"+":"−";
+    if(!minimap.hidden)paintMinimap();
+  });
+  minimap.addEventListener("click",event=>{
+    const rect=minimap.getBoundingClientRect();
+    focusCameraAt((event.clientX-rect.left)/rect.width*W,
+      (event.clientY-rect.top)/rect.height*H);
+  });
+  minimap.addEventListener("keydown",event=>{
+    const move={ArrowUp:[0,-1.5],ArrowDown:[0,1.5],ArrowLeft:[-1.5,0],ArrowRight:[1.5,0]}[event.key];
+    if(move){
+      event.preventDefault();
+      const rect=canvas.getBoundingClientRect();
+      focusCameraAt(W/2-worldPanX/rect.width*W+move[0],
+        H/2-worldPanY/rect.height*H+move[1]);
+    }else if(event.key==="Enter"||event.key===" "){event.preventDefault();resetCamera();}
+  });
+  document.addEventListener("keydown",event=>{
+    if(!playing||event.altKey||event.ctrlKey||event.metaKey||event.repeat||
+       event.target.closest("input,textarea,select,button,[contenteditable]")||
+       document.querySelector("dialog[open]"))return;
+    if(event.key==="m"||event.key==="M"){$("#minimap-toggle").click();return;}
+    if(event.key==="+"||event.key==="="){event.preventDefault();$("#zoom-in").click();}
+    if(event.key==="-"){event.preventDefault();$("#zoom-out").click();}
+    if(event.key==="0"){event.preventDefault();resetCamera();}
+  });
+  canvas.addEventListener("wheel",event=>{
+    if(!playing||!document.body.classList.contains("play-session"))return;
+    event.preventDefault();
+    setCameraZoom(zoomSteps[Math.max(0,Math.min(zoomSteps.length-1,zoomIndex()+(event.deltaY<0?1:-1)))]);
+  },{passive:false});
+  syncCameraButtons();
   window.addEventListener("resize",fitWorldCanvas);
   if("ResizeObserver" in window){
     new ResizeObserver(fitWorldCanvas).observe(document.querySelector(".canvas-wrap"));
@@ -299,7 +399,11 @@
     recalcTasks(); // Limpar ordens já concluídas antes da primeira renderização.
     playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false;
     document.body.classList.add("play-session","focus-game");
-    worldPanX=0;worldPanY=0;hoveredTile=null;feedbackParticles.length=0;closeDrawer();refresh();save();
+    worldPanX=0;worldPanY=0;cameraZoom=1;hoveredTile=null;feedbackParticles.length=0;closeDrawer();refresh();save();
+    minimap.hidden=window.innerWidth<=700;
+    $("#minimap-toggle").setAttribute("aria-expanded",String(!minimap.hidden));
+    $("#minimap-toggle").textContent=minimap.hidden?"+":"−";
+    syncCameraButtons();
     requestAnimationFrame(fitWorldCanvas);
     // O HUD contextual já explica a ação; não obstruir o mapa com aviso ao iniciar.
   }
@@ -1381,6 +1485,7 @@
     save();playing=false;closeDrawer();setTool("till");
     document.body.classList.remove("play-session","focus-game");
     canvas.style.removeProperty("--pan-x");canvas.style.removeProperty("--pan-y");
+    cameraZoom=1;syncCameraButtons();
     if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
     $(".app-shell").inert=true;$("#menu").hidden=false;
     $("#continue").disabled=!localStorage.getItem(SAVE_KEY);
@@ -1411,7 +1516,9 @@
       if(uiAccumulator>.3){refresh();uiAccumulator=0;}
       if(saveAccumulator>8){save();saveAccumulator=0;}
     }
-    draw();requestAnimationFrame(loop);
+    draw();
+    if(playing&&now-lastMinimapFrame>350){paintMinimap();lastMinimapFrame=now;}
+    requestAnimationFrame(loop);
   }
   requestAnimationFrame(fitWorldCanvas);
   requestAnimationFrame(loop);
