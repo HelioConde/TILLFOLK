@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="./game-hud.css?v=2">
   <link rel="stylesheet" href="./sprout-ui.css?v=3">
   <link rel="stylesheet" href="./game-refinement.css?v=1">
+  <link rel="stylesheet" href="./camera-ui.css?v=1">
   <script defer src="./src/menu.js"></script>
   <script defer src="./src/tutorial.js"></script>
   <script defer src="./src/house-renderer.js"></script>
@@ -59,6 +60,19 @@
             <div class="world-tag">🌿 VALE SELVAGEM <span>•</span> ESCOLHA ORDENS PARA SUA EQUIPE</div>
           </div>
         </div>
+        <section id="camera-ui" class="camera-ui" aria-label="Câmera e minimapa">
+          <div class="camera-heading">
+            <span class="camera-title">⌖ VISÃO DO VALE</span>
+            <button id="minimap-toggle" type="button" aria-controls="minimap" aria-expanded="true" title="Mostrar ou ocultar minimapa (M)">−</button>
+          </div>
+          <canvas id="minimap" width="224" height="144" tabindex="0" role="button" aria-label="Minimapa interativo: clique ou use as setas para deslocar a câmera" title="Clique para deslocar a câmera"></canvas>
+          <div class="camera-controls" role="group" aria-label="Controle de zoom do mapa">
+            <button id="zoom-out" type="button" aria-label="Diminuir zoom">−</button>
+            <output id="zoom-value" aria-live="polite">100%</output>
+            <button id="zoom-in" type="button" aria-label="Aumentar zoom">+</button>
+            <button id="zoom-reset" type="button" title="Restaurar câmera" aria-label="Restaurar zoom e posição inicial">⌖</button>
+          </div>
+        </section>
         <div class="tooltray">
           <div class="tool-list" role="group" aria-label="Ferramentas do mapa">
             <button class="tool active" data-tool="till" aria-pressed="true"><span>⛏</span><b>Arar</b><small>Somente arar</small></button>
