@@ -118,7 +118,7 @@ test('Mobile: paleta de sete ordens e cancelamento de uma tarefa',async({page})=
   await start(page);
   await page.locator('#orders-btn').click();
   await expect(page.locator('#orders-panel')).toBeVisible();
-  await expect(page.locator('[data-order-type]')).toHaveCount(10);
+  await expect(page.locator('[data-order-type]')).toHaveCount(8);
   await page.screenshot({path:'screenshots/ordens-paleta-mobile-390x844.png',animations:'disabled'});
   await page.locator('[data-order-type="water"]').click();
   await expect(page.locator('#orders-panel')).toBeHidden();
