@@ -30,7 +30,7 @@ test("vale fechado: 1 saída, impossível escapar antes de cortar o tronco",()=>
     const gate=world.boundary.gate;
     assert.equal(World.clear(world,gate.x,gate.y).blocked,true,"corte manual proibido");
     assert.equal(World.blocked(world,gate.x,gate.y,80,50),true);
-    assert.equal(World.clear(world,gate.x,gate.y,{stoneAxe:true}).resource,"4 madeiras");
+    assert.equal(World.clear(world,gate.x,gate.y,{axe:true}).resource,"4 madeiras");
     assert.equal(world.boundary.open,true);
     assert.equal(reachable(world,60,25),true,"novo corredor livre depois de cortar");
   }
@@ -45,13 +45,13 @@ test("recursos do primeiro machado existem dentro da área fechada",()=>{
     }
   }
 });
-test("o machado de pedra só pode ser fabricado após montar a oficina",()=>{
+test("o machado comum abre a passagem quando fabricado na oficina",()=>{
   const state={crafting:Crafting.normalize(null),inventory:{twigs:40,grass:3,stone:3}};
   const gate={kind:"gateLog"};
   assert.ok(Crafting.blocked(state,"clear",gate));
-  assert.ok(Crafting.craft(state,"stoneAxe").error);
+  assert.ok(Crafting.craft(state,"axe").error);
   state.crafting.station={x:40,y:29};
-  assert.equal(Crafting.craft(state,"stoneAxe").item.key,"stoneAxe");
+  assert.equal(Crafting.craft(state,"stoneAxe").item.key,"axe");
   assert.equal(Crafting.blocked(state,"clear",gate),null);
   const order={type:"clear",x:53,y:25};
   assert.equal(Orders.status(order,{x:53,y:25,dirty:false},gate,state).state,"ready");
