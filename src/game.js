@@ -899,20 +899,6 @@
       part(sprite.door,0,0,16,32,x+21,y+28,22,34);
       if(home.residentId==null)write("LIVRE",x+32,y-19,"#e5f7ae",9);
     }
-    // Blueprints permanecem visíveis enquanto os trabalhadores não concluem
-    // a cabana ou o preparo/plantio da terra. São derivados da fila de ordens:
-    // cancelar ou concluir a ordem remove automaticamente o fantasma.
-    const Blueprint=window.TillfolkBlueprints;
-    for(const order of state.orders){
-      if(order.type==="buildHome"&&inView(order.x,order.y,4))
-        Blueprint.home(ctx,sprite,order.x,order.y,TILE,true);
-      else if((order.type==="till"||order.type==="sow")&&inView(order.x,order.y,1)){
-        const soil=findPlot(order.x,order.y);
-        if(soil&&!soil.seeded&&!soil.produce)
-          Blueprint.field(ctx,sprite,order.x,order.y,TILE,true,
-            order.type==="sow"||soil.tilled);
-      }
-    }
     // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
     for(const p of state.plots){
       if(!inView(p.x,p.y,1)||!p.tilled&&!p.seeded&&!p.produce&&!p.dirty&&!p.fertilized)continue;
@@ -928,6 +914,24 @@
       if(p.produce)part(sprite.crops,48,16,16,16,x,y,32,32);
       if(p.dirty&&!World.at(state.world,p.x,p.y))part(sprite.rocks,0,16,16,16,x,y,32,32);
       if(p.watered&&p.seeded){ctx.fillStyle="#6cc8e5";ctx.fillRect(x+2,y+26,4,3);}
+    }
+    // Blueprint azul após o solo atual: a forma planejada nunca fica encoberta
+    // pela terra arada e some automaticamente quando a tarefa termina.
+    const Blueprint=window.TillfolkBlueprints;
+    const fieldPlans=new Map();
+    for(const order of state.orders){
+      if(order.type==="buildHome"&&inView(order.x,order.y,4))
+        Blueprint.home(ctx,sprite,order.x,order.y,TILE,true);
+      else if((order.type==="till"||order.type==="sow")&&inView(order.x,order.y,1)){
+        const id=keyOf(order.x,order.y);
+        const current=fieldPlans.get(id);
+        fieldPlans.set(id,{x:order.x,y:order.y,grown:order.type==="sow"||Boolean(current?.grown)});
+      }
+    }
+    for(const plan of fieldPlans.values()){
+      const soil=findPlot(plan.x,plan.y);
+      if(soil&&!soil.seeded&&!soil.produce)
+        Blueprint.field(ctx,sprite,plan.x,plan.y,TILE,true,plan.grown||soil.tilled);
     }
     // Marcadores discretos: ordens prontas (creme) ou aguardando (marrom).
     const markers={clear:"L",till:"A",fertilize:"F",sow:"S",water:"R",harvest:"C",carry:"T",collectWater:"💧",collectManure:"E",buildHome:"⌂"};
