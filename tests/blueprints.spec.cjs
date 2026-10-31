@@ -151,6 +151,7 @@ test('HUD com blueprint: velocidade, gestão e menu não se sobrepõem',async({p
       };
       return {metrics:rect('.metrics'),speed:rect('.topbar .speed-wrap'),
         panels:rect('.topbar .hud-panels'),menu:rect('#menu-btn'),
+        clock:rect('#clock'),brand:rect('.topbar .brand'),
         viewport:window.innerWidth};
     });
     expect(geometry.speed.right).toBeLessThanOrEqual(geometry.viewport+1);
@@ -162,6 +163,8 @@ test('HUD com blueprint: velocidade, gestão e menu não se sobrepõem',async({p
     }else{
       expect(geometry.speed.top).toBeGreaterThanOrEqual(geometry.panels.bottom-2);
       expect(geometry.metrics.right).toBeLessThanOrEqual(geometry.speed.left+2);
+      expect(geometry.clock.right).toBeLessThanOrEqual(geometry.metrics.right+1);
+      expect(geometry.brand.right).toBeLessThanOrEqual(geometry.panels.left+1);
     }
     await page.screenshot({path:'screenshots/blueprint-hud-'+size.width+'x'+size.height+'.png',animations:'disabled'});
   }
