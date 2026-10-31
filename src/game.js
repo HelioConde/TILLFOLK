@@ -49,6 +49,41 @@
     feedbackParticles.push({x,y,color,start:performance.now()});
     if(feedbackParticles.length>22)feedbackParticles.shift();
   }
+  const pickupEffects=[],pickupHistory=[];
+  const pickupTypes={
+    twigs:{icon:"🌿",name:"Graveto"},grass:{icon:"🌾",name:"Fibra"},
+    stone:{icon:"🪨",name:"Pedra"},wood:{icon:"🪵",name:"Madeira"},
+    seed:{icon:"🌱",name:"Semente"},food:{icon:"🥕",name:"Comida"},
+    water:{icon:"💧",name:"Água"},manure:{icon:"💩",name:"Esterco"},
+    mushroom:{icon:"🍄",name:"Cogumelo"},flower:{icon:"🌸",name:"Flor"},
+    herbs:{icon:"🌿",name:"Erva"},crop:{icon:"🥕",name:"Colheita"}
+  };
+  function showPickup(x,y,key,amount=1){
+    const quantity=Number(amount)||1;if(quantity<=0)return;
+    const kind=pickupTypes[key]||{icon:"📦",name:"Item"};
+    const item={x,y,key,quantity,icon:kind.icon,name:kind.name,start:performance.now()};
+    pickupHistory.unshift(item);pickupHistory.length=Math.min(8,pickupHistory.length);
+    if(animationsEnabled()){pickupEffects.push(item);if(pickupEffects.length>28)pickupEffects.shift();}
+  }
+  function renderPickupHistory(){
+    const container=$("#pickup-feed");if(!container)return;
+    const current=performance.now();
+    const latest=pickupHistory.filter(item=>current-item.start<5500).slice(0,5);
+    container.hidden=!playing||latest.length===0;
+    if(latest.length)container.innerHTML='<strong class="pickup-heading">🎒 COLETADO AGORA</strong>'+
+      latest.map(item=>'<div class="pickup-entry"><span>'+item.icon+'</span><span>+'+item.quantity+' '+item.name+'</span></div>').join("");
+  }
+  function taskDuration(task){
+    if(task.type==="clear"){
+      const object=World.at(state.world,task.x,task.y);
+      // Recolher pequenos itens à mão é bem diferente de cortar uma árvore.
+      if(object&&["twig","pebble","mushroom","flowers","herbs"].includes(object.kind))return 4;
+      if(object?.kind==="grass")return 9;
+    }
+    return baseTime[task.type]||90;
+  }
+  const handPickup=task=>task?.type==="clear"&&
+    ["twig","pebble","mushroom","flowers","herbs","grass"].includes(World.at(state.world,task.x,task.y)?.kind);
   function clampWorldPan(){
     if(!document.body.classList.contains("play-session"))return;
     const view=$(".canvas-scroll").getBoundingClientRect();
@@ -673,7 +708,7 @@
     setSessionMode("play");
     document.body.classList.add("play-session","focus-game");
     worldPanX=0;worldPanY=0;cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;
-    movementKeys.clear();activeTouches.clear();pinchGesture=null;hoveredTile=null;feedbackParticles.length=0;closeDrawer();refresh();save();
+    movementKeys.clear();activeTouches.clear();pinchGesture=null;hoveredTile=null;feedbackParticles.length=0;pickupEffects.length=0;pickupHistory.length=0;closeDrawer();refresh();save();
     minimap.hidden=window.innerWidth<=700;
     $("#biome-legend").hidden=minimap.hidden;
     $("#minimap-toggle").setAttribute("aria-expanded",String(!minimap.hidden));
@@ -810,12 +845,12 @@
     const p=findPlot(t.x,t.y);
     if(t.type==="collectWater"){
       if(!World.waterAt(state.world,t.x,t.y))return false;
-      state.water+=4;log(w.name+" buscou 4 baldes de água na lagoa.");return true;
+      state.water+=4;showPickup(t.x,t.y,"water",4);log(w.name+" buscou 4 baldes de água na lagoa.");return true;
     }
     if(t.type==="collectManure"){
       const animal=state.animals.find(a=>Math.floor(a.x)===t.x&&Math.floor(a.y)===t.y&&a.manure>0);
       if(!animal)return false;
-      animal.manure--;state.inventory.manure++;
+      animal.manure--;state.inventory.manure++;showPickup(t.x,t.y,"manure");
       log(w.name+" recolheu esterco de "+(animal.kind==="cow"?"vaca":"animal")+".");return true;
     }
     if(t.type==="buildStation"){
@@ -849,19 +884,19 @@
           if(result.blocked)return false;
           const types={tree:"wood",stump:"wood",log:"wood",gateLog:"wood",boulder:"stone",pebble:"stone",
             mushroom:"mushroom",flowers:"flower",herbs:"herbs",grass:"grass",thicket:"wood",twig:"twigs"};
-          const amount={tree:3,stump:2,log:2,gateLog:4,boulder:3,twig:3}[kind]||1;
+          const amount={tree:3,stump:2,log:2,gateLog:4,boulder:3,twig:1}[kind]||1;
           if(kind==="gateLog"){recordTutorial("exit");log("A passagem do vale foi aberta! Novas regiões acessíveis.");}
           const resource=types[kind]||"grass";
           state.inventory[resource]=(state.inventory[resource]||0)+amount;
+          showPickup(t.x,t.y,resource,amount);
           // Grama alta tem chance de soltar uma semente. Não existe semente infinita.
           if(kind==="grass"){
-            state.inventory.twigs++;
             recordTutorial("grass");
             if(Math.random()<.25){
               const variety=Crops.pickWild();
               if(state.seeds===0)state.selectedCrop=variety;
               state.cropSeeds[variety]++;
-              state.seeds++;
+              state.seeds++;showPickup(t.x,t.y,"seed");
               log(w.name+" encontrou uma semente de "+Crops.get(variety).name+" na grama!");
               recordTutorial("seed");
             }
@@ -891,13 +926,13 @@
         if(!w.carryingWater&&state.water<=0)return false;
         if(w.carryingWater)w.carryingWater=false;else state.water--;
         p.watered=true;recordTutorial("water");break;
-      case "harvest":p.produce=true;p.seeded=false;p.watered=false;p.growth=0;recordTutorial("harvest");break;
+      case "harvest":showPickup(t.x,t.y,"crop");p.produce=true;p.seeded=false;p.watered=false;p.growth=0;recordTutorial("harvest");break;
       case "carry":{
         const variety=Crops.get(p.crop)?p.crop:"carrot";
         const amount=Crops.get(variety).food;
         p.produce=false;p.fertilized=false;
-        state.food+=amount;state.cropProduce[variety]+=amount;
-        state.cropSeeds[variety]++;state.seeds++;
+        state.food+=amount;state.cropProduce[variety]+=amount;showPickup(t.x,t.y,"food",amount);
+        state.cropSeeds[variety]++;state.seeds++;showPickup(t.x,t.y,"seed");
         log(w.name+" guardou "+Crops.get(variety).name+" (+"+amount+" comida, +1 semente).");
         recordTutorial("carry");break;
       }
@@ -984,7 +1019,7 @@
       if(w.route?.length){w.route.shift();continue;}
       if(w.supplyStage==="water"){
         if(!World.waterAt(state.world,goal.x,goal.y))continue;
-        w.carryingWater=true;w.supplyStage=null;w.supplyTarget=null;
+        w.carryingWater=true;showPickup(goal.x,goal.y,"water");w.supplyStage=null;w.supplyTarget=null;
         w.routeTask=null;w.route=[];w.workGoal=null;
         log(w.name+" encheu o balde na lagoa e está voltando para regar.");continue;
       }
@@ -993,11 +1028,11 @@
         if(!animal){
           w.supplyTarget=null;w.routeTask=null;w.route=[];continue;
         }
-        animal.manure--;w.carryingManure=true;w.supplyStage=null;w.supplyTarget=null;
+        animal.manure--;showPickup(goal.x,goal.y,"manure");w.carryingManure=true;w.supplyStage=null;w.supplyTarget=null;
         w.routeTask=null;w.route=[];w.workGoal=null;
         log(w.name+" pegou esterco e está levando até a plantação.");continue;
       }
-      w.progress+=scaled*bonus(w,t.type)/baseTime[t.type];
+      w.progress+=scaled*bonus(w,t.type)/taskDuration(t);
       if(w.progress>=1){
         const complete=finish(w,t);
         if(complete)showMapFeedback(t.x,t.y,"#ddf2a2");
@@ -1174,7 +1209,7 @@
         const working=Boolean(active&&!w.moving&&w.progress>0);
         // A troca dos atlas não deve inverter a direção do personagem.
         // Parado = quadro fixo; andando = caminhada; trabalhando = ação.
-        if(working&&active.type!=="water"&&valid(sprite.actions)){
+        if(working&&!handPickup(active)&&active.type!=="water"&&valid(sprite.actions)){
           const image=getWorkerSprite(w,true);
           const actionGroup=actionRow[active.type]??0;
           const actionDirection=actionRowFor[w.facing]??0;
@@ -1185,7 +1220,10 @@
           const direction=walkingRowFor[w.facing]??0;
           const row=direction+(w.moving?4:0);
           const frame=w.moving&&animationsEnabled()?Math.floor(w.walkFrame||0)%8:0;
-          part(image,frame*48+11,row*48+12,26,24,px-20,py-34,40,40);
+          // Coleta manual: o colono dá pulinhos rápidos ao pegar do chão, sem usar o machado.
+          const hopping=working&&handPickup(active)&&animationsEnabled();
+          const jump=hopping?Math.abs(Math.sin(performance.now()/130))*7:0;
+          part(image,frame*48+11,row*48+12,26,24,px-20,py-34-jump,40,40);
         }
         if(!valid(sprite.premium)&&!valid(sprite.worker)){
           ctx.fillStyle=w.color;ctx.fillRect(px-10,py-30,20,27);
@@ -1344,6 +1382,7 @@
   }
   function refresh(){
     if(!state)return;
+    renderPickupHistory();
     if(playing)Missions.render(state);else $("#mission-card").hidden=true;
     const set=(id,value)=>{$(id).textContent=value;};
     set("#day",String(state.day).padStart(2,"0"));
