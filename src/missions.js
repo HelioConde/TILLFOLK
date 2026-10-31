@@ -276,7 +276,9 @@
     const preview=ensureTargetUI();
     if(preview)paintTarget(preview,step.key);
     const label=document.querySelector("#mission-objective-label");
-    if(label)label.textContent="Procure: "+artNames[step.key];
+    if(label)label.textContent=step.key==="workstation"?
+      "Gravetos: "+Math.min(10,state.inventory?.twigs||0)+" / 10 · depois monte a bancada":
+      "Procure: "+artNames[step.key];
     const currentCount=Math.min(step.goal,progress.stats[step.key]);
     document.querySelector("#mission-progress").value=currentCount;
     document.querySelector("#mission-count").textContent=currentCount+" / "+step.goal;
