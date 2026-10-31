@@ -145,14 +145,11 @@
       }
       ctx.restore();
     }
-    if(building && Number.isInteger(options.previewX)&&Number.isInteger(options.previewY)){
-      const x=options.previewX*TILE,y=options.previewY*TILE,ok=options.previewValid;
-      ctx.save();
-      ctx.fillStyle=ok?"#b5eb7780":"#f27c6688";
-      ctx.strokeStyle=ok?"#fff5ac":"#ffb0a0";
-      ctx.lineWidth=2;ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
-      ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);
-      ctx.restore();
+    if(building && ["floor","walls","roof"].includes(layer)&&
+      Number.isInteger(options.previewX)&&Number.isInteger(options.previewY)){
+      // Ghost com a SILHUETA da própria peça em azul (vermelho se inválida).
+      window.TillfolkBlueprints?.piece(ctx,sprites,layer,options.previewX,options.previewY,
+        TILE,options.previewValid,options.previewErase);
     }
   }
   window.TillfolkHouseBuilder=Object.freeze({initial,normalize,edit,draw,occupied,contains,MAX_FLOORS,setBounds});
