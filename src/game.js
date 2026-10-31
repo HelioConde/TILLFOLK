@@ -2046,6 +2046,14 @@
       '<canvas data-crop-icon="'+crop.id+'" width="40" height="40" aria-hidden="true"></canvas>'+
       '<span><strong>'+escapeHtml(crop.name)+'</strong><small>'+extra+'</small></span></button>';
   }
+  function renderCropStock(){
+    const grid=$("#crop-stock-grid");
+    if(!grid)return;
+    grid.innerHTML=Crops.ALL.map(crop=>cropTile(crop,
+      (state.cropSeeds[crop.id]||0)+" sementes · "+(state.cropProduce[crop.id]||0)+" alimentos",
+      "stock-crop",true)).join("");
+    Crops.drawIcons(grid);
+  }
   function renderCropCatalog(){
     const grid=$("#crop-catalog-grid");
     grid.innerHTML=Crops.ALL.map(crop=>cropTile(crop,
@@ -2480,6 +2488,7 @@
   let speedBeforeOptions=1;
   function showGameDialog(d){
     if(!playing||d.open)return;
+    if(d===stockDialog)renderCropStock();
     if(optionsDialog.open)optionsDialog.close();
     d.showModal();
   }
