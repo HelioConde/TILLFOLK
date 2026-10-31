@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="./game-interface.css?v=20261031">
   <link rel="stylesheet" href="./top-speed.css?v=20261031-mobile-brand-clock">
   <script defer src="./src/menu.js"></script>
-  <script defer src="./src/tutorial.js"></script>
+  <script defer src="./src/tutorial.js?v=20261031-fim-escolhas"></script>
   <script defer src="./src/house-renderer.js"></script>
   <script defer src="./src/menu-scene.js?v=20261031-arvores-verdes"></script>
   <script defer src="./src/biomes.js?v=1"></script>
@@ -31,7 +31,7 @@
   <script defer src="./src/blueprints.js?v=1"></script>
   <script defer src="./src/house-building.js?v=20261031-ghost-sprout"></script>
   <script defer src="./src/task-orders.js"></script>
-  <script defer src="./src/game.js?v=20261031-blueprint-colonia"></script>
+  <script defer src="./src/game.js?v=20261031-tutorial-retorno"></script>
   <script defer src="./src/game-hud.js?v=20261031-atalho-direito"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
 </head>
@@ -197,7 +197,7 @@
         <nav class="title-menu-actions" aria-label="Escolha uma opção">
           <button type="button" id="new-game" class="title-menu-button primary"><span>🌱</span><strong>Nova Fazenda</strong><em>›</em></button>
           <button type="button" id="continue" class="title-menu-button"><span>↻</span><strong>Continuar</strong></button>
-          <button type="button" id="help-btn" class="title-menu-button"><span>▤</span><strong>Como Jogar</strong></button>
+          <button type="button" id="help-btn" class="title-menu-button"><span>▤</span><strong>Tutorial</strong></button>
           <button type="button" id="title-settings" class="title-menu-button"><span>⚙</span><strong>Configurações</strong></button>
           <button type="button" id="title-credits" class="title-menu-button"><span>✦</span><strong>Créditos</strong></button>
           <button type="button" id="title-exit" class="title-menu-button"><span>⇥</span><strong>Sair</strong></button>
@@ -298,7 +298,7 @@
     <div id="candidates" class="candidate-list"></div>
   </dialog>
   <dialog id="help-dialog" class="modal help-guide" aria-labelledby="guide-title">
-    <header class="guide-header"><div><span class="overline">PRIMEIROS PASSOS · GUIA ILUSTRADO</span><h2 id="guide-title">Como jogar TILLFOLK</h2><p>Aprenda a comandar sua fazenda, etapa por etapa.</p></div>
+    <header class="guide-header"><div><span class="overline">PRIMEIROS PASSOS · GUIA ILUSTRADO</span><h2 id="guide-title">Tutorial do TILLFOLK</h2><p>Aprenda a comandar sua fazenda, etapa por etapa.</p></div>
     <form method="dialog"><button class="modal-x" aria-label="Fechar tutorial">✕</button></form></header>
     <div class="guide-stage">      <section class="guide-step" data-guide-step="0" >
         <canvas width="384" height="160" class="guide-art" data-guide-art="world" role="img" aria-label="Cena em pixel art: Nova fazenda"></canvas>
@@ -326,7 +326,7 @@
       </section></div>
     <footer class="guide-footer">
       <div class="guide-dots" aria-label="Etapas do tutorial"><button type="button" data-guide-dot="0" aria-label="Etapa 1: Nova fazenda" aria-current="step">1</button><button type="button" data-guide-dot="1" aria-label="Etapa 2: Sua equipe" >2</button><button type="button" data-guide-dot="2" aria-label="Etapa 3: Primeira ordem" >3</button><button type="button" data-guide-dot="3" aria-label="Etapa 4: Cultivar" >4</button><button type="button" data-guide-dot="4" aria-label="Etapa 5: Colheita" >5</button><button type="button" data-guide-dot="5" aria-label="Etapa 6: Automatizar" >6</button></div>
-      <div class="guide-actions"><button type="button" id="help-prev" class="large-secondary" disabled>← Anterior</button><span id="guide-counter" role="status" aria-live="polite">1 de 6</span><button type="button" id="help-next" class="large-primary">Próximo →</button><button type="button" id="help-close" class="large-primary" hidden>Entendi!</button></div>
+      <div class="guide-actions"><button type="button" id="help-prev" class="large-secondary" disabled>← Anterior</button><span id="guide-counter" role="status" aria-live="polite">1 de 6</span><button type="button" id="help-next" class="large-primary">Próximo →</button><button type="button" id="help-close" class="large-secondary" hidden>↩ Voltar ao menu inicial</button><button type="button" id="guide-play" class="large-primary" hidden>▶ Continuar jogando</button></div>
     </footer>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
