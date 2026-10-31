@@ -344,9 +344,15 @@
   const icons = {clear:"🪓",till:"⛏️",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠"};
   const baseTime = {clear:120,till:90,fertilize:60,sow:60,water:90,harvest:120,carry:60,collectWater:65,collectManure:45,buildHome:180};
   const startPriorities = {clear:7,till:6,fertilize:5,sow:6,water:8,harvest:9,carry:8,collectWater:7,collectManure:5,buildHome:7};
-  // Homenagem a Simone: nomes dos colonos inspirados no nome dela.
-  // O jogador continua livre para personalizar cada personagem.
-  const names=["Sim","Simo","Mone","Moni","Mona","Simi","Simona","Monê","Mimo","Simone"];
+  // Homenagem à Simone misturada a nomes brasileiros e apelidos divertidos.
+  // Nomes novos são sorteados; não renomeamos saves com nomes personalizados.
+  const names=[
+    "Sim","Mônica","Luna","Simo","Manu","Mone","Flávia","Moni",
+    "João","Mona","Ana","Simi","Pedro","Simona","Júlia","Monê",
+    "Maria","Mimo","Duda","Simone","Rafa","Siminha","Bruna","Zezinho",
+    "Caio","Simônica","Bia","Môniquinha","José","Lia","Gabi","Toninho",
+    "Nanda","Luiza","Chico","Clara","Zeca","Tati","Nina","Juca"
+  ];
   const legacyWorkerNames={
     Nico:"Sim",Cora:"Simo",Tito:"Mone",Eva:"Moni",Bia:"Mona",
     Theo:"Simi","Léo":"Simona",Sol:"Monê",Ravi:"Mimo",
@@ -362,8 +368,8 @@
   }
   const initialCandidates = [
     {name:"Sim",skills:["water"],neg:["clear"],cost:6,color:"#fff2bd"},
-    {name:"Simo",skills:["till","sow","harvest"],neg:["fertilize"],cost:10,color:"#d3d6fc"},
-    {name:"Mone",skills:["carry","fertilize"],neg:[],cost:8,color:"#ffcfc5"}
+    {name:"Mônica",skills:["till","sow","harvest"],neg:["fertilize"],cost:10,color:"#d3d6fc"},
+    {name:"Manu",skills:["carry","fertilize"],neg:[],cost:8,color:"#ffcfc5"}
   ];
   const HOME_WOOD_COST=8;
   const homeTiles=(x,y)=>[[x,y],[x+1,y],[x,y+1],[x+1,y+1]];

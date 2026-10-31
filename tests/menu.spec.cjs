@@ -1173,8 +1173,23 @@ test('Subtítulo do menu: contraste, legibilidade e seleção de texto',async({p
   }
 });
 
-test('Homenagem a Simone: nomes sugeridos no recrutamento, candidatos e novos trabalhadores',async({page})=>{
-  const variants=/^(Sim|Simo|Mone|Moni|Mona|Simi|Simona|Monê|Mimo|Simone) \d{2}$/;
+test('Homenagem à Simone: nomes brasileiros, apelidos e recrutamento',async({page})=>{
+  const fs=require('node:fs');
+  const code=fs.readFileSync('src/game.js','utf8');
+  const match=code.match(/const names=(\[[\s\S]*?\]);/);
+  expect(match).not.toBeNull();
+  const pool=JSON.parse(match[1]);
+  expect(pool.length).toBeGreaterThanOrEqual(35);
+  expect(new Set(pool).size).toBe(pool.length);
+  for(const name of ['Sim','Simo','Mone','Simone','Mônica','Luna','Manu','Flávia',
+    'João','Ana','Maria','Simônica','Môniquinha','Zezinho']){
+    expect(pool).toContain(name);
+  }
+  const generated=name=>{
+    const parsed=/^(.+) (\d{2})$/.exec(name);
+    expect(parsed).not.toBeNull();
+    expect(pool).toContain(parsed[1]);
+  };
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
   await page.locator('#new-game').click();
   await page.locator('[data-game-mode="relaxed"]').click();
@@ -1182,18 +1197,18 @@ test('Homenagem a Simone: nomes sugeridos no recrutamento, candidatos e novos tr
   const initial=await page.locator('.starter-name-input').evaluateAll(nodes=>nodes.map(n=>n.value));
   expect(initial).toHaveLength(2);
   expect(initial[0]).not.toBe(initial[1]);
-  for(const name of initial)expect(name).toMatch(variants);
+  for(const name of initial)generated(name);
   await page.locator('#starter-reroll-all').click();
   const rerolled=await page.locator('.starter-name-input').evaluateAll(nodes=>nodes.map(n=>n.value));
-  for(const name of rerolled)expect(name).toMatch(variants);
+  for(const name of rerolled)generated(name);
   // Renomeação manual continua permitida e preservada.
   await page.locator('.starter-name-input').first().fill('Minha Simone');
   await page.locator('.starter-name-input').first().dispatchEvent('change');
   await page.locator('#starter-confirm').click();
   const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
   expect(state.workers[0].name).toBe('Minha Simone');
-  expect(state.workers[1].name).toMatch(variants);
-  expect(state.candidates.slice(0,3).map(c=>c.name)).toEqual(['Sim','Simo','Mone']);
+  generated(state.workers[1].name);
+  expect(state.candidates.slice(0,3).map(c=>c.name)).toEqual(['Sim','Mônica','Manu']);
 });
 
 test('Homenagem a Simone: migrar só apelidos automáticos em saves antigos',async({page})=>{
