@@ -287,7 +287,8 @@
     cow:A+"animals/cow.png", well:A+"structures/water-well.png", fences:A+"structures/fences.png",
     roof:A+"structures/wood-roof.png",walls:A+"structures/wood-walls.png",door:A+"structures/wood-door.png",furniture:A+"structures/furniture.png",chest:A+"structures/chest.png",paths:A+"structures/paths.png",fenceGates:A+"structures/fence-gates.png",
     rocks:A+"environment/forageables.png",
-    workstation:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/work station.png"
+    workstation:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/work station.png",
+    valleyCliff:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles/Grass_Hill_Tiles_v2.png"
   };
   const sprite = {};
   for (const [key,url] of Object.entries(spriteUrls)) {
@@ -833,10 +834,12 @@
         const obj=World.at(state.world,p.x,p.y);
         if(obj){
           if(Crafting.blocked(state,"clear",obj))return false;
-          const kind=obj.kind, result=World.clear(state.world,p.x,p.y);
-          const types={tree:"wood",stump:"wood",log:"wood",boulder:"stone",
+          const kind=obj.kind, result=World.clear(state.world,p.x,p.y,{stoneAxe:Crafting.has(state,"stoneAxe")});
+          if(result.blocked)return false;
+          const types={tree:"wood",stump:"wood",log:"wood",gateLog:"wood",boulder:"stone",pebble:"stone",
             mushroom:"mushroom",flowers:"flower",herbs:"herbs",grass:"grass",thicket:"wood",twig:"twigs"};
-          const amount={tree:3,stump:2,log:2,boulder:3,twig:3}[kind]||1;
+          const amount={tree:3,stump:2,log:2,gateLog:4,boulder:3,twig:3}[kind]||1;
+          if(kind==="gateLog"){recordTutorial("exit");log("A passagem do vale foi aberta! Novas regiões acessíveis.");}
           const resource=types[kind]||"grass";
           state.inventory[resource]=(state.inventory[resource]||0)+amount;
           // Grama alta tem chance de soltar uma semente. Não existe semente infinita.
@@ -1518,6 +1521,7 @@
     const plot=findPlot(x,y);
     if(!plot||World.waterAt(state.world,x,y)||
        occupiedByHome(x,y)||occupiedByStation(x,y)||window.TillfolkHouseBuilder.occupied(state.house,x,y))return null;
+    if(World.at(state.world,x,y)?.kind==="ridge")return null;
     if(World.at(state.world,x,y)||plot.dirty)return "clear";
     const terrain=World.terrainAt?.(state.world,x,y);
     if(terrain&&!terrain.farmable)return null;
@@ -1527,6 +1531,7 @@
     return "till";
   }
   function queueAt(type,x,y){
+    if(World.at(state.world,x,y)?.kind==="ridge")return {error:"Encosta fechada: procure o tronco na saída leste."};
     if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||occupiedByHome(x,y)||occupiedByStation(x,y)||occupiedByStation(x,y)||
        (World.waterAt(state.world,x,y)&&type!=="collectWater"))return {error:"Terreno indisponível"};
     if(type==="buildStation"&&!stationSiteValid(x,y))return {error:"Oficina exige terreno livre."};
@@ -1574,6 +1579,9 @@
       "Nenhuma ordem aplicável nesta área.");
   }
   function placeOrder(type,x,y){
+    if(World.at(state.world,x,y)?.kind==="ridge"){
+      notify("Encosta intransponível: procure o tronco caído a leste.");return;
+    }
     if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||occupiedByHome(x,y)||
        (World.waterAt(state.world,x,y)&&type!=="collectWater")){
       notify("Terreno indisponível para ordens.");return;
@@ -2103,7 +2111,7 @@
     if(!button||button.disabled)return;
     const result=Crafting.craft(state,button.dataset.craftTool);
     if(result.error){notify(result.error);return;}
-    if(result.item.key==="axe")recordTutorial("axe");
+    if(result.item.key==="stoneAxe")recordTutorial("axe");
     log("Fabricamos "+result.item.name+" na Work Station.");
     notify("✓ "+result.item.name+" pronta para toda a equipe!");
     recalcTasks();renderWorkshop();refresh();save();
@@ -2407,6 +2415,7 @@
     const objects=state.world.objects||[];
     let candidates=[];
     if(step.target==="grass")candidates=objects.filter(item=>item.kind==="grass");
+    else if(step.target==="exit")candidates=objects.filter(item=>item.kind==="gateLog");
     else if(step.target==="till")candidates=state.plots.filter(p=>
       !p.tilled&&!p.seeded&&!p.dirty&&!World.at(state.world,p.x,p.y)&&
       World.terrainAt(state.world,p.x,p.y).farmable&&!occupiedByHome(p.x,p.y));
