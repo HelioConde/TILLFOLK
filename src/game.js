@@ -861,7 +861,7 @@
       showPickup(t.x,t.y,item.key,1);
       if(item.key==="hoe")recordTutorial("hoe");
       if(item.key==="wateringCan")recordTutorial("wateringCan");
-      if(item.key==="stoneAxe")recordTutorial("axe");
+      if(item.key==="axe")recordTutorial("axe");
       log(w.name+" terminou "+item.name+" na Work Station e guardou no próprio inventário.");
       return true;
     }
@@ -904,7 +904,7 @@
         const obj=World.at(state.world,p.x,p.y);
         if(obj){
           if(Crafting.blocked(state,"clear",obj,w))return false;
-          const kind=obj.kind, result=World.clear(state.world,p.x,p.y,{stoneAxe:Crafting.has(state,"stoneAxe",w)});
+          const kind=obj.kind, result=World.clear(state.world,p.x,p.y,{axe:Crafting.has(state,"axe",w)});
           if(result.blocked)return false;
           const types={tree:"wood",stump:"wood",log:"wood",gateLog:"wood",boulder:"stone",pebble:"stone",
             mushroom:"mushroom",flowers:"flower",herbs:"herbs",grass:"grass",thicket:"wood",twig:"twigs"};
@@ -2702,7 +2702,7 @@
       showMapFeedback(target.x,target.y,"#ecf8a8");
       notify(step.target==="workstation"&&state.inventory.twigs<Crafting.STATION_COST?"Graveto encontrado! Marque Limpar para recolhê-lo.":
         step.target==="grass"?"Tufo de grama encontrado! Marque a ordem de Limpar.":
-        step.target==="exit"?"Esse tronco só pode ser cortado com o machado de pedra. Marque Limpar.":
+        step.target==="exit"?"Esse tronco exige um machado comum. Selecione Limpar e marque o tronco.":
         "Local sugerido destacado. Clique no terreno para dar a ordem.");
     }else{
       notify(step.target==="harvest"?"A cultura ainda está crescendo. Use 3× ou 6× para esperar.":"Não encontrei alvo pronto. Explore o mapa ou use Ordens.");
