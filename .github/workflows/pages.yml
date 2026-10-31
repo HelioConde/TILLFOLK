@@ -1,9 +1,12 @@
 name: TILLFOLK — validar e publicar
 
+# Publicar somente o commit exato aprovado pelo Playwright no push da main.
+# Corridas com screenshots ou testes quebrados não podem implantar artefatos.
 on:
-  push:
+  workflow_run:
+    workflows: ["QA visual — menu e jogo TILLFOLK"]
+    types: [completed]
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,12 +17,22 @@ concurrency:
 
 jobs:
   build:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
     name: Validar cena HTML5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Conferir que o commit aprovado ainda é o HEAD da main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=1
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
       - name: Verificar JavaScript
         run: |
+          node --check src/save-backup.js
           node --check src/biomes.js
           node --check src/wild-world.js
           node --check src/game.js
@@ -37,7 +50,7 @@ jobs:
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
           cp index.html styles.css menu.css menu-layout.css menu-refinement.css game-hud.css sprout-ui.css game-refinement.css camera-ui.css game-polish.css fullscreen-game.css house-building.css task-orders.css team-ux.css ui-polish.css _site/
-          cp src/biomes.js src/game.js src/wild-world.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
+          cp src/save-backup.js src/biomes.js src/game.js src/wild-world.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
@@ -48,6 +61,8 @@ jobs:
           test -f _site/public/assets/sprout-lands/terrain/grass.png
           test -f _site/public/assets/sprout-lands/farming/crops.png
           test -f _site/public/assets/tillfolk/menu-landscape.svg
+          test -f _site/src/save-backup.js
+          grep -q 'src/save-backup.js' _site/index.html
           test -f _site/src/biomes.js
           test -f _site/src/wild-world.js
           test -f _site/src/menu.js
