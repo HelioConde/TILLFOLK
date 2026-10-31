@@ -3,6 +3,20 @@
 ## Regra central
 **O jogador decide o que precisa ser feito; os trabalhadores decidem quem executa e em qual ordem.** Colocar uma ordem para arar um terreno não agenda fertilização, plantio, irrigação, colheita ou transporte. A conclusão de uma ordem remove-a da fila; não cria novas tarefas.
 
+## Ferramenta Universal (padrão)
+O botão **Universal** substitui o atalho Arar. Um clique gera **uma única ordem** para o próximo estado daquele terreno:
+- Solo natural sem obstáculos → **Arar**.
+- Árvore, pedra, grama alta ou outro obstáculo → **Limpar**.
+- Solo arado, ainda sem semente → **Semear**.
+- Planta sem água → **Regar**.
+- Planta madura → **Colher**.
+- Colheita caída no terreno → **Transportar**.
+- Plantação já regada, ainda amadurecendo → nenhuma tarefa nova.
+
+A ferramenta universal **não automatiza uma cadeia inteira**. Os colonos apenas executam as ordens que o jogador coloca na fila; depois é necessário clicar novamente ou marcar outra área. Fertilizar continua uma ordem manual opcional em **Ordens**.
+
+**Seleção por arrasto:** no computador, pressione o botão esquerdo e arraste para desenhar um retângulo de terrenos. Solte para criar uma ordem por célula aplicável, sem duplicar ordens existentes. Em **Ordens** isso designa a mesma tarefa para todos os terrenos; em **Cancelar** remove as ordens da área. Shift+arrastar ou botão do meio continuam movendo a câmera; a seleção usa a transformação atual do zoom. No celular, use o botão **Área: ligada/desligada** acima da barra de ferramentas para alternar entre selecionar com o dedo e deslocar o mapa. O gesto de pinça mantém a função de zoom.
+
 ## Como designar
 1. Entre na fazenda e clique em **Ordens**. Escolha entre **Limpar**, **Arar**, **Fertilizar**, **Semear**, **Regar**, **Colher** e **Transportar**.
 2. Clique nos terrenos desejados para adicionar várias ordens independentes à fila. **Arar** também tem um atalho permanente na barra inferior.
