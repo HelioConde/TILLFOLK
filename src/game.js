@@ -497,6 +497,22 @@
     available.sort((a,b)=>priorityScore(b)-priorityScore(a));
     if(available.length){w.task=available[0].id;w.progress=0;w.routeTask=null;w.route=[];available[0].assigned=w.id;}
   }
+  function assignIdleWorkers(){
+    const idle=state.workers.filter(w=>!w.task);
+    if(!idle.length)return;
+    // Trabalhadores especializados/restritos escolhem antes dos generalistas.
+    // Evita o versátil ocupar a única ordem disponível para outro colono.
+    // Contagem leve: o teste de caminho continua centralizado em assign().
+    const options=w=>tasks.reduce((count,t)=>{
+      if(t.status!=="ready"||t.assigned||w.neg.includes(t.type))return count;
+      if(t.type==="water"&&state.water<=0&&w.neg.includes("collectWater"))return count;
+      if(t.type==="fertilize"&&state.inventory.manure<=0&&w.neg.includes("collectManure"))return count;
+      return count+1;
+    },0);
+    const ranked=idle.map(w=>({worker:w,options:options(w)}))
+      .sort((a,b)=>a.options-b.options||a.worker.id-b.worker.id);
+    for(const entry of ranked)assign(entry.worker);
+  }
   function finish(w,t){
     const p=state.plots.find(p=>p.x===t.x&&p.y===t.y);
     if(t.type==="collectWater"){
@@ -582,7 +598,7 @@
     }
     for(const p of state.plots)if(p.seeded&&p.watered&&p.growth<1)p.growth=Math.min(1,p.growth+scaled/180);
     recalcTasks();
-    for(const w of state.workers)assign(w);
+    assignIdleWorkers();
     for(const w of state.workers){
       w.moving=false;
       if(!w.task)continue;
