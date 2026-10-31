@@ -233,7 +233,7 @@
       appearance:c.appearance ?? i,personalPriority:{},x:13.5+i,y:9.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
     }));
     state = {day:1,minutes:8*60,coins:220,seeds:0,water:0,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
-      plots,orders:[],world,house:window.TillfolkHouseBuilder.initial(),homes:[],animals:[{id:1,kind:"cow",x:16.5,y:9.5,manure:1,timer:0}],inventory:{wood:15,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
+      plots,orders:[],world,house:window.TillfolkHouseBuilder.initial(),homes:[],animals:[],inventory:{wood:15,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     tasks=[]; simSpeed=1; updateSpeed();
@@ -262,8 +262,16 @@
         const [x,y]=state.house.anchor.split("-").map(Number);
         state.homes.push({x,y,residentId:null,legacy:true});
       }
-      state.animals=Array.isArray(s.animals)?s.animals:[{id:1,kind:"cow",x:16.5,y:9.5,manure:1,timer:0}];
-      state.animals=state.animals.filter(a=>Number.isFinite(a.x)&&Number.isFinite(a.y)).map(a=>({...a,manure:Math.max(0,Number(a.manure)||0),timer:Number(a.timer)||0}));
+      // A fase inicial não tem animais. Remover apenas a vaca inicial antiga
+      // (inclusive de saves anteriores), sem apagar animais legítimos de fases futuras.
+      const isLegacyStarterCow=a=>a?.id===1&&a.kind==="cow"&&
+        a.x===16.5&&a.y===9.5&&!a.placedByPlayer;
+      state.animals=(Array.isArray(s.animals)?s.animals:[])
+        .filter(a=>a&&Number.isFinite(a.x)&&Number.isFinite(a.y)&&!isLegacyStarterCow(a))
+        .map(a=>({...a,manure:Math.max(0,Number(a.manure)||0),timer:Number(a.timer)||0}));
+      // Ordens da vaca removida não ficam bloqueadas para sempre.
+      state.orders=state.orders.filter(o=>o.type!=="collectManure"||
+        state.animals.some(a=>Math.floor(a.x)===o.x&&Math.floor(a.y)===o.y));
       assignHomes();
       state.mode=state.mode||"survival";
       state.farmName=state.farmName||"Minha Fazenda";
@@ -663,6 +671,8 @@
     const m=Math.floor(state.minutes);set("#clock",String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
     for(const key of ["coins","seeds","water","food"])set("#"+key,state[key]);
     set("#worker-count",state.workers.length);set("#task-count",tasks.length);
+    const manureOrderButton=$('[data-order-type="collectManure"]');
+    if(manureOrderButton)manureOrderButton.hidden=state.animals.length===0;
     if($("#homes-count"))$("#homes-count").textContent=state.homes.length+"/"+state.workers.length;
     set("#hud-workers",state.workers.length);set("#hud-tasks",tasks.length);
     $("#order-count").textContent=String(tasks.length);
