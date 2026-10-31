@@ -46,8 +46,14 @@
   document.addEventListener("keydown",event=>{
     if(!document.body.classList.contains("play-session")||event.repeat||event.altKey||event.ctrlKey||event.metaKey)return;
     if(document.querySelector("dialog[open]"))return;
+
+    if(key==="escape"){
+      if($("#orders-btn").getAttribute("aria-expanded")==="true")$("#orders-btn").click();
+      else if(!$("#construction-panel").hidden)$('.tool[data-tool="universal"]')?.click();
+      queueMicrotask(sync);
+      return;
+    }
     if(event.target.closest("input,textarea,select,button,[contenteditable]"))return;
-    const key=event.key.toLowerCase();
     const actions={"1":".tool[data-tool='universal']","2":"#orders-btn",
       "3":".tool[data-tool='remover']","4":".tool[data-tool='inspecionar']",
       "5":".tool[data-tool='construir']",
@@ -59,10 +65,6 @@
       event.preventDefault();
       const paused=$("[data-speed='0'].chosen");
       $(paused?"[data-speed='1']":"[data-speed='0']")?.click();
-      queueMicrotask(sync);
-    }else if(key==="escape"){
-      if($("#orders-btn").getAttribute("aria-expanded")==="true")$("#orders-btn").click();
-      else if(!$("#construction-panel").hidden)$('.tool[data-tool="universal"]')?.click();
       queueMicrotask(sync);
     }
   });
