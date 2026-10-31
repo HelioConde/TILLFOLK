@@ -26,6 +26,7 @@ on:
       - 'styles.css'
       - 'game-polish.css'
       - 'game-hud.css'
+      - 'game-refinement.css'
       - 'sprout-ui.css'
       - 'src/sprout-ui-skin.js'
       - 'src/game-hud.js'
