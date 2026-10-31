@@ -64,12 +64,21 @@ test('Fertilização precisa de esterco e a vaca permite ordem de coleta',async(
   await tile(page,Math.floor(cow.x),Math.floor(cow.y));
   const s=await snap(page);
   expect(s.orders.some(o=>o.type==='collectManure')).toBe(true);
-  const before=await page.evaluate(()=>window.TillfolkOrders.status(
-    {type:'fertilize',x:13,y:11},
-    {x:13,y:11,tilled:true,fertilized:false,seeded:false,dirty:false},
-    null,
-    JSON.parse(localStorage.getItem('tillfolk-v01'))
-  ));
+  const before=await page.evaluate(()=>{
+    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    s.animals.forEach(a=>a.manure=0);
+    return window.TillfolkOrders.status(
+      {type:'fertilize',x:13,y:11},
+      {x:13,y:11,tilled:true,fertilized:false,seeded:false,dirty:false},
+      null,s);
+  });
+  const automatic=await page.evaluate(()=>{
+    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    return window.TillfolkOrders.status({type:'fertilize'},
+      {tilled:true,fertilized:false,seeded:false,dirty:false},null,s);
+  });
+  expect(automatic.state).toBe('ready');
+  expect(automatic.reason).toContain('Buscar esterco');
   expect(before.state).toBe('blocked');
   expect(before.reason).toContain('esterco');
   const after=await page.evaluate(()=>{
