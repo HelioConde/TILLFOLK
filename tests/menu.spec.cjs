@@ -964,7 +964,7 @@ test('Sprout Lands UI: atlas original em botões, painel, slots e celular',async
   });
   expect(result.slot).toContain('data:image/png');
   expect(result.button).toContain('data:image/png');
-  expect(result.tooltip).toContain('dialog%20box%20big.png');
+  expect(result.tooltip).toMatch(/dialog(?:%20| )box(?:%20| )big\.png/);
   expect(result.dock.left).toBeGreaterThanOrEqual(0);
   expect(result.dock.right).toBeLessThanOrEqual(result.viewport.width+1);
   expect(result.dock.bottom).toBeLessThanOrEqual(result.viewport.height+1);
