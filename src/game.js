@@ -1350,7 +1350,7 @@
         return;
       }
       // Checar se o jogador já marcou o serviço. Nunca criar tarefas pelo diálogo.
-      const desired=quest.key==="workstation"?"buildStation":quest.key==="axe"?null:step<=3?"clear":({till:"till",sow:"sow",water:"water",
+      const desired=quest.key==="workstation"?"buildStation":["hoe","wateringCan","axe"].includes(quest.key)?null:step<=3?"clear":({till:"till",sow:"sow",water:"water",
         harvest:"harvest",carry:"carry",plan:"buildHome"})[quest.key];
       const relevantOrders=state.orders.filter(order=>order.type===desired);
       const assigned=visible.filter(w=>relevantOrders.some(order=>order.id===w.task));
@@ -2532,7 +2532,9 @@
     let candidates=[];
     if(step.target==="grass")candidates=objects.filter(item=>item.kind==="grass");
     else if(step.target==="exit")candidates=objects.filter(item=>item.kind==="gateLog");
-    else if(step.target==="workstation")candidates=state.plots.filter(p=>stationSiteValid(p.x,p.y));
+    else if(step.target==="workstation")candidates=state.inventory.twigs<Crafting.STATION_COST?
+      objects.filter(item=>item.kind==="twig"):
+      state.plots.filter(p=>stationSiteValid(p.x,p.y));
     else if(step.target==="till")candidates=state.plots.filter(p=>
       !p.tilled&&!p.seeded&&!p.dirty&&!World.at(state.world,p.x,p.y)&&
       World.terrainAt(state.world,p.x,p.y).farmable&&!occupiedByHome(p.x,p.y));
@@ -2545,15 +2547,17 @@
     else if(step.target==="carry")candidates=state.plots.filter(p=>p.produce);
     else if(step.target==="plan")candidates=state.plots.filter(p=>homeSiteValid(p.x,p.y));
     const target=nearest(candidates);
-    if(step.target==="axe"){openWorkshop();return;}
-    if(step.tool==="construir"){
+    if(["axe","hoe","wateringCan"].includes(step.target)){openWorkshop();return;}
+    if(step.target==="workstation"&&state.inventory.twigs<Crafting.STATION_COST){setTool("clear");}
+    else if(step.tool==="construir"){
       setTool("construir");
       $(step.target==="workstation"?'[data-build-layer="station"]':'[data-build-layer="home"]').click();
     }else setTool(step.tool);
     if(target){
       focusCameraAt(target.x+.5,target.y+.5);
       showMapFeedback(target.x,target.y,"#ecf8a8");
-      notify(step.target==="grass"?"Tufo de grama encontrado! Marque a ordem de Limpar.":
+      notify(step.target==="workstation"&&state.inventory.twigs<Crafting.STATION_COST?"Graveto encontrado! Marque Limpar para recolhê-lo.":
+        step.target==="grass"?"Tufo de grama encontrado! Marque a ordem de Limpar.":
         step.target==="exit"?"Esse tronco só pode ser cortado com o machado de pedra. Marque Limpar.":
         "Local sugerido destacado. Clique no terreno para dar a ordem.");
     }else{
