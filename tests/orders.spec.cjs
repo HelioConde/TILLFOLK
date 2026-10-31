@@ -144,7 +144,8 @@ test('Muitas ordens bloqueadas são agrupadas e um trabalhador ocioso explica a 
   await page.waitForTimeout(900);
   await expect(waiting).toHaveAttribute('open','');
   await page.screenshot({path:'screenshots/fila-bloqueada-e-ociosos.png',animations:'disabled'});
-  await page.locator('#open-workers').click();
+  // O painel já está aberto; não clicar em botão escondido atrás do drawer.
+  await expect(page.locator('#farm-sidebar')).toBeVisible();
   await expect(page.locator('.worker-job').first()).toContainText('Restrições impedem');
   await expect(page.locator('.worker-status').first()).toContainText('Aguardando');
   // Remover a proibição de um trabalhador recupera a execução na próxima rodada.
