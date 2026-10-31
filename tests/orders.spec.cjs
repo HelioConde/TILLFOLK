@@ -218,10 +218,10 @@ test('Universal: uma ordem por clique, avançando pelo estado real do terreno',a
       const key='tillfolk-v01',s=JSON.parse(localStorage.getItem(key));
       const p=s.plots.find(p=>p.x===pos.x&&p.y===pos.y);
       Object.assign(p,{dirty:false,tilled:true,fertilized:false,seeded:false,watered:false,
-        growth:0,produce:false},{...fields,pos});
+        growth:0,produce:false},fields);
       s.orders=[];s.world.objects=s.world.objects.filter(o=>o.x!==pos.x||o.y!==pos.y);
       localStorage.setItem(key,JSON.stringify(s));
-    },fields);
+    },{...fields,pos});
     await page.reload({waitUntil:'networkidle'});
     await page.locator('#continue').click();
     await tile(page,pos.x,pos.y);
@@ -234,7 +234,7 @@ test('Universal: uma ordem por clique, avançando pelo estado real do terreno',a
   expect(await setState({seeded:true,watered:true,growth:.3})).toEqual([]);
   await page.evaluate(pos=>{
     const key='tillfolk-v01',s=JSON.parse(localStorage.getItem(key));
-    s.orders=[];const p=s.plots.find(p=>p.x===13&&p.y===11);
+    s.orders=[];const p=s.plots.find(p=>p.x===pos.x&&p.y===pos.y);
     Object.assign(p,{tilled:false,seeded:false,produce:false,watered:false,growth:0});
     s.world.objects.push({x:pos.x,y:pos.y,kind:'grass',variant:0,age:0});
     localStorage.setItem(key,JSON.stringify(s));
@@ -250,7 +250,8 @@ test('Arrastar no mapa enfileira uma área e funciona após zoom, sem duplicar o
   await start(page);
   const drag=async(x0,y0,x1,y1)=>{
     const r=await page.locator('#world').boundingBox();
-    const pt=(x,y)=>({x:r.x+(x+.5)*r.width/28,y:r.y+(y+.5)*r.height/18});
+    const dims=await page.locator('#world').evaluate(c=>({w:c.width/32,h:c.height/32}));
+    const pt=(x,y)=>({x:r.x+(x+.5)*r.width/dims.w,y:r.y+(y+.5)*r.height/dims.h});
     const a=pt(x0,y0),b=pt(x1,y1);
     await page.mouse.move(a.x,a.y);await page.mouse.down();
     await page.mouse.move(b.x,b.y,{steps:9});await page.mouse.up();
