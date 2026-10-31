@@ -1849,7 +1849,7 @@
     const selector=section==="tasks"?"#tasks":"#workers";
     const target=$(selector),scroll=sidebar.scrollTop+
       target.getBoundingClientRect().top-sidebar.getBoundingClientRect().top-105;
-    sidebar.scrollTo({top:Math.max(0,scroll),behavior:"instant"});
+    sidebar.scrollTo({top:Math.max(0,scroll),behavior:"auto"});
     sidebar.querySelectorAll("[data-drawer-target]").forEach(button=>
       button.setAttribute("aria-pressed",String(button.dataset.drawerTarget===section)));
   }
