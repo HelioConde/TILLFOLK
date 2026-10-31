@@ -596,8 +596,19 @@
     }
     bubble.hidden=false;
     const width=bubble.offsetWidth||190,height=bubble.offsetHeight||70;
-    bubble.style.left=Math.round(Math.max(8,Math.min(innerWidth-width-8,x-width/2)))+"px";
-    bubble.style.top=Math.round(Math.max(viewport.top+8,y-height-48))+"px";
+    const left=Math.max(8,Math.min(innerWidth-width-8,x-width/2));
+    const above=Math.max(viewport.top+8,y-height-48);
+    const card=$("#prologue-card"),rect=card.getBoundingClientRect();
+    const overlapsMission=state.mode==="tutorial"&&!card.hidden&&
+      left<rect.right+5&&left+width>rect.left-5&&
+      above<rect.bottom+5&&above+height>rect.top-5;
+    // No celular, o colono pode ficar atrás do cartão. A fala então aparece
+    // logo ABAIXO do sprite, apontando para cima, sem encobrir a missão.
+    const below=y+16;
+    const useBelow=overlapsMission&&below+height<viewport.bottom-8;
+    bubble.classList.toggle("below-worker",useBelow);
+    bubble.style.left=Math.round(left)+"px";
+    bubble.style.top=Math.round(useBelow?below:above)+"px";
   }
   function tutorialHint(){
     const mission=Prologue.snapshot(state).mission;
