@@ -10,7 +10,7 @@
   canvas.width=W*TILE;canvas.height=H*TILE;
   const $ = (s) => document.querySelector(s);
   let worldPanX=0,worldPanY=0,panPointer=null,suppressMapClick=false;
-  let selectionPointer=null,areaSelection=null,areaMode=false;
+  let selectionPointer=null,areaSelection=null,areaMode=false,suppressRightContext=false;
   // A câmera tem escala renderizada e escala desejada: a roda não salta entre quadros.
   let cameraZoom=1,targetCameraZoom=1,cameraAnchor=null,lastCameraFrame=0,lastMinimapFrame=-1000;
   const ZOOM_MIN=1,ZOOM_MAX=6;
@@ -994,9 +994,9 @@
       const a=areaSelection.from,b=areaSelection.to;
       const x0=Math.max(0,Math.min(a.x,b.x)),x1=Math.min(W-1,Math.max(a.x,b.x));
       const y0=Math.max(0,Math.min(a.y,b.y)),y1=Math.min(H-1,Math.max(a.y,b.y));
-      ctx.fillStyle="#e6f7ad3d";
+      ctx.fillStyle=selectionPointer?.cancel?"#ee95804d":"#e6f7ad3d";
       ctx.fillRect(x0*TILE,y0*TILE,(x1-x0+1)*TILE,(y1-y0+1)*TILE);
-      ctx.lineWidth=2;ctx.strokeStyle="#f9ed9b";
+      ctx.lineWidth=2;ctx.strokeStyle=selectionPointer?.cancel?"#ffb19c":"#f9ed9b";
       ctx.strokeRect(x0*TILE+1,y0*TILE+1,(x1-x0+1)*TILE-2,(y1-y0+1)*TILE-2);
     }
     // Feedback breve e descartável ao concluir ou atribuir uma ordem.
@@ -1219,13 +1219,13 @@
     showMapFeedback(x,y,result.state==="blocked"?"#d4a779":"#fff5af");
     return result;
   }
-  function applyToArea(from,to){
+  function applyToArea(from,to,forceCancel=false){
     const x0=Math.max(0,Math.min(from.x,to.x)),x1=Math.min(W-1,Math.max(from.x,to.x));
     const y0=Math.max(0,Math.min(from.y,to.y)),y1=Math.min(H-1,Math.max(from.y,to.y));
     let added=0,cancelled=0,skipped=0;
     const removals=[];
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
-      if(selectedTool==="remover"){
+      if(forceCancel||selectedTool==="remover"){
         const ids=state.orders.filter(o=>o.x===x&&o.y===y).map(o=>o.id);
         removals.push(...ids);cancelled+=ids.length;continue;
       }
@@ -1242,7 +1242,7 @@
         worker.task=null;worker.progress=0;worker.route=[];worker.routeTask=null;worker.workGoal=null;
       }
     }
-    if(added||cancelled){recalcTasks();refresh();save();}
+    if(added||cancelled){hoveredTile=null;recalcTasks();refresh();save();}
     $("#tile-tooltip").hidden=true;
     notify(added?added+" ordem(ns) adicionada(s)"+(skipped?" · "+skipped+" ignorada(s)":"")+"."
       :cancelled?cancelled+" ordem(ns) cancelada(s).":
@@ -1384,8 +1384,18 @@
   });
   $("#build-exit").addEventListener("click",()=>setTool("universal"));
   canvas.addEventListener("contextmenu",event=>{
-    if(!playing||selectedTool!=="construir")return;
-    event.preventDefault();const p=buildCellFromEvent(event);paintHouse(p.x,p.y,true);
+    if(!playing)return;
+    event.preventDefault(); // Não abrir o menu do navegador sobre o jogo.
+    if(suppressRightContext){suppressRightContext=false;return;}
+    const {x,y}=buildCellFromEvent(event);
+    if(x<0||y<0||x>=W||y>=H)return;
+    if(selectedTool==="construir"){paintHouse(x,y,true);return;}
+    // Clique direito sempre cancela as ordens do terreno, não importa a
+    // ferramenta selecionada. Cultivo concluído e árvores nunca são apagados.
+    const ids=state.orders.filter(o=>o.x===x&&o.y===y).map(o=>o.id);
+    if(ids.length){
+      removeOrders(ids);notify(ids.length+" ordem(ns) cancelada(s) com botão direito.");
+    }else notify("Nenhuma ordem pendente neste terreno.");
   });
   canvas.addEventListener("pointerleave",()=>{buildHover=null;hoveredTile=null;});
   document.addEventListener("keydown",event=>{
@@ -1448,9 +1458,10 @@
       return;
     }
     suppressMapClick=false;
-    if(event.button===0&&!event.shiftKey&&canSelectArea()){
+    if((event.button===0||event.button===2)&&!event.shiftKey&&canSelectArea()){
       const cell=pointerTile(event);
-      selectionPointer={id:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
+      selectionPointer={id:event.pointerId,x:event.clientX,y:event.clientY,
+        moved:false,cancel:event.button===2};
       areaSelection={from:cell,to:cell};hoveredTile=null;
       canvas.setPointerCapture(event.pointerId);
       return;
@@ -1496,7 +1507,8 @@
       // Um único toque continua produzindo o clique convencional.
       if(moved&&!cancel&&selection){
         selection.to=pointerTile(event);
-        applyToArea(selection.from,selection.to);
+        applyToArea(selection.from,selection.to,selectionPointer.cancel);
+        if(selectionPointer.cancel)suppressRightContext=true;
         suppressMapClick=true;
       }
       selectionPointer=null;areaSelection=null;
