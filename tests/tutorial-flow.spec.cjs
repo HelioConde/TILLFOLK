@@ -23,34 +23,38 @@ async function startFarm(page,button="tutorial-start"){
 async function jumpToFinalMission(page){
  await page.evaluate(()=>{
   const save=JSON.parse(localStorage.getItem("tillfolk-v01"));
-  save.tutorial={active:true,step:7,finished:false,version:1,
-   stats:{grass:1,seed:1,till:1,sow:1,water:1,harvest:1,carry:1,plan:0}};
+  const steps=window.TillfolkMissions.STEPS;
+  save.tutorial={active:true,step:steps.length-1,finished:false,version:4,
+   stats:Object.fromEntries(steps.map((step,i)=>[step.key,i===steps.length-1?0:1]))};
+  save.crafting.equipment.stoneAxe=true;
+  const gate=save.world.boundary.gate;
+  save.world.boundary.open=false;
+  if(!save.world.objects.some(o=>o.kind==="gateLog"))
+   save.world.objects.push({x:gate.x,y:gate.y,kind:"gateLog",variant:0,age:0});
+  for(const w of save.workers){
+   w.x=gate.x-1.5;w.y=gate.y+.5;w.neg=[];w.route=[];w.task=null;
+  }
+  save.orders=[];
   localStorage.setItem("tillfolk-v01",JSON.stringify(save));
  });
  await page.reload({waitUntil:"networkidle"});
  await continueIfMenuVisible(page);
- await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 11 / 11");
+ await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 12 / 12");
 }
 async function finishBuildingMission(page){
- await page.locator('[data-tool="construir"]').click();
- await page.locator('[data-build-layer="field"]').click();
- // Escolha um canteiro realmente válido do mundo, sem depender do mapa aleatório.
- const result=await page.evaluate(()=>{
-  const save=JSON.parse(localStorage.getItem("tillfolk-v01"));
-  const wild=window.TillfolkWild,orders=new Set(save.orders.map(o=>o.x+","+o.y));
-  const p=save.plots.find(plot=>
-    plot.x>1&&plot.y>1&&plot.x<79&&plot.y<49&&
-    !plot.tilled&&!plot.seeded&&!plot.produce&&!plot.dirty&&
-    !orders.has(plot.x+","+plot.y)&&!wild.at(save.world,plot.x,plot.y)&&
-    !wild.waterAt(save.world,plot.x,plot.y)&&wild.terrainAt(save.world,plot.x,plot.y).farmable);
-  if(!p)return "not-found";
-  const canvas=document.querySelector("#world"),r=canvas.getBoundingClientRect();
-  canvas.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true,
-    clientX:r.left+(p.x+.5)/80*r.width,clientY:r.top+(p.y+.5)/50*r.height}));
-  return "clicked";
+ await page.locator("#orders-btn").click();
+ await page.locator('[data-order-type="clear"]').click();
+ const gate=await page.evaluate(()=>{
+  const s=JSON.parse(localStorage.getItem("tillfolk-v01"));return s.world.boundary.gate;
  });
- expect(result).toBe("clicked");
- await expect(page.locator("#tutorial-done-dialog")).toBeVisible();
+ await page.locator("#world").evaluate((canvas,gate)=>{
+  const rect=canvas.getBoundingClientRect();
+  canvas.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true,
+   clientX:rect.left+(gate.x+.5)/80*rect.width,
+   clientY:rect.top+(gate.y+.5)/50*rect.height}));
+ },gate);
+ await page.locator('[data-speed="6"]').click();
+ await expect(page.locator("#tutorial-done-dialog")).toBeVisible({timeout:55000});
  await expect(page.locator("#mission-card")).toBeHidden();
 }
 
@@ -76,7 +80,7 @@ test("Tutorial inicia no jogo: objetivos, ajuda ao passar mouse e localização"
  const errors=[];page.on("pageerror",e=>errors.push(e.message));
  await visit(page);
  await startFarm(page);
- await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 11");
+ await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 12");
  await expect(page.locator("#mission-count")).toHaveText("0 / 1");
  await expect(page.locator("#mission-help")).toBeHidden();
  await page.locator("#mission-card").hover();
@@ -98,11 +102,12 @@ test("Nova Fazenda tem missões e Continuar preserva o progresso no celular",asy
  await page.reload({waitUntil:"networkidle"});
  await expect(page.locator("#continue")).toBeEnabled();
  await continueIfMenuVisible(page);
- await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 11");
+ await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 12");
  expect(errors).toEqual([]);
 });
 
-test("A última missão abre escolhas e respeita Continuar ou Menu",async({page})=>{
+test("A última missão só termina ao cortar o tronco da passagem e respeita Continuar ou Menu",async({page})=>{
+ test.setTimeout(140000);
  const errors=[];page.on("pageerror",e=>errors.push(e.message));
  await visit(page);
  await startFarm(page);
