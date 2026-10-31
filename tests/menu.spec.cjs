@@ -608,3 +608,63 @@ test('Atlas selvagem: recortes completos e pranchas visuais de todas as variaç�
   await page.locator('#wild-art-audit').screenshot({path:'screenshots/atlas-objetos-celulas-completas.png'});
   expect(errors).toEqual([]);
 });
+
+test('Recrutamento v2: resumo legível, rodapé fixo e screenshots desktop/mobile',async({page})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  for(const size of [{width:1185,height:750},{width:900,height:650},{width:390,height:844}]){
+    await page.setViewportSize(size);
+    await page.locator('#new-game').click();
+    await page.locator('[data-game-mode="relaxed"]').click();
+    await expect(page.locator('#starter-dialog')).toBeVisible();
+    await expect(page.locator('.starter-slot')).toHaveCount(2);
+    await expect(page.locator('.starter-highlights')).toHaveCount(2);
+    await expect(page.locator('.starter-chip-list')).toHaveCount(4);
+    await expect(page.locator('#starter-confirm')).toBeVisible();
+    const measured=await page.evaluate(()=>{
+      const bounds=s=>document.querySelector(s).getBoundingClientRect();
+      const dialog=bounds('#starter-dialog'),heading=bounds('.starter-heading'),footer=bounds('.starter-footer'),
+        input=bounds('#farm-name'),cta=bounds('#starter-confirm');
+      const cards=[...document.querySelectorAll('.starter-slot')].map(card=>{
+        const r=card.getBoundingClientRect(),section=card.querySelector('.starter-highlights').getBoundingClientRect();
+        return {cardHeight:r.height,summaryVisible:section.top>=r.top&&section.bottom<=r.bottom+1,sectionHeight:section.height};
+      });
+      const content=document.querySelector('.starter-content');
+      return {dialogLeft:dialog.left,dialogRight:dialog.right,dialogTop:dialog.top,dialogBottom:dialog.bottom,
+        headingHeight:heading.height,footerHeight:footer.height,
+        footerBottom:footer.bottom,ctaBottom:cta.bottom,inputBottom:input.bottom,
+        contentOverflow:getComputedStyle(content).overflowY,cardCount:cards.length,cards,
+        pageWidth:document.documentElement.scrollWidth};
+    });
+    expect(measured.dialogLeft).toBeGreaterThanOrEqual(0);
+    expect(measured.dialogRight).toBeLessThanOrEqual(size.width+1);
+    expect(measured.dialogTop).toBeGreaterThanOrEqual(0);
+    expect(measured.dialogBottom).toBeLessThanOrEqual(size.height+1);
+    expect(measured.footerBottom).toBeLessThanOrEqual(size.height+1);
+    expect(measured.ctaBottom).toBeLessThanOrEqual(measured.footerBottom+1);
+    expect(measured.inputBottom).toBeLessThanOrEqual(measured.footerBottom+1);
+    expect(measured.contentOverflow).toBe('auto');
+    expect(measured.cards.every(c=>c.summaryVisible&&c.sectionHeight>40)).toBe(true);
+    await page.screenshot({path:'screenshots/recrutamento-v2-'+size.width+'x'+size.height+'.png',animations:'disabled'});
+    if(size.width===390){
+      await page.locator('.starter-slot').nth(1).scrollIntoViewIfNeeded();
+      await page.screenshot({path:'screenshots/recrutamento-v2-mobile-segundo-personagem.png',animations:'disabled'});
+    }
+    await page.locator('#starter-dialog .modal-x').click();
+    await expect(page.locator('#starter-dialog')).toBeHidden();
+  }
+  await page.setViewportSize({width:1185,height:750});
+  await page.locator('#new-game').click();
+  await page.locator('[data-game-mode="survival"]').click();
+  const before=await page.locator('.starter-name-input').first().inputValue();
+  await page.locator('[data-reroll="0"]').click();
+  await expect(page.locator('.starter-highlights')).toHaveCount(2);
+  await page.locator('.starter-activity-details').first().locator('summary').click();
+  await expect(page.locator('.starter-activity-details').first()).toHaveAttribute('open','');
+  await expect(page.locator('.recruit-work-grid').first().locator('.recruit-work-row')).toHaveCount(7);
+  await page.locator('#farm-name').fill('Minha Fazenda de Teste');
+  await page.locator('#starter-confirm').click();
+  await expect(page.locator('#starter-dialog')).toBeHidden();
+  await expect(page.locator('#farm-title')).toHaveText('Minha Fazenda de Teste');
+  expect(errors).toEqual([]);
+});
