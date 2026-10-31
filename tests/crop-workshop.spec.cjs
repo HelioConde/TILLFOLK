@@ -95,10 +95,22 @@ test("receitas da Work Station produzem machado e sementes com consumo real",asy
  await expect(page.locator('[data-craft-tool="axe"]')).toBeEnabled();
  await page.locator('[data-craft-tool="axe"]').click();
  await expect(page.locator('[data-craft-tool="axe"]')).toBeDisabled();
+ // A fabricação NÃO é instantânea: há fila, deslocamento e tempo de bancada.
+ const queued=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
+ expect(queued.orders.some(o=>o.type==="craftTool"&&o.recipe==="axe")).toBe(true);
+ expect(queued.workers.some(w=>w.inventory?.tools?.axe)).toBe(false);
+ await page.locator("#workshop-dialog .modal-x").click();
+ await page.locator('[data-speed="6"]').click();
+ await expect.poll(async()=>{
+   const save=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
+   return save.workers.some(w=>Boolean(w.inventory?.tools?.axe));
+ },{timeout:45000,intervals:[400,900,1500]}).toBe(true);
+ await page.locator("#open-workshop").click();
  await expect(page.locator('[data-craft-crop="tomato"]')).toBeEnabled();
  await page.locator('[data-craft-crop="tomato"]').click();
  const save=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
  expect(save.crafting.equipment.axe).toBe(true);
+ expect(save.workers.some(w=>w.inventory?.tools?.axe)).toBe(true);
  expect(save.inventory.twigs).toBe(42);
  expect(save.inventory.grass).toBe(17);
  expect(save.cropProduce.tomato).toBe(2);
