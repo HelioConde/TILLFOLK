@@ -1,0 +1,56 @@
+name: TILLFOLK — QA das missões e ferramentas
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/prologue.js'
+      - 'src/game.js'
+      - 'src/wild-world.js'
+      - 'src/task-orders.js'
+      - 'prologue.css'
+      - 'index.html'
+      - 'tests/prologue.spec.cjs'
+      - '.github/workflows/prologue-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tillfolk-prologue-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  tutorial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Sintaxe e arquivos da campanha
+        run: |
+          node --check src/prologue.js
+          node --check src/game.js
+          node --check src/wild-world.js
+          node --check src/task-orders.js
+          node --check tests/prologue.spec.cjs
+          test -s prologue.css
+      - name: Instalar Chromium para capturas reais
+        run: |
+          npm install --no-save @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Servir jogo sem backend
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk.log 2>&1 &
+          sleep 2
+      - name: Testar missão e fabricar equipamentos
+        run: npx playwright test tests/prologue.spec.cjs --browser chromium --reporter=line --workers=1
+      - name: Anexar screenshots e resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tutorial-e-oficina-screenshots
+          path: |
+            screenshots/tutorial-*.png
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
