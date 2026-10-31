@@ -137,3 +137,32 @@ test('Plantação por arrasto no celular: várias células e desfazer sem danifi
  expect(s.orders.filter(o=>['till','sow'].includes(o.type))).toHaveLength(0);
  expect(errors).toEqual([]);
 });
+
+
+test('HUD com blueprint: velocidade, gestão e menu não se sobrepõem',async({page})=>{
+  await start(page,1366,768);
+  for(const size of [{width:1366,height:768},{width:390,height:844}]){
+    await page.setViewportSize(size);
+    await page.waitForTimeout(100);
+    const geometry=await page.evaluate(()=>{
+      const rect=selector=>{
+        const r=document.querySelector(selector).getBoundingClientRect();
+        return {left:r.left,top:r.top,right:r.right,bottom:r.bottom};
+      };
+      return {metrics:rect('.metrics'),speed:rect('.topbar .speed-wrap'),
+        panels:rect('.topbar .hud-panels'),menu:rect('#menu-btn'),
+        viewport:window.innerWidth};
+    });
+    expect(geometry.speed.right).toBeLessThanOrEqual(geometry.viewport+1);
+    expect(geometry.panels.right).toBeLessThanOrEqual(geometry.viewport+1);
+    expect(geometry.menu.right).toBeLessThanOrEqual(geometry.viewport+1);
+    if(size.width>840){
+      expect(geometry.metrics.right).toBeLessThanOrEqual(geometry.speed.left+2);
+      expect(geometry.speed.right).toBeLessThanOrEqual(geometry.panels.left+2);
+    }else{
+      expect(geometry.speed.top).toBeGreaterThanOrEqual(geometry.panels.bottom-2);
+      expect(geometry.metrics.right).toBeLessThanOrEqual(geometry.speed.left+2);
+    }
+    await page.screenshot({path:'screenshots/blueprint-hud-'+size.width+'x'+size.height+'.png',animations:'disabled'});
+  }
+});
