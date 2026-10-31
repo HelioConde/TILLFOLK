@@ -714,8 +714,11 @@
       state.sessionSpeed=gameOptions?.open?speedBeforeOptions:
         management?.open?speedBeforeManagement:simSpeed;
       localStorage.setItem(SAVE_KEY,JSON.stringify(state));
-    }catch(error){console.warn("Não foi possível salvar:",error);}
+      return true;
+    }catch(error){console.warn("Não foi possível salvar:",error);return false;}
   }
+  // Atualizações do Pages só recarregam uma partida após salvar com sucesso.
+  window.TillfolkPrepareUpdate=()=>!playing||save()===true;
   // Salvamento imediato antes de atualizar, fechar ou trocar de aba.
   // O ciclo normal de 8 segundos continua ativo enquanto a página está aberta.
   window.addEventListener("pagehide",save);
