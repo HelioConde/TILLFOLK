@@ -2328,6 +2328,11 @@
   $("#game-return-title").addEventListener("click",()=>{
     optionsDialog.close();
     save();setSessionMode("menu");playing=false;closeDrawer();setTool("universal");
+    // O HUD da missão faz parte do jogo, nunca deve permanecer sobre o menu inicial.
+    const missionCard=$("#mission-card");
+    missionCard.hidden=true;
+    missionCard.classList.remove("expanded");
+    $("#mission-details-toggle").setAttribute("aria-expanded","false");
     document.body.classList.remove("play-session","focus-game");
     canvas.style.removeProperty("--pan-x");canvas.style.removeProperty("--pan-y");
     cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;movementKeys.clear();syncCameraButtons();
