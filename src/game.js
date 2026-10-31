@@ -2719,6 +2719,7 @@
   $("#game-return-title").addEventListener("click",()=>{
     optionsDialog.close();
     save();setSessionMode("menu");playing=false;closeDrawer();setTool("universal");
+    window.TillfolkTutorialPointer?.hide();
     // O HUD da missão faz parte do jogo, nunca deve permanecer sobre o menu inicial.
     const missionCard=$("#mission-card");
     missionCard.hidden=true;
@@ -2753,6 +2754,7 @@
   // Abrir automaticamente a fazenda quando a última sessão estava jogando.
   // Retornar ao menu por escolha do jogador NÃO dispara retomada na próxima visita.
   if(shouldAutoResume()&&start(true))renderPriorityControls();
+  let pawNextUpdate=0;
   function loop(now){
     const dt=last?Math.min((now-last)/1000,.07):0;last=now;
     if(playing){
@@ -2762,6 +2764,11 @@
     }
     updateCamera(now);
     draw();
+    if(now>=pawNextUpdate){
+      pawNextUpdate=now+130;
+      window.TillfolkTutorialPointer?.guide({playing,state,
+        quest:state?Missions.current(state):null,selectedTool,buildLayer,canvas,stationSiteValid});
+    }
     if(playing&&now-lastMinimapFrame>350){paintMinimap();lastMinimapFrame=now;}
     requestAnimationFrame(loop);
   }

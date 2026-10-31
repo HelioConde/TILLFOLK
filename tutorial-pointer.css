@@ -1,0 +1,13 @@
+/* Guia visual do tutorial usando o cursor original Sprout Lands. */
+#tillfolk-tutorial-paw{position:fixed;z-index:1800;display:flex;align-items:center;gap:6px;
+  max-width:215px;pointer-events:none;filter:drop-shadow(1px 3px 2px #1c342baa)}
+#tillfolk-tutorial-paw[hidden]{display:none!important}
+#tillfolk-tutorial-paw img{display:block;width:44px;height:44px;object-fit:contain;flex:0 0 44px;
+  image-rendering:pixelated;animation:tillfolk-paw-bob 1.2s ease-in-out infinite}
+#tillfolk-tutorial-paw .tillfolk-paw-caption{font:700 12px/1.25 system-ui,sans-serif;
+  color:#233b2c;background:#fff1ce;border:2px solid #759a70;border-radius:8px;
+  padding:7px 9px;box-shadow:2px 2px 0 #203829;max-width:155px}
+@keyframes tillfolk-paw-bob{50%{transform:translateY(-7px)}}
+@media(prefers-reduced-motion:reduce){#tillfolk-tutorial-paw img{animation:none}}
+@media(max-width:540px){#tillfolk-tutorial-paw img{width:35px;height:35px;flex-basis:35px}
+  #tillfolk-tutorial-paw .tillfolk-paw-caption{font-size:10px;max-width:120px;padding:5px 7px}}
