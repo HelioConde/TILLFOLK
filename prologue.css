@@ -110,3 +110,8 @@ body.play-session #tutorial-speech[hidden],body.play-session #prologue-card[hidd
  #mode-dialog .mode-choice{transition:none}
  #mode-dialog .mode-choice:hover{transform:none}
 }
+
+/* A cauda aponta para cima quando o balão fica abaixo do personagem no mobile. */
+body.play-session .tutorial-speech.below-worker::after{
+ top:-9px;bottom:auto;transform:rotate(225deg);
+}
