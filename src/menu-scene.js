@@ -15,7 +15,6 @@
     roof:"structures/wood-roof.png",walls:"structures/wood-walls.png",
     door:"structures/wood-door.png",
     furniture:"structures/furniture.png",paths:"structures/paths.png",
-    chicken:"animals/chicken.png",cow:"animals/cow.png",
     worker:"characters/worker-variants.png",actions:"characters/worker-actions.png",
     waterfx:"characters/watering-effects.png",treeMotion:"environment/tree-animations.png"
   };
@@ -80,9 +79,6 @@
     const gardenerWalking=field<3000||field>=10400;
     const gardenerX=field<3000?lerp(492,559,field/3000):field<10400?559:lerp(559,492,(field-10400)/3600);
     const gardenerAction=field<3000||field>=10400?"walk":field<7000?"hoe":"water";
-    const cowWalk=pingPong((t+3800)/18700);
-    const chickenWalk=pingPong((t+1600)/12300);
-    const secondChicken=pingPong((t+7100)/15600);
     return {
       t,tree:{phase:treeState,growth:treeGrowth,shake:t>=5900&&t<12100?Math.sin(t/65)*2.1:0,
         fall:falling?clamp01((t-12100)/1800):0},
@@ -91,17 +87,8 @@
       gardener:{x:gardenerX,y:365+Math.sin(t/420)*1.5,
         action:gardenerAction,facing:field>=10400?"left":"right"},
       cropStage:1+Math.floor((t%30000)/7500),
-      // Clareira acima do telhado: cobertura começa em y=174.
-      // As bordas de todos os animais ficam até y=160, sem se esconder atrás
-      // da casa, das lavouras ou do rodapé da tela.
-      animals:[
-        {kind:"cow",x:lerp(749,810,cowWalk),y:89+Math.sin(t/820)*2,
-          face:((t+3800)%18700)<9350?"right":"left"},
-        {kind:"chicken",x:lerp(670,706,chickenWalk),y:112+Math.sin(t/570)*2,
-          face:((t+1600)%12300)<6150?"right":"left"},
-        {kind:"chicken",x:lerp(887,913,secondChicken),y:112+Math.cos(t/670)*2,
-          face:((t+7100)%15600)<7800?"right":"left"}
-      ]
+      // O começo do jogo e a abertura não apresentam animais.
+      animals:[]
     };
   }
   function bed(x,y,row,stage=3){
@@ -132,16 +119,6 @@
     const dirs={down:0,up:1,left:2,right:3};
     const group=action==="chop"?4:0;
     stamp("actions",(frame%2)*48,(group+dirs[facing])*48,48,48,x-14,y-18,w+29,h+30);
-  }
-  function movingAnimal(kind,x,y,face,frame){
-    const cell=kind==="cow"?32:16;
-    const w=kind==="cow"?74:41,h=kind==="cow"?66:41;
-    const atlasFrame=kind==="cow"?frame%3:frame%4;
-    if(face==="left"){
-      ctx.save();ctx.translate(Math.round(x+w),Math.round(y));ctx.scale(-1,1);
-      stamp(kind,atlasFrame*cell,0,cell,cell,0,0,w,h);
-      ctx.restore();
-    }else stamp(kind,atlasFrame*cell,0,cell,cell,x,y,w,h);
   }
   function growableTree(stage){
     const x=841,y=447;
@@ -195,7 +172,7 @@
     for(const [x,y,k,z] of [
       [394,132,2,1.6],[446,119,1,1.4],[493,112,0,1.5],
       [547,124,2,1.12],[613,104,3,1.3],
-      // Abrir espaço no bosque para ver vaca e galinhas sobre a casa.
+      // Clareira aberta, com prioridade visual para a fazenda e os trabalhadores.
       [402,250,0,1.1],[447,252,2,.95],[933,263,1,1.3]
     ])tree(x,y,k,z);
     farmhouse();
@@ -208,10 +185,9 @@
     }
     for(let i=0;i<8;i++)stamp("crops",64,0,16,16,646+i*24,374,22,27);
     for(let i=0;i<7;i++)stamp("furniture",48,16,16,16,695+i*27,384,22,24);
-    // Primeiro plano vivo: árvore de corte, vida animal e dois trabalhadores.
+    // Primeiro plano vivo: árvore de corte e dois trabalhadores.
     growableTree(stage);
     const frame=Math.floor(ms/190)%4;
-    for(const animal of stage.animals)movingAnimal(animal.kind,animal.x,animal.y,animal.face,frame);
     if(stage.gardener.action==="walk")
       workerFrame(stage.gardener.x,stage.gardener.y,0,frame,true,stage.gardener.facing,61,64);
     else
