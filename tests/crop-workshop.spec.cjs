@@ -8,19 +8,14 @@ async function openGame(page){
  await expect(page.locator("#menu")).toBeHidden();
  await expect(page.locator("#world")).toBeVisible();
 }
-test("catálogo agrícola mostra 19 sprites e salva a cultura escolhida",async({page})=>{
+test("Ordens não oferece seletor de cultura; variedades continuam disponíveis",async({page})=>{
  const errors=[];page.on("pageerror",error=>errors.push(error.message));
- await page.setViewportSize({width:1366,height:768});
- await openGame(page);
+ await page.setViewportSize({width:1366,height:768});await openGame(page);
  await page.locator("#orders-btn").click();
- await page.locator("#open-crop-catalog").click();
- await expect(page.locator("#crop-catalog-grid button")).toHaveCount(19);
- await page.locator('[data-choose-crop="tomato"]').click();
- await expect(page.locator('[data-choose-crop="tomato"]')).toHaveAttribute("aria-pressed","true");
- await page.screenshot({path:"screenshots/crop-catalog-19-variedades.png",animations:"disabled"});
- const save=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
- expect(save.selectedCrop).toBe("tomato");
- await page.locator("#crop-catalog-dialog .modal-x").click();
+ await expect(page.locator("#open-crop-catalog")).toHaveCount(0);
+ await expect(page.locator("#crop-catalog-dialog")).toHaveCount(0);
+ await expect(page.locator('[data-order-type]')).toHaveCount(8);
+ expect(await page.evaluate(()=>window.TillfolkCrops.ALL.length)).toBe(19);
  expect(errors).toEqual([]);
 });
 test("work station exibe artes e receitas mesmo antes da construção",async({page})=>{
@@ -32,7 +27,7 @@ test("work station exibe artes e receitas mesmo antes da construção",async({pa
  await expect(page.locator("#workshop-tools button")).toHaveCount(await page.evaluate(()=>window.TillfolkCrafting.RECIPES.length));
  await expect(page.locator("#workshop-recipes button")).toHaveCount(19);
  await expect(page.locator('[data-craft-tool="axe"]')).toBeDisabled();
- await expect(page.locator('[data-craft-tool="stoneAxe"]')).toHaveCount(0);
+ await expect(page.locator('[data-craft-tool="stoneAxe"]')).toHaveCount(1);
  await expect(page.locator("#workshop-status")).toContainText("10 gravetos");
  // Verifica pixels reais da spritesheet, não imagens geradas ou ícones inventados.
  const originalSprites=await page.evaluate(async()=>{
