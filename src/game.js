@@ -699,7 +699,17 @@
     $("#tasks").innerHTML=list.length?list.slice(0,45).map(t=>{
       const w=state.workers.find(w=>w.id===t.assigned);
       const jobState=w?escapeHtml(w.name)+" · trabalhando":t.status==="blocked"?escapeHtml(t.reason):"Disponível";
-      return '<div class="task order-task '+(t.status==="blocked"?"order-blocked":"")+'"><div>'+icons[t.type]+' '+labels[t.type]+'<small>Terreno '+(t.x+1)+', '+(t.y+1)+' · '+jobState+'</small></div><div class="order-task-controls"><b>P'+state.priorities[t.type]+'</b><button type="button" data-cancel-order="'+t.id+'" aria-label="Cancelar ordem '+labels[t.type]+' do terreno '+(t.x+1)+', '+(t.y+1)+'">✕</button></div></div>';
+      const status=t.status==="blocked"?"waiting":w?"working":"ready";
+      const statusText=status==="waiting"?"Aguardando":status==="working"?"Em execução":"Disponível";
+      const progress=w?Math.min(100,Math.max(0,Math.round(w.progress*100))):0;
+      return '<div class="task order-task '+(t.status==="blocked"?"order-blocked":"")+'" data-order-state="'+status+'">'+
+        '<div class="order-task-main"><div class="order-task-title">'+
+        '<span class="order-symbol" aria-hidden="true">'+icons[t.type]+'</span>'+
+        '<strong>'+labels[t.type]+'</strong><span class="order-state">'+statusText+'</span></div>'+
+        '<small>Terreno '+(t.x+1)+', '+(t.y+1)+' · '+jobState+'</small>'+
+        (w?'<div class="order-progress" role="progressbar" aria-label="Progresso da tarefa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+progress+'"><i style="width:'+progress+'%"></i></div>':'')+
+        '</div><div class="order-task-controls"><b>P'+state.priorities[t.type]+'</b>'+
+        '<button type="button" data-cancel-order="'+t.id+'" aria-label="Cancelar ordem '+labels[t.type]+' do terreno '+(t.x+1)+', '+(t.y+1)+'">✕</button></div></div>';
     }).join("")+(list.length>45?'<div class="empty">+ '+(list.length-45)+' ordens adicionais</div>':""):'<div class="empty">Sem ordens. Escolha um trabalho e marque o terreno. A equipe não inicia outras etapas automaticamente.</div>';
     $("#journal").innerHTML=state.journal.map(s=>'<div class="log">✧ '+escapeHtml(s)+'</div>').join("");
     drawSidebarAvatars();
