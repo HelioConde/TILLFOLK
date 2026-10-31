@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="./task-orders.css">
   <link rel="stylesheet" href="./team-ux.css?v=4">
   <link rel="stylesheet" href="./menu-refinement.css">
+  <link rel="stylesheet" href="./game-hud.css?v=2">
   <script defer src="./src/menu.js"></script>
   <script defer src="./src/tutorial.js"></script>
   <script defer src="./src/house-renderer.js"></script>
@@ -24,6 +25,7 @@
   <script defer src="./src/house-building.js"></script>
   <script defer src="./src/task-orders.js"></script>
   <script defer src="./src/game.js?v=20261030-manual-orders"></script>
+  <script defer src="./src/game-hud.js?v=2"></script>
 </head>
 <body>
   <div class="app-shell" inert>
@@ -63,6 +65,11 @@
             <button class="tool" data-tool="construir" aria-pressed="false"><span>⌂</span><b>Construir</b><small>Editar casa</small></button>
           </div>
           <div class="speed-wrap" role="group" aria-label="Velocidade da simulação"><span>VELOCIDADE</span><button type="button" data-speed="0" aria-label="Pausar simulação" title="Pausar">Ⅱ</button><button type="button" data-speed="1" class="chosen" aria-label="Velocidade normal, 1 vez">1×</button><button type="button" data-speed="3" aria-label="Velocidade rápida, 3 vezes">3×</button><button type="button" data-speed="6" aria-label="Velocidade muito rápida, 6 vezes">6×</button></div>
+        </div>
+        <div class="hud-selection" role="status" aria-live="polite">
+          <span class="hud-key">AÇÃO</span>
+          <strong id="hud-tool-name">ARAR</strong>
+          <small id="hud-tool-hint">Marque o solo para preparar o cultivo</small>
         </div>
         <div id="orders-panel" class="orders-panel" role="region" aria-label="Lista de ordens para os trabalhadores" hidden>
           <div class="orders-heading"><strong>☷ DESIGNAR TRABALHO</strong><span><b id="order-count">0</b> ordens na fila · a equipe escolhe qual executar</span></div>
