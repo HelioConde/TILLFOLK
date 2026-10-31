@@ -990,3 +990,69 @@ test('Sprout Lands UI: atlas original em botões, painel, slots e celular',async
   await page.screenshot({path:'screenshots/sprout-ui-jogo-mobile-390x844.png',animations:'disabled'});
   expect(errors).toEqual([]);
 });
+
+
+test('Menu vivo: lenhador derruba árvore, toco regenera, horta cresce e animais passeiam',async({page})=>{
+  const fs=require('node:fs');
+  const failures=[];
+  page.on('pageerror',error=>failures.push(String(error)));
+  page.on('response',response=>{
+    if(response.status()>=400&&/\/sprout-lands\//.test(response.url()))
+      failures.push('Sprite ausente: '+response.url());
+  });
+  await page.setViewportSize({width:1366,height:768});
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.waitForFunction(()=>{
+    const scene=window.TillfolkMenuScene;
+    return scene && scene.assetHealth().ready===scene.assetHealth().total;
+  });
+  const info=await page.evaluate(()=>{
+    const scene=window.TillfolkMenuScene;
+    const times=[0,8500,13000,15000,22500,30000];
+    return {
+      frames:times.map(t=>scene.sample(t)),
+      sourceFiles:Object.values(scene.sources),
+      assets:scene.assetHealth(),
+      cycle:scene.cycleMs
+    };
+  });
+  const [initial,chopping,falling,stump,growing,regrown]=info.frames;
+  expect(info.assets.failed).toEqual([]);
+  expect(info.sourceFiles).not.toContain('structures/fences.png');
+  expect(info.cycle).toBeGreaterThanOrEqual(28000);
+  expect(chopping.logger.action).toBe('chop');
+  expect(chopping.tree.phase).toBe('mature');
+  expect(falling.tree.phase).toBe('falling');
+  expect(stump.tree.phase).toBe('stump');
+  expect(growing.tree.phase).toBe('growing');
+  expect(regrown.tree.phase).toBe('mature');
+  expect(initial.logger.x).not.toBe(chopping.logger.x);
+  expect(initial.gardener.x).not.toBe(chopping.gardener.x);
+  expect(initial.animals).toHaveLength(3);
+  expect(initial.animals.some(a=>a.kind==='cow')).toBe(true);
+  expect(initial.animals.filter(a=>a.kind==='chicken')).toHaveLength(2);
+  expect(initial.animals[0].x).not.toBe(chopping.animals[0].x);
+  expect(initial.cropStage).not.toBe(growing.cropStage);
+  fs.mkdirSync('screenshots',{recursive:true});
+  const phases=[['lavoura',0],['lenhador',8500],['queda',13000],['toco',15000],['reflorestamento',22500],['arvore-adulta',30000]];
+  const images=[];
+  for(const [name,ms] of phases){
+    const base64=await page.evaluate(ms=>{
+      window.TillfolkMenuScene.drawAt(ms);
+      return document.querySelector('#title-scene').toDataURL('image/png').split(',')[1];
+    },ms);
+    fs.writeFileSync('screenshots/menu-vivo-'+name+'.png',Buffer.from(base64,'base64'));
+    images.push(base64);
+  }
+  expect(new Set(images).size).toBeGreaterThanOrEqual(5);
+  await page.screenshot({path:'screenshots/menu-vivo-desktop-1366x768.png',animations:'disabled'});
+  // A opção de animação desativada deve congelar os pixels do Canvas.
+  await page.locator('#title-settings').click();
+  await page.locator('#title-motion').uncheck();
+  await page.locator('#title-settings-dialog .modal-x').click();
+  const frozen=await page.locator('#title-scene').evaluate(canvas=>canvas.toDataURL());
+  await page.waitForTimeout(380);
+  expect(await page.locator('#title-scene').evaluate(canvas=>canvas.toDataURL())).toBe(frozen);
+  expect(failures).toEqual([]);
+});
