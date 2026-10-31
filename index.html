@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="./sprout-ui.css?v=3">
   <link rel="stylesheet" href="./game-refinement.css?v=1">
   <link rel="stylesheet" href="./camera-ui.css?v=1">
+  <link rel="stylesheet" href="./prologue.css?v=1">
   <link rel="stylesheet" href="./top-speed.css?v=1">
   <link rel="stylesheet" href="./game-interface.css?v=20261031">
   <script defer src="./src/menu.js"></script>
@@ -29,6 +30,7 @@
   <script defer src="./src/biomes.js?v=1"></script>
   <script defer src="./src/wild-world.js?v=20261031-sem-frutiferas"></script>
   <script defer src="./src/house-building.js"></script>
+  <script defer src="./src/prologue.js?v=1"></script>
   <script defer src="./src/task-orders.js"></script>
   <script defer src="./src/game.js?v=20261031-clique-direito-selecao"></script>
   <script defer src="./src/game-hud.js?v=20261031-atalho-direito"></script>
@@ -84,6 +86,14 @@
           <button id="open-full-map" class="full-map-trigger" type="button" aria-haspopup="dialog" aria-controls="full-map-dialog">▦ Mapa completo</button>
           <p class="camera-help">Zoom mínimo: 50% · Roda: zoom · WASD: mover · H: centralizar</p>
         </section>
+        <section id="prologue-card" class="prologue-card" aria-label="Missão do tutorial" title="Passe o mouse ou abra a missão para entender a próxima etapa">
+          <div class="prologue-topline"><span id="prologue-step">PRÓLOGO · MISSÃO 1/10</span><button id="prologue-open" type="button" aria-controls="prologue-details" aria-expanded="false">▣ Detalhes</button></div>
+          <strong id="prologue-title">O vale começa nas suas mãos</strong>
+          <p id="prologue-summary">Recolha recursos para a primeira ferramenta.</p>
+          <div id="prologue-goals" class="prologue-goals" aria-live="polite"></div>
+          <div id="prologue-details" class="prologue-details" hidden><p id="prologue-description"></p><small>Missões de aprendizado: terminam quando você dominar o básico. Nenhuma tarefa é feita automaticamente.</small></div>
+          <button type="button" id="workshop-open" class="prologue-craft">🛠️ Abrir oficina <span id="prologue-tool-count">0/5</span></button>
+        </section>
         <div class="tooltray">
           <div class="tool-list" role="group" aria-label="Ferramentas do mapa">
             <button class="tool active" data-tool="universal" aria-pressed="true"><span>✦</span><b>Universal</b><small>Próxima tarefa</small></button>
@@ -116,7 +126,7 @@
           <p>Escolha uma tarefa específica ou use Universal para a próxima etapa conforme o solo. Arraste sobre o mapa para várias ordens; no celular ative Área.</p>
         </div>
         <div id="construction-panel" class="construction-panel" role="region" aria-label="Construção da casa" hidden>
-          <div class="construction-heading"><strong>⌂ CONSTRUÇÃO</strong><span>🪵 Madeira: <b id="build-stock">15</b> · Piso <b id="build-floor-count">0</b>/25 · Casas: <b id="build-homes-count">0</b></span><button id="build-exit" type="button">✕ Fechar</button></div>
+          <div class="construction-heading"><strong>⌂ CONSTRUÇÃO</strong><span>🪵 Madeira: <b id="build-stock">0</b> · Piso <b id="build-floor-count">0</b>/25 · Casas: <b id="build-homes-count">0</b></span><button id="build-exit" type="button">✕ Fechar</button></div>
           <div class="construction-actions" role="group" aria-label="Camadas de construção">
             <button type="button" data-build-layer="floor" aria-pressed="true">▦ Piso</button>
             <button type="button" data-build-layer="walls" aria-pressed="false">▥ Paredes</button>
@@ -293,6 +303,25 @@
     <span class="overline">CASA DE RECRUTAMENTO</span><h2>Encontre sua próxima ajuda</h2>
     <p>Até 3 habilidades positivas e 3 restrições. A contratação consome <strong>comida</strong> e exige uma moradia livre.</p><p id="housing-status" role="status" aria-live="polite"></p>
     <div id="candidates" class="candidate-list"></div>
+  </dialog>
+  <dialog id="prologue-dialog" class="modal prologue-dialog" aria-labelledby="prologue-dialog-title">
+    <form method="dialog"><button type="submit" class="modal-x" aria-label="Fechar detalhes da missão">✕</button></form>
+    <span class="overline" id="prologue-dialog-step">PRÓLOGO · MISSÃO</span>
+    <h2 id="prologue-dialog-title">Próximo objetivo</h2>
+    <p id="prologue-dialog-description"></p>
+    <div id="prologue-dialog-goals" class="prologue-goals"></div>
+    <p class="prologue-dialog-note">Conclua tarefas reais no mapa. A campanha tem um fim e não cria ordens automaticamente.</p>
+    <button type="button" id="prologue-dialog-craft" class="large-primary">🛠️ Abrir oficina</button>
+  </dialog>
+  <dialog id="workshop-dialog" class="modal workshop-dialog" aria-labelledby="workshop-title">
+    <form method="dialog"><button type="submit" class="modal-x" aria-label="Fechar oficina">✕</button></form>
+    <span class="overline">OFICINA DA COLÔNIA</span>
+    <h2 id="workshop-title">Ferramentas primitivas</h2>
+    <p>A equipe começa sem ferramentas. Recolha gravetos e pedras soltas com as mãos e fabrique equipamentos para todos compartilharem.</p>
+    <div id="workshop-stock" class="workshop-stock" aria-live="polite"></div>
+    <p class="workshop-scroll-hint">↕ Role a janela para conhecer todas as 5 ferramentas.</p>
+    <div id="workshop-recipes" class="workshop-recipes"></div>
+    <p id="workshop-message" role="status" aria-live="polite">Selecione uma receita com recursos suficientes.</p>
   </dialog>
   <dialog id="help-dialog" class="modal help-guide" aria-labelledby="guide-title">
     <header class="guide-header"><div><span class="overline">PRIMEIROS PASSOS · GUIA ILUSTRADO</span><h2 id="guide-title">Como jogar TILLFOLK</h2><p>Aprenda a comandar sua fazenda, etapa por etapa.</p></div>
