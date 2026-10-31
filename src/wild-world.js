@@ -5,8 +5,8 @@
 (() => {
   const Biomes=window.TillfolkBiomes;
   if(!Biomes)throw new Error("Carregue src/biomes.js antes do terreno selvagem.");
-  const solidKinds=new Set(["tree","boulder","log","thicket","stump"]);
-  const gatherKinds=new Set(["tree","boulder","log","thicket","stump","mushroom","flowers","herbs","grass","twig"]);
+  const solidKinds=new Set(["tree","boulder","log","thicket","stump","ridge","gateLog"]);
+  const gatherKinds=new Set(["tree","boulder","log","thicket","stump","mushroom","flowers","herbs","grass","twig","pebble","gateLog"]);
   const key=(x,y)=>x+","+y;
   // Atlas original: variações 2,3,4,5 exibem frutos na copa.
   // Nesta fase só usar árvores verdes para madeira (0,1 e 6).
@@ -32,7 +32,45 @@
   const nearStart=(x,y,w,h)=>Math.hypot((x-(w>=60?w/2:13.6))/1.15,
     (y-(h>=40?h/2:9.5))/1.05)<4.8;
   const inMap=(x,y,w,h)=>x>=1&&y>=1&&x<w-1&&y<h-1;
-  function create(seed,w,h,exclude=[]){
+  // Área inicial 25x23 no interior do anel; saída única ao leste.
+  function valleyBounds(w,h){
+    const cx=Math.floor(w/2),cy=Math.floor(h/2);
+    return {left:cx-13,right:cx+13,top:cy-12,bottom:cy+12,
+      gate:{x:cx+13,y:cy},open:false};
+  }
+  function ringTile(r,x,y){
+    return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom&&
+      (x===r.left||x===r.right||y===r.top||y===r.bottom);
+  }
+  function installValley(world,random){
+    if(world.width<60||world.height<40)return;
+    const region=valleyBounds(world.width,world.height);
+    world.boundary=region;
+    world.objects=world.objects.filter(p=>!ringTile(region,p.x,p.y));
+    world.water=world.water.filter(p=>!ringTile(region,p.x,p.y));
+    for(let y=region.top;y<=region.bottom;y++)for(let x=region.left;x<=region.right;x++){
+      if(!ringTile(region,x,y))continue;
+      world.objects.push({x,y,kind:x===region.gate.x&&y===region.gate.y?"gateLog":"ridge",
+        variant:(x+y)%4,age:0});
+    }
+    const occupied=new Set([...world.objects,...world.water].map(p=>key(p.x,p.y)));
+    const inside=p=>p.x>region.left+1&&p.x<region.right-1&&p.y>region.top+1&&p.y<region.bottom-1;
+    // Garante materiais acessíveis para 30 gravetos + machado de pedra, sem softlock.
+    function stock(kind,min){
+      let count=world.objects.filter(p=>p.kind===kind&&inside(p)).length;
+      let attempts=0;
+      while(count<min&&attempts++<6500){
+        const x=region.left+2+Math.floor(random()*(region.right-region.left-3));
+        const y=region.top+2+Math.floor(random()*(region.bottom-region.top-3));
+        if(occupied.has(key(x,y))||Math.hypot(x-world.width/2,y-world.height/2)<3.8)continue;
+        world.objects.push({x,y,kind,variant:Math.floor(random()*4),age:0});
+        occupied.add(key(x,y));count++;
+      }
+    }
+    stock("twig",52);stock("grass",28);stock("pebble",10);
+  }
+
+  function create(seed,w,h,exclude=[],options={}){
     const random=randSeed(seed), reserved=new Set(exclude.map(p=>key(p.x,p.y)));
     const world={version:2,seed,width:w,height:h,objects:[],water:[],lastRegrownDay:1};
     world.biomeMap=Biomes.generate(seed,w,h);
@@ -94,6 +132,7 @@
         used.add(key(x,y));needed--;
       }
     }
+    if(options.gated!==false)installValley(world,random);
     return world;
   }
   const indices=new WeakMap();
@@ -113,16 +152,19 @@
   function blocked(world,x,y,w,h){
     return !inMap(x,y,w,h)||waterAt(world,x,y)||solidKinds.has(at(world,x,y)?.kind);
   }
-  function clear(world,x,y){
+  function clear(world,x,y,options={}){
     const obj=at(world,x,y);
     if(!obj)return {resource:null,remaining:false};
     if(!gatherKinds.has(obj.kind))return {resource:null,remaining:false};
+    if(obj.kind==="gateLog"&&!options.stoneAxe)return {resource:null,remaining:true,blocked:true};
     let resource="fibras";
     if(obj.kind==="tree"){
       obj.kind="stump";obj.variant=0;resource="3 madeiras";
       return {resource,remaining:true};
     }
-    if(obj.kind==="stump")resource="2 madeiras";
+    if(obj.kind==="gateLog"){resource="4 madeiras";if(world.boundary)world.boundary.open=true;}
+    else if(obj.kind==="pebble")resource="1 pedra";
+    else if(obj.kind==="stump")resource="2 madeiras";
     else if(obj.kind==="boulder")resource="3 pedras";
     else if(obj.kind==="log")resource="2 madeiras";
     else if(obj.kind==="mushroom")resource="cogumelos";
@@ -141,7 +183,8 @@
     for(let i=0;i<Math.min(7,day-world.lastRegrownDay)*2;i++){
       const x=1+Math.floor(rng()*(w-2)),y=1+Math.floor(rng()*(h-2));
       const id=key(x,y);
-      if(occupied.has(id)||waters.has(id)||cultivated.has(id)||nearStart(x,y,w,h))continue;
+      if(occupied.has(id)||waters.has(id)||cultivated.has(id)||nearStart(x,y,w,h)||
+         (world.boundary&&world.boundary.gate.x===x&&world.boundary.gate.y===y))continue;
       const biome=Biomes.kind(world,x,y);
       // Neve e areia não geram grama tropical espontaneamente.
       if(biome==="i"||biome==="s")continue;
@@ -173,6 +216,7 @@
       [64,48,16,16],[80,48,16,16],[0,64,16,16],
       [16,64,16,16],[32,64,16,16],[48,64,16,16],[80,64,16,16]]),
     grass:Object.freeze([[0,32,16,16],[16,32,16,16],[32,32,16,16],[48,32,16,16]]),
+    pebble:Object.freeze([[0,16,16,16],[16,16,16,16],[32,16,16,16],[48,16,16,16]]),
     herbs:Object.freeze([[16,32,16,16],[32,32,16,16],[48,32,16,16]]),
     log:Object.freeze([[0,80,32,16],[32,80,32,16]]),
     stump:Object.freeze([[0,96,16,16],[16,96,16,16],[32,96,32,16],
@@ -211,6 +255,19 @@
   function drawObject(ctx,obj,sprites,size,part){
     const x=obj.x*size,y=obj.y*size,v=obj.variant||0,kind=obj.kind;
     const frame=spriteFrame(kind,v);
+    if(kind==="ridge"){
+      // Parede natural usando os tiles premium de colinas.
+      ctx.fillStyle="#354c31";ctx.fillRect(x,y+size*.26,size,size*.74);
+      ctx.fillStyle="#7a9f63";ctx.fillRect(x+2,y+1,size-4,6);
+      part(sprites.valleyCliff,0,0,16,16,x,y,size,size);
+      ctx.fillStyle="#223d2b55";ctx.fillRect(x+2,y+size-6,size-4,6);
+      return;
+    }
+    if(kind==="gateLog"){
+      ctx.fillStyle="#35402b";ctx.fillRect(x-8,y+size-11,size+16,8);
+      part(sprites.trees,0,80,32,16,x-16,y+4,size*2,size-7);
+      return;
+    }
     if(kind==="tree"&&frame){
       const [sx,sy,sw,sh]=frame;
       const large=sw===48,slim=sw===16;
@@ -280,7 +337,8 @@
     if(legacy?.version>=2&&legacy.width===width&&legacy.height===height&&legacy.biomeMap?.length===width*height)
       return legacy;
     const seed=Number.isInteger(legacy?.seed)?legacy.seed:139931;
-    const enlarged=create(seed,width,height);
+    // Migração não insere muralhas sobre construções de saves antigos.
+    const enlarged=create(seed,width,height,[],{gated:false});
     const withinOld=(p)=>p.x<oldWidth&&p.y<oldHeight;
     // A colônia antiga permanece nas mesmas coordenadas: nenhuma árvore ou lago
     // preexistente desaparece. Apenas a região além das bordas é gerada novamente.
@@ -296,7 +354,7 @@
     stripFruitTrees(enlarged);
     return enlarged;
   }
-  window.TillfolkWild=Object.freeze({create,expand,at,waterAt,blocked,clear,regrow,
+  window.TillfolkWild=Object.freeze({create,expand,valleyBounds,ringTile,at,waterAt,blocked,clear,regrow,
     drawGround,drawObject,drawAmbient,spriteFrame,atlasFrames,
     stripFruitTrees,nonFruitTreeVariants,
     terrainAt:Biomes.at,biomeAt:Biomes.kind});
