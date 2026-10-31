@@ -297,7 +297,8 @@
     // Captura de um instante para o QA visual sem esperar 36 segundos reais.
     drawAt:(millis=0)=>{if(!menu.hidden)paint(millis);},
     cycleMs:CYCLE,
-    sources:Object.freeze({...sources})
+    sources:Object.freeze({...sources}),
+    assetHealth:()=>({ready:all.filter(ready).length,total:all.length,failed:[...failures]})
   });
   render();requestAnimationFrame(loop);
 
