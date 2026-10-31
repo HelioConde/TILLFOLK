@@ -99,9 +99,35 @@
     world.lastRegrownDay=day;
     return newCount;
   }
-  const grassSlots=[[0,32],[16,32],[32,32],[48,32],[64,32],[80,32]];
-  const flowerSlots=[[0,48],[16,48],[32,48],[64,48],[80,48],[0,64],[16,64],[32,64],[48,64],[80,64]];
-  const mushroomSlots=[[0,0],[16,0],[32,0],[48,0],[64,0],[80,0]];
+  // Auditoria visual Sprout Lands (atlas de árvores 192×112, coleta 192×80).
+  // NÃO assumir que cada árvore começa em múltiplos de 32:
+  // a primeira ocupa 16px; as seguintes começam em 16, 48, 80, 112 e 144.
+  // Os arbustos estão em y=48, não no topo entre árvores.
+  const atlasFrames=Object.freeze({
+    tree:Object.freeze([[0,0,16,32],[16,0,32,32],[48,0,32,32],
+      [80,0,32,32],[112,0,32,32],[144,0,32,32],[144,48,48,48]]),
+    thicket:Object.freeze([[0,48,16,16],[16,48,16,16],[32,48,16,16],
+      [48,48,16,16],[64,48,16,16]]),
+    boulder:Object.freeze([[0,16,16,16],[16,16,16,16],[32,16,16,16],
+      [48,16,16,16],[64,16,16,16],[80,16,16,16],
+      [96,16,32,32],[128,16,32,32],[160,16,32,32]]),
+    mushroom:Object.freeze([[0,0,16,16],[16,0,16,16],[32,0,16,16],
+      [48,0,16,16],[64,0,16,16],[80,0,16,16],[96,0,16,16]]),
+    flowers:Object.freeze([[0,48,16,16],[16,48,16,16],[32,48,16,16],
+      [64,48,16,16],[80,48,16,16],[0,64,16,16],
+      [16,64,16,16],[32,64,16,16],[48,64,16,16],[80,64,16,16]]),
+    grass:Object.freeze([[0,32,16,16],[16,32,16,16],[32,32,16,16],[48,32,16,16]]),
+    herbs:Object.freeze([[16,32,16,16],[32,32,16,16],[48,32,16,16]]),
+    log:Object.freeze([[0,80,32,16],[32,80,32,16]]),
+    stump:Object.freeze([[0,96,16,16],[16,96,16,16],[32,96,32,16],
+      [64,96,32,16],[96,96,16,16],[112,96,32,16],[144,96,32,16]])
+  });
+  function spriteFrame(kind,variant=0){
+    const options=atlasFrames[kind];
+    if(!options)return null;
+    const index=((Math.trunc(variant)||0)%options.length+options.length)%options.length;
+    return options[index];
+  }
   function drawGround(ctx,sprites,world,w,h,size,part){
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
       const tileX=x*size,tileY=y*size;
@@ -134,50 +160,50 @@
     }
   }
   function drawObject(ctx,obj,sprites,size,part){
-    const x=obj.x*size,y=obj.y*size,v=obj.variant||0;
-    switch(obj.kind){
-      case "tree":{
-        const source=v%4===0?[144,48,48,48]:v%3===0?[80,0,32,32]:[144,0,32,32];
-        const big=source[2]===48;
-        part(sprites.trees,...source,x-(big?24:8),y-(big?53:42),big?83:52,big?84:69);break;
-      }
-      case "boulder":{
-        const big=v%4===0;
-        const sx=big?128:(v%3)*16,sy=16;
-        part(sprites.rocks,sx,sy,big?32:16,16,x-(big?9:0),y-(big?10:0),big?48:32,big?40:32);break;
-      }
-      case "mushroom":{
-        const [sx,sy]=mushroomSlots[v%mushroomSlots.length];
-        part(sprites.rocks,sx,sy,16,16,x+5,y+6,23,23);break;
-      }
-      case "flowers":{
-        const [sx,sy]=flowerSlots[v%flowerSlots.length];
-        part(sprites.rocks,sx,sy,16,16,x+4,y+6,24,24);break;
-      }
-      case "grass":{
-        const [sx,sy]=grassSlots[v%grassSlots.length];
-        part(sprites.rocks,sx,sy,16,16,x+4,y+9,24,22);break;
-      }
-      case "herbs":{
-        part(sprites.rocks,64,32,16,16,x+6,y+5,22,24);break;
-      }
-      case "thicket":{
-        part(sprites.trees,(v%3)*16,0,16,32,x-7,y-24,45,57);break;
-      }
-      case "log":{
-        ctx.fillStyle="#694b31";ctx.fillRect(x+1,y+17,30,11);
-        ctx.fillStyle="#ad8654";ctx.fillRect(x+2,y+14,27,8);
-        ctx.fillStyle="#e7b977";ctx.fillRect(x+1,y+15,6,11);break;
-      }
-      case "stump":{
-        ctx.fillStyle="#64472e";ctx.fillRect(x+6,y+13,22,15);
-        ctx.fillStyle="#b08b59";ctx.fillRect(x+5,y+11,24,9);
-        ctx.fillStyle="#d6b278";ctx.fillRect(x+11,y+13,12,4);break;
-      }
-      case "twig":{
-        ctx.fillStyle="#6d5c36";ctx.fillRect(x+8,y+20,16,3);
-        ctx.fillRect(x+17,y+16,3,8);break;
-      }
+    const x=obj.x*size,y=obj.y*size,v=obj.variant||0,kind=obj.kind;
+    const frame=spriteFrame(kind,v);
+    if(kind==="tree"&&frame){
+      const [sx,sy,sw,sh]=frame;
+      const large=sw===48,slim=sw===16;
+      const naturalW=large?82:slim?35:53,naturalH=large?82:slim?67:66;
+      // Manter a base da árvore no solo, sem cortar a copa junto à borda superior.
+      const height=Math.min(naturalH,y+size-2);
+      const width=Math.round(naturalW*height/naturalH);
+      const left=Math.round(x+size/2-width/2),top=Math.round(y+size-height);
+      part(sprites.trees,sx,sy,sw,sh,left,top,width,height);
+      return;
+    }
+    if(kind==="thicket"&&frame){
+      const [sx,sy,sw,sh]=frame;
+      part(sprites.trees,sx,sy,sw,sh,x,y+size-29,size,29);
+      return;
+    }
+    if(kind==="boulder"&&frame){
+      const [sx,sy,sw,sh]=frame,large=sw===32;
+      const width=large?46:27,height=large?43:27;
+      part(sprites.rocks,sx,sy,sw,sh,x+Math.round((size-width)/2),
+        y+size-height,width,height);
+      return;
+    }
+    if((kind==="log"||kind==="stump")&&frame){
+      const [sx,sy,sw,sh]=frame,wide=sw===32;
+      const width=kind==="log"?47:wide?37:25,height=kind==="log"?24:wide?23:22;
+      part(sprites.trees,sx,sy,sw,sh,x+Math.round((size-width)/2),
+        y+size-height,width,height);
+      return;
+    }
+    if(frame){
+      const [sx,sy,sw,sh]=frame;
+      const width=kind==="mushroom"?24:kind==="flowers"?24:25;
+      const height=kind==="grass"?22:24;
+      part(sprites.rocks,sx,sy,sw,sh,x+Math.round((size-width)/2),
+        y+size-height,width,height);
+      return;
+    }
+    if(kind==="twig"){
+      // Um galho simples não depende de regiões vazias do atlas.
+      ctx.fillStyle="#745234";ctx.fillRect(x+7,y+23,17,3);
+      ctx.fillStyle="#a27b51";ctx.fillRect(x+16,y+19,3,7);
     }
   }
   function drawAmbient(ctx,world,t,size){
@@ -201,5 +227,5 @@
       ctx.fillStyle="#244934";ctx.fillRect(x+2,y+1,1,1);ctx.fillRect(x+5,y+1,1,1);
     }
   }
-  window.TillfolkWild=Object.freeze({create,at,waterAt,blocked,clear,regrow,drawGround,drawObject,drawAmbient});
+  window.TillfolkWild=Object.freeze({create,at,waterAt,blocked,clear,regrow,drawGround,drawObject,drawAmbient,spriteFrame,atlasFrames});
 })();
