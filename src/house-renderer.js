@@ -71,7 +71,8 @@
     stats.doors++;
 
     // Cobertura por último no Canvas (z-index visual superior).
-    const roofDrop=4*TILE;
+    // A posição da cobertura acompanha a escala (inclusive no jogo a 1x).
+    const roofDrop=2*cell;
     if(roofVisible){
       // Reduzir 6,25% APENAS NA HORIZONTAL; a altura do telhado permanece original.
       // A fachada, janelas, porta e as coordenadas originais não mudam.
