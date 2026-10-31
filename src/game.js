@@ -4,6 +4,7 @@
   const World=window.TillfolkWild,Orders=window.TillfolkOrders;
   if(!Orders)throw new Error("Carregue src/task-orders.js antes do motor TILLFOLK.");
   Orders.setBounds(W,H);
+  window.TillfolkHouseBuilder.setBounds(W,H);
   if(!World)throw new Error("Carregue src/wild-world.js antes do motor TILLFOLK.");
   const canvas = document.querySelector("#world"), ctx = canvas.getContext("2d");
   canvas.width=W*TILE;canvas.height=H*TILE;
@@ -1273,7 +1274,10 @@
     if(!playing||!document.body.classList.contains("play-session"))return;
     const viewport=$(".canvas-scroll").getBoundingClientRect(),bounds=canvas.getBoundingClientRect();
     if(bounds.width<=viewport.width+80)return; // Desktop: a casa ja esta visivel.
-    const anchor=state.house?.anchor?.split("-").map(Number);
+    // Não enviar o jogador para a região antiga (13,9) enquanto a casa
+    // nova ainda não tiver fundação. Mantenha a câmera no centro da colônia.
+    if(!state.house?.anchor)return;
+    const anchor=state.house.anchor.split("-").map(Number);
     const focusX=anchor?.length===2&&Number.isFinite(anchor[0])?anchor[0]+.5:13.5;
     const houseX=(focusX*TILE/canvas.width)*bounds.width;
     worldPanX+=viewport.left+viewport.width*.5-(bounds.left+houseX);
