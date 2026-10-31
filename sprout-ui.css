@@ -1,0 +1,215 @@
+/* TILLFOLK — Sprout Lands UI Pack: componentes reais, não apenas paleta.
+   Spritesheets usados diretamente do repositório, sem dependências externas.
+   A posição e o estado dos botões continuam controlados pelo JS do jogo. */
+:root{
+  --sprout-dialog-frame:url("./public/assets/Sprout Lands - UI Pack - Basic pack/Sprite sheets/Dialouge UI/dialog box big.png");
+  --sprout-dialog-small:url("./public/assets/Sprout Lands - UI Pack - Basic pack/Sprite sheets/Dialouge UI/dialog box medium.png");
+  --sprout-dialog-med:url("./public/assets/Sprout Lands - UI Pack - Basic pack/Sprite sheets/Dialouge UI/Premade dialog box medium.png");
+  --sprout-square-sheet:url("./public/assets/Sprout Lands - UI Pack - Basic pack/Sprite sheets/buttons/Square Buttons 26x26.png");
+  --sprout-tile-sheet:url("./public/assets/Sprout Lands - UI Pack - Basic pack/emojis-free/emoji style ui/Inventory_Blocks_Spritesheet.png");
+  --sprout-font-dark:#453728;
+  --sprout-cream:#f5e5bd;
+  --sprout-wood:#6d5036;
+}
+/* Tiles originais do inventário. Os recortes do Sprite sheet for Basic Pack
+   e de Inventory_Blocks_Spritesheet são carregados por src/sprout-ui-skin.js. */
+body.play-session .tool span{
+  width:43px!important;height:43px!important;
+  background-image:var(--sprout-inventory-slot,var(--sprout-sheet-button-cream,var(--sprout-square-sheet)))!important;
+  background-position:center!important;background-size:100% 100%!important;
+  background-repeat:no-repeat!important;image-rendering:pixelated!important;
+  color:#493522!important;text-shadow:1px 1px #fff4d5;
+  filter:drop-shadow(0px 2px 0 #211b1680)!important;
+}
+body.play-session .tool.active span{
+  background-image:var(--sprout-inventory-active,var(--sprout-sheet-button-light,var(--sprout-square-sheet)))!important;
+  background-position:center!important;background-size:100% 100%!important;
+  color:#31412d!important;
+}
+body.play-session .tool b{
+  color:#fff0ce!important;text-shadow:1px 2px #1d1d16;
+}
+body.play-session .tool.active b{color:#fdf4c9!important}
+/* Botões utilizam uma célula recortada de Sprout Lands — a moldura não se
+   deforma nos cantos; a região interna se ajusta ao texto (nine-slice). */
+body.play-session .hud-panels button,
+body.play-session .speed-wrap button,
+body.play-session .focus-game-btn{
+  border-style:solid!important;border-width:10px!important;
+  border-color:transparent!important;
+  border-image-source:var(--sprout-sheet-button-cream,var(--sprout-square-sheet))!important;
+  border-image-slice:9 fill!important;
+  border-image-width:10px!important;
+  border-image-outset:0!important;
+  border-image-repeat:stretch!important;
+  background:none!important;
+  color:var(--sprout-font-dark)!important;
+  box-shadow:0 3px 0 #2e211c!important;
+  text-shadow:none!important;
+  padding:1px 8px!important;
+  min-height:41px!important;
+}
+body.play-session .hud-panels button[aria-expanded="true"],
+body.play-session .hud-panels button:hover,
+body.play-session .speed-wrap button.chosen,
+body.play-session .focus-game-btn:hover{
+  border-image-source:var(--sprout-sheet-button-light,var(--sprout-square-sheet))!important;
+}
+body.play-session .hud-panels button span{
+  color:#fbe9bb!important;background:#4b5838!important;
+  border:1px solid #687f49;border-radius:2px!important;
+  min-width:18px;padding:1px 4px!important;
+}
+body.play-session #menu-btn{
+  border:10px solid transparent!important;
+  border-image-source:var(--sprout-sheet-button-cream,var(--sprout-square-sheet))!important;
+  border-image-slice:9 fill!important;
+  border-image-width:10px!important;
+  border-image-repeat:stretch!important;
+  background:none!important;color:#403323!important;
+  padding:0!important;min-height:43px!important;
+  font-size:20px!important;box-shadow:0 3px #2d211a!important;
+}
+body.play-session #menu-btn:hover{
+  border-image-source:var(--sprout-sheet-button-light,var(--sprout-square-sheet))!important;
+}
+body.play-session .tooltray{
+  border-radius:2px!important;
+  border:9px solid transparent!important;
+  border-image-source:var(--sprout-sheet-button-wood,var(--sprout-square-sheet))!important;
+  border-image-slice:9!important;border-image-width:10px!important;
+  border-image-repeat:stretch!important;
+  background:linear-gradient(180deg,#3b3e2fef,#202d24f5)!important;
+  box-shadow:0 6px 0 #2b271a,0 13px 30px #0e2119a3!important;
+  padding:5px 8px!important;
+}
+body.play-session .tool-list{
+  border-right:2px solid #9d865e!important;padding-right:9px!important;
+}
+body.play-session .tool.active{
+  border-color:#f6d792!important;
+  box-shadow:inset 0 0 0 1px #718454,0 2px 0 #29261a!important;
+}
+/* Madeira do Sprout nos contornos, verde escuro no interior para preservar
+   contrastes de textos e a leitura das tarefas. */
+body.play-session .scene-head,
+body.play-session .sidebar .panel,
+body.play-session .orders-panel,
+body.play-session .construction-panel{
+  border-style:solid!important;border-width:9px!important;border-radius:0!important;
+  border-color:transparent!important;
+  border-image-source:var(--sprout-sheet-button-wood,var(--sprout-square-sheet))!important;
+  border-image-slice:9!important;border-image-width:10px!important;
+  border-image-repeat:stretch!important;
+  background:linear-gradient(170deg,#3f4b38fa,#293b2bfa)!important;
+  box-shadow:0 4px 0 #2b231a,0 12px 26px #131f1680!important;
+}
+body.play-session .scene-head:before{display:none!important}
+body.play-session .scene-head{padding:7px 10px!important}
+body.play-session .sidebar .panel{padding:10px 12px!important}
+body.play-session .sidebar .panel .worker{
+  border-radius:0!important;border:3px solid #a69873!important;
+  background:linear-gradient(145deg,#344d38,#243b30)!important;
+  box-shadow:inset 0 0 0 1px #718b61!important;
+}
+body.play-session .sidebar .panel .task,
+body.play-session .orders-choices button,
+body.play-session .construction-actions button{
+  border-radius:0!important;border:3px solid #a5916b!important;
+  background:linear-gradient(145deg,#405542,#293f31)!important;
+  box-shadow:0 2px 0 #192b20!important;
+}
+body.play-session .orders-choices button.chosen,
+body.play-session .orders-choices button[aria-pressed="true"],
+body.play-session .construction-actions button.chosen,
+body.play-session .construction-actions button[aria-pressed="true"]{
+  border-color:#f0d69c!important;
+  background:#e7d8aa!important;color:#33402d!important;
+}
+body.play-session .orders-choices button.chosen small,
+body.play-session .orders-choices button[aria-pressed="true"] small{color:#526343!important}
+body.play-session .sidebar .portrait{
+  border-radius:0!important;border:5px solid transparent!important;
+  border-image-source:var(--sprout-sheet-button-cream,var(--sprout-square-sheet))!important;
+  border-image-slice:9!important;border-image-width:5px!important;
+  background:#8fb482;
+}
+body.play-session .hud-selection{
+  display:flex!important;gap:8px!important;
+  border-style:solid!important;border-width:10px!important;border-color:transparent!important;
+  border-image-source:var(--sprout-dialog-frame)!important;
+  border-image-slice:9 fill!important;
+  border-image-width:10px!important;border-image-repeat:stretch!important;
+  background:none!important;
+  min-height:40px!important;
+  padding:0px 10px!important;
+  box-shadow:0 3px 0 #433b2c!important;
+}
+body.play-session .hud-selection .hud-key{
+  color:#806c45!important;font-size:10px!important;
+}
+body.play-session .hud-selection strong{
+  color:#513c27!important;text-shadow:1px 1px #fff3d0;
+}
+body.play-session .hud-selection small{
+  color:#4d4a31!important;text-shadow:none!important;
+}
+/* Janela de ajuda e notificações em pergaminho oficial Sprout. */
+body.play-session #toast:not([hidden]),
+body.play-session .tile-tooltip{
+  border-style:solid!important;border-width:10px!important;
+  border-color:transparent!important;border-radius:0!important;
+  border-image-source:var(--sprout-dialog-frame)!important;
+  border-image-slice:9 fill!important;border-image-width:10px!important;
+  border-image-repeat:stretch!important;
+  background:none!important;
+  color:#48372b!important;
+  padding:5px 10px!important;
+  text-shadow:none!important;
+  box-shadow:0 4px 0 #3d3227!important;
+}
+/* Pequenos detalhes de janela do Sprout deixam o gerenciamento mais legível. */
+body.play-session .drawer-heading{
+  border-bottom:5px solid #c5ad78!important;
+  background:#3b3a2bf5!important;
+  box-shadow:0 4px #263125;
+}
+body.play-session .drawer-heading strong{
+  font:17px Sprout,monospace!important;color:#f7e8bb!important;
+}
+body.play-session .drawer-heading button{
+  border-radius:0!important;border:5px solid transparent!important;
+  border-image-source:var(--sprout-sheet-button-cream,var(--sprout-square-sheet))!important;
+  border-image-slice:9 fill!important;border-image-width:6px!important;
+  background:none!important;color:#403124!important;padding:4px 9px!important;
+}
+body.play-session .world-tag{
+  border-radius:0!important;
+  border:5px solid transparent!important;
+  border-image-source:var(--sprout-sheet-button-wood,var(--sprout-square-sheet))!important;
+  border-image-slice:9!important;border-image-width:6px!important;
+  background:#233625f0!important;
+}
+@media(max-width:900px){
+ body.play-session .hud-panels button{padding:1px 5px!important}
+ body.play-session .tooltray{padding:4px 5px!important}
+ body.play-session .tool-list{padding-right:4px!important}
+}
+@media(max-width:760px){
+ body.play-session .tool span{width:39px!important;height:39px!important}
+ body.play-session .tool{grid-template-rows:39px 16px!important}
+ body.play-session .scene-head{top:112px!important}
+ body.play-session .hud-selection{bottom:calc(clamp(13px,2vh,23px) + 92px)!important}
+}
+@media(max-width:460px){
+ body.play-session .tool span{width:38px!important;height:38px!important}
+ body.play-session .tool-list{border-right:0!important;border-bottom:2px solid #9d865e!important;padding-bottom:3px!important}
+ body.play-session .tooltray{max-width:calc(100vw - 10px)!important}
+ body.play-session .hud-selection{bottom:142px!important;padding:0 7px!important}
+ body.play-session .hud-selection small{display:none!important}
+ body.play-session .scene-head{top:110px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body.play-session .tooltray,
+ body.play-session .hud-selection{transition:none!important}
+}
