@@ -81,3 +81,39 @@
 @media(prefers-reduced-motion:reduce){
  #menu .title-scene-canvas{animation:none!important;transform:none!important}
 }
+
+/* Contraste da frase do menu: legível sobre qualquer frame do cenário animado.
+   Seletor específico para não alterar os textos dos botões ou dos modais. */
+#menu .title-navigation > .title-tagline{
+  display:block;
+  width:fit-content;
+  max-width:min(365px,100%);
+  margin:9px 0 15px;
+  padding:9px 12px;
+  border-radius:7px;
+  border:1px solid rgba(193,226,173,.22);
+  background-color:rgba(9,34,23,.91);
+  color:#fff8dc;
+  font:650 14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+  text-shadow:0 1px 3px rgba(0,0,0,.85);
+  text-align:left;
+  box-shadow:0 3px 12px rgba(5,22,13,.23);
+}
+#menu .title-navigation > .title-tagline::selection{
+  background:#bdda89;
+  color:#163322;
+  text-shadow:none;
+}
+@media(max-width:850px){
+  #menu .title-navigation > .title-tagline{
+    margin:9px auto 14px;
+    text-align:center;
+  }
+}
+@media(max-width:520px){
+  #menu .title-navigation > .title-tagline{
+    max-width:100%;
+    font-size:13px;
+    padding:8px 10px;
+  }
+}
