@@ -27,7 +27,8 @@ test("work station exibe artes e receitas mesmo antes da construção",async({pa
  await expect(page.locator("#workshop-tools button")).toHaveCount(await page.evaluate(()=>window.TillfolkCrafting.RECIPES.length));
  await expect(page.locator("#workshop-recipes button")).toHaveCount(19);
  await expect(page.locator('[data-craft-tool="axe"]')).toBeDisabled();
- await expect(page.locator('[data-craft-tool="stoneAxe"]')).toHaveCount(1);
+ // A antiga receita stoneAxe foi substituída pelo machado axe.
+ await expect(page.locator('[data-craft-tool="stoneAxe"]')).toHaveCount(0);
  await expect(page.locator("#workshop-status")).toContainText("10 gravetos");
  // Verifica pixels reais da spritesheet, não imagens geradas ou ícones inventados.
  const originalSprites=await page.evaluate(async()=>{
