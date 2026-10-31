@@ -24,20 +24,20 @@
   <link rel="stylesheet" href="./top-speed.css?v=20261031-mobile-brand-clock">
   <link rel="stylesheet" href="./tutorial-missions.css?v=20261031-menu-missao-fix">
   <link rel="stylesheet" href="./hud-settings.css?v=20261031-icones-ajuste-v4">
-  <link rel="stylesheet" href="./crop-workshop.css?v=20261031-sprites-reais-v5">
+  <link rel="stylesheet" href="./crop-workshop.css?v=20261031-inventarios-farm-v6">
   <script defer src="./src/menu.js?v=20261031-sync-preferencias"></script>
   <script defer src="./src/tutorial.js?v=20261031-fim-escolhas"></script>
   <script defer src="./src/house-renderer.js?v=20261031-fazenda-casa"></script>
   <script defer src="./src/menu-scene.js?v=20261031-arvores-verdes"></script>
   <script defer src="./src/biomes.js?v=20261031-clareira-ampliada-v1"></script>
-  <script defer src="./src/wild-world.js?v=20261031-progressao-v4"></script>
-  <script defer src="./src/blueprints.js?v=20261031-fazenda-casa"></script>
+  <script defer src="./src/wild-world.js?v=20261031-inventarios-farm-v6"></script>
+  <script defer src="./src/blueprints.js?v=20261031-inventarios-farm-v6"></script>
   <script defer src="./src/house-building.js?v=20261031-fazenda-casa"></script>
-  <script defer src="./src/crop-catalog.js?v=20261031-progressao-v4"></script>
-  <script defer src="./src/crafting.js?v=20261031-sprites-reais-v5"></script>
-  <script defer src="./src/task-orders.js?v=20261031-progressao-v4"></script>
+  <script defer src="./src/crop-catalog.js?v=20261031-inventarios-farm-v6"></script>
+  <script defer src="./src/crafting.js?v=20261031-inventarios-farm-v6"></script>
+  <script defer src="./src/task-orders.js?v=20261031-inventarios-farm-v6"></script>
   <script defer src="./src/missions.js?v=20261031-sprites-reais-v5"></script>
-  <script defer src="./src/game.js?v=20261031-sprites-reais-v5"></script>
+  <script defer src="./src/game.js?v=20261031-inventarios-farm-v6"></script>
   <script defer src="./src/game-hud.js?v=20261031-atalho-direito"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
 </head>
@@ -390,6 +390,14 @@
     <h3>🌱 Preparar sementes</h3><p>Troque 2 unidades de um cultivo armazenado por 3 sementes da mesma cultura.</p>
     <p id="workshop-status" role="status"></p>
     <div id="workshop-recipes" class="farm-crop-grid" aria-label="Receitas da oficina"></div>
+  </dialog>
+  <dialog id="worker-inventory-dialog" class="modal worker-inventory-dialog" aria-labelledby="worker-inventory-title">
+    <button type="button" class="modal-x" id="worker-inventory-close" aria-label="Fechar inventário">✕</button>
+    <h2 id="worker-inventory-title">Inventário do colono</h2>
+    <p>As ferramentas são individuais. Use o botão direito sobre um colono para inspecionar seus equipamentos.</p>
+    <div id="worker-inventory-tools" class="worker-inventory-tools"></div>
+    <h3>Materiais recolhidos</h3>
+    <div id="worker-inventory-items" class="worker-inventory-items"></div>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>
