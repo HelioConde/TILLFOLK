@@ -1,7 +1,8 @@
 "use strict";
 (() => {
   const TILE = 32, W = 80, H = 50, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01";
-  const World=window.TillfolkWild,Orders=window.TillfolkOrders;
+  const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions;
+  if(!Missions)throw new Error("Carregue src/missions.js antes do motor TILLFOLK.");
   if(!Orders)throw new Error("Carregue src/task-orders.js antes do motor TILLFOLK.");
   Orders.setBounds(W,H);
   window.TillfolkHouseBuilder.setBounds(W,H);
@@ -456,6 +457,7 @@
     if(!path.length){const [x,y]=reached.split(",").map(Number);path.push({x:x+.5,y:y+.5});}
     return path;
   }
+  let tutorialSpeedBeforeFinish=1;
   let state = null, tasks = [], selectedTool = "universal", buildLayer = "floor", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
@@ -473,7 +475,7 @@
       id:i+1,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,
       appearance:c.appearance ?? i,personalPriority:{},x:W/2-.5+i,y:H/2-.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
     }));
-    state = {day:1,minutes:8*60,seeds:0,water:0,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
+    state = {day:1,minutes:8*60,seeds:0,water:0,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",tutorial:Missions.create(),
       plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),homes:[],animals:[],inventory:{wood:15,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
@@ -484,6 +486,7 @@
       const s=JSON.parse(localStorage.getItem(SAVE_KEY));
       if(!s||!Array.isArray(s.plots)||!Array.isArray(s.workers))return false;
       state=s;
+      state.tutorial=Missions.normalize(s.tutorial); // Saves antigos continuam jogáveis, sem iniciar missões retroativas.
       state.workers.forEach(homageSavedName);
       // Migração não destrutiva: os saves continuam utilizáveis, mas não há moeda.
       delete state.coins;
@@ -558,6 +561,19 @@
   function save(){if(!state||!playing)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch(e){console.warn("Não foi possível salvar:",e);}}
   function log(text){state.journal.unshift(text);state.journal.length=Math.min(5,state.journal.length);}
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
+  function recordTutorial(key,quantity=1){
+    const previous=Missions.current(state);
+    const result=Missions.record(state,key,quantity);
+    if(!result.advanced)return;
+    if(previous)log("✦ Missão concluída: "+previous.title+".");
+    Missions.render(state);
+    save();
+    if(result.finished){
+      tutorialSpeedBeforeFinish=simSpeed;
+      simSpeed=0;updateSpeed();refresh();closeDrawer();
+      $("#tutorial-done-dialog").showModal();
+    }else if(previous)notify("✓ Missão concluída: "+previous.title+"!");
+  }
   function start(continueSaved=false, chosenStarters = [], config = {}){
     if(!continueSaved||!readSave())reset(chosenStarters,config);
     houseHistory=[];buildHover=null;areaSelection=null;selectionPointer=null;setTool("universal");
@@ -730,7 +746,13 @@
           const resource=types[kind]||"grass";
           state.inventory[resource]=(state.inventory[resource]||0)+amount;
           // Grama alta tem chance de soltar uma semente. Não existe semente infinita.
-          if(kind==="grass"&&Math.random()<.25){state.seeds++;log(w.name+" encontrou uma semente ao cortar grama!");}
+          if(kind==="grass"){
+            recordTutorial("grass");
+            if(Math.random()<.25){
+              state.seeds++;log(w.name+" encontrou uma semente ao cortar grama!");
+              recordTutorial("seed");
+            }
+          }
           if(result.resource)log(w.name+" coletou "+result.resource+".");
           p.dirty=result.remaining;
           if(result.remaining)complete=false; // Continuar a mesma ordem até retirar o toco.
@@ -738,18 +760,18 @@
         // Limpar o terreno produz recursos naturais, nunca moedas.
         break;
       }
-      case "till":p.tilled=true;break;
+      case "till":p.tilled=true;recordTutorial("till");break;
       case "fertilize":
         if(!w.carryingManure&&state.inventory.manure<=0)return false;
         if(w.carryingManure)w.carryingManure=false;else state.inventory.manure--;
         p.fertilized=true;break;
-      case "sow":if(state.seeds<=0)return false;p.seeded=true;p.growth=0;state.seeds--;break;
+      case "sow":if(state.seeds<=0)return false;p.seeded=true;p.growth=0;state.seeds--;recordTutorial("sow");break;
       case "water":
         if(!w.carryingWater&&state.water<=0)return false;
         if(w.carryingWater)w.carryingWater=false;else state.water--;
-        p.watered=true;break;
-      case "harvest":p.produce=true;p.seeded=false;p.watered=false;p.growth=0;break;
-      case "carry":p.produce=false;p.fertilized=false;state.food+=3;state.seeds++;log(w.name+" armazenou a colheita (+3 comida, +1 semente).");break;
+        p.watered=true;recordTutorial("water");break;
+      case "harvest":p.produce=true;p.seeded=false;p.watered=false;p.growth=0;recordTutorial("harvest");break;
+      case "carry":p.produce=false;p.fertilized=false;state.food+=3;state.seeds++;log(w.name+" armazenou a colheita (+3 comida, +1 semente).");recordTutorial("carry");break;
     }
     if(complete&&t.type!=="carry"&&t.type!=="harvest")log(w.name+" terminou: "+labels[t.type].toLowerCase()+".");
     return complete;
@@ -1075,6 +1097,7 @@
   }
   function refresh(){
     if(!state)return;
+    if(playing)Missions.render(state);else $("#mission-card").hidden=true;
     const set=(id,value)=>{$(id).textContent=value;};
     set("#day",String(state.day).padStart(2,"0"));
     const m=Math.floor(state.minutes);set("#clock",String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
