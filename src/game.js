@@ -344,10 +344,26 @@
   const icons = {clear:"🪓",till:"⛏️",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠"};
   const baseTime = {clear:120,till:90,fertilize:60,sow:60,water:90,harvest:120,carry:60,collectWater:65,collectManure:45,buildHome:180};
   const startPriorities = {clear:7,till:6,fertilize:5,sow:6,water:8,harvest:9,carry:8,collectWater:7,collectManure:5,buildHome:7};
+  // Homenagem a Simone: nomes dos colonos inspirados no nome dela.
+  // O jogador continua livre para personalizar cada personagem.
+  const names=["Sim","Simo","Mone","Moni","Mona","Simi","Simona","Monê","Mimo","Simone"];
+  const legacyWorkerNames={
+    Nico:"Sim",Cora:"Simo",Tito:"Mone",Eva:"Moni",Bia:"Mona",
+    Theo:"Simi","Léo":"Simona",Sol:"Monê",Ravi:"Mimo",
+    Mel:"Simone",Ivo:"Simo",Lua:"Mone",Dora:"Sim",Zeca:"Moni"
+  };
+  function homageSavedName(person){
+    // Só nomes automaticamente gerados nas versões antigas: "Lua 88", etc.
+    // Não altera nomes personalizados, IDs, habilidades ou tarefas.
+    if(!person||typeof person.name!=="string")return;
+    const old=/^([^\d]+) ([1-9]\d)$/.exec(person.name);
+    if(old&&Object.hasOwn(legacyWorkerNames,old[1]))
+      person.name=legacyWorkerNames[old[1]]+" "+old[2];
+  }
   const initialCandidates = [
-    {name:"Mila",skills:["water"],neg:["clear"],cost:6,color:"#fff2bd"},
-    {name:"Bento",skills:["till","sow","harvest"],neg:["fertilize"],cost:10,color:"#d3d6fc"},
-    {name:"Lina",skills:["carry","fertilize"],neg:[],cost:8,color:"#ffcfc5"}
+    {name:"Sim",skills:["water"],neg:["clear"],cost:6,color:"#fff2bd"},
+    {name:"Simo",skills:["till","sow","harvest"],neg:["fertilize"],cost:10,color:"#d3d6fc"},
+    {name:"Mone",skills:["carry","fertilize"],neg:[],cost:8,color:"#ffcfc5"}
   ];
   const HOME_WOOD_COST=8;
   const homeTiles=(x,y)=>[[x,y],[x+1,y],[x,y+1],[x+1,y+1]];
@@ -461,6 +477,7 @@
       const s=JSON.parse(localStorage.getItem(SAVE_KEY));
       if(!s||!Array.isArray(s.plots)||!Array.isArray(s.workers))return false;
       state=s;
+      state.workers.forEach(homageSavedName);
       // Migração não destrutiva: os saves continuam utilizáveis, mas não há moeda.
       delete state.coins;
       state.food=Math.max(0,Number(state.food)||0);
@@ -526,6 +543,7 @@
         w.route=[];w.routeTask=null;w.facing=w.facing||"down";w.moving=false;w.walkFrame=0;
       });
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
+      state.candidates.forEach(homageSavedName);
       state.journal=Array.isArray(s.journal)?s.journal:[];
       tasks=[];recalcTasks();simSpeed=1;updateSpeed();return true;
     }catch {return false;}
@@ -1152,7 +1170,6 @@
       return '<div class="candidate"><div class="candidate-head"><h3>🌿 '+c.name+'</h3><b>🥕 '+foodHireCost(c)+' comida</b></div>'+htmlTags(c)+'<button class="small-primary" data-hire="'+i+'" '+(state.food<foodHireCost(c)||vacant<1?"disabled":"")+'>Contratar trabalhador</button></div>';
     }).join("");
   }
-  const names=["Nico","Cora","Tito","Eva","Bia","Theo","Léo","Sol","Ravi","Mel","Ivo","Lua","Dora","Zeca"];
   function newCandidate(){
     const types=Object.keys(labels),count=1+Math.floor(Math.random()*3);
     const skills=types.slice().sort(()=>Math.random()-.5).slice(0,count);
