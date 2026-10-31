@@ -187,3 +187,26 @@ test('Fertilização busca esterco da vaca e entrega na plantação',async({page
   expect(result.animals[0].manure).toBe(0);
   expect(result.orders).toEqual([]);
 });
+
+test('Cabana é concluída por trabalhador com madeira, não ao clicar',async({page})=>{
+  test.setTimeout(70000);
+  await start(page);
+  await page.evaluate(()=>{
+    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    s.workers[0].neg=[];localStorage.setItem('tillfolk-v01',JSON.stringify(s));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('#continue').click();
+  await selectOrder(page,'buildHome');
+  await tile(page,12,11);
+  const before=await snap(page);
+  expect(before.homes).toHaveLength(0);
+  expect(before.orders).toEqual([{id:'12-11:buildHome',type:'buildHome',x:12,y:11}]);
+  await page.locator('[data-speed="6"]').click();
+  await expect.poll(async()=>(await snap(page)).homes.length,{timeout:50000,intervals:[400,800]}).toBe(1);
+  const after=await snap(page);
+  expect(after.inventory.wood).toBe(before.inventory.wood-8);
+  expect(after.homes[0].residentId).toBe(after.workers[0].id);
+  expect(after.orders).toEqual([]);
+  await page.screenshot({path:'screenshots/colonia-cabana-concluida-1600x900.png',animations:'disabled'});
+});
