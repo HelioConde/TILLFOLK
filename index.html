@@ -86,7 +86,7 @@
           <button id="open-full-map" class="full-map-trigger" type="button" aria-haspopup="dialog" aria-controls="full-map-dialog">▦ Mapa completo</button>
           <p class="camera-help">Zoom mínimo: 50% · Roda: zoom · WASD: mover · H: centralizar</p>
         </section>
-        <section id="prologue-card" class="prologue-card" aria-label="Missão do tutorial" title="Passe o mouse ou abra a missão para entender a próxima etapa">
+        <section id="prologue-card" class="prologue-card" hidden aria-label="Missão do tutorial" title="Passe o mouse ou abra a missão para entender a próxima etapa">
           <div class="prologue-topline"><span id="prologue-step">PRÓLOGO · MISSÃO 1/10</span><button id="prologue-open" type="button" aria-controls="prologue-details" aria-expanded="false">▣ Detalhes</button></div>
           <strong id="prologue-title">O vale começa nas suas mãos</strong>
           <p id="prologue-summary">Recolha recursos para a primeira ferramenta.</p>
@@ -94,12 +94,17 @@
           <div id="prologue-details" class="prologue-details" hidden><p id="prologue-description"></p><small>Missões de aprendizado: terminam quando você dominar o básico. Nenhuma tarefa é feita automaticamente.</small></div>
           <button type="button" id="workshop-open" class="prologue-craft">🛠️ Abrir oficina <span id="prologue-tool-count">0/5</span></button>
         </section>
+        <div id="tutorial-speech" class="tutorial-speech" role="status" aria-live="polite" aria-atomic="true" hidden>
+          <strong id="tutorial-speaker">Equipe</strong>
+          <span id="tutorial-speech-text"></span>
+        </div>
         <div class="tooltray">
           <div class="tool-list" role="group" aria-label="Ferramentas do mapa">
             <button class="tool active" data-tool="universal" aria-pressed="true"><span>✦</span><b>Universal</b><small>Próxima tarefa</small></button>
             <button class="tool" id="orders-btn" type="button" aria-pressed="false" aria-expanded="false" aria-controls="orders-panel"><span>☷</span><b>Ordens</b><small id="order-selected">Especificar</small></button>
             <button class="tool" data-tool="remover" aria-pressed="false"><span>✕</span><b>Cancelar</b><small>Ordens pendentes</small></button>
             <button class="tool" data-tool="inspecionar" aria-pressed="false"><span>⌕</span><b>Inspecionar</b><small>Ver estado</small></button>
+            <button class="tool workshop-tool" type="button" id="workshop-hud-button" aria-haspopup="dialog" aria-controls="workshop-dialog"><span>🛠️</span><b>Oficina</b><small>Fabricar</small></button>
             <button class="tool" data-tool="construir" aria-pressed="false"><span>⌂</span><b>Construir</b><small>Editar casa</small></button>
           </div>
           
@@ -243,19 +248,25 @@
       <form method="dialog"><button class="modal-x" aria-label="Voltar ao menu">✕</button></form>
     </div>
     <h2 id="mode-title">Como deseja começar?</h2>
-    <p class="mode-intro">Escolha o ritmo da sua colônia. As tarefas agrícolas continuam demoradas em ambos os modos.</p>
+    <p class="mode-intro">Escolha como iniciar sua fazenda. O tutorial ensina os primeiros passos; nos modos normais não há missões na tela.</p>
     <div class="mode-choices">
+      <button type="button" data-game-mode="tutorial" class="mode-choice tutorial-choice">
+        <canvas class="mode-art" width="192" height="72" data-preview="mode-relaxed" aria-hidden="true"></canvas>
+        <strong>📖 Tutorial guiado</strong>
+        <small>Dez missões com falas dos colonos, coleta e fabricação de ferramentas. Ao terminar, continue a mesma fazenda na Sobrevivência.</small>
+        <em>RECOMENDADO PARA INICIANTES</em>
+      </button>
       <button type="button" data-game-mode="survival" class="mode-choice">
         <canvas class="mode-art" width="192" height="72" data-preview="mode-survival" aria-hidden="true"></canvas>
         <strong>Sobrevivência</strong>
         <small>Produza alimentos para sustentar seus trabalhadores. A comida é consumida a cada novo dia.</small>
-        <em>DESAFIO ORIGINAL</em>
+        <em>SEM MISSÕES · DESAFIO ORIGINAL</em>
       </button>
       <button type="button" data-game-mode="relaxed" class="mode-choice">
         <canvas class="mode-art" width="192" height="72" data-preview="mode-relaxed" aria-hidden="true"></canvas>
         <strong>Fazenda tranquila</strong>
         <small>Sem consumo diário de alimentos. Concentre-se nas tarefas e nas especializações da equipe.</small>
-        <em>MODO DE APRENDIZADO</em>
+        <em>SEM MISSÕES · SEM CONSUMO DIÁRIO</em>
       </button>
     </div>
   </dialog>
