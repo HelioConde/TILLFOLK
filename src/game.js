@@ -217,7 +217,7 @@
     document.body.classList.add("play-session","focus-game");
     worldPanX=0;worldPanY=0;closeDrawer();refresh();save();
     requestAnimationFrame(fitWorldCanvas);
-    notify("Selecione uma ordem: limpar, arar, semear ou irrigar. A equipe só executa o que você mandar.");
+    // O HUD contextual já explica a ação; não obstruir o mapa com aviso ao iniciar.
   }
   // Somente ordens solicitadas pelo jogador entram na fila. Nenhuma etapa é
   // fabricada depois de limpar, arar, semear, regar ou colher.
