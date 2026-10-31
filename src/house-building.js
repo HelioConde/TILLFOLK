@@ -2,7 +2,8 @@
 /* Casa de TILLFOLK: portabilidade web da arquitetura em camadas de
    Slime-Harvest/scripts/building/house_builder.gd. Sem assets novos. */
 (() => {
-  const TILE = 32, WIDTH = 28, HEIGHT = 18, MAX_FLOORS = 25;
+  // O editor clássico acompanha o mundo 80×50; pisos legados 28×18 continuam válidos.
+  const TILE = 32, WIDTH = 80, HEIGHT = 50, MAX_FLOORS = 25;
   let doorOpenness=0,doorTimestamp=0;
   const key = (x,y) => x + "-" + y;
   const decode = value => value.split("-").map(Number);
