@@ -21,8 +21,8 @@ async function tile(page,x,y){
     const r=canvas.getBoundingClientRect();
     canvas.dispatchEvent(new MouseEvent('click',{
       bubbles:true,cancelable:true,
-      clientX:r.left+(p.x+.5)*r.width/28,
-      clientY:r.top+(p.y+.5)*r.height/18
+      clientX:r.left+(p.x+.5)*r.width/(canvas.width/32),
+      clientY:r.top+(p.y+.5)*r.height/(canvas.height/32)
     }));
   },{x,y});
 }
@@ -171,6 +171,7 @@ test('Irrigação viaja à lagoa automaticamente e retorna ao canteiro',async({p
     p.tilled=true;p.seeded=true;p.watered=false;
     s.workers[0].neg=[];
     s.water=0;
+    s.crafting.equipment.wateringCan=true; // cenário com equipamento já fabricado
     s.orders=[{id:'13-11:water',type:'water',x:13,y:11}];
     localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
@@ -217,7 +218,7 @@ test('Cabana é concluída por trabalhador com madeira, não ao clicar',async({p
   await start(page);
   await page.evaluate(()=>{
     const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
-    s.workers[0].neg=[];localStorage.setItem('tillfolk-v01',JSON.stringify(s));
+    s.workers[0].neg=[];s.inventory.wood=15;localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
   await continueIfMenuVisible(page);
