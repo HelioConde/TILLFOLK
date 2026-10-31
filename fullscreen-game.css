@@ -29,7 +29,7 @@ body.play-session #world{
  position:absolute!important;left:50%!important;top:50%!important;display:block!important;
  flex:none!important;min-width:0!important;min-height:0!important;
  width:auto;height:auto;max-width:none!important;max-height:none!important;
- aspect-ratio:896 / 576;object-fit:fill;
+ aspect-ratio:80 / 50;object-fit:fill;
  transform:translate(calc(-50% + var(--pan-x,0px)),calc(-50% + var(--pan-y,0px)));
  border:0!important;box-shadow:none!important;image-rendering:pixelated;
  touch-action:none;user-select:none;
@@ -168,3 +168,24 @@ body.play-session .wild-inventory{
 body.play-session .inventory-panel {flex:none}
 body.play-session #world{cursor:crosshair}
 body.play-session .world-tag{background:#152e22e6;color:#e5f1ce}
+
+/* Navegação interna acessível: não exige clicar na barra atrás do backdrop. */
+body.play-session .drawer-section-nav{
+ position:sticky;top:50px;z-index:4;
+ display:grid;grid-template-columns:1fr 1fr;gap:7px;
+ padding:9px 2px 10px;background:#183125;
+ border-bottom:1px solid #658568;
+}
+body.play-session .drawer-section-nav button{
+ min-height:44px;border:1px solid #7da67b;border-radius:7px;
+ background:#294a38;color:#f3ecd4;font:800 12px/1.3 system-ui,sans-serif;
+}
+body.play-session .drawer-section-nav button[aria-pressed="true"]{
+ background:#d7edaa;color:#1a3928;border-color:#ddf1b9;
+}
+body.play-session .drawer-section-nav button:focus-visible{
+ outline:3px solid #f4d18b;outline-offset:2px;
+}
+@media(prefers-reduced-motion:reduce){
+ body.play-session .sidebar{transition:none!important}
+}
