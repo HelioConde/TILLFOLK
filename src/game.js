@@ -743,22 +743,56 @@
       const factor=w.skills.length===1?"+100%":w.skills.length===2?"+60%":w.skills.length===3?"+30%":"sem bônus";
       return '<div class="worker" data-worker-state="'+(w.moving?"moving":t?"working":"idle")+'"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div class="worker-identity"><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+escapeHtml(title)+'</div><span class="worker-status">'+(w.moving?"➤ Caminhando":t?"● Em atividade":"● Disponível")+'</span></div></div><div class="tags">'+positive+neg+'</div><div class="worker-bar" role="progressbar" aria-label="Progresso de '+escapeHtml(w.name)+'" aria-valuenow="'+Math.round(w.progress*100)+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+(w.progress*100)+'%"></i></div><div class="worker-role">Especialização: '+factor+'</div></div>';
     }).join("");
-    const list=tasks.slice().sort((a,b)=>(a.status==="ready"?0:1)-(b.status==="ready"?0:1)||state.priorities[b.type]-state.priorities[a.type]);
-    $("#tasks").innerHTML=list.length?list.slice(0,45).map(t=>{
+    // Ordens ativas/prontas ficam em destaque; dependências aguardando são
+    // recolhidas para não ocupar toda a tela com tarefas impossíveis agora.
+    const diagnose=(t)=>{
+      if(t.status==="blocked")return t.reason||"Aguardando pré-requisito";
+      if(t.assigned)return null;
+      const possible=state.workers.filter(w=>!workerTaskBlocker(w,t));
+      if(possible.length)return null;
+      const blockers=state.workers.map(w=>workerTaskBlocker(w,t)).filter(Boolean);
+      return blockers.every(reason=>reason.startsWith("Traço negativo"))?
+        "Nenhum colono pode executar: restrições de habilidade":
+        blockers.some(reason=>reason.includes("Sem caminho"))?
+        "Nenhum trabalhador tem caminho livre até esta ordem":
+        blockers[0]||"Nenhum trabalhador disponível";
+    };
+    const active=tasks.filter(t=>Boolean(t.assigned));
+    const ready=tasks.filter(t=>!t.assigned&&!diagnose(t));
+    const waiting=tasks.filter(t=>!t.assigned&&Boolean(diagnose(t)));
+    const renderOrder=t=>{
       const w=state.workers.find(w=>w.id===t.assigned);
-      const jobState=w?escapeHtml(w.name)+" · trabalhando":t.status==="blocked"?escapeHtml(t.reason):"Disponível";
-      const status=t.status==="blocked"?"waiting":w?"working":"ready";
-      const statusText=status==="waiting"?"Aguardando":status==="working"?"Em execução":"Disponível";
+      const reason=diagnose(t);
+      const status=reason?"waiting":w?"working":"ready";
+      const statusText=reason?"Aguardando":w?"Em execução":"Pronta";
+      const statusDetail=reason|| (w?escapeHtml(w.name)+" · trabalhando":"Aguardando atribuição");
       const progress=w?Math.min(100,Math.max(0,Math.round(w.progress*100))):0;
-      return '<div class="task order-task '+(t.status==="blocked"?"order-blocked":"")+'" data-order-state="'+status+'">'+
+      return '<div class="task order-task '+(reason?"order-blocked":"")+'" data-order-state="'+status+'">'+
         '<div class="order-task-main"><div class="order-task-title">'+
         '<span class="order-symbol" aria-hidden="true">'+icons[t.type]+'</span>'+
         '<strong>'+labels[t.type]+'</strong><span class="order-state">'+statusText+'</span></div>'+
-        '<small>Terreno '+(t.x+1)+', '+(t.y+1)+' · '+jobState+'</small>'+
+        '<small>Terreno '+(t.x+1)+', '+(t.y+1)+' · '+escapeHtml(statusDetail)+'</small>'+
         (w?'<div class="order-progress" role="progressbar" aria-label="Progresso da tarefa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+progress+'"><i style="width:'+progress+'%"></i></div>':'')+
         '</div><div class="order-task-controls"><b>P'+state.priorities[t.type]+'</b>'+
         '<button type="button" data-cancel-order="'+t.id+'" aria-label="Cancelar ordem '+labels[t.type]+' do terreno '+(t.x+1)+', '+(t.y+1)+'">✕</button></div></div>';
-    }).join("")+(list.length>45?'<div class="empty">+ '+(list.length-45)+' ordens adicionais</div>':""):'<div class="empty">Sem ordens. Escolha um trabalho e marque o terreno. A equipe não inicia outras etapas automaticamente.</div>';
+    };
+    const now=[...active,...ready];
+    const preview=now.slice(0,30).map(renderOrder).join("");
+    const rest=now.length>30?'<details class="task-waiting-group"><summary>Mostrar mais '+(now.length-30)+' ordens prontas</summary>'+
+      now.slice(30).map(renderOrder).join("")+'</details>':"";
+    const waitingBlock=waiting.length?
+      '<details class="task-waiting-group"><summary>⏳ '+waiting.length+
+      ' aguardando recursos, desbloqueio ou caminho</summary>'+
+      '<div class="task-blocked-hint">Essas ordens não são executáveis ainda. Abra para ver o motivo de cada uma; não é preciso cancelá-las.</div>'+
+      waiting.slice(0,80).map(renderOrder).join("")+
+      (waiting.length>80?'<p>Mais '+(waiting.length-80)+' ordens aguardando.</p>':"")+
+      '</details>':"";
+    const totals='<div class="task-list-summary" role="status">'+
+      '<span>● '+active.length+' em execução</span><span>✓ '+ready.length+
+      ' prontas</span><span>⏳ '+waiting.length+' aguardando</span></div>';
+    $("#tasks").innerHTML=tasks.length?
+      totals+preview+rest+waitingBlock:
+      '<div class="empty">Sem ordens. Escolha um trabalho e marque o terreno. A equipe não inicia etapas automaticamente.</div>';
     $("#journal").innerHTML=state.journal.map(s=>'<div class="log">✧ '+escapeHtml(s)+'</div>').join("");
     drawSidebarAvatars();
   }
