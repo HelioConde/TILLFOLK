@@ -1102,7 +1102,7 @@
     const quest=Missions.current(state),workers=state.workers;
     if(!quest||!workers?.length)return;
     const worker=workers[Math.floor(performance.now()/8500)%Math.min(2,workers.length)];
-    if(!inView(worker.x,worker.y,6))return;
+    if(!Number.isFinite(worker.x)||!Number.isFinite(worker.y))return;
     const message=Missions.speech(state,worker);
     if(!message)return;
     ctx.save();
