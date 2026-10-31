@@ -179,8 +179,12 @@
     // O lenhador fica ao LADO da árvore/pedra; nunca pisa dentro do obstáculo.
     const start=[Math.floor(fromX),Math.floor(fromY)],id=(x,y)=>x+","+y;
     const origin=id(...start);
-    const goals=blocked(toX,toY)?directions.map(([dx,dy])=>[toX+dx,toY+dy])
-      .filter(([x,y])=>!blocked(x,y)):[[toX,toY]];
+    // Ao clicar num ponto interno da lagoa, qualquer margem da MESMA lagoa
+    // é válida: um trabalhador nunca precisa pisar na água.
+    const sourceTiles=World.waterAt(state?.world,toX,toY)?state.world.water:[{x:toX,y:toY}];
+    const goals=blocked(toX,toY)?sourceTiles.flatMap(tile=>
+      directions.map(([dx,dy])=>[tile.x+dx,tile.y+dy])
+        .filter(([x,y])=>!blocked(x,y))):[[toX,toY]];
     if(!goals.length)return [];
     const destinations=new Set(goals.map(([x,y])=>id(x,y)));
     const queue=[start],previous=new Map([[origin,null]]);
