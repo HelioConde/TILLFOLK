@@ -125,24 +125,6 @@
 #starter-dialog .starter-chip.none{
   background:#244737;border-color:#628968;color:#e0ebd4;
 }
-#starter-dialog .starter-activity-details{
-  margin:5px 12px 2px;background:#1d372b;border:1px solid #5f896b;
-  border-radius:7px;padding:0;
-}
-#starter-dialog .starter-activity-details summary{
-  list-style:none;display:flex;align-items:center;justify-content:space-between;
-  min-height:37px;padding:8px 10px;cursor:pointer;
-  font:800 12px/1.25 system-ui,sans-serif;color:#e2f1cb;
-}
-#starter-dialog .starter-activity-details summary::-webkit-details-marker{display:none}
-#starter-dialog .starter-activity-details summary:after{content:"⌄";font-size:17px}
-#starter-dialog .starter-activity-details[open] summary:after{content:"⌃"}
-#starter-dialog .starter-activity-details>p{
-  font:500 12px/1.4 system-ui,sans-serif;color:#d2e1c8;
-  margin:0;padding:1px 10px 8px;
-}
-#starter-dialog .recruit-work-grid{padding:0 8px 9px;gap:5px}
-#starter-dialog .recruit-work-row{font:600 12px/1.4 system-ui,sans-serif;padding:7px}
 #starter-dialog .starter-slot .starter-reroll{
   align-self:stretch;width:auto;margin:9px 12px 12px;
   min-height:36px;padding:7px 10px;border:1px solid #83a984;
@@ -200,4 +182,31 @@
  #starter-dialog .starter-heading{padding:10px 18px}
  #starter-dialog .starter-content{padding:9px 16px}
  #starter-dialog .starter-footer{padding:8px 16px}
+}
+
+/* Tempos somente nas especialidades: tooltip flutuante não ocupa espaço nos cards. */
+#starter-dialog .starter-chip.specialty {
+  appearance:none;cursor:help;position:relative;max-width:100%;
+  min-height:32px;margin:0;text-align:left;
+  font:700 12px/1.25 system-ui,sans-serif;
+  transition:background .13s ease,border-color .13s ease;
+}
+#starter-dialog .starter-chip.specialty:is(:hover,:focus-visible,[aria-expanded="true"]) {
+  border-color:#e1e9af;background:#406d4b;color:#fff8db;
+}
+#starter-dialog .starter-chip .chip-info {
+  margin-left:2px;opacity:.8;font-size:12px;line-height:1;
+}
+#starter-dialog .starter-specialty-tooltip {
+  position:fixed;z-index:100;
+  width:max-content;max-width:min(300px,calc(100vw - 20px));
+  padding:11px 13px;border:1px solid #d5e7a1;border-radius:8px;
+  color:#fff9dc;background:#152d22;
+  box-shadow:0 8px 24px #061b13c9;
+  font:600 13px/1.45 system-ui,sans-serif;
+  text-align:left;white-space:normal;pointer-events:none;
+}
+#starter-dialog .starter-specialty-tooltip[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce) {
+  #starter-dialog .starter-chip.specialty{transition:none}
 }
