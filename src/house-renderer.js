@@ -29,6 +29,14 @@
     return {width:ROOF_COLS*cell,height:(ROOF_ROWS+WALL_ROWS-1)*cell,cell};
   }
 
+  // Encosta a base da fachada no terreno, centralizando a casa sobre a fundação.
+  // Reutilizado pela partida, pelos projetos de cabanas e pelo blueprint.
+  function positionForFootprint(x,y,width=64,height=64,scale=1){
+    const size=dimensions(scale);
+    return {x:Math.round(x+(width-size.width)/2),
+      y:Math.round(y+height-(size.height-size.cell))};
+  }
+
   function draw(ctx,assets,x,y,{scale=2,roofVisible=true}={}){
     if(!Number.isInteger(scale)||scale<1||scale>6)
       throw new RangeError("Escala precisa ser um inteiro de 1 a 6");
@@ -103,7 +111,7 @@
   }
 
   window.TillfolkHouse=Object.freeze({
-    draw,roofAtlas,wallAtlas,dimensions,
+    draw,roofAtlas,wallAtlas,dimensions,positionForFootprint,
     reference:"HelioConde/Slime-Harvest/scripts/building/house_builder.gd"
   });
 })();
