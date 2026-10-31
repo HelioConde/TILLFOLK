@@ -40,8 +40,9 @@
   let hoveredTile=null;
   const feedbackParticles=[];
   const reducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
+  const animationsEnabled=()=>window.TillfolkPreferences?.animationsEnabled?.()??!reducedMotion.matches;
   function showMapFeedback(x,y,color="#f4df9e"){
-    if(reducedMotion.matches)return;
+    if(!animationsEnabled())return;
     feedbackParticles.push({x,y,color,start:performance.now()});
     if(feedbackParticles.length>22)feedbackParticles.shift();
   }
@@ -122,7 +123,7 @@
       }else cameraAnchor=null;
       return;
     }
-    const fraction=reducedMotion.matches?1:1-Math.exp(-dt/95);
+    const fraction=animationsEnabled()?1-Math.exp(-dt/95):1;
     cameraZoom+=(targetCameraZoom-cameraZoom)*fraction;
     if(Math.abs(targetCameraZoom-cameraZoom)<.002)cameraZoom=targetCameraZoom;
     fitWorldCanvas();
@@ -990,13 +991,13 @@
           const image=getWorkerSprite(w,true);
           const actionGroup=actionRow[active.type]??0;
           const actionDirection=actionRowFor[w.facing]??0;
-          const frame=simSpeed===0?0:Math.floor(performance.now()/250)%2;
+          const frame=simSpeed===0||!animationsEnabled()?0:Math.floor(performance.now()/250)%2;
           part(image,frame*48,(actionGroup+actionDirection)*48,48,48,px-34,py-51,68,68);
         }else{
           const image=getWorkerSprite(w);
           const direction=walkingRowFor[w.facing]??0;
           const row=direction+(w.moving?4:0);
-          const frame=w.moving?Math.floor(w.walkFrame||0)%8:0;
+          const frame=w.moving&&animationsEnabled()?Math.floor(w.walkFrame||0)%8:0;
           part(image,frame*48+11,row*48+12,26,24,px-20,py-34,40,40);
         }
         if(!valid(sprite.premium)&&!valid(sprite.worker)){
@@ -1004,7 +1005,7 @@
         }
         // A irrigação usa as gotas verdes do atlas local; não mostra pedras como água.
         if(working&&active.type==="water"&&valid(sprite.wateringFx)){
-          const fxFrame=simSpeed===0?0:Math.floor(performance.now()/150)%9;
+          const fxFrame=simSpeed===0||!animationsEnabled()?0:Math.floor(performance.now()/150)%9;
           part(sprite.wateringFx,fxFrame*48,0,48,48,px+4,py-24,48,48);
         }
         // Placa de colono com estado — mesma paleta do HUD, sem cobrir o sprite.
@@ -1026,7 +1027,7 @@
         }
       }
     }
-    World.drawAmbient(ctx,state.world,performance.now(),TILE);
+    World.drawAmbient(ctx,state.world,animationsEnabled()?performance.now():0,TILE);
     // Prévia ANTES de construir: azul transparente para posição válida,
     // vermelho transparente se a regra de terreno/ocupação impedir a obra.
     if(playing&&selectedTool==="construir"&&buildHover&&!panPointer&&!areaSelection){
@@ -2090,7 +2091,18 @@
     speedBeforeOptions=simSpeed;simSpeed=0;updateSpeed();
     optionsDialog.showModal();
   });
+  const optionsMain=$("#game-options-main"),settingsPanel=$("#game-settings-panel");
+  const gameSettingsTrigger=$("#game-open-settings");
+  function showInGameSettings(showSettings){
+    optionsMain.hidden=showSettings;settingsPanel.hidden=!showSettings;
+    gameSettingsTrigger.setAttribute("aria-expanded",String(showSettings));
+    (showSettings?$("#game-motion"):gameSettingsTrigger).focus({preventScroll:true});
+  }
+  gameSettingsTrigger.addEventListener("click",()=>showInGameSettings(true));
+  $("#game-settings-back").addEventListener("click",()=>showInGameSettings(false));
   optionsDialog.addEventListener("close",()=>{
+    optionsMain.hidden=false;settingsPanel.hidden=true;
+    gameSettingsTrigger.setAttribute("aria-expanded","false");
     if(playing){simSpeed=speedBeforeOptions;updateSpeed();}
   });
   $("#game-resume").addEventListener("click",()=>optionsDialog.close());
