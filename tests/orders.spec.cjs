@@ -11,6 +11,14 @@ async function start(page){
   await page.locator('[data-game-mode="relaxed"]').click();
   await page.locator('#starter-confirm').click();
   await expect(page.locator('#world')).toBeVisible();
+  // Suites legadas testam ordens; os equipamentos já foram fabricados neste cenário.
+  await page.evaluate(()=>{
+    const save=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    for(const tool of Object.keys(save.crafting.equipment))save.crafting.equipment[tool]=true;
+    localStorage.setItem('tillfolk-v01',JSON.stringify(save));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await continueIfMenuVisible(page);
 }
 async function choose(page,type){
   await page.locator('#orders-btn').click();
