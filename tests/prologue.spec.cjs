@@ -4,7 +4,7 @@ const snap=page=>page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01
 async function newFarm(page){
   await page.goto(BASE,{waitUntil:"networkidle"});
   await page.locator("#new-game").click();
-  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator('[data-game-mode="tutorial"]').click();
   await page.locator("#starter-confirm").click();
   await expect(page.locator("#world")).toBeVisible();
 }
@@ -100,9 +100,13 @@ test("Campanha termina na cabana e nunca gera missões infinitas",async({page})=
   expect(reached.stage).toBe(reached.total);
   await page.reload({waitUntil:"networkidle"});
   await page.locator("#continue").click();
-  await expect(page.locator("#prologue-title")).toContainText("aprendeu a sobreviver");
-  await expect(page.locator("#prologue-goals")).toContainText("10 missões concluídas");
-  expect((await snap(page)).prologue.done).toBe(true);
+  await expect(page.locator("#prologue-card")).toBeHidden();
+  await expect(page.locator("#workshop-hud-button")).toBeVisible();
+  const saved=await snap(page);
+  expect(saved.prologue.done).toBe(true);
+  expect(saved.mode).toBe("survival");
+  expect(saved.workers).toHaveLength(2);
+  expect(saved.inventory.wood).toBe(0);
 });
 
 test("Salvar antigo conserva ferramentas desbloqueadas e não reinicia prólogo",async({page})=>{
@@ -124,6 +128,8 @@ test("Salvar antigo conserva ferramentas desbloqueadas e não reinicia prólogo"
 test("UI mobile: missão pode expandir e oficina não corta a tela",async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await newFarm(page);
+  await expect(page.locator("#tutorial-speech")).toBeVisible();
+  await expect(page.locator("#tutorial-speech-text")).toContainText("gravat");
   await page.screenshot({path:"screenshots/tutorial-primeira-missao-390x844.png",animations:"disabled"});
   await page.locator("#prologue-open").click();
   await expect(page.locator("#prologue-dialog")).toBeVisible();
@@ -135,4 +141,80 @@ test("UI mobile: missão pode expandir e oficina não corta a tela",async({page}
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x+box.width).toBeLessThanOrEqual(391);
   await page.screenshot({path:"screenshots/tutorial-oficina-390x844.png",animations:"disabled"});
+});
+
+
+test("Menu apresenta Tutorial, Sobrevivência e Fazenda tranquila em tela pequena",async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto(BASE,{waitUntil:"networkidle"});
+  await page.locator("#new-game").click();
+  const modes=page.locator("#mode-dialog [data-game-mode]");
+  await expect(modes).toHaveCount(3);
+  await expect(page.locator('[data-game-mode="tutorial"]')).toContainText("Tutorial guiado");
+  await expect(page.locator('[data-game-mode="survival"]')).toContainText("Sobrevivência");
+  await expect(page.locator('[data-game-mode="relaxed"]')).toContainText("Fazenda tranquila");
+  await page.screenshot({path:"screenshots/modos-tutorial-normal-390x844.png",animations:"disabled"});
+  const dialog=await page.locator("#mode-dialog").boundingBox();
+  expect(dialog.x).toBeGreaterThanOrEqual(0);
+  expect(dialog.x+dialog.width).toBeLessThanOrEqual(391);
+});
+
+for(const gameMode of ["survival","relaxed"]){
+  test("Modo normal "+gameMode+" não mostra missões nem falas e mantém oficina",async({page})=>{
+    await page.goto(BASE,{waitUntil:"networkidle"});
+    await page.locator("#new-game").click();
+    await page.locator('[data-game-mode="'+gameMode+'"]').click();
+    await page.locator("#starter-confirm").click();
+    const before=await snap(page);
+    expect(before.mode).toBe(gameMode);
+    await expect(page.locator("#prologue-card")).toBeHidden();
+    await expect(page.locator("#tutorial-speech")).toBeHidden();
+    await expect(page.locator("#workshop-hud-button")).toBeVisible();
+    await page.locator("#workshop-hud-button").click();
+    await expect(page.locator("#workshop-dialog")).toBeVisible();
+    await page.locator("#workshop-dialog .modal-x").click();
+    await page.reload({waitUntil:"networkidle"});
+    await page.locator("#continue").click();
+    await expect(page.locator("#prologue-card")).toBeHidden();
+    await expect(page.locator("#tutorial-speech")).toBeHidden();
+    expect((await snap(page)).mode).toBe(gameMode);
+  });
+}
+
+test("Última missão encerra guia, mantém a fazenda e troca para Sobrevivência",async({page})=>{
+  await newFarm(page);
+  const prior=await snap(page);
+  // Todos os capítulos anteriores realizados; falta terminar a cabana.
+  await page.evaluate(()=>{
+    const api=window.TillfolkPrologue,s=JSON.parse(localStorage.getItem("tillfolk-v01"));
+    s.tools=Object.fromEntries(Object.keys(api.RECIPES).map(id=>[id,1]));
+    for(const [type,count] of Object.entries({
+      twig:3,pebble:2,grass:3,seed:1,wood:8,till:1,sow:1,water:1,harvest:1,carry:1
+    }))api.event(s,type,count);
+    localStorage.setItem("tillfolk-v01",JSON.stringify(s));
+  });
+  await page.reload({waitUntil:"networkidle"});
+  await page.locator("#continue").click();
+  await expect(page.locator("#prologue-card")).toBeVisible();
+  const before=await snap(page);
+  expect(before.prologue.stage).toBe(9);
+  // A migração de save completo também representa a conclusão atômica após
+  // uma casa: após recarregar, não existe novo prólogo nem reset de estado.
+  await page.evaluate(()=>{
+    const api=window.TillfolkPrologue,s=JSON.parse(localStorage.getItem("tillfolk-v01"));
+    api.event(s,"buildHome");
+    s.homes.push({x:42,y:26,residentId:null,legacy:false});
+    localStorage.setItem("tillfolk-v01",JSON.stringify(s));
+  });
+  await page.reload({waitUntil:"networkidle"});
+  await page.locator("#continue").click();
+  const after=await snap(page);
+  expect(after.mode).toBe("survival");
+  expect(after.prologue.done).toBe(true);
+  expect(after.homes.some(h=>h.x===42&&h.y===26)).toBe(true);
+  expect(after.workers.map(w=>w.id)).toEqual(prior.workers.map(w=>w.id));
+  await expect(page.locator("#prologue-card")).toBeHidden();
+  await expect(page.locator("#tutorial-speech")).toBeHidden();
+  await expect(page.locator("#workshop-hud-button")).toBeVisible();
+  await page.screenshot({path:"screenshots/tutorial-concluido-jogo-normal.png",animations:"disabled"});
 });
