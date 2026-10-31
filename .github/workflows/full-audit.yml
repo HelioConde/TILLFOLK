@@ -1,0 +1,57 @@
+name: TILLFOLK — auditoria completa de código, missões e atualização
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tillfolk-full-audit
+  cancel-in-progress: true
+jobs:
+  code:
+    name: JavaScript, dados e progressão
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar sintaxe de todos os módulos e testes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in src/*.js tests/*.cjs; do node --check "$file"; done
+          node --check tests/../src/live-update.js
+      - name: Rodar toda a suíte de testes unitários
+        run: node --test tests/*.test.cjs
+  browser:
+    name: Jogo, UI, tutorial e versão online
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Servir jogo em localhost
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-full-audit-http.log 2>&1 &
+          sleep 2
+      - name: Executar testes de regressão e todas as jornadas do navegador
+        run: npx playwright test --browser chromium --workers=2 --reporter=line
+      - name: Guardar screenshots e relatório dos erros
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-auditoria-completa
+          path: |
+            test-results/
+            screenshots/
+          if-no-files-found: warn
+          retention-days: 14
