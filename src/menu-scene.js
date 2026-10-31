@@ -91,12 +91,15 @@
       gardener:{x:gardenerX,y:365+Math.sin(t/420)*1.5,
         action:gardenerAction,facing:field>=10400?"left":"right"},
       cropStage:1+Math.floor((t%30000)/7500),
+      // Clareira acima do telhado: cobertura começa em y=174.
+      // As bordas de todos os animais ficam até y=160, sem se esconder atrás
+      // da casa, das lavouras ou do rodapé da tela.
       animals:[
-        {kind:"cow",x:lerp(788,908,cowWalk),y:466+Math.sin(t/820)*3,
+        {kind:"cow",x:lerp(749,810,cowWalk),y:89+Math.sin(t/820)*2,
           face:((t+3800)%18700)<9350?"right":"left"},
-        {kind:"chicken",x:lerp(674,780,chickenWalk),y:478+Math.sin(t/570)*2,
+        {kind:"chicken",x:lerp(670,706,chickenWalk),y:112+Math.sin(t/570)*2,
           face:((t+1600)%12300)<6150?"right":"left"},
-        {kind:"chicken",x:lerp(855,935,secondChicken),y:503+Math.cos(t/670)*2,
+        {kind:"chicken",x:lerp(887,913,secondChicken),y:112+Math.cos(t/670)*2,
           face:((t+7100)%15600)<7800?"right":"left"}
       ]
     };
@@ -132,7 +135,7 @@
   }
   function movingAnimal(kind,x,y,face,frame){
     const cell=kind==="cow"?32:16;
-    const w=kind==="cow"?67:35,h=kind==="cow"?59:35;
+    const w=kind==="cow"?74:41,h=kind==="cow"?66:41;
     const atlasFrame=kind==="cow"?frame%3:frame%4;
     if(face==="left"){
       ctx.save();ctx.translate(Math.round(x+w),Math.round(y));ctx.scale(-1,1);
@@ -191,8 +194,8 @@
     }
     for(const [x,y,k,z] of [
       [394,132,2,1.6],[446,119,1,1.4],[493,112,0,1.5],
-      [547,124,2,1.12],[613,104,3,1.3],[690,112,4,1.1],
-      [806,110,2,1.3],[879,134,3,1.5],[938,119,2,1.5],
+      [547,124,2,1.12],[613,104,3,1.3],
+      // Abrir espaço no bosque para ver vaca e galinhas sobre a casa.
       [402,250,0,1.1],[447,252,2,.95],[933,263,1,1.3]
     ])tree(x,y,k,z);
     farmhouse();
