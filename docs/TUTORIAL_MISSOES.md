@@ -1,28 +1,62 @@
-# Tutorial interativo e missões — TILLFOLK
+# Tutorial e missões — TILLFOLK
+**Revisão de design: 31/10/2026**
 
-O menu separa dois caminhos:
+> **Propósito:** ensinar o jogador a manter uma colônia viva. A primeira sequência apresenta coleta, fabricação, cultivo e abertura do vale; futuras missões devem introduzir alimentação diária, moradias, recrutamento e riscos de sobrevivência. Referência: [GDD](./GDD_TILLFOLK.md).
 
-- **Como jogar:** o guia ilustrado existente, independente da simulação; não completa missões.
-- **Tutorial · missões:** abre a configuração de uma nova fazenda. Após escolher modo e dois trabalhadores, o jogador recebe objetivos dentro do mundo. **Nova Fazenda** também começa com missões, para integrar o aprendizado à partida.
-- **Continuar:** retoma a mesma fazenda e o progresso salvo em `state.tutorial`. Jogos salvos antes desta versão continuam sem objetivos retroativos.
+## Menu: dois caminhos distintos
 
-## Sequência (validação por ações concluídas)
+- **Como jogar:** guia ilustrado, apenas consulta, não interfere no progresso nem termina missões.
+- **Tutorial:** cria uma partida com missões acompanhadas **dentro** do jogo, balões de diálogo, painel de objetivos, detalhes e botão Mostrar no mapa.
+- **Nova Fazenda:** também começa com objetivos para orientar quem está iniciando; não é uma sequência de páginas fora do mundo.
+- **Continuar:** retoma a mesma colônia, tarefa e estado salvo, sem exibir o menu quando a sessão estava ativa.
+- **Voltar ao menu inicial:** oculta o painel de missões; ao retomar, exibe a missão atual.
 
-| Etapa | Missão | Validação |
-| --- | --- | --- |
-| 1 | O vale está vivo | Um colono efetivamente remove grama alta |
-| 2 | Uma surpresa entre as folhas | Encontrar uma semente ao cortar grama (25% por tufo) |
-| 3 | A terra precisa respirar | Conclusão da ordem Arar |
-| 4 | O primeiro plantio | Conclusão da ordem Semear |
-| 5 | Água para o amanhã | Conclusão da ordem Regar (busca na lagoa permitida pela ordem) |
-| 6 | Paciência que vira alimento | Colher cultura com crescimento completo |
-| 7 | Nada fica para trás | Transportar colheita para o estoque |
-| 8 | Um futuro para a colônia | Criar blueprint de cabana ou canteiro, sem forçar construção instantânea |
+## Sequência atual do protótipo: 12 missões
 
-Não há tarefas auto-enfileiradas pelo tutorial. A ferramenta Universal continua criando somente a próxima ordem, e o clique direito cancela ordens ou blueprints. O botão **Mostrar no mapa** localiza um objetivo e seleciona a ferramenta adequada. **Detalhes** abre instruções no toque/click; passar o mouse sobre o cartão também revela a ajuda. Um balão no mapa alterna a fala contextual entre os primeiros colonos.
+O código de referência é `src/missions.js`, não uma lista antiga neste documento.
 
-Ao cumprir o último objetivo, a simulação pausa, salva o estado e exibe duas opções: **Continuar jogando** (restaura a velocidade anterior) e **Voltar ao menu inicial** (salva antes de sair). A conclusão não reaparece ao carregar a fazenda.
+| # | Evento registrado ao completar trabalho | O que ensina |
+|---|---|---|
+| 1 | `workstation` | Juntar gravetos e construir a Work Station |
+| 2 | `hoe` | Fabricar uma enxada e prepará-la para um colono |
+| 3 | `grass` | Marcar e concluir a limpeza de grama alta |
+| 4 | `seed` | Encontrar sementes entre os tufos de grama |
+| 5 | `till` | Arar solo livre com a ferramenta apropriada |
+| 6 | `sow` | Plantar uma cultura em solo preparado |
+| 7 | `wateringCan` | Fabricar o regador |
+| 8 | `water` | Regar o canteiro |
+| 9 | `harvest` | Esperar a plantação amadurecer e colher |
+| 10 | `carry` | Transportar comida até o estoque |
+| 11 | `axe` | Fabricar um machado comum |
+| 12 | `exit` | Cortar o tronco que bloqueia a saída do vale |
 
-## Verificações
+**Atenção:** o machado de pedra foi removido. O tronco é cortado com o machado comum. O frame da enxada deve corresponder à enxada real do atlas. Esses itens não são intercambiáveis.
 
-Execute `node --test tests/tutorial-missions.test.cjs` para testar as regras e o save sem dependências. Para revisão visual, teste a versão publicada no GitHub Pages em desktop e mobile, incluindo a leitura da missão por mouse e por toque, o botão localizador, o diálogo final e o retorno com Continuar. A inspeção visual ainda precisa ser feita no navegador.
+As missões avançam pela **conclusão real do trabalho**, nunca ao clicar apenas em um botão ou enfileirar uma ordem. Eventos obtidos antecipadamente podem ser reconhecidos na progressão; verificar a lógica em `Missions.record`.
+
+## Próximo capítulo: sobrevivência verdadeira [PLANEJADO]
+
+Quando existirem fome individual, saúde e morte, a conclusão do tutorial inicial será o início de um desafio de sobrevivência mais longo, com missões opcionais de acompanhamento:
+
+1. **O jantar é para todos:** produzir comida suficiente para alimentar os habitantes e acompanhar os níveis individuais de fome.
+2. **Estoque para amanhã:** estabilizar uma reserva alimentar por mais de um dia de consumo.
+3. **Um teto para cada pessoa:** construir novas casas e atribuir os moradores.
+4. **Mais braços, mais bocas:** recrutar um colono e aumentar a produção para atender à nova necessidade.
+5. **Além da passagem:** buscar um material que só existe depois de desbloquear outra região.
+6. **A força de cada um:** definir prioridades diferentes para dois colonos e tirar proveito de uma especialização.
+
+Essas **seis missões adicionais são propostas**, não estão implementadas. Sua liberação depende das mecânicas previstas em [ROADMAP_SOBREVIVENCIA.md](./ROADMAP_SOBREVIVENCIA.md).
+
+## Usabilidade e conclusão
+
+- Passe o mouse ou toque em **Detalhes** para aprender por que uma missão está esperando e qual ferramenta falta.
+- **Mostrar no mapa** destaca objetivos reais e pode selecionar a ferramenta adequada, sem concluir ações automaticamente.
+- As falas dos trabalhadores devem ser naturais, variadas e situacionais; balões desaparecem depois de um intervalo e não ficam sobre o menu.
+- Ao concluir a sequência inicial, apresentar **Continuar jogando** ou **Voltar ao menu inicial**. A colônia e o save permanecem intactos.
+- Não usar missões para fornecer comida infinita, eliminar consequências de sobrevivência ou teletransportar materiais.
+
+## QA e arquivos
+
+- Fonte de verdade da progressão: `src/missions.js`; gatilhos de trabalho: `src/game.js`.
+- Testes: `tests/tutorial-missions.test.cjs`, `tests/tutorial-flow.spec.cjs`, além de validações de crafting e da passagem do vale.
+- Novas missões precisam de testes de save, progresso, cancelamento, bloqueio por ferramenta, mobile e retorno ao menu.
