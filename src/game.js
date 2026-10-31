@@ -2229,6 +2229,31 @@
       "stock-crop",true)).join("");
     Crops.drawIcons(grid);
   }
+  // A oficina reutiliza o atlas Sprout Lands. A remoção da janela de
+  // seleção de culturas não deve afetar o desenho das ferramentas.
+  const workshopAtlas=new Image();
+  workshopAtlas.src=Crafting.ITEMS_SPRITE;
+  workshopAtlas.addEventListener("load",()=>{
+    if(state&&$("#workshop-dialog")?.open)paintWorkshopTools();
+  });
+  function paintWorkshopTools(){
+    document.querySelectorAll(".workstation-tool-sprite").forEach(canvas=>{
+      const ctx=canvas.getContext("2d");
+      if(!ctx)return;
+      ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,canvas.width,canvas.height);
+      const item=canvas.closest("[data-craft-tool]")?.dataset.craftTool;
+      const frame=Crafting.itemFrame(item);
+      if(frame&&valid(workshopAtlas)){
+        ctx.drawImage(workshopAtlas,frame.x,frame.y,frame.w,frame.h,3,3,42,42);
+        canvas.setAttribute("aria-label","Sprite de "+(Crafting.recipe(item)?.name||"ferramenta"));
+      }else if(!frame){
+        ctx.fillStyle="#d7e2b0";ctx.font="bold 20px system-ui";
+        ctx.textAlign="center";ctx.textBaseline="middle";
+        ctx.fillText(Crafting.recipe(item)?.icon||"⚒",24,25);
+        canvas.setAttribute("aria-label","Ícone provisório: "+(Crafting.recipe(item)?.name||"ferramenta"));
+      }
+    });
+  }
   function renderWorkshop(){
     const ready=Boolean(state.crafting?.station);
     $("#workshop-status").textContent=ready?
