@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#203b2d">
+<title>TILLFOLK · Editor de TileMap Terrain</title>
+<style>
+:root{color-scheme:dark;--bg:#182b22;--panel:#263e30;--line:#6f825f;--gold:#ebd5a1;--soft:#c9dac1;--green:#a9d58a;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:#fff0d3}
+*{box-sizing:border-box}body{margin:0}button,select,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,select:focus-visible,input:focus-visible,canvas:focus-visible{outline:3px solid #ffeaa1;outline-offset:3px}
+button,.control-link{border:2px solid #9caa7a;background:#345542;color:#fff2d1;border-radius:6px;padding:8px 11px;font-weight:800}
+button:hover{background:#486c4e}.control-link{text-decoration:none;display:inline-flex;align-items:center}
+button.primary{background:#cbe8a3;color:#233829;border-color:#eef7c6}
+button.primary:hover{background:#e1f5be}
+main{max-width:1480px;margin:0 auto;padding:22px 20px 56px}
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;border-bottom:1px solid #6e875b;padding:0 0 16px}
+header h1{margin:4px 0;font-size:clamp(23px,3.2vw,35px);font-weight:900;line-height:1.15;color:#f9e7b8}
+p{line-height:1.5;color:var(--soft);margin:7px 0}
+.eyebrow{color:#b9df90;font:900 11px system-ui;letter-spacing:1.4px}
+.layout{display:grid;grid-template-columns:minmax(360px,1fr) minmax(350px,1.1fr);gap:18px;align-items:start;margin-top:18px}
+.panel{border:2px solid #778961;background:var(--panel);border-radius:8px;padding:16px;box-shadow:0 5px 0 #101f16}
+.panel h2{font-size:17px;margin:0 0 8px;color:var(--gold)}
+.panel h3{font-size:14px;margin:13px 0 8px;color:#f4dfb0}
+.panel-note{font-size:12px;margin:0 0 10px}
+.step{display:inline-grid;place-items:center;width:23px;height:23px;margin-right:5px;background:#96be80;color:#1f3124;font-weight:950;border-radius:50%;font-size:12px}
+.atlas-wrap{max-width:100%;overflow:auto;border:1px solid #86946b;background:#1b3025;padding:10px;border-radius:5px}
+.atlas{display:grid;grid-template-columns:repeat(11,minmax(45px,1fr));gap:4px;min-width:550px}
+.atlas-tile{padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:4px;border:2px solid #5e785c;background:#3e5b47;min-height:62px;border-radius:4px;position:relative}
+.atlas-tile canvas{width:40px;height:40px;image-rendering:pixelated;background-color:#8e9f8d;background-image:linear-gradient(45deg,#b6c4ae 25%,transparent 25%,transparent 75%,#b6c4ae 75%),linear-gradient(45deg,#b6c4ae 25%,transparent 25%,transparent 75%,#b6c4ae 75%);background-size:12px 12px;background-position:0 0,6px 6px}
+.atlas-tile span{font-size:9px;font-weight:800;white-space:nowrap}
+.atlas-tile.used{border-color:#b0df93}
+.atlas-tile.current{outline:2px solid #f7cf75;outline-offset:-2px;background:#668052}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:12px 0}
+.legend .dot{width:10px;height:10px;border-radius:2px;background:#b6d998}.legend .dot.orange{background:#ffe095}
+.stack{display:grid;gap:17px}.row{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.terrain-layout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-width:370px;margin:13px auto 0}
+.inside-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-width:270px;margin:12px auto}
+.extras-layout{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:6px}
+.role{min-width:0;min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:5px;text-align:center;padding:8px 4px;border:2px solid #718a63;background:#324c3b}
+.role[aria-pressed="true"]{border-color:#ffe49a;background:#567751;box-shadow:0 0 0 2px #edcf76 inset}
+.role.assigned{border-color:#a8d69a}
+.role canvas{width:47px;height:47px;image-rendering:pixelated;background-color:#829181;background-image:linear-gradient(45deg,#adbbaa 25%,transparent 25%,transparent 75%,#adbbaa 75%),linear-gradient(45deg,#adbbaa 25%,transparent 25%,transparent 75%,#adbbaa 75%);background-size:14px 14px;background-position:0 0,7px 7px}
+.role strong{font-size:10px;line-height:1.2;color:#f4e8c4}
+.role small{font-size:10px;color:#bcd6ad;font-variant-numeric:tabular-nums}
+.role:not(.assigned) canvas{opacity:.45}
+.selected-role{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:12px 0 7px;background:#20392b;border:1px solid #607e5e;padding:10px;border-radius:6px}
+.selected-role strong{color:#ffdd91;font-size:13px}
+#notice{font-size:12px;line-height:1.5;min-height:22px;color:#d7eabb}
+hr{border:0;border-top:1px solid #69815c;margin:16px 0}
+.sample{width:100%;max-width:850px;image-rendering:pixelated;image-rendering:crisp-edges;display:block;cursor:crosshair;touch-action:none;border:3px solid #bbaa7b;background:#6f8255;aspect-ratio:20/14}
+.map-wrap{overflow:hidden;border-radius:5px;background:#14281f}
+.map-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.map-controls button[aria-pressed="true"]{background:#afd590;color:#24402d}
+.report{font-size:12px;margin:8px 0;line-height:1.5;white-space:normal}
+.report .warn{color:#ffd097;font-weight:750}
+#export-text{width:100%;height:170px;resize:vertical;padding:12px;border:1px solid #7d976b;border-radius:5px;background:#16291f;color:#d4e4cc;font:11px/1.5 ui-monospace,monospace}
+.file-label{display:inline-flex;border:2px solid #9caa7a;border-radius:6px;background:#345542;color:#fff2d1;padding:8px 11px;cursor:pointer;font-weight:800}
+.file-label input{display:none}
+.help{color:#c5d7b7;font-size:12px;margin-top:8px}
+#count{font-size:12px;color:#a6d68b}
+footer{font-size:12px;color:#b9cfb0;border-top:1px solid #60785c;padding-top:12px;margin-top:18px}
+details{border:1px solid #667f5f;border-radius:6px;padding:10px;background:#22382c}
+summary{cursor:pointer;font-weight:850;color:#f0dfb5}
+@media(max-width:930px){main{padding:14px 10px 42px}.layout{grid-template-columns:1fr}.panel{padding:12px}.atlas{min-width:540px}}
+@media(max-width:410px){.terrain-layout{gap:4px}.role{min-height:98px}.role strong{font-size:9px}.role canvas{width:41px;height:41px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div>
+<div class="eyebrow">TILLFOLK · FERRAMENTAS DE TERRENO</div>
+<h1>Editor de TileMap Terrain</h1>
+<p>Escolha os sprites do <strong>Grass_Tile_Layers</strong> para montar automaticamente centros, bordas e cantos externos e internos. Não precisa mexer em código.</p>
+</div>
+<div class="row">
+<a class="control-link" href="./mapear_grama.html">Ver atlas numerado</a>
+<a class="control-link" href="./">Voltar ao jogo</a>
+</div>
+</header>
+<section class="layout">
+<div class="stack">
+<section class="panel" aria-labelledby="atlas-title">
+<h2 id="atlas-title"><span class="step">1</span> Selecione os sprites do atlas</h2>
+<p class="panel-note">Primeiro clique em uma <b>posição do modelo</b> ao lado; depois clique aqui no sprite correspondente. Pode repetir o mesmo sprite em mais de uma posição.</p>
+<div class="atlas-wrap"><div id="atlas" class="atlas" role="group" aria-label="77 tiles do Grass Tile Layers"></div></div>
+<div class="legend"><span class="dot"></span><span class="help">Tile já usado</span><span class="dot orange"></span><span class="help">Tile da posição selecionada</span></div>
+<div class="row"><button id="use-previous" type="button">Importar classificações do mapeador antigo</button><span id="count">0 / 20 posições preenchidas</span></div>
+</section>
+<section class="panel" aria-labelledby="file-title">
+<h2 id="file-title"><span class="step">3</span> Salve ou envie o mapeamento</h2>
+<p class="panel-note">Suas escolhas são salvas neste navegador. Para integrá-las ao jogo, copie o JSON aqui e envie na conversa, ou baixe o arquivo.</p>
+<div class="row">
+<button id="copy" class="primary">Copiar configuração</button>
+<button id="download">Baixar JSON</button>
+<label class="file-label">Importar JSON <input id="import" type="file" accept="application/json,.json"></label>
+</div>
+<p class="help">O JSON inclui IDs como <b>C03_L02</b> e coordenadas do atlas. A prévia do terreno também vai no arquivo, separada da configuração de sprites.</p>
+<textarea id="export-text" aria-label="JSON de configuração do terreno" readonly spellcheck="false"></textarea>
+</section>
+</div>
+<div class="stack">
+<section class="panel" aria-labelledby="roles-title">
+<h2 id="roles-title"><span class="step">2</span> Monte o conjunto de terreno</h2>
+<p class="panel-note">Modelo 3×3: selecione cada posição e escolha seu sprite no atlas. Os cantos internos abaixo corrigem encontros em L e buracos.</p>
+<div class="selected-role">
+<strong id="selected-label">Centro · falta escolher um tile</strong>
+<button id="remove-role">Remover sprite da posição</button>
+</div>
+<h3>Centro, bordas e cantos externos</h3>
+<div id="main-roles" class="terrain-layout" role="group" aria-label="Matriz 3 por 3 de peças de terreno"></div>
+<h3>Cantos internos que complementam a borda</h3>
+<p class="panel-note">Usados quando dois vizinhos existem, mas falta o vizinho na diagonal (canto para dentro do terreno).</p>
+<div id="inner-roles" class="inside-layout" role="group" aria-label="Quatro cantos internos complementares"></div>
+<details>
+<summary>Peças especiais para caminhos finos e ilhas (opcional)</summary>
+<p class="panel-note">Evita esticar um canto em faixas de 1 tile, pontas e terrenos isolados.</p>
+<div id="extra-roles" class="extras-layout" role="group" aria-label="Peças especiais opcionais"></div>
+</details>
+<p id="notice" role="status" aria-live="polite"></p>
+</section>
+<section class="panel" aria-labelledby="preview-title">
+<h2 id="preview-title"><span class="step">4</span> Teste pintando o mapa</h2>
+<p class="panel-note">Desenhe com o mouse ou toque. As bordas e os cantos internos são escolhidos pelo algoritmo com base nos 8 vizinhos. Abaixo da prévia aparecem peças ainda sem mapeamento.</p>
+<div class="map-controls" role="group" aria-label="Ferramenta de desenho">
+<button type="button" id="paint" aria-pressed="true">✎ Pintar grama</button>
+<button type="button" id="erase-map" aria-pressed="false">⌫ Apagar</button>
+<button type="button" id="sample-island">Exemplo: ilha</button>
+<button type="button" id="sample-corners">Exemplo: cantos internos</button>
+<button type="button" id="reset-map">Limpar mapa</button>
+</div>
+<div class="map-wrap">
+<canvas id="preview" width="320" height="224" tabindex="0" aria-label="Prévia do terreno, 20 colunas por 14 linhas. Desenhe clicando e arrastando."></canvas>
+</div>
+<div class="report" id="report" role="status"></div>
+<div class="row"><button id="download-png">Baixar prévia PNG</button><span class="help">20 × 14 tiles · 16 px cada · sem rotações ou reamostragem</span></div>
+</section>
+</div>
+</section>
+<footer>O editor só salva um mapeamento de recursos e uma prévia. Ele ainda não substitui automaticamente o terreno das partidas do TILLFOLK; a integração será feita a partir do JSON aprovado por você.</footer>
+</main>
+<script src="./src/terrain-autotile.js"></script>
+<script>
+"use strict";
+(()=>{
+const A=window.TillfolkTerrainAutotile;
+if(!A){document.getElementById("notice").textContent="Erro ao carregar o sistema de terrain. Confira a publicação.";return;}
+const EMBEDDED="data:image/png;base64,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";
+const STORAGE="tillfolk-terrain-roles-v1";
+const OLD="tillfolk-grass-tile-layers-mapping-v1";
+const $=query=>document.querySelector(query);
+const labels={
+canto_noroeste:"Canto superior esquerdo",borda_norte:"Borda superior",canto_nordeste:"Canto superior direito",
+borda_oeste:"Borda esquerda",centro:"Centro",borda_leste:"Borda direita",
+canto_sudoeste:"Canto inferior esquerdo",borda_sul:"Borda inferior",canto_sudeste:"Canto inferior direito",
+interno_noroeste:"Complemento interno superior esquerdo",interno_nordeste:"Complemento interno superior direito",
+interno_sudoeste:"Complemento interno inferior esquerdo",interno_sudeste:"Complemento interno inferior direito",
+isolado:"Peça isolada",horizontal:"Faixa horizontal",vertical:"Faixa vertical",
+ponta_norte:"Ponta conectada ao norte",ponta_leste:"Ponta conectada ao leste",
+ponta_sul:"Ponta conectada ao sul",ponta_oeste:"Ponta conectada ao oeste"
+};
+const ROLE_NAMES={canto_noroeste:"↖ Externo",borda_norte:"↑ Superior",canto_nordeste:"↗ Externo",
+borda_oeste:"← Esquerda",centro:"● Centro",borda_leste:"→ Direita",canto_sudoeste:"↙ Externo",
+borda_sul:"↓ Inferior",canto_sudeste:"↘ Externo",
+interno_noroeste:"↖ Interno",interno_nordeste:"↗ Interno",interno_sudoeste:"↙ Interno",interno_sudeste:"↘ Interno"};
+const IMG=new Image(),W=20,H=14;
+const valid=id=>Boolean(A.coords(id));
+let roles={},activeRole="centro",brush="paint",drawing=false;
+let map=Array.from({length:H},()=>Array(W).fill(false));
+const roleButtons=new Map(),atlasButtons=new Map();
+try{roles=JSON.parse(localStorage.getItem(STORAGE)||"{}");}catch{roles={}}
+roles=Object.fromEntries(A.ROLES.filter(key=>valid(roles[key])).map(key=>[key,roles[key]]));
+function store(){try{localStorage.setItem(STORAGE,JSON.stringify(roles));}catch{}}
+function previewSource(canvas,id){
+  const ctx=canvas.getContext("2d");ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,16,16);
+  const p=A.coords(id);if(p&&IMG.complete&&IMG.naturalWidth)ctx.drawImage(IMG,p.x,p.y,16,16,0,0,16,16);
+}
+function makeRole(key,parent){
+  const button=document.createElement("button");button.type="button";
+  button.className="role";button.setAttribute("aria-label",labels[key]);
+  const caption=document.createElement("strong");caption.textContent=ROLE_NAMES[key]||labels[key];
+  const canvas=document.createElement("canvas");canvas.width=16;canvas.height=16;
+  const value=document.createElement("small");value.textContent="Sem sprite";
+  button.append(caption,canvas,value);
+  button.addEventListener("click",()=>{activeRole=key;refresh()});
+  parent.append(button);roleButtons.set(key,{button,canvas,value});
+}
+for(const key of A.MAIN)makeRole(key,$("#main-roles"));
+for(const key of A.INNER)makeRole(key,$("#inner-roles"));
+for(const key of A.EXTRA)makeRole(key,$("#extra-roles"));
+for(let y=0;y<7;y++)for(let x=0;x<11;x++){
+  const id="C"+String(x+1).padStart(2,"0")+"_L"+String(y+1).padStart(2,"0");
+  const button=document.createElement("button"),label=document.createElement("span"),canvas=document.createElement("canvas");
+  button.type="button";button.className="atlas-tile";button.setAttribute("aria-label",id+": atribuir a "+labels[activeRole]);
+  canvas.width=canvas.height=16;label.textContent=id;
+  button.append(canvas,label);
+  button.addEventListener("click",()=>{
+    roles[activeRole]=id;store();refresh();
+    $("#notice").textContent=id+" definido como "+labels[activeRole].toLowerCase()+".";
+  });
+  $("#atlas").append(button);atlasButtons.set(id,{button,canvas});
+}
+IMG.onload=()=>{if(IMG.naturalWidth!==176||IMG.naturalHeight!==112){$("#notice").textContent="Atlas em dimensões inesperadas.";return;}
+ for(const [id,{canvas}] of atlasButtons)previewSource(canvas,id);
+ refresh();};
+IMG.src=EMBEDDED;
+function sample(name){
+  map=Array.from({length:H},()=>Array(W).fill(false));
+  if(name==="island"){
+    for(let y=2;y<11;y++)for(let x=3;x<17;x++)map[y][x]=true;
+    for(let y=2;y<5;y++)for(let x=3;x<7;y===4&&x===6?x++:x++)map[y][x]=false;
+    // Braço estreito cria uma extremidade e dois cantos externos.
+    for(let x=16;x<20;x++)map[7][x]=true;
+  }else if(name==="corners"){
+    for(let y=1;y<13;y++)for(let x=2;x<18;x++)map[y][x]=true;
+    for(let y=1;y<5;y++)for(let x=2;x<7;x++)map[y][x]=false;
+    for(let y=8;y<12;y++)for(let x=10;x<14;x++)map[y][x]=false;
+    for(let y=4;y<7;y++)for(let x=16;x<18;x++)map[y][x]=false;
+  }
+  refresh();
+}
+const ctx=$("#preview").getContext("2d");
+ctx.imageSmoothingEnabled=false;
+function drawMap(){
+  let count=0,missing=new Map();
+  ctx.clearRect(0,0,W*16,H*16);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const px=x*16,py=y*16;
+    ctx.fillStyle=(x+y)%2?"#7b8a67":"#758260";
+    ctx.fillRect(px,py,16,16);
+    if(!map[y][x])continue;
+    count++;
+    ctx.fillStyle="#83a16d";ctx.fillRect(px,py,16,16);
+    const result=A.draw(ctx,IMG,map,x,y,roles);
+    if(!result.primary){
+      ctx.fillStyle="#a7c88a";ctx.fillRect(px+2,py+2,12,12);
+      ctx.fillStyle="#3b5b37";ctx.font="bold 10px sans-serif";ctx.fillText("?",px+5,py+12);
+    }else if(result.usedFallback){
+      ctx.strokeStyle="#e9b666";ctx.strokeRect(px+.5,py+.5,15,15);
+    }
+    for(const role of result.missing)missing.set(role,(missing.get(role)||0)+1);
+  }
+  if(!count){$("#report").textContent="Mapa vazio. Use os exemplos ou pinte grama para testar bordas e cantos.";return;}
+  if(missing.size){
+    const names=Array.from(missing,([key,n])=>(labels[key]||key)+" ("+n+")");
+    $("#report").textContent=count+" tiles de grama. Peças que faltam neste desenho: "+names.join(" · ")+". Os contornos dourados indicam fallback.";
+    $("#report").classList.add("warn");
+  }else{
+    $("#report").textContent=count+" tiles de grama · todas as posições usadas neste desenho estão mapeadas.";
+    $("#report").classList.remove("warn");
+  }
+}
+function exportPayload(){
+  return {...A.exportConfig(roles),preview:{width:W,height:H,grid:map.map(r=>r.map(on=>on?"1":"0").join(""))}};
+}
+function refresh(){
+  for(const [key,slot] of roleButtons){
+    slot.button.setAttribute("aria-pressed",String(activeRole===key));
+    slot.button.classList.toggle("assigned",valid(roles[key]));
+    slot.value.textContent=valid(roles[key])?roles[key]:"Sem sprite";
+    previewSource(slot.canvas,roles[key]);
+  }
+  for(const [id,item] of atlasButtons){
+    item.button.classList.toggle("used",Object.values(roles).includes(id));
+    item.button.classList.toggle("current",roles[activeRole]===id);
+    item.button.setAttribute("aria-label",id+": atribuir como "+labels[activeRole]);
+    item.button.title=id+" · "+A.ROLES.filter(r=>roles[r]===id).map(r=>labels[r]).join(", ");
+  }
+  $("#count").textContent=Object.keys(roles).length+" / 20 posições preenchidas";
+  $("#selected-label").textContent=labels[activeRole]+" · "+(roles[activeRole]||"escolha um sprite à esquerda");
+  $("#remove-role").disabled=!roles[activeRole];
+  $("#export-text").value=JSON.stringify(exportPayload(),null,2);
+  drawMap();
+}
+function setBrush(value){
+  brush=value;
+  $("#paint").setAttribute("aria-pressed",String(value==="paint"));
+  $("#erase-map").setAttribute("aria-pressed",String(value==="erase"));
+}
+function atPointer(ev){
+  const canvas=$("#preview"),rect=canvas.getBoundingClientRect();
+  if(!rect.width||!rect.height)return;
+  const x=Math.floor((ev.clientX-rect.left)/rect.width*W);
+  const y=Math.floor((ev.clientY-rect.top)/rect.height*H);
+  if(x<0||y<0||x>=W||y>=H)return;
+  if(map[y][x]!== (brush==="paint")){
+    map[y][x]=brush==="paint";refresh();
+  }
+}
+$("#preview").addEventListener("pointerdown",e=>{
+  if(e.pointerType==="mouse"&&e.button!==0)return;
+  drawing=true;$("#preview").setPointerCapture(e.pointerId);atPointer(e);
+});
+$("#preview").addEventListener("pointermove",e=>{if(drawing)atPointer(e)});
+for(const name of ["pointerup","pointercancel","lostpointercapture"])$("#preview").addEventListener(name,()=>{drawing=false});
+$("#preview").addEventListener("contextmenu",e=>e.preventDefault());
+$("#paint").onclick=()=>setBrush("paint");
+$("#erase-map").onclick=()=>setBrush("erase");
+$("#sample-island").onclick=()=>sample("island");
+$("#sample-corners").onclick=()=>sample("corners");
+$("#reset-map").onclick=()=>sample("empty");
+$("#remove-role").onclick=()=>{delete roles[activeRole];store();refresh();$("#notice").textContent="Posição limpa: "+labels[activeRole]};
+function importPrevious(existing){
+  const m=existing?.mapeamento||existing;
+  const keys={centro:"centro",borda_norte:"borda_norte",borda_sul:"borda_sul",
+   borda_oeste:"borda_oeste",borda_leste:"borda_leste",
+   canto_noroeste:"canto_noroeste",canto_nordeste:"canto_nordeste",
+   canto_sudoeste:"canto_sudoeste",canto_sudeste:"canto_sudeste"};
+  let imported=0;
+  for(const [id,kind] of Object.entries(m||{})){
+    const key=keys[kind];
+    if(key&&valid(id)&&!roles[key]){roles[key]=id;imported++;}
+  }
+  store();refresh();
+  $("#notice").textContent=imported+" posições importadas do mapeador antigo. Cantos internos genéricos precisam de orientação (↖ ↗ ↙ ↘).";
+}
+$("#use-previous").onclick=()=>{
+  try{const saved=JSON.parse(localStorage.getItem(OLD)||"{}");importPrevious(saved)}
+  catch{$("#notice").textContent="Nenhum mapeamento antigo disponível neste navegador."}
+};
+const saveFile=(filename,type,data)=>{
+  const blob=new Blob([data],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.download=filename;a.href=url;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
+};
+$("#download").onclick=()=>saveFile("tillfolk_grass_terrain.json","application/json;charset=utf-8",$("#export-text").value);
+$("#download-png").onclick=()=>{
+  $("#preview").toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.download="tillfolk_grass_terrain_preview.png";a.href=url;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);},"image/png");
+};
+$("#copy").onclick=async()=>{
+ const field=$("#export-text");try{await navigator.clipboard.writeText(field.value);$("#notice").textContent="Configuração copiada. Cole no ChatGPT para integrar ao TILLFOLK."}
+ catch{field.focus();field.select();$("#notice").textContent="Copie o JSON selecionado (Ctrl+C)."}
+};
+$("#import").addEventListener("change",async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ try{
+  const data=JSON.parse(await file.text());
+  if(data.roles&&typeof data.roles==="object"){
+    const next={};
+    for(const key of A.ROLES)if(valid(data.roles[key]))next[key]=data.roles[key];
+    roles=next;
+    if(Array.isArray(data.preview?.grid)&&data.preview.width===W&&data.preview.height===H&&data.preview.grid.length===H
+       &&data.preview.grid.every(x=>typeof x==="string"&&x.length===W&&/^[01]+$/.test(x))){
+      map=data.preview.grid.map(row=>Array.from(row,ch=>ch==="1"));
+    }
+    store();refresh();$("#notice").textContent="Configuração importada com sucesso.";
+  }else if(data.mapeamento){importPrevious(data)}
+  else throw new Error("Formato desconhecido. Envie JSON de terrain ou do mapeador antigo.");
+ }catch(error){$("#notice").textContent="Falha ao importar: "+error.message}
+ e.target.value="";
+});
+sample("corners");
+})();
+</script>
+</body>
+</html>
