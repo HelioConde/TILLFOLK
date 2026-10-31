@@ -1009,6 +1009,10 @@
     set("#farm-title",state.farmName||"Minha Fazenda");
     set("#mode-label",(state.mode==="relaxed"?"FAZENDA TRANQUILA":"SOBREVIVÊNCIA")+" · DIA "+state.day);
     $("#status").textContent=simSpeed===0?"Ⅱ Simulação pausada":"● Fazenda em funcionamento";
+    // Com o painel fechado, evitar reconstruir listas de até 1500 ordens
+    // e executar milhares de buscas de rota a cada 300 ms.
+    // Todos os contadores e o HUD continuam atualizados normalmente.
+    if(!document.body.classList.contains("drawer-open"))return;
     $("#workers").innerHTML=state.workers.map(w=>{
       const t=tasks.find(t=>t.id===w.task);
       const title=w.supplyStage==="water"?"Buscando água na lagoa":
@@ -1817,6 +1821,7 @@
     drawerReturnFocus=document.activeElement;
     document.body.classList.add("drawer-open");sidebar.inert=false;
     sidebar.setAttribute("aria-hidden","false");backdrop.hidden=false;
+    refresh(); // Recriar as listas apenas quando há alguém visualizando o painel.
     $("#open-workers").setAttribute("aria-expanded","true");
     $("#open-tasks").setAttribute("aria-expanded","true");
     requestAnimationFrame(()=>{
