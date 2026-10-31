@@ -1,5 +1,10 @@
 # TILLFOLK — Colônia sustentável (marco jogável 01)
 
+> **Visão atual (31/10/2026):** este documento descreve **o primeiro marco do protótipo**, e não o jogo completo. A proposta oficial é **sobrevivência real de colônia inspirada em Oxygen Not Included**, com fome por personagem, morte, derrota, moradia, recrutamento e expansão. Consultar [GDD_TILLFOLK.md](./GDD_TILLFOLK.md) e [ROADMAP_SOBREVIVENCIA.md](./ROADMAP_SOBREVIVENCIA.md).
+>
+> **Lacuna crítica:** há desconto diário de comida no modo Sobrevivência, mas chegar a zero **não provoca ainda fome individual, dano ou morte**. Implementar isso é a primeira prioridade antes de sistemas ambientais avançados.
+
+
 ## O que entrou no código
 
 O jogador continua decidindo cada **ordem de agricultura**. Os colonos selecionam trabalhos conforme prioridade, distância e restrições. Buscar água ou esterco é um **subpasso logístico autorizado** pela ordem de regar/fertilizar, e não uma nova ordem agrícola autônoma.
