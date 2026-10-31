@@ -2015,7 +2015,18 @@
   });
   $("#continue").addEventListener("click",()=>{start(true);renderPriorityControls();});
   $("#help-btn").addEventListener("click",()=>$("#help-dialog").showModal());
-  $("#help-close").addEventListener("click",()=>$("#help-dialog").close());
+  // Conclusão do tutorial: preservar a partida e a navegação do menu.
+  // Com save existente, usa exatamente o botão Continuar. Sem save,
+  // segue o fluxo normal de escolha de modo + recrutamento inicial.
+  $("#guide-play").addEventListener("click",()=>{
+    $("#help-dialog").close();
+    if($("#continue").disabled)$("#new-game").click();
+    else $("#continue").click();
+  });
+  $("#help-close").addEventListener("click",()=>{
+    $("#help-dialog").close();
+    $("#help-btn").focus({preventScroll:true});
+  });
   const sidebar=$("#farm-sidebar"),backdrop=$("#drawer-backdrop");
   let drawerReturnFocus=null;
   function closeDrawer(){
