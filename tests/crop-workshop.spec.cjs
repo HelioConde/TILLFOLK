@@ -47,7 +47,7 @@ test("receitas da Work Station produzem machado e sementes com consumo real",asy
   if(sessionStorage.getItem("workshop-fixture-loaded"))return;
   const s=JSON.parse(localStorage.getItem("tillfolk-v01"));
   if(!s)return;
-  s.crafting.station={x:38,y:24};s.workstations=[{x:38,y:24}];
+  s.crafting.station={x:38,y:24};s.workstations=[{x:38,y:24}];s.firstHarvest=true; // cenário avançado após a colheita
   s.inventory.twigs=50;s.inventory.grass=20;s.inventory.wood=20;s.inventory.stone=10;
   s.cropProduce.tomato=4;s.food=10;
   localStorage.setItem("tillfolk-v01",JSON.stringify(s));
