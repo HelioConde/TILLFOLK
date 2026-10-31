@@ -1951,7 +1951,6 @@
         "Work Station: junte 10 gravetos e planeje a bancada no chão livre. Clique direito cancela.":
         "Camada: "+btn.textContent.trim()+". Clique para construir ou use o botão direito para apagar.";
   }));
-  $("#build-exit").addEventListener("click",()=>setTool("universal"));
   function openWorkerInventory(worker){
     Crafting.normalizeWorker(worker);
     const dialog=$("#worker-inventory-dialog");
@@ -2180,12 +2179,41 @@
     }
     if(Orders.TYPES.includes(selectedTool))placeOrder(selectedTool,x,y);
   });
-  document.querySelectorAll("[data-tool]").forEach(b=>b.addEventListener("click",()=>setTool(b.dataset.tool)));
+  // A mesma tecla do HUD alterna Objetos; nenhum painel exige botão Fechar.
+  document.querySelectorAll("[data-tool]").forEach(b=>b.addEventListener("click",()=>{
+    const next=b.dataset.tool;
+    setTool(next==="construir"&&selectedTool==="construir"?"universal":next);
+  }));
   $("#orders-btn").addEventListener("click",()=>{
     if(!playing)return;
     const open=$("#orders-panel").hidden;
+    // Objetos e Ordens são mutuamente exclusivos.
+    if(!$("#construction-panel").hidden)setTool("universal");
     $("#orders-panel").hidden=!open;
     $("#orders-btn").setAttribute("aria-expanded",String(open));
+  });
+  function dismissActionPanels(){
+    const orders=$("#orders-panel"),objects=$("#construction-panel");
+    if(!orders.hidden){
+      orders.hidden=true;
+      $("#orders-btn").setAttribute("aria-expanded","false");
+    }
+    if(!objects.hidden)setTool("universal");
+  }
+  // A ação do canvas é processada primeiro: só depois a sobreposição fecha,
+  // preservando o posicionamento de uma Work Station e as ordens emitidas.
+  document.addEventListener("click",event=>{
+    if(!playing)return;
+    const target=event.target;
+    if(!(target instanceof Element))return;
+    if(target.closest("#construction-panel,#orders-panel,#orders-btn,[data-tool='construir']"))return;
+    if(target.closest(".canvas-scroll,.tooltray,.hud-panels,.hud-selection,.speed-wrap,#mission-card")){
+      dismissActionPanels();
+    }
+  });
+  document.addEventListener("contextmenu",event=>{
+    if(!playing)return;
+    if(event.target instanceof Element&&event.target.closest(".canvas-scroll"))dismissActionPanels();
   });
   document.querySelectorAll("[data-order-type]").forEach(btn=>btn.addEventListener("click",()=>{
     setTool(btn.dataset.orderType);

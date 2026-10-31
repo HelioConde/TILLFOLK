@@ -41,7 +41,7 @@
     order?.setAttribute("aria-keyshortcuts","2");
   }
   document.addEventListener("click",event=>{
-    if(event.target.closest(".tool,.speed-wrap,#drag-mode,#orders-btn,[data-order-type],#build-exit,#orders-panel,#drawer-close"))queueMicrotask(sync);
+    if(event.target.closest(".tool,.speed-wrap,#drag-mode,#orders-btn,#orders-panel,[data-order-type],#drawer-close"))queueMicrotask(sync);
   });
   document.addEventListener("keydown",event=>{
     if(!document.body.classList.contains("play-session")||event.repeat||event.altKey||event.ctrlKey||event.metaKey)return;
@@ -62,7 +62,7 @@
       queueMicrotask(sync);
     }else if(key==="escape"){
       if($("#orders-btn").getAttribute("aria-expanded")==="true")$("#orders-btn").click();
-      else if(!$("#construction-panel").hidden)$("#build-exit")?.click();
+      else if(!$("#construction-panel").hidden)$('.tool[data-tool="universal"]')?.click();
       queueMicrotask(sync);
     }
   });

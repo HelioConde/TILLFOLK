@@ -19,6 +19,7 @@ test("Objetos mostra somente Cabana e Work Station e permite planejar bancada",a
  await page.setViewportSize({width:1600,height:900});await newGame(page);
  await page.locator('[data-tool="construir"]').click();
  await expect(page.locator("#construction-panel")).toBeVisible();
+ await expect(page.locator("#build-exit")).toHaveCount(0);
  await expect(page.locator('#construction-panel [data-build-layer]')).toHaveCount(2);
  await expect(page.locator('[data-build-layer="home"]')).toBeVisible();
  await expect(page.locator('[data-build-layer="station"]')).toBeVisible();
@@ -35,6 +36,7 @@ test("Objetos mostra somente Cabana e Work Station e permite planejar bancada",a
  });
  expect(cell).toBeTruthy();
  await clickTile(page,cell.x,cell.y);
+ await expect(page.locator("#construction-panel")).toBeHidden();
  const orders=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")).orders);
  expect(orders.some(o=>o.type==="buildStation"&&o.x===cell.x&&o.y===cell.y)).toBe(true);
  await page.reload({waitUntil:"networkidle"});
