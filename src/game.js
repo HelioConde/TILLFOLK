@@ -152,7 +152,24 @@
     const w=minimap.width,h=minimap.height;
     miniCtx.clearRect(0,0,w,h);
     miniCtx.imageSmoothingEnabled=false;
-    miniCtx.drawImage(canvas,0,0,w,h);
+    // Minimap independente da câmera: não reutilizar o canvas com regiões
+    // fora da viewport transparentes. Assim ele retrata o mundo inteiro.
+    const pixelWidth=w/W,pixelHeight=h/H;
+    for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){
+      const kind=World.biomeAt(state.world,tx,ty);
+      miniCtx.fillStyle=window.TillfolkBiomes.COLORS[kind]||"#a4d17c";
+      miniCtx.fillRect(Math.floor(tx*pixelWidth),Math.floor(ty*pixelHeight),
+        Math.ceil(pixelWidth)+1,Math.ceil(pixelHeight)+1);
+    }
+    miniCtx.fillStyle="#578da0";
+    for(const tile of state.world.water)miniCtx.fillRect(
+      Math.floor(tile.x*pixelWidth),Math.floor(tile.y*pixelHeight),
+      Math.ceil(pixelWidth)+1,Math.ceil(pixelHeight)+1);
+    miniCtx.fillStyle="#2d5532";
+    for(const obj of state.world.objects)if(obj.kind==="tree"||obj.kind==="thicket"){
+      miniCtx.fillRect(Math.floor(obj.x*pixelWidth),Math.floor(obj.y*pixelHeight),
+        Math.ceil(pixelWidth),Math.ceil(pixelHeight));
+    }
     // Marcadores de ordens: amarelo = pronta, marrom = dependência pendente.
     for(const job of tasks){
       miniCtx.fillStyle=job.status==="ready"?"#ffe5a1":"#aa7057";
@@ -318,6 +335,7 @@
   function homeSiteValid(x,y){
     if(x<2||y<2||x>=W-3||y>=H-3)return false;
     return homeTiles(x,y).every(([tx,ty])=>
+      World.terrainAt(state.world,tx,ty).buildable&&
       !World.waterAt(state.world,tx,ty)&&!World.at(state.world,tx,ty)&&
       !state.animals?.some(a=>Math.floor(a.x)===tx&&Math.floor(a.y)===ty)&&
       !window.TillfolkHouseBuilder.occupied(state.house,tx,ty)&&
@@ -694,7 +712,10 @@
         animal.manure=Math.min(3,(animal.manure||0)+1);
       }
     }
-    for(const p of state.plots)if(p.seeded&&p.watered&&p.growth<1)p.growth=Math.min(1,p.growth+scaled/180);
+    for(const p of state.plots)if(p.seeded&&p.watered&&p.growth<1){
+      const fertility=World.terrainAt(state.world,p.x,p.y).fertility;
+      p.growth=Math.min(1,p.growth+scaled/180*fertility);
+    }
     recalcTasks();
     assignIdleWorkers();
     for(const w of state.workers){
@@ -735,7 +756,8 @@
       if(d>.055){
         if(Math.abs(dx)>Math.abs(dy))w.facing=dx>0?"right":"left";
         else w.facing=dy>0?"down":"up";
-        const distance=Math.min(d,scaled*2.65);
+        const terrain=World.terrainAt(state.world,Math.floor(w.x),Math.floor(w.y));
+        const distance=Math.min(d,scaled*2.65/terrain.moveCost);
         w.x+=dx/d*distance;w.y+=dy/d*distance;
         w.moving=true;w.walkFrame=(w.walkFrame||0)+distance*4.5;
         continue;
@@ -781,7 +803,16 @@
     if(!state)return;
     ctx.clearRect(0,0,canvas.width,canvas.height);
     // Nada pré-construído: a paisagem vem do seed salvo com a partida.
-    World.drawGround(ctx,sprite,state.world,W,H,TILE,part);
+    const screen=$(".canvas-scroll").getBoundingClientRect(),surface=canvas.getBoundingClientRect();
+    const visibleBounds={
+      x0:Math.max(0,Math.floor((screen.left-surface.left)/surface.width*W)-4),
+      x1:Math.min(W-1,Math.ceil((screen.right-surface.left)/surface.width*W)+4),
+      y0:Math.max(0,Math.floor((screen.top-surface.top)/surface.height*H)-4),
+      y1:Math.min(H-1,Math.ceil((screen.bottom-surface.top)/surface.height*H)+4)
+    };
+    const inView=(x,y,margin=0)=>x>=visibleBounds.x0-margin&&x<=visibleBounds.x1+margin&&
+      y>=visibleBounds.y0-margin&&y<=visibleBounds.y1+margin;
+    World.drawGround(ctx,sprite,state.world,W,H,TILE,part,visibleBounds);
     // Construções vivem no save e compartilham o mesmo atlas da referencia Godot.
     window.TillfolkHouseBuilder.draw(ctx,sprite,part,state.house,{
       building:selectedTool==="construir",layer:buildLayer,workers:state.workers,
@@ -789,7 +820,7 @@
       previewValid:buildHover?Boolean(getBuildEdit(buildHover.x,buildHover.y,eraseBuild).house):false
     });
     // Cabanas 2x2 são estruturas independentes, concluídas pelos trabalhadores.
-    for(const home of state.homes.filter(h=>!h.legacy)){
+    for(const home of state.homes.filter(h=>!h.legacy&&inView(h.x,h.y,4))){
       const x=home.x*TILE,y=home.y*TILE;
       part(sprite.walls,16,16,16,16,x+4,y+22,56,41);
       part(sprite.roof,16,0,16,16,x-5,y-14,74,50);
@@ -798,8 +829,9 @@
       if(home.residentId==null)write("LIVRE",x+32,y-19,"#e5f7ae",9);
     }
     // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
+    const orderTiles=new Set(state.orders.map(o=>keyOf(o.x,o.y)));
     for(const p of state.plots){
-      if(!p.selected&&!p.tilled&&!p.seeded&&!p.produce)continue;
+      if(!inView(p.x,p.y,1)||!p.selected&&!p.tilled&&!p.seeded&&!p.produce)continue;
       const x=p.x*TILE,y=p.y*TILE;
       ctx.fillStyle=p.tilled?"#b38f6c":"#99c46b";ctx.fillRect(x+1,y+1,TILE-2,TILE-2);
       if(p.tilled)part(sprite.dirt,0,80,16,16,x,y);
@@ -807,7 +839,7 @@
       if(p.seeded)part(sprite.crops,Math.min(4,Math.floor(p.growth*5))*16,0,16,16,x,y,32,32);
       if(p.produce)part(sprite.crops,48,16,16,16,x,y,32,32);
       if(p.dirty&&!World.at(state.world,p.x,p.y))part(sprite.rocks,0,16,16,16,x,y,32,32);
-      if(state.orders.some(o=>o.x===p.x&&o.y===p.y)){ctx.strokeStyle="#ecdf96";ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.strokeRect(x+3,y+3,26,26);ctx.setLineDash([]);}
+      if(orderTiles.has(keyOf(p.x,p.y))){ctx.strokeStyle="#ecdf96";ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.strokeRect(x+3,y+3,26,26);ctx.setLineDash([]);}
       if(p.watered&&p.seeded){ctx.fillStyle="#6cc8e5";ctx.fillRect(x+2,y+26,4,3);}
     }
     // Marcadores discretos: ordens prontas (creme) ou aguardando (marrom).
@@ -819,6 +851,7 @@
     }
     for(const [tile,jobs] of byTile){
       const [x,y]=tile.split("-").map(Number);
+      if(!inView(x,y,1))continue;
       const next=jobs.find(j=>j.status==="ready")||jobs[0];
       ctx.fillStyle=next.status==="ready"?"#ecdc9b":"#ad8d68";
       ctx.fillRect(x*TILE+2,y*TILE+2,19,13);
@@ -828,9 +861,12 @@
     }
     // Profundidade natural: árvores cobrem personagens atrás delas e vice-versa.
     const layers=[
-      ...state.world.objects.map(object=>({type:"nature",object,depth:(object.y+.8)*TILE})),
-      ...state.workers.map(worker=>({type:"worker",worker,depth:worker.y*TILE})),
-      ...state.animals.map(animal=>({type:"animal",animal,depth:animal.y*TILE}))
+      ...state.world.objects.filter(object=>inView(object.x,object.y,3))
+        .map(object=>({type:"nature",object,depth:(object.y+.8)*TILE})),
+      ...state.workers.filter(worker=>inView(worker.x,worker.y,3))
+        .map(worker=>({type:"worker",worker,depth:worker.y*TILE})),
+      ...state.animals.filter(animal=>inView(animal.x,animal.y,3))
+        .map(animal=>({type:"animal",animal,depth:animal.y*TILE}))
     ].sort((a,b)=>a.depth-b.depth);
     // IMPORTANTE: as spritesheets de caminhada e ferramentas usam ordens laterais opostas.
     // Caminhada: linha 2 = direita, 3 = esquerda; trabalho: linha 2 = esquerda, 3 = direita.
@@ -1077,7 +1113,7 @@
     const planned=state.orders.filter(o=>o.x===p.x&&o.y===p.y);
     $("#tile-tooltip").hidden=false;
     $("#tile-tooltip").textContent="Terreno "+(p.x+1)+", "+(p.y+1)+
-      " · "+(p.produce?"Colheita pronta":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural")+
+      " · "+World.terrainAt(state.world,p.x,p.y).name+" · "+(p.produce?"Colheita pronta":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural")+
       " · Ordens: "+(planned.length?planned.map(o=>labels[o.type]).join(" → "):"nenhuma");
   }
   function removeOrders(ids){
@@ -1099,6 +1135,10 @@
       notify("Selecione a posição de um animal para recolher esterco.");return;
     }
     const plot=findPlot(x,y);
+    const terrain=World.terrainAt(state.world,x,y);
+    if(["till","fertilize","sow","water","harvest","carry"].includes(type)&&!terrain.farmable){
+      notify("Não é possível cultivar em "+terrain.name.toLowerCase()+".");return;
+    }
     const result=Orders.add(state.orders,type,x,y,plot,World.at(state.world,x,y),state);
     if(result.error){notify(result.error);return;}
     state.orders.push(result.order);
@@ -1120,6 +1160,8 @@
     return state.plots.some(p=>p.x===x&&p.y===y&&(p.selected||p.tilled||p.seeded||p.produce));
   }
   function getBuildEdit(x,y,erase){
+    if(!World.terrainAt(state.world,x,y).buildable)
+      return {error:"Este bioma não permite construir nesta área."};
     if(!erase&&(state.inventory?.wood||0)<1)return {error:"Madeira insuficiente! Use os trabalhadores para recolher madeira."};
     return window.TillfolkHouseBuilder.edit(state.house,buildLayer,x,y,erase,isBuildCellBusy);
   }
