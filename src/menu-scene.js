@@ -112,16 +112,18 @@
   function workerFrame(x,y,index,frame=0,moving=false,facing="down",w=58,h=60,target=ctx){
     if(!ready("worker"))return;
     const img=imgs.worker;
-    const appearance=Math.min(index,Math.max(0,Math.floor(img.naturalHeight/192)-1));
+    // Mesmo mapeamento de caminhada do gameplay (4 direções + 4 em movimento).
+    // Os 48px do quadro incluem margens transparentes; recortar o corpo impede
+    // a aparência de personagem minúsculo no cenário.
     const dirs={down:0,up:1,right:2,left:3};
     const row=(moving?4:0)+(dirs[facing]??0);
-    stamp("worker",(frame%4)*48,appearance*192+row*48,48,48,x,y,w,h,target);
+    stamp("worker",(frame%8)*48+11,row*48+12,26,24,x,y,w,h,target);
   }
   function workingFrame(x,y,action="hoe",facing="right",frame=0,w=60,h=62){
     // worker-actions: duas colunas por ação; grupos de quatro direções.
     const dirs={down:0,up:1,left:2,right:3};
     const group=action==="chop"?4:0;
-    stamp("actions",(frame%2)*48,(group+dirs[facing])*48,48,48,x,y,w,h);
+    stamp("actions",(frame%2)*48,(group+dirs[facing])*48,48,48,x-14,y-18,w+29,h+30);
   }
   function movingAnimal(kind,x,y,face,frame){
     const cell=kind==="cow"?32:16;
@@ -205,7 +207,7 @@
     if(stage.gardener.action==="walk")
       workerFrame(stage.gardener.x,stage.gardener.y,0,frame,true,stage.gardener.facing,61,64);
     else
-      workingFrame(stage.gardener.x,stage.gardener.y,stage.gardener.action==="water"?"hoe":"hoe",
+      workingFrame(stage.gardener.x,stage.gardener.y,"hoe",
         stage.gardener.facing,Math.floor(ms/250),61,64);
     if(stage.logger.action==="chop")
       workingFrame(stage.logger.x,stage.logger.y,"chop","right",Math.floor(ms/240),62,64);
@@ -292,6 +294,8 @@
   // Interface somente de leitura para testes determinísticos de quadros.
   window.TillfolkMenuScene=Object.freeze({
     sample:(millis=0)=>sceneState(millis),
+    // Captura de um instante para o QA visual sem esperar 36 segundos reais.
+    drawAt:(millis=0)=>{if(!menu.hidden)paint(millis);},
     cycleMs:CYCLE,
     sources:Object.freeze({...sources})
   });
