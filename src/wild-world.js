@@ -46,8 +46,9 @@
     if(world.width<60||world.height<40)return;
     const region=valleyBounds(world.width,world.height);
     world.boundary=region;
-    world.objects=world.objects.filter(p=>!ringTile(region,p.x,p.y));
-    world.water=world.water.filter(p=>!ringTile(region,p.x,p.y));
+    const corridor=p=>p.y===region.gate.y&&p.x>=region.gate.x-4&&p.x<=region.gate.x+9;
+    world.objects=world.objects.filter(p=>!ringTile(region,p.x,p.y)&&!corridor(p));
+    world.water=world.water.filter(p=>!ringTile(region,p.x,p.y)&&!corridor(p));
     for(let y=region.top;y<=region.bottom;y++)for(let x=region.left;x<=region.right;x++){
       if(!ringTile(region,x,y))continue;
       world.objects.push({x,y,kind:x===region.gate.x&&y===region.gate.y?"gateLog":"ridge",
@@ -62,7 +63,7 @@
       while(count<min&&attempts++<6500){
         const x=region.left+2+Math.floor(random()*(region.right-region.left-3));
         const y=region.top+2+Math.floor(random()*(region.bottom-region.top-3));
-        if(occupied.has(key(x,y))||Math.hypot(x-world.width/2,y-world.height/2)<3.8)continue;
+        if(occupied.has(key(x,y))||corridor({x,y})||Math.hypot(x-world.width/2,y-world.height/2)<3.8)continue;
         world.objects.push({x,y,kind,variant:Math.floor(random()*4),age:0});
         occupied.add(key(x,y));count++;
       }
