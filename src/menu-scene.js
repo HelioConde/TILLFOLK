@@ -107,7 +107,7 @@
           face:((t+7400)%21800)<10900?"right":"left"},
         {kind:"chicken",x:lerp(662,705,chickA),y:123+Math.sin(t/570)*2,
           face:((t+1200)%12200)<6100?"right":"left"},
-        {kind:"chicken",x:lerp(908,928,chickB),y:123+Math.cos(t/670)*2,
+        {kind:"chicken",x:lerp(896,918,chickB),y:123+Math.cos(t/670)*2,
           face:((t+5700)%15800)<7900?"right":"left"}
       ]
     };
