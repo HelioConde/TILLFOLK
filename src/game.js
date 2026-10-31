@@ -1957,12 +1957,30 @@
     $("#build-status").textContent="Última alteração desfeita.";
   });
   $("#build-exit").addEventListener("click",()=>setTool("universal"));
+  function openWorkerInventory(worker){
+    Crafting.normalizeWorker(worker);
+    const dialog=$("#worker-inventory-dialog");
+    $("#worker-inventory-title").textContent="Inventário · "+worker.name;
+    const tools=Crafting.RECIPES.filter(recipe=>worker.inventory.tools[recipe.key]);
+    $("#worker-inventory-tools").innerHTML=tools.length?
+      tools.map(recipe=>'<div class="worker-tool-card"><span>'+recipe.icon+'</span><strong>'+
+        escapeHtml(recipe.name)+'</strong></div>').join(""):
+      '<p>Nenhuma ferramenta. Fabrique equipamentos na Work Station para este colono.</p>';
+    const items=Object.entries(worker.inventory.items).filter(([,amount])=>amount>0);
+    $("#worker-inventory-items").innerHTML=items.length?
+      items.map(([key,amount])=>'<span>'+escapeHtml(pickupTypes[key]?.name||key)+': '+amount+'</span>').join(""):
+      '<p>Sem coletas registradas.</p>';
+    if(!dialog.open)dialog.showModal();
+  }
+  $("#worker-inventory-close").addEventListener("click",()=>$("#worker-inventory-dialog").close());
   canvas.addEventListener("contextmenu",event=>{
     if(!playing)return;
     event.preventDefault(); // Não abrir o menu do navegador sobre o jogo.
     if(suppressRightContext){suppressRightContext=false;return;}
     const {x,y}=buildCellFromEvent(event);
     if(x<0||y<0||x>=W||y>=H)return;
+    const worker=state.workers.find(w=>Math.hypot(w.x-(x+.5),w.y-(y+.5))<=.85);
+    if(worker){openWorkerInventory(worker);return;}
     if(selectedTool==="construir"){
       if(buildLayer==="field"||buildLayer==="home"||buildLayer==="station"){
         const ids=state.orders.filter(o=>buildLayer==="field"?
@@ -1971,7 +1989,7 @@
           o.type==="buildHome"&&homeTiles(o.x,o.y).some(([hx,hy])=>hx===x&&hy===y))
           .map(o=>o.id);
         if(ids.length){removeOrders(ids);$("#build-status").textContent="Blueprint cancelado.";}
-        else $("#build-status").textContent="Nenhum blueprint nesse terreno.";
+        else {$("#build-status").textContent="Seleção cancelada.";setTool("universal");}
         return;
       }
       paintHouse(x,y,true);return;
@@ -1981,7 +1999,11 @@
     const ids=state.orders.filter(o=>o.x===x&&o.y===y).map(o=>o.id);
     if(ids.length){
       removeOrders(ids);notify(ids.length+" ordem(ns) cancelada(s) com botão direito.");
-    }else notify("Nenhuma ordem pendente neste terreno.");
+    }else{
+      setTool("universal");
+      $("#tile-tooltip").hidden=true;
+      notify("Seleção cancelada · modo Universal.");
+    }
   });
   canvas.addEventListener("pointerleave",()=>{
     buildHover=null;hoveredTile=null;
