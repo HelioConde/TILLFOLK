@@ -41,12 +41,17 @@ test("work station exibe artes e receitas mesmo antes da construção",async({pa
 test("receitas da Work Station produzem machado e sementes com consumo real",async({page})=>{
  const errors=[];page.on("pageerror",error=>errors.push(error.message));
  await openGame(page);
- await page.evaluate(()=>{
+ // Aplicar a fixture no próximo carregamento, após pagehide salvar o jogo atual.
+ // Assim o teste não disputa com o autosave real do navegador.
+ await page.addInitScript(()=>{
+  if(sessionStorage.getItem("workshop-fixture-loaded"))return;
   const s=JSON.parse(localStorage.getItem("tillfolk-v01"));
+  if(!s)return;
   s.crafting.station={x:38,y:24};s.workstations=[{x:38,y:24}];
   s.inventory.twigs=50;s.inventory.grass=20;s.inventory.wood=20;s.inventory.stone=10;
   s.cropProduce.tomato=4;s.food=10;
   localStorage.setItem("tillfolk-v01",JSON.stringify(s));
+  sessionStorage.setItem("workshop-fixture-loaded","1");
  });
  await page.reload({waitUntil:"networkidle"});
  await expect(page.locator("#menu")).toBeHidden();
