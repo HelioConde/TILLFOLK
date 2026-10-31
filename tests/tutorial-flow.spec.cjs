@@ -29,7 +29,7 @@ async function jumpToFinalMission(page){
  });
  await page.reload({waitUntil:"networkidle"});
  await continueIfMenuVisible(page);
- await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 10 / 10");
+ await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 11 / 11");
 }
 async function finishBuildingMission(page){
  await page.locator('[data-tool="construir"]').click();
@@ -76,7 +76,7 @@ test("Tutorial inicia no jogo: objetivos, ajuda ao passar mouse e localização"
  const errors=[];page.on("pageerror",e=>errors.push(e.message));
  await visit(page);
  await startFarm(page);
- await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 10");
+ await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 11");
  await expect(page.locator("#mission-count")).toHaveText("0 / 1");
  await expect(page.locator("#mission-help")).toBeHidden();
  await page.locator("#mission-card").hover();
@@ -98,7 +98,7 @@ test("Nova Fazenda tem missões e Continuar preserva o progresso no celular",asy
  await page.reload({waitUntil:"networkidle"});
  await expect(page.locator("#continue")).toBeEnabled();
  await continueIfMenuVisible(page);
- await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 10");
+ await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 11");
  expect(errors).toEqual([]);
 });
 
