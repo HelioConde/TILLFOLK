@@ -1742,7 +1742,7 @@
   backdrop.addEventListener("click",dismissDrawer);
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("drawer-open")){dismissDrawer();}});
   $("#menu-btn").addEventListener("click",()=>{
-    save();playing=false;closeDrawer();setTool("till");
+    save();playing=false;closeDrawer();setTool("universal");
     document.body.classList.remove("play-session","focus-game");
     canvas.style.removeProperty("--pan-x");canvas.style.removeProperty("--pan-y");
     cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;movementKeys.clear();syncCameraButtons();
