@@ -783,7 +783,7 @@ test('Tela inicial: créditos, som, tutorial visual e cartões no rodapé',async
  await page.locator('#title-credits-dialog .modal-x').click();
  await page.locator('#title-settings').click();
  await page.locator('#title-sound').uncheck();
- await page.locator('#title-volume').fill('25');
+ await page.locator('#title-volume').evaluate(el=>{el.value='25';el.dispatchEvent(new Event('input',{bubbles:true}));});
  await expect(page.locator('#title-sound-test')).toBeDisabled();
  await page.screenshot({path:'screenshots/configuracoes-som-v2.png'});
  await page.locator('#title-settings-dialog .modal-x').click();
