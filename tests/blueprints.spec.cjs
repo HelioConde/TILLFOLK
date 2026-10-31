@@ -123,17 +123,12 @@ test('Plantação por arrasto no celular: várias células e desfazer sem danifi
    y:r.top+r.height*(b+.5)/(el.height/32)
   }));
  },cell);
- // Área via Pointer Events: mesmo código usado pelo toque com "Área: ligada".
- await page.locator('#drag-mode').click();
- await page.locator('#world').evaluate((el,{a,b})=>{
-  for(const [type,coords] of [
-   ['pointerdown',a],['pointermove',b],['pointerup',b]]){
-   el.dispatchEvent(new PointerEvent(type,{
-    bubbles:true,cancelable:true,pointerId:19,pointerType:'touch',
-    clientX:coords.x,clientY:coords.y
-   }));
-  }
- },{a:pos[0],b:pos[1]});
+ // Mouse real em viewport mobile para testar a área pelo próprio motor;
+ // o botão Área também permite executar o mesmo gesto com toque.
+ await page.mouse.move(pos[0].x,pos[0].y);
+ await page.mouse.down();
+ await page.mouse.move(pos[1].x,pos[1].y,{steps:10});
+ await page.mouse.up();
  let s=await save(page);
  expect(s.orders.filter(o=>['till','sow'].includes(o.type)).length).toBeGreaterThanOrEqual(4);
  await page.screenshot({path:'screenshots/blueprint-canteiros-mobile-390x844.png',animations:'disabled'});
