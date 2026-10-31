@@ -73,6 +73,19 @@
     // Cobertura por último no Canvas (z-index visual superior).
     const roofDrop=4*TILE;
     if(roofVisible){
+      // Reduzir SOMENTE a cobertura em 6,25%, mantendo o topo e o centro.
+      // A fachada, janelas, porta e as coordenadas originais não mudam.
+      const roofScale=0.9375;
+      const canTransform=["save","translate","scale","restore"]
+        .every(method=>typeof ctx[method]==="function");
+      if(canTransform){
+        const centerX=originX+ROOF_COLS*cell/2;
+        const topY=originY+roofDrop;
+        ctx.save();
+        ctx.translate(centerX,topY);
+        ctx.scale(roofScale,roofScale);
+        ctx.translate(-centerX,-topY);
+      }
       for(let row=0;row<ROOF_ROWS;row++){
         for(let col=0;col<ROOF_COLS;col++){
           const [sx,sy]=roofAtlas(col,row);
@@ -82,6 +95,7 @@
       }
       stamp("roof",5,0,originX+3*cell,originY+roofDrop+2*cell);
       stats.chimneys++;
+      if(canTransform)ctx.restore();
     }
 
     return {...stats,...dimensions(scale),x:originX,y:originY,scale};
