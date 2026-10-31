@@ -1,0 +1,18 @@
+/* Catálogo de plantio e oficina. Sprites reais: public/assets/assets/crops. */
+.farm-catalog-dialog{width:min(780px,calc(100vw - 24px));max-height:90dvh;overflow:auto}
+.farm-catalog-dialog .farm-crop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin:16px 0}
+.farm-crop-grid button{display:flex;align-items:center;gap:9px;min-width:0;padding:10px 9px;
+ border:2px solid #819e72;border-radius:7px;background:#325040;color:#fff1d4;
+ font:bold 12px/1.3 system-ui,sans-serif;text-align:left;cursor:pointer}
+.farm-crop-grid button:hover,.farm-crop-grid button:focus-visible{border-color:#def0a0;background:#436447;outline-offset:2px}
+.farm-crop-grid button[aria-pressed="true"]{border-color:#f7e8a6;background:#4e6949;box-shadow:inset 0 0 0 1px #eac68f}
+.farm-crop-grid button:disabled{opacity:.5;cursor:not-allowed}
+.farm-crop-grid button canvas{image-rendering:pixelated;width:40px;height:40px;flex:none}
+.farm-crop-grid button strong,.farm-crop-grid button small{display:block}
+.farm-crop-grid button small{margin-top:4px;color:#c7e6aa;font-weight:600}
+.farm-catalog-dialog #workshop-status,.farm-catalog-dialog #crop-catalog-status{
+ padding:10px;border:1px solid #688463;background:#263b30;color:#eff0d0;border-radius:6px}
+body:not(.play-session) #crop-catalog-dialog,body:not(.play-session) #workshop-dialog{display:none!important}
+@media(max-width:500px){.farm-catalog-dialog .farm-crop-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.farm-crop-grid button{padding:7px 6px;gap:5px;font-size:11px}
+.farm-crop-grid button canvas{width:30px;height:30px}}
