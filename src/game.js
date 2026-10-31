@@ -42,6 +42,7 @@
   }
   let hoveredTile=null;
   const feedbackParticles=[];
+  let blockedAttempt=null;
   const reducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
   const animationsEnabled=()=>window.TillfolkPreferences?.animationsEnabled?.()??!reducedMotion.matches;
   function showMapFeedback(x,y,color="#f4df9e"){
@@ -1044,6 +1045,7 @@
     }
   }
   function valid(img){return img&&img.complete&&img.naturalWidth>0;}
+  const validImage=valid;
   function part(img,sx,sy,sw,sh,x,y,w=32,h=32){
     if(!img||!(valid(img)||(img instanceof HTMLCanvasElement&&img.width>0&&img.height>0)))return;
     const width=img.naturalWidth||img.width,height=img.naturalHeight||img.height;
@@ -1264,24 +1266,35 @@
         if(buildLayer==="home")Blueprint.home(ctx,sprite,x,y,TILE,valid);
         else if(buildLayer==="field")Blueprint.field(ctx,sprite,x,y,TILE,valid,true);
         else if(buildLayer==="station"){
-          ctx.fillStyle=valid?"#56aee288":"#e97f7588";
+          if(validImage(sprite.workstation)){
+            const img=sprite.workstation;
+            Blueprint.part(ctx,img,0,0,img.naturalWidth,img.naturalHeight,
+              x*TILE-4,y*TILE-20,40,49,valid,.7);
+          }
+          ctx.fillStyle=valid?"#56aee844":"#e97f7544";
           ctx.fillRect(x*TILE+2,y*TILE+2,TILE-4,TILE-4);
           ctx.strokeStyle=valid?"#acebff":"#ffac9e";ctx.lineWidth=2;
           ctx.strokeRect(x*TILE+2,y*TILE+2,TILE-4,TILE-4);
         }
       }
     }
-    // Um bloqueio real aparece em vermelho sobre o recurso, não como se fosse coletável.
-    if(playing&&(selectedTool==="universal"||selectedTool==="clear"||selectedTool==="inspecionar")){
-      for(const object of state.world.objects){
-        if(!inView(object.x,object.y,2)||object.kind==="ridge")continue;
-        const reason=Crafting.blocked(state,"clear",object);
-        if(!reason)continue;
-        const px=object.x*TILE,py=object.y*TILE;
-        ctx.strokeStyle="rgba(211,60,60,.85)";ctx.lineWidth=2;
-        ctx.strokeRect(px+2,py+2,TILE-4,TILE-4);
-        ctx.fillStyle="#a93636de";ctx.fillRect(px+2,py+2,12,12);
-        ctx.fillStyle="#fff2e4";ctx.font="bold 10px sans-serif";ctx.textAlign="left";ctx.fillText("×",px+5,py+12);
+    // Só o objeto alvo de uma tentativa inválida fica vermelho.
+    if(blockedAttempt&&performance.now()<blockedAttempt.until&&inView(blockedAttempt.x,blockedAttempt.y,1)){
+      const px=blockedAttempt.x*TILE,py=blockedAttempt.y*TILE;
+      ctx.fillStyle="#da353550";ctx.fillRect(px+1,py+1,TILE-2,TILE-2);
+      ctx.strokeStyle="#ff6f62";ctx.lineWidth=3;ctx.strokeRect(px+2,py+2,TILE-4,TILE-4);
+      write("!",px+TILE/2,py-4,"#ffb6a8",17);
+    }
+    // Prévia de semente seguindo o cursor, usando o ícone real do cultivo selecionado.
+    if(playing&&hoveredTile&&!areaSelection&&(selectedTool==="sow"||
+       selectedTool==="universal"&&nextUniversalOrder(hoveredTile.x,hoveredTile.y)==="sow")){
+      const {x,y}=hoveredTile,p=findPlot(x,y);
+      if(p){
+        const canPlant=p.tilled&&!p.seeded&&state.cropSeeds[state.selectedCrop]>0&&!p.dirty;
+        Blueprint.field(ctx,sprite,x,y,TILE,canPlant,true);
+        const icon=Crops.imageFor(state.selectedCrop,"icon");
+        if(icon?.complete&&icon.naturalWidth>=16)
+          Blueprint.part(ctx,icon,0,0,16,16,x*TILE+8,y*TILE+5,16,16,canPlant,.8);
       }
     }
     // Ordem sob o cursor: destaque de tile, não adiciona tarefas automaticamente.
@@ -1289,7 +1302,8 @@
       const {x,y}=hoveredTile,validTile=x>=0&&x<W&&y>=0&&y<H;
       if(validTile){
         const px=x*TILE,py=y*TILE;
-        const restriction=Crafting.blocked(state,"clear",World.at(state.world,x,y));
+        const type=selectedTool==="universal"?nextUniversalOrder(x,y):selectedTool;
+        const restriction=type&&Crafting.blocked(state,type,World.at(state.world,x,y));
         const canOrder=!restriction&&Boolean(findPlot(x,y)||selectedTool==="collectWater"||selectedTool==="remover");
         ctx.fillStyle=canOrder?"#f8ec9440":"#ed424264";
         ctx.fillRect(px+1,py+1,TILE-2,TILE-2);
@@ -1611,6 +1625,8 @@
     return "till";
   }
   function queueAt(type,x,y){
+    const toolProblem=Crafting.blocked(state,type,World.at(state.world,x,y));
+    if(toolProblem){markBlocked(x,y,toolProblem);return {error:toolProblem};}
     if(World.at(state.world,x,y)?.kind==="ridge")return {error:"Encosta fechada: procure o tronco na saída leste."};
     if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||occupiedByHome(x,y)||occupiedByStation(x,y)||occupiedByStation(x,y)||
        (World.waterAt(state.world,x,y)&&type!=="collectWater"))return {error:"Terreno indisponível"};
@@ -1659,7 +1675,14 @@
       :cancelled?cancelled+" ordem(ns) cancelada(s).":
       "Nenhuma ordem aplicável nesta área.");
   }
+  function markBlocked(x,y,reason){
+    blockedAttempt={x,y,reason,until:performance.now()+2600};
+    const tip=$("#tile-tooltip");tip.textContent="⛔ "+reason;tip.classList.add("locked");tip.hidden=false;
+    showMapFeedback(x,y,"#ff625a");notify(reason);
+  }
   function placeOrder(type,x,y){
+    const toolProblem=Crafting.blocked(state,type,World.at(state.world,x,y));
+    if(toolProblem){markBlocked(x,y,toolProblem);return;}
     if(World.at(state.world,x,y)?.kind==="ridge"){
       notify("Encosta intransponível: procure o tronco caído a leste.");return;
     }
@@ -2026,7 +2049,11 @@
     if(playing&&!panPointer&&event.pointerType!=="touch"){
       hoveredTile=buildCellFromEvent(event);
       const {x,y}=hoveredTile,object=x>=0&&y>=0&&x<W&&y<H?World.at(state.world,x,y):null;
-      const needed=object&&Crafting.blocked(state,"clear",object);
+      const attempted=blockedAttempt&&blockedAttempt.x===x&&blockedAttempt.y===y&&
+        performance.now()<blockedAttempt.until;
+      const type=selectedTool==="universal"?nextUniversalOrder(x,y):selectedTool;
+      const needed=attempted?blockedAttempt.reason:
+        type&&type!=="inspecionar"?Crafting.blocked(state,type,object):null;
       const tip=$("#tile-tooltip");
       if(needed){
         const typeNames={boulder:"Pedra grande",tree:"Árvore",stump:"Toco",log:"Tronco",
@@ -2093,6 +2120,9 @@
     if(suppressMapClick){suppressMapClick=false;return;}
     if(!playing||!state)return;
     const rect=canvas.getBoundingClientRect(),x=Math.floor((event.clientX-rect.left)/rect.width*W),y=Math.floor((event.clientY-rect.top)/rect.height*H);
+    const clickType=selectedTool==="universal"?nextUniversalOrder(x,y):selectedTool;
+    const restriction=clickType&&Crafting.blocked(state,clickType,World.at(state.world,x,y));
+    if(restriction){markBlocked(x,y,restriction);return;}
     if(occupiedByStation(x,y)){openWorkshop();return;}
     if(selectedTool==="construir"){paintHouse(x,y);return;}
     if(window.TillfolkHouseBuilder.occupied(state.house,x,y)){notify("Esta área já faz parte da casa.");return;}
