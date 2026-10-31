@@ -1091,3 +1091,34 @@ test('A abertura não carrega nem desenha animais em nenhum quadro',async({page}
   fs.writeFileSync('screenshots/menu-inicial-sem-animais.png',Buffer.from(image,'base64'));
   await page.screenshot({path:'screenshots/menu-inicial-sem-animais-desktop.png',animations:'disabled'});
 });
+
+
+test('Subtítulo do menu: contraste, legibilidade e seleção de texto',async({page})=>{
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  for(const view of [{width:1366,height:768},{width:390,height:844}]){
+    await page.setViewportSize(view);
+    const tagline=page.locator('#menu .title-navigation > .title-tagline');
+    await expect(tagline).toBeVisible();
+    await expect(tagline).toHaveText('Uma fazenda cresce melhor quando cada pessoa encontra seu talento.');
+    const design=await tagline.evaluate(el=>{
+      const css=getComputedStyle(el);
+      const r=el.getBoundingClientRect();
+      return {color:css.color,background:css.backgroundColor,fontSize:parseFloat(css.fontSize),
+        textShadow:css.textShadow,left:r.left,right:r.right,width:r.width,height:r.height};
+    });
+    expect(design.color).toBe('rgb(255, 248, 220)');
+    const rgba=design.background.match(/rgba?\(([^)]+)\)/);
+    expect(rgba).not.toBeNull();
+    const numbers=rgba[1].split(',').map(Number);
+    expect(numbers[0]).toBeLessThan(40);
+    expect(numbers[1]).toBeLessThan(50);
+    expect(numbers[2]).toBeLessThan(40);
+    expect(numbers[3]??1).toBeGreaterThanOrEqual(.9);
+    expect(design.fontSize).toBeGreaterThanOrEqual(13);
+    expect(design.textShadow).not.toBe('none');
+    expect(design.left).toBeGreaterThanOrEqual(0);
+    expect(design.right).toBeLessThanOrEqual(view.width+1);
+    expect(design.height).toBeGreaterThan(35);
+    await page.screenshot({path:'screenshots/menu-frase-legivel-'+view.width+'x'+view.height+'.png',animations:'disabled'});
+  }
+});
