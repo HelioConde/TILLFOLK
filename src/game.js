@@ -1270,13 +1270,27 @@
         }
       }
     }
+    // Um bloqueio real aparece em vermelho sobre o recurso, não como se fosse coletável.
+    if(playing&&(selectedTool==="universal"||selectedTool==="clear"||selectedTool==="inspecionar")){
+      for(const object of state.world.objects){
+        if(!inView(object.x,object.y,2)||object.kind==="ridge")continue;
+        const reason=Crafting.blocked(state,"clear",object);
+        if(!reason)continue;
+        const px=object.x*TILE,py=object.y*TILE;
+        ctx.strokeStyle="rgba(211,60,60,.85)";ctx.lineWidth=2;
+        ctx.strokeRect(px+2,py+2,TILE-4,TILE-4);
+        ctx.fillStyle="#a93636de";ctx.fillRect(px+2,py+2,12,12);
+        ctx.fillStyle="#fff2e4";ctx.font="bold 10px sans-serif";ctx.textAlign="left";ctx.fillText("×",px+5,py+12);
+      }
+    }
     // Ordem sob o cursor: destaque de tile, não adiciona tarefas automaticamente.
     if(playing&&hoveredTile&&selectedTool!=="construir"&&!panPointer){
       const {x,y}=hoveredTile,validTile=x>=0&&x<W&&y>=0&&y<H;
       if(validTile){
         const px=x*TILE,py=y*TILE;
-        const canOrder=Boolean(findPlot(x,y)||selectedTool==="collectWater"||selectedTool==="remover");
-        ctx.fillStyle=canOrder?"#f8ec9440":"#ed8f7a33";
+        const restriction=Crafting.blocked(state,"clear",World.at(state.world,x,y));
+        const canOrder=!restriction&&Boolean(findPlot(x,y)||selectedTool==="collectWater"||selectedTool==="remover");
+        ctx.fillStyle=canOrder?"#f8ec9440":"#ed424264";
         ctx.fillRect(px+1,py+1,TILE-2,TILE-2);
         ctx.lineWidth=2;ctx.strokeStyle=canOrder?"#fff5b2":"#f3ae9b";
         ctx.strokeRect(px+2,py+2,TILE-4,TILE-4);
@@ -1303,6 +1317,16 @@
       ctx.strokeStyle=particle.color;ctx.lineWidth=2;
       ctx.strokeRect(cx-5-elapsed*10,cy-5-elapsed*10,10+elapsed*20,10+elapsed*20);
       ctx.globalAlpha=1;
+    }
+    // O item salta no cenário, sobe e desaparece; o canto mantém o histórico por alguns segundos.
+    for(let i=pickupEffects.length-1;i>=0;i--){
+      const p=pickupEffects[i],t=(now-p.start)/1450;
+      if(t>=1){pickupEffects.splice(i,1);continue;}
+      const x=(p.x+.5)*TILE,y=p.y*TILE-12-28*Math.sin(Math.PI*Math.min(1,t))-(t*16);
+      ctx.save();ctx.globalAlpha=Math.min(1,(1-t)*1.6);
+      ctx.fillStyle="#1a392acb";ctx.beginPath();ctx.roundRect(x-26,y-28,52,21,6);ctx.fill();
+      write(p.icon+" +"+p.quantity,x,y-13,"#fbefad",11);
+      ctx.restore();
     }
   }
   // Colônias têm conversas breves e intervaladas, não tutoriais repetidos sem parar.
@@ -1911,7 +1935,10 @@
       removeOrders(ids);notify(ids.length+" ordem(ns) cancelada(s) com botão direito.");
     }else notify("Nenhuma ordem pendente neste terreno.");
   });
-  canvas.addEventListener("pointerleave",()=>{buildHover=null;hoveredTile=null;});
+  canvas.addEventListener("pointerleave",()=>{
+    buildHover=null;hoveredTile=null;
+    if($("#tile-tooltip").classList.contains("locked")){$("#tile-tooltip").hidden=true;$("#tile-tooltip").classList.remove("locked");}
+  });
   document.addEventListener("keydown",event=>{
     if(!playing||event.target.closest("input,textarea,select,[contenteditable]")||document.querySelector("dialog[open]"))return;
     const k=event.key.toLowerCase();
@@ -1995,7 +2022,20 @@
         selectionPointer.moved=true;
       return;
     }
-    if(playing&&!panPointer&&event.pointerType!=="touch")hoveredTile=buildCellFromEvent(event);
+    if(playing&&!panPointer&&event.pointerType!=="touch"){
+      hoveredTile=buildCellFromEvent(event);
+      const {x,y}=hoveredTile,object=x>=0&&y>=0&&x<W&&y<H?World.at(state.world,x,y):null;
+      const needed=object&&Crafting.blocked(state,"clear",object);
+      const tip=$("#tile-tooltip");
+      if(needed){
+        const typeNames={boulder:"Pedra grande",tree:"Árvore",stump:"Toco",log:"Tronco",
+          gateLog:"Tronco da passagem",thicket:"Arbusto",ridge:"Parede de rocha"};
+        tip.textContent="⛔ "+(typeNames[object.kind]||"Recurso bloqueado")+" · "+needed+".";
+        tip.classList.add("locked");tip.hidden=false;
+      }else if(tip.classList.contains("locked")){
+        tip.hidden=true;tip.classList.remove("locked");
+      }
+    }
     if(playing&&selectedTool==="construir"&&!panPointer)buildHover=buildCellFromEvent(event);
     if(event.pointerType==="touch"&&activeTouches.has(event.pointerId)){
       activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
@@ -2138,15 +2178,11 @@
   workshopAtlas.src=Crafting.ITEMS_SPRITE;
   workshopAtlas.addEventListener("load",()=>{if(state&&$("#workshop-dialog").open)paintWorkshopTools();});
   function paintWorkshopTools(){
-    if(!workshopAtlas.complete||!workshopAtlas.naturalWidth)return;
     document.querySelectorAll(".workstation-tool-sprite").forEach(canvas=>{
-      const index=Number(canvas.dataset.toolIndex);
-      const columns=Math.max(1,Math.floor(workshopAtlas.naturalWidth/16));
-      const sx=(index%columns)*16,sy=Math.floor(index/columns)*16;
-      if(sx+16>workshopAtlas.naturalWidth||sy+16>workshopAtlas.naturalHeight)return;
-      const g=canvas.getContext("2d");g.imageSmoothingEnabled=false;
-      g.clearRect(0,0,canvas.width,canvas.height);
-      g.drawImage(workshopAtlas,sx,sy,16,16,4,4,40,40);
+      const recipe=Crafting.RECIPES[Number(canvas.dataset.toolIndex)];
+      if(!recipe)return;
+      const key=recipe.key==="stoneAxe"?"axe":recipe.key;
+      Missions.drawTarget(canvas.getContext("2d"),key,0,0,48);
     });
   }
   function renderWorkshop(){
