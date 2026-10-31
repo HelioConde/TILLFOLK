@@ -1,0 +1,43 @@
+name: TILLFOLK — testes da colônia
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/game.js'
+      - 'src/task-orders.js'
+      - 'src/wild-world.js'
+      - 'src/house-building.js'
+      - 'tests/colony.spec.cjs'
+      - 'index.html'
+      - '.github/workflows/colony-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  colony:
+    name: Economia, logística e moradias
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright
+        run: |
+          npm install --no-save @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Servir aplicação sem backend
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-http.log 2>&1 &
+          sleep 2
+      - name: Testar ciclo de colônia
+        run: npx playwright test tests/colony.spec.cjs --browser chromium --reporter=line
+      - name: Screenshots de colônia
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-colony-screenshots
+          path: screenshots/
+          if-no-files-found: warn
+          retention-days: 14
