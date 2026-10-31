@@ -7,7 +7,8 @@ permissions:
   contents: read
 concurrency:
   group: tillfolk-full-audit
-  cancel-in-progress: true
+  # A auditoria completa precisa terminar mesmo que o design receba commits em paralelo.
+  cancel-in-progress: false
 jobs:
   code:
     name: JavaScript, dados e progressão
