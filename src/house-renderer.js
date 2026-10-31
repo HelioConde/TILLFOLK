@@ -62,10 +62,15 @@
       }
     }
 
-    // Telhado abaixado mais 1 tile original (+16 px), total 6×16 px.
-    // No Canvas, a ordem das chamadas equivale ao z-index: desenhar o
-    // telhado DEPOIS das paredes faz o beiral cobrir a parte superior da
-    // fachada, sem ficar escondido por trás dela.
+    // Janelas e porta na posição existente, antes da camada do telhado.
+    for(const col of [1,3]){
+      stamp("walls",3,2,facadeX+col*cell,facadeY+3*cell);
+      stats.windows++;
+    }
+    stamp("door",5,0,facadeX+2*cell,facadeY+3*cell);
+    stats.doors++;
+
+    // Cobertura por último no Canvas (z-index visual superior).
     const roofDrop=6*TILE;
     if(roofVisible){
       for(let row=0;row<ROOF_ROWS;row++){
@@ -78,15 +83,6 @@
       stamp("roof",5,0,originX+3*cell,originY+roofDrop+2*cell);
       stats.chimneys++;
     }
-
-    // Aberturas ficam na frente da cobertura. O beiral termina exatamente
-    // no topo da última fileira, sem esconder as janelas nem a porta.
-    for(const col of [1,3]){
-      stamp("walls",3,2,facadeX+col*cell,facadeY+3*cell);
-      stats.windows++;
-    }
-    stamp("door",5,0,facadeX+2*cell,facadeY+3*cell);
-    stats.doors++;
 
     return {...stats,...dimensions(scale),x:originX,y:originY,scale};
   }
