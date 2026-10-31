@@ -536,7 +536,7 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
       facadeMin:128,allUniform:calls.every(c=>c.dw*c.sh===c.dh*c.sw),
       roofBeforeWindows:calls.findIndex(c=>c.asset==='roof')<calls.findIndex(c=>c.asset==='walls'&&c.sx===48&&c.sy===32),
       roofOverWalls:calls.findIndex(c=>c.asset==='roof')>calls.findIndex(c=>c.asset==='walls'),
-      noWindowsBehindRoof:calls.filter(c=>c.asset==='roof').every(c=>c.dy+c.dh<=224)};
+      windowsDrawnAboveRoof:calls.findLastIndex(c=>c.asset==='walls'&&c.sx===48&&c.sy===32)>calls.findLastIndex(c=>c.asset==='roof')};
   });
   expect(result.stats.stretched).toBe(0);
   expect(result.stats.walls).toBe(20);
@@ -548,7 +548,7 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
   expect(result.allUniform).toBe(true);
   expect(result.roofBeforeWindows).toBe(true);
   expect(result.roofOverWalls).toBe(true);
-  expect(result.noWindowsBehindRoof).toBe(true);
+  expect(result.windowsDrawnAboveRoof).toBe(true);
 });
 
 
