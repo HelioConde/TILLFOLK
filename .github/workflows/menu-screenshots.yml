@@ -25,6 +25,8 @@ on:
       - 'styles.css'
       - 'game-polish.css'
       - 'game-hud.css'
+      - 'sprout-ui.css'
+      - 'src/sprout-ui-skin.js'
       - 'src/game-hud.js'
       - 'fullscreen-game.css'
       - '.github/workflows/pages.yml'
