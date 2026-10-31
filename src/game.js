@@ -2239,7 +2239,10 @@
       const tip=$("#tile-tooltip");
       if(needed){
         const typeNames={boulder:"Pedra grande",tree:"Árvore",stump:"Toco",log:"Tronco",thicket:"Arbusto"};
-        tip.textContent="⛔ "+(typeNames[object.kind]||"Recurso bloqueado")+" · "+needed+".";
+        // O solo livre nao possui objeto: bloqueios de enxada/regador ainda sao validos.
+        // Nunca acessar .kind sem conferir, ou cada pointermove quebra o mapa.
+        const targetName=object?.kind?(typeNames[object.kind]||"Recurso"):"Terreno";
+        tip.textContent="⛔ "+targetName+" · "+needed+".";
         tip.classList.add("locked");tip.hidden=false;
       }else if(tip.classList.contains("locked")){
         tip.hidden=true;tip.classList.remove("locked");
