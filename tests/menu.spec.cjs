@@ -573,7 +573,9 @@ test('Telhado em primeiro plano, sem recortes nas janelas e porta',async({page})
     const stats=window.TillfolkHouse.draw(ctx,assets,8,8,{scale:2});
     return {stats,firstRoof:order.indexOf('roof'),lastWall:order.lastIndexOf('walls'),
       lastDoor:order.lastIndexOf('door'),lastDraw:order.at(-1),
-      png:output.toDataURL('image/png').slice(0,30)};
+      png:output.toDataURL('image/png').slice(0,30),
+      clipReleased:(()=>{ctx.fillStyle='#ff0000';ctx.fillRect(0,0,2,2);
+        return ctx.getImageData(0,0,1,1).data[0]===255;})()};
   });
   expect(detail.stats.stretched).toBe(0);
   expect(detail.stats.roof).toBe(35);
@@ -581,8 +583,9 @@ test('Telhado em primeiro plano, sem recortes nas janelas e porta',async({page})
   expect(detail.firstRoof).toBeGreaterThan(detail.lastDoor);
   expect(detail.lastDraw).toBe('roof');
   const source=require('node:fs').readFileSync('src/house-renderer.js','utf8');
-  expect(source).not.toMatch(/ctx\.clip\(/);
-  expect(source).not.toMatch(/roofMask/);
+  expect(source).toMatch(/ctx\\.clip\\(roofMask/);
+  expect(source).toMatch(/if\\(canClip\\)ctx\\.restore\\(\\)/);
+  expect(detail.clipReleased).toBe(true);
   expect(detail.png).toMatch(/^data:image\/png;base64,/);
   await page.screenshot({path:'screenshots/casa-telhado-primeiro-plano-1366x768.png',animations:'disabled'});
 });
