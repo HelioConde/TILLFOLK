@@ -55,3 +55,10 @@ Casa do menu e do mapa desenhada com escala 2× exata: cada tile 16×16 ocupa 32
 - Janelas na terceira fileira (índice 2), porta na última fileira (índice 3), alinhadas no mesmo grid.
 - A altura lógica passa de 288 para 256 pixels na escala 2×.
 - Teste Playwright verifica as coordenadas reais de desenho no canvas, além das capturas.
+
+
+### Alinhamento v1.1.2 (feedback visual)
+- Janelas descem uma célula da grade renderizada: da linha 2 para a linha 3 (+32 px em escala 2×).
+- O telhado desce três tiles originais de 16px (+48 px na cena), mantendo o total de cinco faixas.
+- O telhado agora é desenhado antes da fachada; a sobreposição não encobre janelas e porta.
+- Testes Playwright conferem coordenadas exatas, proporção e ordem de camadas; salvar screenshot do menu após cada alteração.
