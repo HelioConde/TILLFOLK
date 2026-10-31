@@ -131,6 +131,10 @@
         <div class="footnote">TILLFOLK · Gerencie o vale e organize sua equipe</div>
       </section>
       <aside class="sidebar" id="farm-sidebar" aria-label="Painel de trabalhadores e tarefas" aria-hidden="true" inert><div class="drawer-heading"><strong>Gestão da fazenda</strong><button type="button" id="drawer-close" aria-label="Fechar painel de gestão">✕ Fechar</button></div>
+        <nav class="drawer-section-nav" aria-label="Seções da gestão da fazenda">
+          <button type="button" data-drawer-target="workers" aria-controls="workers" aria-pressed="true">♟ Equipe</button>
+          <button type="button" data-drawer-target="tasks" aria-controls="tasks" aria-pressed="false">☷ Ordens</button>
+        </nav>
         <div class="panel worker-panel">
           <div class="panel-top"><div><span class="overline">PESSOAS DA FAZENDA</span><h2>Trabalhadores <span id="worker-count">1</span></h2><small>🏠 Moradias: <b id="homes-count">0/2</b></small></div><button id="hire-btn" class="small-primary">+ Contratar</button></div>
           <div id="workers" class="workers"></div>
