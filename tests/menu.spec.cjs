@@ -1065,3 +1065,35 @@ test('Menu vivo: lenhador derruba árvore, toco regenera, horta cresce e animais
   expect(await page.locator('#title-scene').evaluate(canvas=>canvas.toDataURL())).toBe(frozen);
   expect(failures).toEqual([]);
 });
+
+test('Animais sempre visíveis na clareira acima da casa, em todo o ciclo',async({page})=>{
+  const fs=require('node:fs');
+  await page.setViewportSize({width:1366,height:768});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.waitForFunction(()=>window.TillfolkMenuScene?.assetHealth().ready===
+    window.TillfolkMenuScene?.assetHealth().total);
+  const results=await page.evaluate(()=>{
+    const scene=window.TillfolkMenuScene;
+    return Array.from({length:37},(_,i)=>scene.sample(i*1000).animals);
+  });
+  for(const animals of results){
+    expect(animals).toHaveLength(3);
+    for(const animal of animals){
+      const width=animal.kind==='cow'?74:41;
+      const height=animal.kind==='cow'?66:41;
+      expect(animal.x).toBeGreaterThanOrEqual(655);
+      expect(animal.x+width).toBeLessThanOrEqual(960);
+      expect(animal.y).toBeGreaterThanOrEqual(70);
+      // O teto da casa começa em y=174: nenhum animal o sobrepõe.
+      expect(animal.y+height).toBeLessThan(168);
+    }
+  }
+  // Captura determinística da clareira; não depende de esperar o ciclo real.
+  const image=await page.evaluate(()=>{
+    window.TillfolkMenuScene.drawAt(5000);
+    return document.querySelector('#title-scene').toDataURL('image/png').split(',')[1];
+  });
+  fs.mkdirSync('screenshots',{recursive:true});
+  fs.writeFileSync('screenshots/menu-animais-acima-da-casa.png',Buffer.from(image,'base64'));
+  await page.screenshot({path:'screenshots/menu-animais-acima-da-casa-desktop.png',animations:'disabled'});
+});
