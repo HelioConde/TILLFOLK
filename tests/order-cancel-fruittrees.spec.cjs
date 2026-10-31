@@ -12,6 +12,14 @@ async function start(page,width=1366,height=768){
   await page.locator('[data-game-mode="relaxed"]').click();
   await page.locator('#starter-confirm').click();
   await expect(page.locator('body')).toHaveClass(/play-session/);
+  // Fluxos antigos de cancelamento utilizam uma fazenda com ferramentas já prontas.
+  await page.evaluate(()=>{
+    const save=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    for(const tool of Object.keys(save.crafting.equipment))save.crafting.equipment[tool]=true;
+    localStorage.setItem('tillfolk-v01',JSON.stringify(save));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await continueIfMenuVisible(page);
 }
 const dispatchTile=(page,x,y,type='click')=>page.locator('#world').evaluate(
  (canvas,{x,y,type})=>{
