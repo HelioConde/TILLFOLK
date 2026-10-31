@@ -1,0 +1,49 @@
+name: TILLFOLK — cultivos e Work Station
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/game.js'
+      - 'src/crop-catalog.js'
+      - 'src/crafting.js'
+      - 'src/task-orders.js'
+      - 'index.html'
+      - 'crop-workshop.css'
+      - 'tests/crops.test.cjs'
+      - 'tests/crop-workshop.spec.cjs'
+      - '.github/workflows/crop-workshop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  farming:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar assets agrícolas, sprites e catálogo
+        run: node --test tests/crops.test.cjs
+      - name: Instalar navegador
+        run: |
+          npm install --no-save @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Servir TILLFOLK
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-crops.log 2>&1 &
+          sleep 2
+      - name: Validar culturas e fabricação
+        run: npx playwright test tests/crop-workshop.spec.cjs --browser chromium --reporter=line
+      - name: Guardar screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-workshop-crop-screenshots
+          path: screenshots/
+          if-no-files-found: warn
+          retention-days: 14
