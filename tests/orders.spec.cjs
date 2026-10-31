@@ -201,3 +201,90 @@ test('Distribuição evita trabalhador parado com ordens compatíveis na fila',a
   await expect(page.locator('.worker-status').nth(1)).toContainText(/Em atividade|Caminhando/);
   await page.screenshot({path:'screenshots/dois-colonos-trabalhando-em-paralelo.png',animations:'disabled'});
 });
+
+
+test('Universal: uma ordem por clique, avançando pelo estado real do terreno',async({page})=>{
+  await page.setViewportSize({width:1600,height:900});
+  await start(page);
+  await expect(page.locator('[data-tool="universal"]')).toHaveAttribute('aria-pressed','true');
+  await tile(page,13,11);
+  expect((await snap(page)).orders.map(o=>o.type)).toEqual(['till']);
+  async function setState(fields){
+    await page.evaluate(fields=>{
+      const key='tillfolk-v01',s=JSON.parse(localStorage.getItem(key));
+      const p=s.plots.find(p=>p.x===13&&p.y===11);
+      Object.assign(p,{dirty:false,tilled:true,fertilized:false,seeded:false,watered:false,
+        growth:0,produce:false},fields);
+      s.orders=[];s.world.objects=s.world.objects.filter(o=>o.x!==13||o.y!==11);
+      localStorage.setItem(key,JSON.stringify(s));
+    },fields);
+    await page.reload({waitUntil:'networkidle'});
+    await page.locator('#continue').click();
+    await tile(page,13,11);
+    return (await snap(page)).orders.map(o=>o.type);
+  }
+  expect(await setState({tilled:true})).toEqual(['sow']);
+  expect(await setState({seeded:true,watered:false})).toEqual(['water']);
+  expect(await setState({seeded:true,watered:true,growth:1})).toEqual(['harvest']);
+  expect(await setState({produce:true})).toEqual(['carry']);
+  expect(await setState({seeded:true,watered:true,growth:.3})).toEqual([]);
+  await page.evaluate(()=>{
+    const key='tillfolk-v01',s=JSON.parse(localStorage.getItem(key));
+    s.orders=[];const p=s.plots.find(p=>p.x===13&&p.y===11);
+    Object.assign(p,{tilled:false,seeded:false,produce:false,watered:false,growth:0});
+    s.world.objects.push({x:13,y:11,kind:'grass',variant:0,age:0});
+    localStorage.setItem(key,JSON.stringify(s));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('#continue').click();
+  await tile(page,13,11);
+  expect((await snap(page)).orders.map(o=>o.type)).toEqual(['clear']);
+});
+
+test('Arrastar no mapa enfileira uma área e funciona após zoom, sem duplicar ordens',async({page})=>{
+  await page.setViewportSize({width:1600,height:900});
+  await start(page);
+  const drag=async(x0,y0,x1,y1)=>{
+    const r=await page.locator('#world').boundingBox();
+    const pt=(x,y)=>({x:r.x+(x+.5)*r.width/28,y:r.y+(y+.5)*r.height/18});
+    const a=pt(x0,y0),b=pt(x1,y1);
+    await page.mouse.move(a.x,a.y);await page.mouse.down();
+    await page.mouse.move(b.x,b.y,{steps:9});await page.mouse.up();
+  };
+  await drag(11,7,14,9);
+  const before=await snap(page);
+  expect(before.orders.length).toBeGreaterThanOrEqual(8);
+  expect(before.orders.length).toBeLessThanOrEqual(12);
+  expect(new Set(before.orders.map(o=>o.id)).size).toBe(before.orders.length);
+  expect(before.orders.every(o=>['till','clear'].includes(o.type))).toBe(true);
+  await page.screenshot({path:'screenshots/universal-arrasto-desktop.png',animations:'disabled'});
+  await drag(11,7,14,9);
+  expect((await snap(page)).orders.length).toBe(before.orders.length);
+  await page.locator('#zoom-in').click();
+  await drag(12,9,15,10);
+  const after=await snap(page);
+  expect(after.orders.length).toBeGreaterThan(before.orders.length);
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('#continue').click();
+  expect((await snap(page)).orders).toEqual(after.orders);
+  await page.locator('[data-tool="remover"]').click();
+  await drag(11,7,14,9);
+  expect((await snap(page)).orders.length).toBeLessThan(after.orders.length);
+});
+
+test('Área no celular alterna seleção por toque sem remover navegação da câmera',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await start(page);
+  await expect(page.locator('#drag-mode')).toBeVisible();
+  await expect(page.locator('#drag-mode')).toHaveAttribute('aria-pressed','false');
+  await page.locator('#drag-mode').click();
+  await expect(page.locator('#drag-mode')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#drag-mode')).toContainText('ligada');
+  await page.screenshot({path:'screenshots/universal-area-mobile.png',animations:'disabled'});
+  await page.locator('#drag-mode').click();
+  await expect(page.locator('#drag-mode')).toHaveAttribute('aria-pressed','false');
+  await page.locator('#orders-btn').click();
+  await page.locator('[data-order-type="till"]').click();
+  await expect(page.locator('#orders-panel')).toBeHidden();
+  await expect(page.locator('#order-selected')).toHaveText('Arar');
+});
