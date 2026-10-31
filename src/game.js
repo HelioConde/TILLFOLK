@@ -1841,10 +1841,20 @@
     $("#open-workers").setAttribute("aria-expanded","true");
     $("#open-tasks").setAttribute("aria-expanded","true");
     requestAnimationFrame(()=>{
-      sidebar.scrollTop=section==="tasks"?$("#tasks").getBoundingClientRect().top-sidebar.getBoundingClientRect().top+sidebar.scrollTop-90:0;
+      selectDrawerSection(section);
       $("#drawer-close").focus({preventScroll:true});
     });
   }
+  function selectDrawerSection(section){
+    const selector=section==="tasks"?"#tasks":"#workers";
+    const target=$(selector),scroll=sidebar.scrollTop+
+      target.getBoundingClientRect().top-sidebar.getBoundingClientRect().top-105;
+    sidebar.scrollTo({top:Math.max(0,scroll),behavior:"instant"});
+    sidebar.querySelectorAll("[data-drawer-target]").forEach(button=>
+      button.setAttribute("aria-pressed",String(button.dataset.drawerTarget===section)));
+  }
+  sidebar.querySelectorAll("[data-drawer-target]").forEach(button=>
+    button.addEventListener("click",()=>selectDrawerSection(button.dataset.drawerTarget)));
   $("#open-workers").addEventListener("click",()=>openDrawer("workers"));
   $("#open-tasks").addEventListener("click",()=>openDrawer("tasks"));
   function dismissDrawer(){closeDrawer();if(drawerReturnFocus?.isConnected)drawerReturnFocus.focus({preventScroll:true});}
