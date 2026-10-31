@@ -48,6 +48,16 @@ test("fabricar consome recursos, persiste ferramenta e libera a ordem",()=>{
   assert.match(C.craft(s,"axe").error,/já foi fabricado/);
   assert.equal(C.normalize(s.crafting).equipment.axe,true);
 });
+test("a enxada usa o recorte correto do atlas, antes confundido com machado de pedra",()=>{
+  const hoe=C.itemFrame("hoe");
+  assert.equal(hoe.x,32);
+  assert.equal(hoe.y,0);
+  assert.equal(hoe.w,16);
+  assert.equal(hoe.h,16);
+  assert.notDeepEqual(hoe,C.itemFrame("axe"));
+  assert.equal(C.itemFrame("stoneAxe"),null);
+  assert.equal(C.RECIPES.find(recipe=>recipe.key==="hoe").name,"Enxada");
+});
 test("o regador continua bloqueado até ser fabricado",()=>{
   const s=state();s.crafting.station={x:10,y:10};
   assert.match(C.blocked(s,"water"),/regador/);
