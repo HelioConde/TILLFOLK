@@ -1,5 +1,8 @@
 # TILLFOLK — ordens de trabalho explícitas (inspirado em Oxygen Not Included)
 
+> **Regra de design para sobrevivência:** cada personagem terá necessidades próprias e poderá morrer sem alimento; a IA deve conciliar ordens do jogador com comportamentos pessoais essenciais (comer, descansar e buscar segurança), quando implementados. **Todos podem executar qualquer trabalho não proibido por traço negativo; especializações aceleram, mas não desbloqueiam tarefas.** A referência central é o [GDD](./GDD_TILLFOLK.md).
+
+
 ## Regra central
 **O jogador decide o que precisa ser feito; os trabalhadores decidem quem executa e em qual ordem.** Colocar uma ordem para arar um terreno não agenda fertilização, plantio, irrigação, colheita ou transporte. A conclusão de uma ordem remove-a da fila; não cria novas tarefas.
 
