@@ -6,12 +6,22 @@
   function show(id){const d=$(id);if(!d.open)d.showModal();}
   let motion=!window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   try{const saved=localStorage.getItem(key);if(saved!==null)motion=saved==="true";}catch{}
-  function sync(){menu.classList.toggle("no-title-motion",!motion);$("#title-motion").checked=motion;$("#title-motion").setAttribute("aria-checked",String(motion));}
-  sync();
-  $("#title-motion").addEventListener("change",e=>{
-    motion=e.target.checked;sync();
+  function sync(){
+    menu.classList.toggle("no-title-motion",!motion);
+    document.body.classList.toggle("tf-reduced-animations",!motion);
+    for(const input of [$("#title-motion"),$("#game-motion")]){
+      if(!input)continue;
+      input.checked=motion;
+      input.setAttribute("aria-checked",String(motion));
+    }
+  }
+  function setMotion(value){
+    motion=Boolean(value);sync();
     try{localStorage.setItem(key,String(motion));}catch{}
-  });
+  }
+  sync();
+  for(const input of [$("#title-motion"),$("#game-motion")])
+    input?.addEventListener("change",e=>setMotion(e.target.checked));
   function fullscreen(){
     if(!document.fullscreenEnabled){show("#title-settings-dialog");return;}
     if(document.fullscreenElement){document.exitFullscreen().catch(()=>{});}
@@ -31,13 +41,16 @@
     if(saved!==null)soundEnabled=saved==="true";
     if(v!==null)volume=Math.max(0,Math.min(100,Number(v)||0));
   }catch{}
-  const toggleSound=$("#title-sound"),slider=$("#title-volume"),volumeLabel=$("#title-volume-label");
+  const soundToggles=[$("#title-sound"),$("#game-sound")];
+  const sliders=[$("#title-volume"),$("#game-volume")];
+  const volumeLabels=[$("#title-volume-label"),$("#game-volume-label")];
   function syncSound(){
-    toggleSound.checked=soundEnabled;
-    slider.value=String(volume);
-    slider.disabled=!soundEnabled;
-    $("#title-sound-test").disabled=!soundEnabled||volume===0;
-    volumeLabel.textContent=volume+"%";
+    soundToggles.forEach(input=>{if(input)input.checked=soundEnabled;});
+    sliders.forEach(input=>{if(input){input.value=String(volume);input.disabled=!soundEnabled;}});
+    volumeLabels.forEach(label=>{if(label)label.textContent=volume+"%";});
+    for(const id of ["#title-sound-test","#game-sound-test"]){
+      const button=$(id);if(button)button.disabled=!soundEnabled||volume===0;
+    }
   }
   function playSound(){
     if(!soundEnabled||volume===0)return;
@@ -62,13 +75,20 @@
     try{localStorage.setItem(soundKey,String(soundEnabled));localStorage.setItem(volumeKey,String(volume));}catch{}
   }
   syncSound();
-  toggleSound.addEventListener("change",()=>{soundEnabled=toggleSound.checked;persistSound();syncSound();if(soundEnabled)playSound();});
-  slider.addEventListener("input",()=>{volume=Number(slider.value);persistSound();syncSound();});
+  soundToggles.forEach(input=>input?.addEventListener("change",()=>{
+    soundEnabled=input.checked;persistSound();syncSound();if(soundEnabled)playSound();
+  }));
+  sliders.forEach(input=>input?.addEventListener("input",()=>{
+    volume=Math.max(0,Math.min(100,Number(input.value)||0));persistSound();syncSound();
+  }));
   $("#title-sound-test").addEventListener("click",playSound);
-  menu.addEventListener("click",event=>{
-    if(event.target.closest("button")&&!event.target.closest("#title-sound-test"))playSound();
+  $("#game-sound-test")?.addEventListener("click",playSound);
+  document.addEventListener("click",event=>{
+    if(event.target.closest("button")&&!event.target.closest("#title-sound-test,#game-sound-test"))playSound();
   });
+  window.TillfolkPreferences={animationsEnabled:()=>motion&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches};
   $("#title-settings").addEventListener("click",()=>show("#title-settings-dialog"));
+  $("#game-fullscreen-setting")?.addEventListener("click",fullscreen);
   $("#title-credits").addEventListener("click",()=>show("#title-credits-dialog"));
   $("#title-exit").addEventListener("click",()=>show("#title-exit-dialog"));
   $("#title-return").addEventListener("click",()=>$("#title-exit-dialog").close());
