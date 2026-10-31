@@ -1,0 +1,56 @@
+name: TILLFOLK — smoke da PR (backup, UX e capturas)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/save-backup.js'
+      - 'src/game.js'
+      - 'src/house-renderer.js'
+      - 'src/house-building.js'
+      - 'index.html'
+      - 'menu-refinement.css'
+      - 'fullscreen-game.css'
+      - 'tests/save-backup.spec.cjs'
+      - 'tests/release-smoke.spec.cjs'
+      - '.github/workflows/feature-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tillfolk-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar sintaxe dos módulos modificados
+        run: |
+          node --check src/save-backup.js
+          node --check src/game.js
+          node --check src/house-building.js
+          node --check src/house-renderer.js
+      - name: Instalar Playwright Chromium
+        run: |
+          npm install --no-save @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Servir site estático
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-http.log 2>&1 &
+          sleep 2
+      - name: Smoke de UX, importação e 4 resoluções
+        run: npx playwright test tests/save-backup.spec.cjs tests/release-smoke.spec.cjs --browser chromium --reporter=line
+      - name: Capturas e rastros de falhas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-pr-smoke
+          path: |
+            screenshots/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
