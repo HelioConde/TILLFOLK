@@ -2194,7 +2194,7 @@
         canvas.setAttribute("aria-label","Sprite original: "+recipe.name);
       }else if(!frame){
         // Somente receitas ainda sem sprite identificado recebem ícone provisório.
-        ctx.font="29px system-ui, sans-serif";
+        ctx.fillStyle="#213e30";ctx.font="29px system-ui, sans-serif";
         ctx.textAlign="center";ctx.textBaseline="middle";
         ctx.fillText(recipe.icon,24,25);
         canvas.setAttribute("aria-label","Ícone provisório: "+recipe.name);
@@ -2217,7 +2217,9 @@
         '<canvas class="workstation-tool-sprite" data-tool-index="'+index+'" width="48" height="48" role="img" aria-label="Ilustração de '+recipe.name+'"></canvas>'+
         '<span class="workstation-tool-text"><strong>'+recipe.icon+' '+recipe.name+'</strong>'+
         '<small>'+recipe.help+'</small>'+
-        '<small>'+(made?'✓ Fabricado':locked?'🔒 Colha primeiro sua horta':Crafting.formatCost(recipe.cost))+'</small></span></button>';
+        '<small>'+(made?'✓ Fabricado':locked?'🔒 Colha primeiro sua horta':Crafting.formatCost(recipe.cost))+'</small>'+
+        (Crafting.itemFrame(recipe.key)?'':'<small class="workstation-art-note">Ícone provisório · sem sprite identificado</small>')+
+        '</span></button>';
     }).join("");
     paintWorkshopTools();
     const grid=$("#workshop-recipes");
