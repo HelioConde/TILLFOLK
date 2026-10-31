@@ -1,0 +1,44 @@
+name: TILLFOLK — jornada das 11 missões e atualização ao vivo
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/game.js'
+      - 'src/live-update.js'
+      - 'src/missions.js'
+      - 'src/tutorial-pointer.js'
+      - 'index.html'
+      - 'tests/live-update.spec.cjs'
+      - 'tests/tutorial-progression.spec.cjs'
+      - '.github/workflows/pages.yml'
+      - '.github/workflows/mission-live-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar Chrome e dependências
+        run: |
+          npm ci
+          npx playwright install chromium
+      - name: Servir jogo
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-mission-http.log 2>&1 &
+          sleep 2
+      - name: Testar todos os objetivos e atualização de versão preservando save
+        run: npx playwright test tests/live-update.spec.cjs tests/tutorial-progression.spec.cjs --browser chromium --workers=1 --reporter=line
+      - name: Capturar erro para análise
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-missions-live-update-results
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 14
