@@ -1003,7 +1003,7 @@ test('Sprout Lands UI: atlas original em botões, painel, slots e celular',async
 });
 
 
-test('Menu vivo: lenhador derruba árvore, toco regenera, horta cresce sem animais',async({page})=>{
+test('Menu vivo: lenhador derruba árvore, corta o toco, muda cresce e vacas passeiam',async({page})=>{
   const fs=require('node:fs');
   const failures=[];
   page.on('pageerror',error=>failures.push(String(error)));
@@ -1020,7 +1020,7 @@ test('Menu vivo: lenhador derruba árvore, toco regenera, horta cresce sem anima
   });
   const info=await page.evaluate(()=>{
     const scene=window.TillfolkMenuScene;
-    const times=[0,8500,13000,15000,22500,30000];
+    const times=[0,8500,13000,15000,17100,19200,22500,30000];
     return {
       frames:times.map(t=>scene.sample(t)),
       sourceFiles:Object.values(scene.sources),
@@ -1028,7 +1028,7 @@ test('Menu vivo: lenhador derruba árvore, toco regenera, horta cresce sem anima
       cycle:scene.cycleMs
     };
   });
-  const [initial,chopping,falling,stump,growing,regrown]=info.frames;
+  const [initial,chopping,falling,stump,stumpChop,cleared,growing,regrown]=info.frames;
   expect(info.assets.failed).toEqual([]);
   expect(info.sourceFiles).not.toContain('structures/fences.png');
   expect(info.cycle).toBeGreaterThanOrEqual(28000);
@@ -1036,17 +1036,25 @@ test('Menu vivo: lenhador derruba árvore, toco regenera, horta cresce sem anima
   expect(chopping.tree.phase).toBe('mature');
   expect(falling.tree.phase).toBe('falling');
   expect(stump.tree.phase).toBe('stump');
+  expect(stumpChop.tree.phase).toBe('stump');
+  expect(stumpChop.logger.action).toBe('stump-chop');
+  expect(cleared.tree.phase).toBe('cleared');
+  expect(cleared.tree.growth).toBe(0);
   expect(growing.tree.phase).toBe('growing');
+  expect(growing.tree.growth).toBeGreaterThan(0);
+  expect(growing.tree.growth).toBeLessThan(1);
   expect(regrown.tree.phase).toBe('mature');
   expect(initial.logger.x).not.toBe(chopping.logger.x);
   expect(initial.gardener.x).not.toBe(chopping.gardener.x);
-  expect(initial.animals).toEqual([]);
-  expect(chopping.animals).toEqual([]);
-  expect(info.sourceFiles).not.toContain('animals/cow.png');
-  expect(info.sourceFiles).not.toContain('animals/chicken.png');
+  expect(initial.animals).toHaveLength(4);
+  expect(initial.animals.filter(a=>a.kind==='cow')).toHaveLength(2);
+  expect(initial.animals.filter(a=>a.kind==='chicken')).toHaveLength(2);
+  expect(info.sourceFiles).toContain('animals/cow.png');
+  expect(info.sourceFiles).toContain('animals/chicken.png');
+  expect(initial.animals[0].x).not.toBe(chopping.animals[0].x);
   expect(initial.cropStage).not.toBe(growing.cropStage);
   fs.mkdirSync('screenshots',{recursive:true});
-  const phases=[['lavoura',0],['lenhador',8500],['queda',13000],['toco',15000],['reflorestamento',22500],['arvore-adulta',30000]];
+  const phases=[['lavoura',0],['lenhador',8500],['queda',13000],['toco',15000],['cortando-toco',17100],['terreno-limpo',19200],['reflorestamento',22500],['arvore-adulta',30000]];
   const images=[];
   for(const [name,ms] of phases){
     const base64=await page.evaluate(ms=>{
@@ -1068,28 +1076,70 @@ test('Menu vivo: lenhador derruba árvore, toco regenera, horta cresce sem anima
   expect(failures).toEqual([]);
 });
 
-test('A abertura não carrega nem desenha animais em nenhum quadro',async({page})=>{
+test('Menu: vacas acima da casa e tronco removido antes do novo crescimento',async({page})=>{
   const fs=require('node:fs');
   await page.setViewportSize({width:1366,height:768});
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
-  await page.waitForFunction(()=>window.TillfolkMenuScene?.assetHealth().ready===
-    window.TillfolkMenuScene?.assetHealth().total);
-  const snapshot=await page.evaluate(()=>{
+  await page.waitForFunction(()=>{
     const scene=window.TillfolkMenuScene;
-    return {
-      frames:Array.from({length:37},(_,i)=>scene.sample(i*1000).animals),
-      assets:Object.values(scene.sources)
+    return scene&&scene.assetHealth().ready===scene.assetHealth().total;
+  });
+  const result=await page.evaluate(()=>{
+    const scene=window.TillfolkMenuScene,canvas=document.querySelector('#title-scene');
+    const frames=Array.from({length:37},(_,i)=>scene.sample(i*1000));
+    const ctx=canvas.getContext('2d'),original=ctx.drawImage,draws=[];
+    ctx.drawImage=function(img,...args){
+      const src=img.currentSrc||img.src||'';
+      if(src.includes('trees-and-bushes.png')||src.includes('/animals/'))draws.push({
+        src,sx:args[0],sy:args[1],sw:args[2],sh:args[3],
+        x:args[4],y:args[5],w:args[6],h:args[7]});
+      return original.call(this,img,...args);
     };
+    function capture(time){
+      draws.length=0;
+      scene.drawAt(time);
+      return draws.slice();
+    }
+    const stump=capture(15000),cleared=capture(19200),sprout=capture(22500);
+    ctx.drawImage=original;
+    // A inspeção considera SOMENTE a árvore da obra (x≈841, y≈447).
+    const local=entries=>entries.filter(d=>d.src.includes('trees-and-bushes.png')
+      &&d.x>=816&&d.x<=865&&d.y>=389&&d.y<=470);
+    return {frames,stump:local(stump),cleared:local(cleared),sprout:local(sprout),
+      cowDraws:cleared.filter(d=>d.src.includes('/animals/cow.png')).length,
+      chickenDraws:cleared.filter(d=>d.src.includes('/animals/chicken.png')).length};
   });
-  expect(snapshot.frames.every(animals=>Array.isArray(animals)&&animals.length===0)).toBe(true);
-  expect(snapshot.assets.some(path=>path.startsWith('animals/'))).toBe(false);
-  const image=await page.evaluate(()=>{
-    window.TillfolkMenuScene.drawAt(5000);
-    return document.querySelector('#title-scene').toDataURL('image/png').split(',')[1];
-  });
+  expect(result.frames.every(f=>f.animals.length===4)).toBe(true);
+  for(const frame of result.frames){
+    const [cow1,cow2,chicken1,chicken2]=frame.animals;
+    expect(cow1.kind).toBe('cow');
+    expect(cow2.kind).toBe('cow');
+    expect(chicken1.kind).toBe('chicken');
+    expect(chicken2.kind).toBe('chicken');
+    for(const animal of frame.animals){
+      const w=animal.kind==='cow'?66:37;
+      const h=animal.kind==='cow'?58:37;
+      expect(animal.x).toBeGreaterThan(640);
+      expect(animal.x+w).toBeLessThanOrEqual(960);
+      expect(animal.y).toBeGreaterThanOrEqual(65);
+      expect(animal.y+h).toBeLessThan(175);
+    }
+  }
+  const stumpSprite=r=>r.sx===32&&r.sy===96&&r.sw===16&&r.sh===16;
+  expect(result.stump.some(stumpSprite)).toBe(true);
+  expect(result.cleared.some(stumpSprite)).toBe(false);
+  expect(result.sprout.some(stumpSprite)).toBe(false);
+  expect(result.cowDraws).toBeGreaterThanOrEqual(2);
+  expect(result.chickenDraws).toBeGreaterThanOrEqual(2);
   fs.mkdirSync('screenshots',{recursive:true});
-  fs.writeFileSync('screenshots/menu-inicial-sem-animais.png',Buffer.from(image,'base64'));
-  await page.screenshot({path:'screenshots/menu-inicial-sem-animais-desktop.png',animations:'disabled'});
+  for(const [name,time] of [['toco-em-corte',17100],['sem-toco',19200],['muda-sem-toco',22500],['vacas-acima-casa',5000]]){
+    const base64=await page.evaluate(ms=>{
+      window.TillfolkMenuScene.drawAt(ms);
+      return document.querySelector('#title-scene').toDataURL('image/png').split(',')[1];
+    },time);
+    fs.writeFileSync('screenshots/menu-'+name+'.png',Buffer.from(base64,'base64'));
+  }
+  await page.screenshot({path:'screenshots/menu-vacas-acima-casa-desktop.png',animations:'disabled'});
 });
 
 

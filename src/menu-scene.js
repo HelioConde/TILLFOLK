@@ -16,7 +16,8 @@
     door:"structures/wood-door.png",
     furniture:"structures/furniture.png",paths:"structures/paths.png",
     worker:"characters/worker-variants.png",actions:"characters/worker-actions.png",
-    waterfx:"characters/watering-effects.png",treeMotion:"environment/tree-animations.png"
+    waterfx:"characters/watering-effects.png",treeMotion:"environment/tree-animations.png",
+    cow:"animals/cow.png",chicken:"animals/chicken.png"
   };
   const imgs={};
   let loaded=0,failures=[];
@@ -68,27 +69,47 @@
   }
   function sceneState(ms=0){
     const t=((Math.max(0,ms)%CYCLE)+CYCLE)%CYCLE;
-    const falling=t>=12100&&t<13900;
-    const chopped=t>=13900&&t<18200;
-    const growing=t>=18200&&t<27900;
-    const treeState=t<12100?"mature":falling?"falling":chopped?"stump":growing?"growing":"mature";
-    const treeGrowth=treeState==="growing"?clamp01((t-18200)/9700):treeState==="stump"?0:1;
-    const loggerWalking=t<5900||t>=27500;
-    const loggerX=t<5900?lerp(676,754,t/5900):t<27500?754:lerp(754,676,(t-27500)/8500);
+    // O toco é cortado em uma SEGUNDA operação, depois da queda.
+    // Só quando ele some é que o terreno fica disponível para uma nova muda.
+    const treePhase=t<12100?"mature":
+      t<13900?"falling":t<18100?"stump":t<20500?"cleared":
+      t<27900?"growing":"mature";
+    const growth=treePhase==="growing"?clamp01((t-20500)/7400):
+      treePhase==="cleared"||treePhase==="stump"?0:1;
     const field=(t+2800)%14000;
-    const gardenerWalking=field<3000||field>=10400;
-    const gardenerX=field<3000?lerp(492,559,field/3000):field<10400?559:lerp(559,492,(field-10400)/3600);
-    const gardenerAction=field<3000||field>=10400?"walk":field<7000?"hoe":"water";
+    const loggerWalking=t<5900||t>=27900;
+    const loggerX=t<5900?lerp(676,784,t/5900):
+      t<27900?784:lerp(784,676,(t-27900)/8100);
+    const loggerAction=(t>=5900&&t<12100)?"chop":
+      (t>=13900&&t<18100)?"stump-chop":loggerWalking?"walk":"idle";
+    const cowA=pingPong((t+2000)/18600);
+    const cowB=pingPong((t+7400)/21800);
+    const chickA=pingPong((t+1200)/12200);
+    const chickB=pingPong((t+5700)/15800);
     return {
-      t,tree:{phase:treeState,growth:treeGrowth,shake:t>=5900&&t<12100?Math.sin(t/65)*2.1:0,
-        fall:falling?clamp01((t-12100)/1800):0},
-      logger:{x:loggerX,y:394+Math.sin(t/620)*2,action:t>=5900&&t<12100?"chop":loggerWalking?"walk":"idle",
-        facing:t>=27500?"left":"right"},
-      gardener:{x:gardenerX,y:365+Math.sin(t/420)*1.5,
-        action:gardenerAction,facing:field>=10400?"left":"right"},
+      t,
+      tree:{phase:treePhase,growth,fall:treePhase==="falling"?clamp01((t-12100)/1800):0,
+        shake:loggerAction==="chop"?Math.sin(t/65)*2.1:0,
+        stumpShake:loggerAction==="stump-chop"?Math.sin(t/60)*2:0},
+      logger:{x:loggerX,y:394+Math.sin(t/620)*2,action:loggerAction,
+        facing:t>=27900?"left":"right"},
+      gardener:{x:field<3000?lerp(492,559,field/3000):field<10400?559:
+          lerp(559,492,(field-10400)/3600),
+        y:365+Math.sin(t/420)*1.5,
+        action:field<3000||field>=10400?"walk":field<7000?"hoe":"water",
+        facing:field>=10400?"left":"right"},
       cropStage:1+Math.floor((t%30000)/7500),
-      // O começo do jogo e a abertura não apresentam animais.
-      animals:[]
+      // Animais no gramado ACIMA do telhado, longe do cenário de plantio.
+      animals:[
+        {kind:"cow",x:lerp(727,787,cowA),y:83+Math.sin(t/830)*2,
+          face:((t+2000)%18600)<9300?"right":"left"},
+        {kind:"cow",x:lerp(835,879,cowB),y:88+Math.sin(t/910)*2,
+          face:((t+7400)%21800)<10900?"right":"left"},
+        {kind:"chicken",x:lerp(662,705,chickA),y:123+Math.sin(t/570)*2,
+          face:((t+1200)%12200)<6100?"right":"left"},
+        {kind:"chicken",x:lerp(896,918,chickB),y:123+Math.cos(t/670)*2,
+          face:((t+5700)%15800)<7900?"right":"left"}
+      ]
     };
   }
   function bed(x,y,row,stage=3){
@@ -120,27 +141,42 @@
     const group=action==="chop"?4:0;
     stamp("actions",(frame%2)*48,(group+dirs[facing])*48,48,48,x-14,y-18,w+29,h+30);
   }
+  function movingAnimal(animal,ms){
+    const {kind,x,y,face}=animal;
+    const cell=kind==="cow"?32:16;
+    const w=kind==="cow"?66:37,h=kind==="cow"?58:37;
+    const frame=Math.floor(ms/260)%(kind==="cow"?3:4);
+    if(face==="left"){
+      ctx.save();
+      ctx.translate(Math.round(x+w),Math.round(y));
+      ctx.scale(-1,1);
+      stamp(kind,frame*cell,0,cell,cell,0,0,w,h);
+      ctx.restore();
+    }else stamp(kind,frame*cell,0,cell,cell,x,y,w,h);
+  }
   function growableTree(stage){
     const x=841,y=447;
-    const treeInfo=stage.tree;
-    if(treeInfo.phase==="stump"){
-      // O toco do próprio atlas permanece após o corte.
-      stamp("trees",32,96,16,16,x-11,y-14,24,23);
-    }else if(treeInfo.phase==="growing"){
-      stamp("trees",32,96,16,16,x-11,y-14,24,23);
-      tree(x,y,1,.23+treeInfo.growth*1.02);
-    }else if(treeInfo.phase==="falling"){
+    const info=stage.tree;
+    if(info.phase==="stump"){
+      // O lenhador ainda está trabalhando: toco visível e tremendo.
+      stamp("trees",32,96,16,16,x-11+info.stumpShake,y-14,24,23);
+    }else if(info.phase==="cleared"){
+      // Tronco removido: terreno LIMPO, sem qualquer sprite de toco.
+    }else if(info.phase==="growing"){
+      // Nasce uma muda somente DEPOIS que o toco foi totalmente cortado.
+      tree(x,y,1,.18+info.growth*1.07);
+    }else if(info.phase==="falling"){
       ctx.save();
       ctx.translate(x,y);
-      ctx.rotate(-Math.PI*.45*treeInfo.fall);
+      ctx.rotate(-Math.PI*.45*info.fall);
       tree(0,0,1,1.25);
       ctx.restore();
     }else{
-      tree(x+treeInfo.shake,y,1,1.25);
+      tree(x+info.shake,y,1,1.25);
     }
   }
   function ambientParticles(stage){
-    if(stage.tree.phase==="falling"||stage.logger.action==="chop"){
+    if(stage.tree.phase==="falling"||stage.logger.action==="chop"||stage.logger.action==="stump-chop"){
       const n=stage.tree.phase==="falling"?11:5;
       for(let i=0;i<n;i++){
         const p=(stage.t/8+i*23)%94;
@@ -185,7 +221,9 @@
     }
     for(let i=0;i<8;i++)stamp("crops",64,0,16,16,646+i*24,374,22,27);
     for(let i=0;i<7;i++)stamp("furniture",48,16,16,16,695+i*27,384,22,24);
-    // Primeiro plano vivo: árvore de corte e dois trabalhadores.
+    // Animais passeiam em área livre ao norte da casa, sem sobrepor o telhado.
+    for(const animal of stage.animals)movingAnimal(animal,ms);
+    // Primeiro plano vivo: árvore cortada, toco removido e dois trabalhadores.
     growableTree(stage);
     const frame=Math.floor(ms/190)%4;
     if(stage.gardener.action==="walk")
@@ -193,7 +231,7 @@
     else
       workingFrame(stage.gardener.x,stage.gardener.y,"hoe",
         stage.gardener.facing,Math.floor(ms/250),61,64);
-    if(stage.logger.action==="chop")
+    if(stage.logger.action==="chop"||stage.logger.action==="stump-chop")
       workingFrame(stage.logger.x,stage.logger.y,"chop","right",Math.floor(ms/240),62,64);
     else
       workerFrame(stage.logger.x,stage.logger.y,1,frame,stage.logger.action==="walk",
