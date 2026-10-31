@@ -233,3 +233,49 @@ test('Interface 50%, mapa completo, estoque separado e menu de opções',async({
   await page.locator('#game-return-title').click();
   await expect(page.locator('#menu')).toBeVisible();
 });
+
+test('Velocidade no topo: pausado, 1×, 3×, 6× e barra inferior sem controles',async({page})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+  for(const viewport of [{width:1366,height:768},{width:390,height:844}]){
+    await page.setViewportSize(viewport);
+    await startFarm(page);
+    const speed=page.locator('.topbar .speed-wrap');
+    await expect(speed).toBeVisible();
+    await expect(page.locator('.tooltray .speed-wrap')).toHaveCount(0);
+    await expect(speed.locator('button[data-speed]')).toHaveCount(4);
+    await expect(speed.locator('[data-speed="1"]')).toHaveClass(/chosen/);
+    const geometry=await page.evaluate(()=>{
+      const box=s=>document.querySelector(s).getBoundingClientRect().toJSON();
+      const header=box('.topbar'),speed=box('.topbar .speed-wrap'),
+        buttons=[...document.querySelectorAll('.topbar .speed-wrap button')].map(b=>b.getBoundingClientRect().toJSON()),
+        dock=box('.tooltray'),metrics=box('.metrics'),panels=box('.hud-panels');
+      return {header,speed,buttons,dock,metrics,panels,viewport:{width:innerWidth,height:innerHeight}};
+    });
+    expect(geometry.speed.top).toBeGreaterThanOrEqual(geometry.header.top-1);
+    expect(geometry.speed.bottom).toBeLessThanOrEqual(geometry.header.bottom+2);
+    expect(geometry.speed.left).toBeGreaterThanOrEqual(0);
+    expect(geometry.speed.right).toBeLessThanOrEqual(viewport.width+1);
+    expect(geometry.dock.top).toBeGreaterThan(geometry.header.bottom+30);
+    expect(geometry.buttons.every(r=>r.width>=28&&r.height>=28)).toBe(true);
+    expect(geometry.speed.left).toBeGreaterThanOrEqual(geometry.metrics.left);
+    // A faixa de velocidade ocupa espaço próprio, sem cobrir outros controles.
+    if(viewport.width>840){
+      expect(geometry.speed.right).toBeLessThanOrEqual(geometry.panels.left+2);
+    }else{
+      expect(geometry.speed.top).toBeGreaterThan(geometry.panels.top+2);
+      expect(geometry.metrics.right).toBeLessThanOrEqual(geometry.speed.left+2);
+    }
+    await speed.locator('[data-speed="0"]').click();
+    await expect(speed.locator('[data-speed="0"]')).toHaveClass(/chosen/);
+    await expect(page.locator('#status')).toContainText('pausada');
+    await speed.locator('[data-speed="3"]').click();
+    await expect(speed.locator('[data-speed="3"]')).toHaveClass(/chosen/);
+    await expect(speed.locator('[data-speed="0"]')).not.toHaveClass(/chosen/);
+    await speed.locator('[data-speed="6"]').click();
+    await expect(speed.locator('[data-speed="6"]')).toHaveClass(/chosen/);
+    await speed.locator('[data-speed="1"]').click();
+    await expect(speed.locator('[data-speed="1"]')).toHaveClass(/chosen/);
+    await page.screenshot({path:'screenshots/velocidade-topo-'+viewport.width+'x'+viewport.height+'.png',animations:'disabled'});
+  }
+  expect(errors).toEqual([]);
+});
