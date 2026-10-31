@@ -28,6 +28,9 @@ jobs:
           node --test tests/terrain-editor.test.cjs
           node --check src/wild-world.js
           node --check src/game.js
+          node --check src/survival.js
+          node --check src/tutorial-pointer.js
+          node --test tests/hunger.test.cjs tests/survival-death.test.cjs tests/survival-hud.test.cjs
           node --check src/crop-catalog.js
           node --check src/crafting.js
           node --test tests/crafting.test.cjs
@@ -49,8 +52,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
-          cp index.html crop-workshop.css tutorial-missions.css styles.css menu.css menu-layout.css menu-refinement.css game-hud.css sprout-ui.css game-refinement.css camera-ui.css top-speed.css game-interface.css game-polish.css fullscreen-game.css house-building.css hud-settings.css task-orders.css team-ux.css ui-polish.css _site/
-          cp src/terrain-catalog.js src/terrain-autotile.js src/crafting.js src/crop-catalog.js src/missions.js src/biomes.js src/game.js src/wild-world.js src/blueprints.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
+          # Publicar todos os estilos locais. Evita 404 quando novos sistemas forem adicionados.
+          cp index.html ./*.css _site/
+          # Publicar todos os módulos do motor, incluindo sobrevivência e guia do tutorial.
+          cp src/*.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
           # Texturas de todos os terrenos Sprout Lands usados pelo jogo.
@@ -70,6 +75,29 @@ jobs:
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
           cp "public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles/Grass_Tile_Layers_MAPEAR.html" _site/mapear_grama.html
           cp terrain-editor.html _site/terrain-editor.html
+          # Conferir TODAS as dependências .css e .js referenciadas no HTML publicado.
+          # O teste roda no artefato real, não apenas na árvore fonte do repositório.
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('_site/index.html', 'utf8');
+          let checked = 0;
+          for (const tag of html.match(/<(?:link|script)\b[^>]*>/gi) || []) {
+            const match = tag.match(/\b(?:href|src)\s*=\s*["']([^"']+)["']/i);
+            if (!match || !match[1].startsWith('./')) continue;
+            const relative = decodeURIComponent(match[1].split(/[?#]/)[0].slice(2));
+            if (!/\.(?:css|js)$/i.test(relative)) continue;
+            checked++;
+            if (!fs.existsSync('_site/' + relative))
+              throw new Error('CSS/JS não publicado: ' + relative);
+          }
+          if (checked < 30) throw new Error('Referências HTML incompletas: ' + checked);
+          const scripts = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)].map(m => m[1].split('?')[0]);
+          const survival = scripts.indexOf('./src/survival.js');
+          const game = scripts.indexOf('./src/game.js');
+          if (survival < 0 || game < 0 || survival >= game)
+            throw new Error('survival.js deve carregar antes de game.js');
+          console.log('Recursos HTML validados no artefato: ' + checked + ' arquivos CSS/JS');
+          NODE
           test -f _site/public/assets/sprout-lands/characters/worker-basic.png
           test -f _site/public/assets/sprout-lands/characters/worker-variants.png
           test -f _site/public/assets/sprout-lands/characters/worker-actions.png
