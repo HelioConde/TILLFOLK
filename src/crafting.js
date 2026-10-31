@@ -28,11 +28,18 @@
   }
   function canBuild(state){return !state?.crafting?.station&&missing(state,{twigs:STATION_COST}).length===0;}
   function recipe(key){return RECIPES.find(item=>item.key===key)||null;}
+  function locked(state,key){
+    if(["axe","stoneAxe"].includes(key)&&state?.tutorial?.active===true&&
+       !state?.firstHarvest&&!(state.tutorial.stats?.harvest>0))
+      return "Colha sua primeira plantação antes de fabricar machados.";
+    return null;
+  }
   function craft(state,key){
     const item=recipe(key);
     if(!item)return {error:"Receita desconhecida."};
     if(!state?.crafting?.station)return {error:"Construa e acesse uma Work Station primeiro."};
     if(has(state,key))return {error:item.name+" já foi fabricado."};
+    const unavailableStage=locked(state,key);if(unavailableStage)return {error:unavailableStage};
     const unavailable=missing(state,item.cost);
     if(unavailable.length)return {error:"Faltam materiais para "+item.name.toLowerCase()+"."};
     for(const [resource,amount] of Object.entries(item.cost))state.inventory[resource]-=amount;
@@ -65,6 +72,6 @@
   }
   window.TillfolkCrafting=Object.freeze({
     STATION_COST,STATION_SPRITE,ITEMS_SPRITE,RECIPES,
-    normalize,has,missing,canBuild,recipe,craft,requiredTool,blocked,formatCost
+    normalize,has,missing,canBuild,recipe,craft,locked,requiredTool,blocked,formatCost
   });
 })();
