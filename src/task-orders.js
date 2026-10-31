@@ -2,9 +2,9 @@
 /* Um colono pode escolher uma ordem existente, mas nunca criar novas ordens.
    A lista pertence ao jogador e é salva em state.orders. Sem backend. */
 (() => {
-  const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry","collectWater","collectManure","buildHome"]);
-  const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa"});
-  const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠"});
+  const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry","collectWater","collectManure","buildHome","buildStation"]);
+  const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina"});
+  const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️"});
   let worldWidth=28,worldHeight=18;
   function setBounds(width,height){
     if(Number.isInteger(width)&&Number.isInteger(height)&&width>=28&&height>=18){
@@ -20,7 +20,7 @@
       if(!order||!TYPES.includes(order.type)||!validCell(order.x,order.y))continue;
       const key=id(order.type,order.x,order.y);
       if(seen.has(key))continue;
-      seen.add(key);result.push({id:key,type:order.type,x:order.x,y:order.y});
+      seen.add(key);result.push({id:key,type:order.type,x:order.x,y:order.y,...(order.type==="sow"&&typeof order.crop==="string"&&window.TillfolkCrops?.get(order.crop)?{crop:order.crop}:{})});
       if(result.length>=1500)break;
     }
     return result;
@@ -39,6 +39,13 @@
       const animal=resources.animals.find(a=>Math.floor(a.x)===order.x&&Math.floor(a.y)===order.y);
       return animal?.manure>0?{state:"ready",reason:"Esterco disponível"}
         :{state:"blocked",reason:"Aguardando esterco do animal"};
+    }
+    if(order.type==="buildStation"){
+      if(resources?.workstations?.some(station=>station.x===order.x&&station.y===order.y))
+        return {state:"done",reason:"Oficina já montada"};
+      return (resources?.inventory?.wood||0)>=5&&(resources?.inventory?.stone||0)>=2
+        ?{state:"ready",reason:"Materiais disponíveis"}
+        :{state:"blocked",reason:"Aguardando 5 madeiras e 2 pedras"};
     }
     if(order.type==="buildHome"){
       const already=resources?.homes?.some(h=>h.x===order.x&&h.y===order.y);
@@ -73,7 +80,11 @@
         if(plot.produce)return {state:"blocked",reason:"Retire a colheita anterior"};
         if(dirty)return {state:"blocked",reason:"Aguardando limpeza"};
         if(!plot.tilled)return {state:"blocked",reason:"Aguardando arar o solo"};
-        return seeds>0?{state:"ready",reason:"Pronta"}:{state:"blocked",reason:"Sem sementes"};
+        if(seeds<=0)return {state:"blocked",reason:"Sem sementes"};
+        if(order.crop&&resources?.cropSeeds&&
+           !(resources.cropSeeds[order.crop]>0))
+          return {state:"blocked",reason:"Sem sementes de "+(window.TillfolkCrops?.get(order.crop)?.name||order.crop)};
+        return {state:"ready",reason:"Pronta"};
       case "water":
         if(plot.watered&&plot.seeded)return {state:"done",reason:"Já irrigado"};
         if(!plot.seeded)return {state:"blocked",reason:"Aguardando semeadura"};
@@ -90,7 +101,7 @@
     }
   }
   function add(orders,type,x,y,plot,object,resources){
-    if(!TYPES.includes(type)||!validCell(x,y)||(!plot&&!["collectWater","collectManure"].includes(type)))return {error:"Escolha um terreno válido."};
+    if(!TYPES.includes(type)||!validCell(x,y)||(!plot&&!["collectWater","collectManure","buildStation"].includes(type)))return {error:"Escolha um terreno válido."};
     const key=id(type,x,y);
     if(orders.some(o=>o.id===key))return {error:"Esta ordem já está na lista."};
     if(orders.length>=1500)return {error:"Fila cheia. Cancele algumas ordens."};
