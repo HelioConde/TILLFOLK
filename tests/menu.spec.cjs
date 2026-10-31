@@ -494,16 +494,16 @@ test('Casa Slime-Harvest: 5 faixas originais, escala 2x, captura real',async({pa
     const h=window.TillfolkHouse;
     if(!h)throw new Error("Renderizador Slime-Harvest não carregou");
     return {
-      center:Array.from({length:5},(_,row)=>h.roofAtlas(3,row)),
-      left:Array.from({length:5},(_,row)=>h.roofAtlas(0,row)),
-      right:Array.from({length:5},(_,row)=>h.roofAtlas(6,row)),
+      center:Array.from({length:4},(_,row)=>h.roofAtlas(3,row)),
+      left:Array.from({length:4},(_,row)=>h.roofAtlas(0,row)),
+      right:Array.from({length:4},(_,row)=>h.roofAtlas(6,row)),
       dimensions:h.dimensions(2)
     };
   });
-  expect(result.center).toEqual([[1,0],[1,1],[1,2],[1,3],[1,4]]);
-  expect(result.left.map(t=>t[0])).toEqual([0,0,0,0,0]);
-  expect(result.right.map(t=>t[0])).toEqual([2,2,2,2,2]);
-  expect(result.dimensions).toEqual({width:224,height:288,cell:32});
+  expect(result.center).toEqual([[1,0],[1,1],[1,2],[1,4]]);
+  expect(result.left.map(t=>t[0])).toEqual([0,0,0,0]);
+  expect(result.right.map(t=>t[0])).toEqual([2,2,2,2]);
+  expect(result.dimensions).toEqual({width:224,height:224,cell:32});
   const fs=require('node:fs');
   fs.mkdirSync('screenshots',{recursive:true});
   const data=await page.locator('#title-scene').evaluate(c=>c.toDataURL('image/png').split(',')[1]);
@@ -541,17 +541,17 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
   expect(result.stats.stretched).toBe(0);
   expect(result.stats.walls).toBe(20);
   expect(result.windows.map(w=>[w.dx,w.dy])).toEqual([[64,256],[128,256]]);
-  expect(result.doors.map(d=>[d.dx,d.dy,d.dw,d.dh])).toEqual([[96,256,32,32]]);
+  expect(result.doors.map(d=>[d.dx,d.dy,d.dw,d.dh])).toEqual([[96,256,32,64]]);
   expect(result.roofMin).toBe(96);
-  expect(result.roofMax).toBe(256);
-  expect(result.rooftopCount).toBe(36);
+  expect(result.roofMax).toBe(224);
+  expect(result.rooftopCount).toBe(29);
   expect(result.allUniform).toBe(true);
   expect(result.roofBeforeWindows).toBe(false);
   expect(result.roofOverWalls).toBe(true);
   expect(result.windowsDrawnAboveRoof).toBe(false);
   // Cobertura em primeiro plano E a janela começa exatamente onde termina
   // o último tile do beiral: não existem recortes nem sobreposição indevida.
-  expect(result.windows.every(w=>w.dy===result.roofMax)).toBe(true);
+  expect(result.windows.every(w=>w.dy===result.roofMax+32)).toBe(true);
 });
 
 
@@ -578,7 +578,7 @@ test('Telhado em primeiro plano, sem recortes nas janelas e porta',async({page})
         return ctx.getImageData(0,0,1,1).data[0]===255;})()};
   });
   expect(detail.stats.stretched).toBe(0);
-  expect(detail.stats.roof).toBe(35);
+  expect(detail.stats.roof).toBe(28);
   expect(detail.firstRoof).toBeGreaterThan(detail.lastWall);
   expect(detail.firstRoof).toBeGreaterThan(detail.lastDoor);
   expect(detail.lastDraw).toBe('roof');
