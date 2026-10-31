@@ -1172,3 +1172,51 @@ test('Subtítulo do menu: contraste, legibilidade e seleção de texto',async({p
     await page.screenshot({path:'screenshots/menu-frase-legivel-'+view.width+'x'+view.height+'.png',animations:'disabled'});
   }
 });
+
+test('Homenagem a Simone: nomes sugeridos no recrutamento, candidatos e novos trabalhadores',async({page})=>{
+  const variants=/^(Sim|Simo|Mone|Moni|Mona|Simi|Simona|Monê|Mimo|Simone) \d{2}$/;
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.locator('#new-game').click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await expect(page.locator('.starter-name-input')).toHaveCount(2);
+  const initial=await page.locator('.starter-name-input').evaluateAll(nodes=>nodes.map(n=>n.value));
+  expect(initial).toHaveLength(2);
+  expect(initial[0]).not.toBe(initial[1]);
+  for(const name of initial)expect(name).toMatch(variants);
+  await page.locator('#starter-reroll-all').click();
+  const rerolled=await page.locator('.starter-name-input').evaluateAll(nodes=>nodes.map(n=>n.value));
+  for(const name of rerolled)expect(name).toMatch(variants);
+  // Renomeação manual continua permitida e preservada.
+  await page.locator('.starter-name-input').first().fill('Minha Simone');
+  await page.locator('.starter-name-input').first().dispatchEvent('change');
+  await page.locator('#starter-confirm').click();
+  const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
+  expect(state.workers[0].name).toBe('Minha Simone');
+  expect(state.workers[1].name).toMatch(variants);
+  expect(state.candidates.slice(0,3).map(c=>c.name)).toEqual(['Sim','Simo','Mone']);
+});
+
+test('Homenagem a Simone: migrar só apelidos automáticos em saves antigos',async({page})=>{
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.locator('#new-game').click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator('#starter-confirm').click();
+  await page.evaluate(()=>{
+    const key='tillfolk-v01',s=JSON.parse(localStorage.getItem(key));
+    s.workers[0].name='Lua 88';
+    s.workers[1].name='Eva 59';
+    s.candidates=[{name:'Zeca 91',skills:[],neg:[],cost:70,color:'#fff2bd'},
+      {name:'Simone',skills:[],neg:[],cost:80,color:'#ffcfc5'}];
+    localStorage.setItem(key,JSON.stringify(s));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('#continue').click();
+  const changed=await page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
+  expect(changed.workers.map(w=>w.name)).toEqual(['Mone 88','Moni 59']);
+  expect(changed.candidates.map(c=>c.name)).toEqual(['Moni 91','Simone']);
+  expect(changed.workers.every(w=>w.skills&&w.neg)).toBe(true);
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('#continue').click();
+  const again=await page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
+  expect(again.workers.map(w=>w.name)).toEqual(changed.workers.map(w=>w.name));
+});
