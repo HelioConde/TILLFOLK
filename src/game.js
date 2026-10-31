@@ -801,17 +801,15 @@
       const profile=count===1?"Especialista":count===2?"Multitalento":count===3?"Versátil":"Generalista";
       const allowed=availableTasks.length-person.neg.length;
       const skills=person.skills.length
-        ?person.skills.map(type=>'<span class="starter-chip" title="'+escapeHtml(activityDetails[type])+'">'+icons[type]+' '+labels[type]+'</span>').join("")
+        ?person.skills.map(type=>{
+          const seconds=Math.round(baseTime[type]/bonusForCandidate(person,type));
+          const description=labels[type]+': '+seconds+' segundos por ação (velocidade 1×, sem deslocamento). Bônus de +'+bonus+'% nesta especialidade.';
+          return '<button type="button" class="starter-chip specialty" data-specialty-tooltip="'+escapeHtml(description)+'" aria-label="'+escapeHtml(description)+'" aria-expanded="false">'+icons[type]+' '+labels[type]+' <span aria-hidden="true" class="chip-info">ⓘ</span></button>';
+        }).join("")
         :'<span class="starter-chip none">Sem especialidade · velocidade normal</span>';
       const blocked=person.neg.length
         ?person.neg.map(type=>'<span class="starter-chip negative" title="'+escapeHtml(activityDetails[type])+'">✕ '+labels[type]+'</span>').join("")
         :'<span class="starter-chip none">✓ Nenhuma restrição</span>';
-      const times=availableTasks.map(type=>{
-        const forbidden=person.neg.includes(type);
-        const faster=person.skills.includes(type);
-        const duration=forbidden?"Proibido":Math.round(baseTime[type]/bonusForCandidate(person,type))+"s";
-        return '<div class="recruit-work-row '+(forbidden?'work-forbidden':faster?'work-bonus':'')+'"><span>'+icons[type]+' '+labels[type]+'</span><b>'+duration+'</b></div>';
-      }).join("");
       return '<article class="starter-slot" aria-label="Trabalhador inicial '+(index+1)+'">'+
         '<div class="starter-card-top"><span>TRABALHADOR 0'+(index+1)+'</span><span class="starter-kind">'+profile+'</span></div>'+
         '<div class="starter-identity"><div class="starter-avatar-frame"><canvas width="78" height="88" class="starter-portrait" data-slot="'+index+'" role="img" aria-label="Sprite de '+escapeHtml(person.name)+'"></canvas></div>'+
@@ -825,18 +823,75 @@
         '<section aria-label="Especialidades de '+escapeHtml(person.name)+'"><h3 class="starter-highlight-heading">✦ Especialidades <small>'+count+'</small></h3><div class="starter-chip-list">'+skills+'</div></section>'+
         '<section aria-label="Restrições de '+escapeHtml(person.name)+'"><h3 class="starter-highlight-heading">✕ Não pode realizar <small>'+person.neg.length+'</small></h3><div class="starter-chip-list">'+blocked+'</div></section>'+
         '</div>'+
-        '<details class="starter-activity-details"><summary>Comparar tempos por tarefa</summary>'+
-        '<p>Tempo estimado em 1×, sem deslocamento. Qualquer tarefa não proibida pode ser executada.</p>'+
-        '<div class="recruit-work-grid">'+times+'</div></details>'+
         '<button class="starter-reroll" type="button" data-reroll="'+index+'" aria-label="Sortear outro trabalhador para a posição '+(index+1)+'">↻ Trocar este trabalhador</button>'+
         '</article>';
     }).join("");
+    hideSpecialtyTooltip();
     redrawStarterAvatars();
   }
   function bonusForCandidate(person,type){
     if(!person.skills.includes(type))return 1;
     return person.skills.length===1?2:person.skills.length===2?1.6:1.3;
   }
+  // Tooltip único fora do conteúdo rolável. Mouse, teclado e toque compartilham
+  // o mesmo texto; não exige biblioteca nem usa sprites externos.
+  const specialtyTooltip=$("#starter-specialty-tooltip");
+  let activeSpecialty=null, pinnedSpecialty=false;
+  function hideSpecialtyTooltip(force=false){
+    if(pinnedSpecialty&&!force)return;
+    if(activeSpecialty?.isConnected)activeSpecialty.setAttribute("aria-expanded","false");
+    activeSpecialty=null;pinnedSpecialty=false;specialtyTooltip.hidden=true;
+  }
+  function showSpecialtyTooltip(button,pinned=false){
+    if(!button||!button.isConnected)return;
+    if(activeSpecialty&&activeSpecialty!==button)activeSpecialty.setAttribute("aria-expanded","false");
+    activeSpecialty=button;pinnedSpecialty=pinned;
+    specialtyTooltip.textContent=button.dataset.specialtyTooltip||"";
+    specialtyTooltip.hidden=false;
+    button.setAttribute("aria-expanded",String(pinned));
+    // Posicionamento em coordenadas da viewport, sem recorte pelo scroll dos cards.
+    specialtyTooltip.style.left="0px";
+    specialtyTooltip.style.top="0px";
+    const rect=button.getBoundingClientRect();
+    const width=specialtyTooltip.offsetWidth,height=specialtyTooltip.offsetHeight;
+    const left=Math.max(10,Math.min(innerWidth-width-10,rect.left+rect.width/2-width/2));
+    const top=rect.top-height-10>=8?rect.top-height-10:
+      Math.min(Math.max(8,innerHeight-height-10),rect.bottom+10);
+    specialtyTooltip.style.left=Math.round(left)+"px";
+    specialtyTooltip.style.top=Math.round(top)+"px";
+  }
+  $("#starter-slots").addEventListener("pointerover",event=>{
+    if(event.pointerType!=="mouse"&&event.pointerType!=="pen")return;
+    const chip=event.target.closest(".starter-chip.specialty");
+    if(chip&&(!activeSpecialty||!pinnedSpecialty))showSpecialtyTooltip(chip);
+  });
+  $("#starter-slots").addEventListener("pointerout",event=>{
+    if(event.pointerType!=="mouse"&&event.pointerType!=="pen")return;
+    const chip=event.target.closest(".starter-chip.specialty");
+    if(chip&&!chip.contains(event.relatedTarget))hideSpecialtyTooltip();
+  });
+  $("#starter-slots").addEventListener("focusin",event=>{
+    const chip=event.target.closest(".starter-chip.specialty");
+    if(chip)showSpecialtyTooltip(chip);
+  });
+  $("#starter-slots").addEventListener("focusout",event=>{
+    const chip=event.target.closest(".starter-chip.specialty");
+    if(chip)hideSpecialtyTooltip();
+  });
+  $("#starter-slots").addEventListener("click",event=>{
+    const chip=event.target.closest(".starter-chip.specialty");
+    if(!chip)return;
+    if(activeSpecialty===chip&&pinnedSpecialty)hideSpecialtyTooltip(true);
+    else showSpecialtyTooltip(chip,true);
+  });
+  document.addEventListener("pointerdown",event=>{
+    if(!event.target.closest(".starter-chip.specialty"))hideSpecialtyTooltip(true);
+  });
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape"&&activeSpecialty){hideSpecialtyTooltip(true);}
+  });
+  $(".starter-content").addEventListener("scroll",()=>hideSpecialtyTooltip(true),{passive:true});
+  $("#starter-dialog").addEventListener("close",()=>hideSpecialtyTooltip(true));
   // Atualização dos avatares ao carregar atlas feita pelo sistema de paletas.
   $("#starter-slots").addEventListener("click",event=>{
     const btn=event.target.closest("[data-reroll]");if(!btn)return;
