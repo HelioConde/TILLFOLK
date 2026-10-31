@@ -715,8 +715,9 @@ test('Recrutamento: tooltip de especialidade por hover, foco e toque',async({pag
   const expected=await chip.getAttribute('data-specialty-tooltip');
   await expect(tip).toHaveText(expected);
   const geometry=await tip.boundingBox();
-  expect(geometry.x).toBeGreaterThanOrEqual(0);
-  expect(geometry.x+geometry.width).toBeLessThanOrEqual(1185);
+  const dialogBounds=await page.locator('#starter-dialog').boundingBox();
+  expect(geometry.x).toBeGreaterThanOrEqual(dialogBounds.x+8);
+  expect(geometry.x+geometry.width).toBeLessThanOrEqual(dialogBounds.x+dialogBounds.width-8);
   expect(geometry.y).toBeGreaterThanOrEqual(0);
   expect(geometry.y+geometry.height).toBeLessThanOrEqual(750);
   await page.screenshot({path:'screenshots/tooltip-especialidade-desktop.png',animations:'disabled'});
