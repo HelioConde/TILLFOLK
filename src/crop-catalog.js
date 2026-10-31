@@ -77,11 +77,19 @@
       if(img.complete)paint();else img.addEventListener("load",paint,{once:true});
     }
   }
-  function pickWild(random=Math.random){
-    const total=ALL.reduce((sum,c)=>sum+c.weight,0);
-    let roll=random()*total;
-    for(const crop of ALL){roll-=crop.weight;if(roll<0)return crop.id;}
-    return "carrot";
+  // Distribuição de culturas por região; o primeiro vale começa pela batata.
+  // Só utiliza espécies que já têm sprite no catálogo do projeto.
+  const REGIONS=Object.freeze({
+    g:Object.freeze(["potato","potato","carrot"]),
+    f:Object.freeze(["berry","tomato","broccoli","potato"]),
+    s:Object.freeze(["wheat","corn","pumpkin"]),
+    w:Object.freeze(["celery","leek","onion","rice"].filter(id=>byId.has(id))),
+    i:Object.freeze(["potato"]),
+    p:Object.freeze(["beetroot","radish"])
+  });
+  function pickWild(random=Math.random,region="g"){
+    const available=REGIONS[region]||REGIONS.g;
+    return available[Math.min(available.length-1,Math.floor(random()*available.length))];
   }
-  window.TillfolkCrops=Object.freeze({ALL,get:id=>byId.get(id),imageFor,normalizeStock,draw,drawIcons,pickWild});
+  window.TillfolkCrops=Object.freeze({ALL,REGIONS,get:id=>byId.get(id),imageFor,normalizeStock,draw,drawIcons,pickWild});
 })();
