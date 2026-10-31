@@ -56,7 +56,7 @@
     }
     const occupied=new Set([...world.objects,...world.water].map(p=>key(p.x,p.y)));
     const inside=p=>p.x>region.left+1&&p.x<region.right-1&&p.y>region.top+1&&p.y<region.bottom-1;
-    // Garante materiais acessíveis para 30 gravetos + machado de pedra, sem softlock.
+    // Garante gravetos e fibras acessíveis para fabricar as ferramentas, sem softlock.
     function stock(kind,min){
       let count=world.objects.filter(p=>p.kind===kind&&inside(p)).length;
       let attempts=0;
@@ -164,7 +164,7 @@
     const obj=at(world,x,y);
     if(!obj)return {resource:null,remaining:false};
     if(!gatherKinds.has(obj.kind))return {resource:null,remaining:false};
-    if(obj.kind==="gateLog"&&!options.stoneAxe)return {resource:null,remaining:true,blocked:true};
+    if(obj.kind==="gateLog"&&!options.axe)return {resource:null,remaining:true,blocked:true};
     let resource="fibras";
     if(obj.kind==="tree"){
       obj.kind="stump";obj.variant=0;resource="3 madeiras";
