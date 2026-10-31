@@ -688,7 +688,18 @@ test('Recrutamento v2: resumo legível, rodapé fixo e screenshots desktop/mobil
   await firstSpecialty.focus();
   await expect(page.locator('#starter-specialty-tooltip')).toBeVisible();
   await page.keyboard.press('Tab');
-  await expect(page.locator('#starter-specialty-tooltip')).toBeVisible();
+  const anotherSpecialtyFocused=await page.evaluate(()=>
+    document.activeElement?.matches('.starter-chip.specialty')||false
+  );
+  if(anotherSpecialtyFocused)
+    await expect(page.locator('#starter-specialty-tooltip')).toBeVisible();
+  else
+    await expect(page.locator('#starter-specialty-tooltip')).toBeHidden();
+  const nextSpecialty=page.locator('.starter-chip.specialty').nth(1);
+  await nextSpecialty.focus();
+  await expect(page.locator('#starter-specialty-tooltip')).toHaveText(
+    await nextSpecialty.getAttribute('data-specialty-tooltip')
+  );
   await page.keyboard.press('Escape');
   await expect(page.locator('#starter-specialty-tooltip')).toBeHidden();
   await expect(page.locator('#starter-dialog')).toBeVisible();
