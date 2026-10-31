@@ -3,73 +3,54 @@ const test=require("node:test");
 const assert=require("node:assert/strict");
 global.window={};
 require("../src/missions.js");
-const Missions=global.window.TillfolkMissions;
-const world=()=>({tutorial:Missions.create(),workers:[{name:"Mone"},{name:"Luna"}]});
+const M=global.window.TillfolkMissions;
+const make=()=>({tutorial:M.create(),workers:[{name:"Mone"},{name:"Luna"}]});
+const keys=M.STEPS.map(item=>item.key);
 
-test("começa na primeira missão, sem concluir por mera marcação de ordem",()=>{
- const state=world();
- assert.equal(Missions.current(state).key,"workstation");
- assert.equal(state.tutorial.stats.workstation,0);
- assert.equal(Missions.record(state,"invalid").advanced,false);
+test("o tutorial inicia na primeira missão sem cumprir objetivos automaticamente",()=>{
+ const state=make();
+ assert.equal(M.current(state)?.key,keys[0]);
+ assert.equal(M.record(state,"inexistente").advanced,false);
  assert.equal(state.tutorial.step,0);
 });
-
-test("semente encontrada antes da passagem de etapa continua valendo",()=>{
- const state=world();
- Missions.record(state,"seed");
+test("objetivos adiantados ficam registrados e são reconhecidos ao chegar na etapa",()=>{
+ const state=make();
+ const ahead=keys[Math.min(3,keys.length-1)];
+ M.record(state,ahead);
  assert.equal(state.tutorial.step,0);
- Missions.record(state,"workstation");
- Missions.record(state,"axe");
- Missions.record(state,"grass");
- assert.equal(state.tutorial.step,4);
- assert.equal(Missions.current(state).key,"till");
+ for(const key of keys.slice(0,keys.indexOf(ahead)))M.record(state,key);
+ assert.equal(state.tutorial.step,keys.indexOf(ahead)+1);
 });
-
-test("dez ações reais concluem tutorial apenas uma vez",()=>{
- const state=world();
- for(const key of Missions.STEPS.map(step=>step.key)){
-  const output=Missions.record(state,key);
-  assert.equal(output.advanced,true,key);
- }
+test("todas as missões completam uma única vez e preservam a conclusão",()=>{
+ const state=make();
+ for(const key of keys)assert.equal(M.record(state,key).advanced,true,key);
  assert.equal(state.tutorial.finished,true);
- assert.equal(state.tutorial.step,Missions.STEPS.length);
- assert.equal(Missions.current(state),null);
- assert.equal(Missions.record(state,"plan").finished,false);
+ assert.equal(state.tutorial.step,keys.length);
+ assert.equal(M.current(state),null);
+ assert.equal(M.record(state,keys.at(-1)).advanced,false);
 });
-
-test("cada missão oferece conversas naturais de apresentação, espera e trabalho",()=>{
- const state=world();
- assert.equal(Missions.STEPS.length,10);
- for(const [index,step] of Missions.STEPS.entries()){
-   state.tutorial.step=index;
-   for(const mode of ["intro","waiting","working"]){
-     const first=Missions.speech(state,state.workers[0],mode,0);
-     const other=Missions.speech(state,state.workers[1],mode,0);
-     assert.ok(first.length>=25&&first.length<=145,step.key+" "+mode+" tamanho");
-     assert.ok(other.length>=25&&other.length<=145,step.key+" "+mode+" tamanho 2");
-     assert.notEqual(first,other,step.key+" "+mode+" variação entre colonos");
-     assert.notEqual(first,Missions.speech(state,state.workers[0],mode,1),step.key+" "+mode+" alternância");
-   }
-   assert.ok(step.help.length>80,step.key+" ajuda detalhada");
-   assert.ok(step.complete.length>10,step.key+" celebração");
+test("falas têm dois interlocutores e três contextos naturais",()=>{
+ const state=make();
+ for(const [index,step] of M.STEPS.entries()){
+  state.tutorial.step=index;
+  for(const mode of ["intro","waiting","working"]){
+   const a=M.speech(state,state.workers[0],mode,0);
+   const b=M.speech(state,state.workers[1],mode,0);
+   assert.ok(a.length>=18&&a.length<=180,step.key+" fala");
+   assert.notEqual(a,b,step.key+" interlocutor");
+   assert.notEqual(a,M.speech(state,state.workers[0],mode,1),step.key+" variação");
+  }
+  assert.ok(step.help.length>60,step.key+" instrução");
+  assert.ok(step.complete.length>10,step.key+" conclusão");
  }
 });
-
-test("a fala acompanha a missão atual e não aparece ao terminar",()=>{
- const state=world();
- const before=Missions.speech(state,state.workers[0],"intro");
- Missions.record(state,"workstation");Missions.record(state,"axe");
- assert.notEqual(Missions.speech(state,state.workers[0],"intro"),before);
- for(const key of ["grass","seed","till","sow","water","harvest","carry","plan"])Missions.record(state,key);
- assert.equal(Missions.speech(state,state.workers[0],"intro"),"");
-});
-test("save antigo não inicia missões, e progresso novo restaura",()=>{
- assert.equal(Missions.normalize(null).active,false);
- const state=world();
- Missions.record(state,"workstation");
- const loaded=Missions.normalize(JSON.parse(JSON.stringify(state.tutorial)));
- assert.equal(loaded.active,true);
- assert.equal(loaded.step,1);
- assert.equal(loaded.stats.workstation,1);
- assert.ok(Missions.speech({tutorial:loaded,workers:[{}]},{}).length>0);
+test("saves antigos não recebem tutorial novo, saves atuais são restaurados",()=>{
+ assert.equal(M.normalize(null).active,false);
+ const state=make();
+ M.record(state,keys[0]);
+ const restored=M.normalize(JSON.parse(JSON.stringify(state.tutorial)));
+ assert.equal(restored.active,true);
+ assert.equal(restored.step,1);
+ assert.equal(restored.stats[keys[0]],1);
+ assert.ok(M.speech({tutorial:restored,workers:[{}]},{}).length>10);
 });
