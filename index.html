@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="./fullscreen-game.css">
   <link rel="stylesheet" href="./house-building.css">
   <link rel="stylesheet" href="./task-orders.css">
-  <link rel="stylesheet" href="./team-ux.css?v=3">
+  <link rel="stylesheet" href="./team-ux.css?v=4">
   <script defer src="./src/menu.js"></script>
   <script defer src="./src/house-renderer.js"></script>
   <script defer src="./src/menu-scene.js"></script>
@@ -184,7 +184,7 @@
     <header class="starter-heading">
       <div><span class="overline">NOVA FAZENDA · ESCOLHA SUA EQUIPE</span>
         <h2 id="starter-title">Escolha seus 2 trabalhadores</h2>
-        <p id="starter-description">Compare as especialidades e o que cada pessoa não pode fazer. Os dois são gratuitos.</p>
+        <p id="starter-description">Compare especialidades e restrições. Passe o mouse, use Tab ou toque numa especialidade para ver o tempo de trabalho.</p>
       </div>
       <form method="dialog"><button class="modal-x" type="submit" aria-label="Voltar ao menu">✕</button></form>
     </header>
@@ -203,6 +203,7 @@
       </div>
       <p class="starter-note">Especialistas com uma única habilidade são mais rápidos nessa atividade. Começar uma nova fazenda substitui o salvamento atual.</p>
     </footer>
+    <div id="starter-specialty-tooltip" class="starter-specialty-tooltip" role="tooltip" hidden></div>
   </dialog>
   <dialog id="management-dialog" class="management-dialog" aria-labelledby="management-title">
     <div class="dialog-topline">
