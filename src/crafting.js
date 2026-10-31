@@ -33,7 +33,25 @@
       ?{x:raw.station.x,y:raw.station.y}:null;
     return {version:1,station,equipment};
   }
-  function has(state,key){return state?.crafting?.equipment?.[key]===true;}
+  // Ferramentas equipadas pertencem ao trabalhador. A flag global serve somente
+  // como espelho de compatibilidade dos saves antigos, não concede ferramenta.
+  function normalizeWorker(worker,legacyEquipment=null){
+    if(!worker.inventory||typeof worker.inventory!=="object")
+      worker.inventory={tools:{},items:{}};
+    worker.inventory.tools=worker.inventory.tools||{};
+    worker.inventory.items=worker.inventory.items||{};
+    for(const key of Object.keys(equipped)){
+      const hadOwn=Object.hasOwn(worker.inventory.tools,key);
+      worker.inventory.tools[key]=hadOwn?Boolean(worker.inventory.tools[key]):Boolean(legacyEquipment?.[key]);
+    }
+    return worker.inventory;
+  }
+  function has(state,key,worker=null){
+    if(worker)return Boolean(worker.inventory?.tools?.[key]);
+    if(Array.isArray(state?.workers)&&state.workers.length)
+      return state.workers.some(w=>Boolean(w.inventory?.tools?.[key]));
+    return state?.crafting?.equipment?.[key]===true;
+  }
   function missing(state,cost){
     return Object.entries(cost).filter(([key,need])=>(Number(state?.inventory?.[key])||0)<need);
   }
@@ -45,17 +63,18 @@
       return "Colha sua primeira plantação antes de fabricar machados.";
     return null;
   }
-  function craft(state,key){
+  function craft(state,key,worker=null){
     const item=recipe(key);
     if(!item)return {error:"Receita desconhecida."};
     if(!state?.crafting?.station)return {error:"Construa e acesse uma Work Station primeiro."};
-    if(has(state,key))return {error:item.name+" já foi fabricado."};
+    if(has(state,key,worker))return {error:item.name+" já foi fabricado"+(worker?" para este colono":"")+"."};
     const unavailableStage=locked(state,key);if(unavailableStage)return {error:unavailableStage};
     const unavailable=missing(state,item.cost);
     if(unavailable.length)return {error:"Faltam materiais para "+item.name.toLowerCase()+"."};
     for(const [resource,amount] of Object.entries(item.cost))state.inventory[resource]-=amount;
     state.crafting.equipment[key]=true;
-    return {item};
+    if(worker)normalizeWorker(worker).tools[key]=true;
+    return {item,workerId:worker?.id??null};
   }
   function requiredTool(type,object){
     if(type==="till")return "hoe";
@@ -71,11 +90,11 @@
     }
     return null;
   }
-  function blocked(state,type,object){
+  function blocked(state,type,object,worker=null){
     if(type==="clear"&&object?.kind==="ridge")return "Encosta fechada: procure a passagem com o tronco caído.";
     const tool=requiredTool(type,object);
     const name=recipe(tool)?.name||"Ferramenta";
-    return tool&&!has(state,tool)?"Precisa de "+name.toLowerCase()+" na Work Station":null;
+    return tool&&!has(state,tool,worker)?"Precisa de "+name.toLowerCase()+" no inventário do colono":null;
   }
   function formatCost(cost){
     const labels={twigs:"gravetos",grass:"fibras",wood:"madeiras",stone:"pedras"};
@@ -83,6 +102,6 @@
   }
   window.TillfolkCrafting=Object.freeze({
     STATION_COST,STATION_SPRITE,ITEMS_SPRITE,ITEM_FRAMES,itemFrame,RECIPES,
-    normalize,has,missing,canBuild,recipe,craft,locked,requiredTool,blocked,formatCost
+    normalize,normalizeWorker,has,missing,canBuild,recipe,craft,locked,requiredTool,blocked,formatCost
   });
 })();
