@@ -9,11 +9,13 @@ on:
       - 'menu.css'
       - 'menu-layout.css'
       - 'ui-polish.css'
-      - 'team-ux.css'
       - 'src/menu.js'
       - 'src/menu-scene.js'
       - 'src/game.js'
       - 'src/house-building.js'
+      - 'tests/orders.spec.cjs'
+      - 'task-orders.css'
+      - 'src/task-orders.js'
       - 'house-building.css'
       - 'tests/house.spec.cjs'
       - 'src/wild-world.js'
@@ -44,7 +46,7 @@ jobs:
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-http.log 2>&1 &
           sleep 2
       - name: Capturar screenshots e validar cortes
-        run: npx playwright test tests/menu.spec.cjs tests/house.spec.cjs --browser chromium --reporter=line
+        run: npx playwright test tests/menu.spec.cjs tests/house.spec.cjs tests/orders.spec.cjs --browser chromium --reporter=line
       - name: Anexar screenshots
         if: always()
         uses: actions/upload-artifact@v4

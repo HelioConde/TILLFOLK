@@ -1,7 +1,8 @@
 "use strict";
 (() => {
   const TILE = 32, W = 28, H = 18, SAVE_KEY = "tillfolk-v01";
-  const World=window.TillfolkWild;
+  const World=window.TillfolkWild,Orders=window.TillfolkOrders;
+  if(!Orders)throw new Error("Carregue src/task-orders.js antes do motor TILLFOLK.");
   if(!World)throw new Error("Carregue src/wild-world.js antes do motor TILLFOLK.");
   const canvas = document.querySelector("#world"), ctx = canvas.getContext("2d");
   const $ = (s) => document.querySelector(s);
@@ -156,7 +157,7 @@
     if(!path.length){const [x,y]=reached.split(",").map(Number);path.push({x:x+.5,y:y+.5});}
     return path;
   }
-  let state = null, tasks = [], selectedTool = "cultivar", buildLayer = "floor", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
+  let state = null, tasks = [], selectedTool = "till", buildLayer = "floor", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
     return {x,y,selected,dirty:false,tilled:false,fertilized:false,seeded:false,watered:false,growth:0,produce:false};
@@ -174,7 +175,7 @@
       appearance:c.appearance ?? i,personalPriority:{},x:13.5+i,y:9.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
     }));
     state = {day:1,minutes:8*60,coins:220,seeds:18,water:30,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
-      plots,world,house:window.TillfolkHouseBuilder.initial(),inventory:{wood:15,stone:0,mushroom:0,flower:0,herbs:0,grass:0}, workers:team,
+      plots,orders:[],world,house:window.TillfolkHouseBuilder.initial(),inventory:{wood:15,stone:0,mushroom:0,flower:0,herbs:0,grass:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     tasks=[]; simSpeed=1; updateSpeed();
@@ -185,6 +186,9 @@
       if(!s||!Array.isArray(s.plots)||!Array.isArray(s.workers))return false;
       state=s;
       state.house=window.TillfolkHouseBuilder.normalize(s.house);
+      state.orders=Orders.normalize(s.orders);
+      // Saves anteriores nunca geram tarefas implícitas após a atualização.
+      if(!Array.isArray(s.orders))state.plots.forEach(p=>{p.selected=false;});
       // Salvamentos antigos continuam válidos: a geração não apaga cultivos já feitos.
       if(!state.world){
         state.world=World.create((Date.now()>>>0),W,H,[
@@ -199,7 +203,7 @@
       state.workers.forEach(w=>{w.task=null;w.progress=0;w.personalPriority=w.personalPriority||{};w.x=Number.isFinite(w.x)?w.x:13.5;w.y=Number.isFinite(w.y)?w.y:9.5;w.route=[];w.routeTask=null;w.facing=w.facing||"down";w.moving=false;w.walkFrame=0;});
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
       state.journal=Array.isArray(s.journal)?s.journal:[];
-      tasks=[];simSpeed=1;updateSpeed();return true;
+      tasks=[];recalcTasks();simSpeed=1;updateSpeed();return true;
     }catch {return false;}
   }
   function save(){if(!state||!playing)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch(e){console.warn("Não foi possível salvar:",e);}}
@@ -207,37 +211,44 @@
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
   function start(continueSaved=false, chosenStarters = [], config = {}){
     if(!continueSaved||!readSave())reset(chosenStarters,config);
-    houseHistory=[];buildHover=null;setTool("cultivar");
+    houseHistory=[];buildHover=null;setTool("till");
+    recalcTasks(); // Limpar ordens já concluídas antes da primeira renderização.
     playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false;
     document.body.classList.add("play-session","focus-game");
     worldPanX=0;worldPanY=0;closeDrawer();refresh();save();
     requestAnimationFrame(fitWorldCanvas);
-    notify("Um vale selvagem à sua espera! Marque a vegetação para limpar e cultivar.");
+    notify("Selecione uma ordem: limpar, arar, semear ou irrigar. A equipe só executa o que você mandar.");
   }
-  function getNext(p){
-    if(!p.selected||window.TillfolkHouseBuilder.occupied(state.house,p.x,p.y))return null;
-    if(p.produce)return "carry";
-    if(p.dirty||World.at(state.world,p.x,p.y))return "clear";
-    if(!p.tilled)return "till";
-    if(!p.fertilized)return "fertilize";
-    if(!p.seeded)return state.seeds>0?"sow":null;
-    if(!p.watered)return state.water>0?"water":null;
-    if(p.growth>=1)return "harvest";
-    return null;
-  }
+  // Somente ordens solicitadas pelo jogador entram na fila. Nenhuma etapa é
+  // fabricada depois de limpar, arar, semear, regar ou colher.
   function recalcTasks(){
-    const assigned=new Map();
-    state.workers.forEach(w=>{if(w.task)assigned.set(w.task,w.id);});
-    tasks=state.plots.map(p=>{
-      const type=getNext(p);
-      return type ? {id:keyOf(p.x,p.y)+":"+type,x:p.x,y:p.y,type,assigned:assigned.get(keyOf(p.x,p.y)+":"+type)||null}:null;
-    }).filter(Boolean);
-    for(const w of state.workers)if(w.task&&!tasks.some(t=>t.id===w.task)){w.task=null;w.progress=0;}
+    const current=new Set(state.orders.map(o=>o.id));
+    for(const w of state.workers){
+      if(w.task&&!current.has(w.task)){
+        w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
+      }
+    }
+    const assigned=new Map(state.workers.filter(w=>w.task).map(w=>[w.task,w.id]));
+    tasks=state.orders.map(order=>{
+      const p=state.plots.find(p=>p.x===order.x&&p.y===order.y);
+      const result=Orders.status(order,p,World.at(state.world,order.x,order.y),state);
+      return {...order,status:result.state,reason:result.reason,assigned:assigned.get(order.id)||null};
+    });
+    // Eliminar somente ordens que já perderam o sentido (ex.: save legado).
+    const stale=tasks.filter(t=>t.status==="done");
+    if(stale.length){
+      const ids=new Set(stale.map(t=>t.id));
+      state.orders=state.orders.filter(t=>!ids.has(t.id));
+      tasks=tasks.filter(t=>!ids.has(t.id));
+      for(const w of state.workers)if(ids.has(w.task)){
+        w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
+      }
+    }
   }
   function bonus(w,type){return w.skills.includes(type)?(w.skills.length===1?2:w.skills.length===2?1.6:1.3):1;}
   function assign(w){
     if(w.task)return;
-    const available=tasks.filter(t=>!t.assigned&&!w.neg.includes(t.type)&&routeBetween(w.x,w.y,t.x,t.y).length>0);
+    const available=tasks.filter(t=>t.status==="ready"&&!t.assigned&&!w.neg.includes(t.type)&&routeBetween(w.x,w.y,t.x,t.y).length>0);
     const priorityScore=t=>{
       const global=state.priorities[t.type]||5;
       const individual=w.personalPriority?.[t.type]??5;
@@ -250,7 +261,8 @@
   }
   function finish(w,t){
     const p=state.plots.find(p=>p.x===t.x&&p.y===t.y);
-    if(!p)return;
+    if(!p)return false;
+    let complete=true;
     switch(t.type){
       case "clear":{
         const obj=World.at(state.world,p.x,p.y);
@@ -263,17 +275,19 @@
           state.inventory[resource]=(state.inventory[resource]||0)+amount;
           if(result.resource)log(w.name+" coletou "+result.resource+".");
           p.dirty=result.remaining;
+          if(result.remaining)complete=false; // Continuar a mesma ordem até retirar o toco.
         }else p.dirty=false;
         state.coins+=2;break;
       }
       case "till":p.tilled=true;break;
       case "fertilize":p.fertilized=true;break;
-      case "sow":if(state.seeds<=0)return;p.seeded=true;p.growth=0;state.seeds--;break;
-      case "water":if(state.water<=0)return;p.watered=true;state.water--;break;
+      case "sow":if(state.seeds<=0)return false;p.seeded=true;p.growth=0;state.seeds--;break;
+      case "water":if(state.water<=0)return false;p.watered=true;state.water--;break;
       case "harvest":p.produce=true;p.seeded=false;p.watered=false;p.growth=0;break;
       case "carry":p.produce=false;p.fertilized=false;state.food+=3;state.coins+=15;state.seeds+=2;log(w.name+" armazenou a colheita (+3 comida, +15 moedas).");break;
     }
-    if(t.type!=="carry"&&t.type!=="harvest")log(w.name+" terminou: "+labels[t.type].toLowerCase()+".");
+    if(complete&&t.type!=="carry"&&t.type!=="harvest")log(w.name+" terminou: "+labels[t.type].toLowerCase()+".");
+    return complete;
   }
   function step(dt){
     if(!playing||simSpeed===0)return;
@@ -317,7 +331,12 @@
       w.x=target.x;w.y=target.y;
       if(w.route?.length){w.route.shift();continue;}
       w.progress+=scaled*bonus(w,t.type)/baseTime[t.type];
-      if(w.progress>=1){finish(w,t);w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;recalcTasks();}
+      if(w.progress>=1){
+        const complete=finish(w,t);
+        if(complete)state.orders=state.orders.filter(order=>order.id!==t.id);
+        w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
+        recalcTasks();
+      }
     }
   }
   function valid(img){return img&&img.complete&&img.naturalWidth>0;}
@@ -343,7 +362,7 @@
     });
     // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
     for(const p of state.plots){
-      if(!p.selected)continue;
+      if(!p.selected&&!p.tilled&&!p.seeded&&!p.produce)continue;
       const x=p.x*TILE,y=p.y*TILE;
       ctx.fillStyle=p.tilled?"#b38f6c":"#99c46b";ctx.fillRect(x+1,y+1,TILE-2,TILE-2);
       if(p.tilled)part(sprite.dirt,0,80,16,16,x,y);
@@ -351,8 +370,24 @@
       if(p.seeded)part(sprite.crops,Math.min(4,Math.floor(p.growth*5))*16,0,16,16,x,y,32,32);
       if(p.produce)part(sprite.crops,48,16,16,16,x,y,32,32);
       if(p.dirty&&!World.at(state.world,p.x,p.y))part(sprite.rocks,0,16,16,16,x,y,32,32);
-      if(!p.tilled){ctx.strokeStyle="#ecdf96";ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.strokeRect(x+3,y+3,26,26);ctx.setLineDash([]);}
+      if(state.orders.some(o=>o.x===p.x&&o.y===p.y)){ctx.strokeStyle="#ecdf96";ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.strokeRect(x+3,y+3,26,26);ctx.setLineDash([]);}
       if(p.watered&&p.seeded){ctx.fillStyle="#6cc8e5";ctx.fillRect(x+2,y+26,4,3);}
+    }
+    // Marcadores discretos: ordens prontas (creme) ou aguardando (marrom).
+    const markers={clear:"L",till:"A",fertilize:"F",sow:"S",water:"R",harvest:"C",carry:"T"};
+    const byTile=new Map();
+    for(const job of tasks){
+      const id=keyOf(job.x,job.y),entry=byTile.get(id)||[];
+      entry.push(job);byTile.set(id,entry);
+    }
+    for(const [tile,jobs] of byTile){
+      const [x,y]=tile.split("-").map(Number);
+      const next=jobs.find(j=>j.status==="ready")||jobs[0];
+      ctx.fillStyle=next.status==="ready"?"#ecdc9b":"#ad8d68";
+      ctx.fillRect(x*TILE+2,y*TILE+2,19,13);
+      ctx.fillStyle="#23382b";ctx.font="bold 10px sans-serif";ctx.textAlign="left";
+      ctx.fillText(markers[next.type]||"?",x*TILE+5,y*TILE+12);
+      if(jobs.length>1){ctx.fillStyle="#273a2d";ctx.fillText(String(jobs.length),x*TILE+23,y*TILE+12);}
     }
     // Profundidade natural: árvores cobrem personagens atrás delas e vice-versa.
     const layers=[
@@ -420,6 +455,7 @@
     for(const key of ["coins","seeds","water","food"])set("#"+key,state[key]);
     set("#worker-count",state.workers.length);set("#task-count",tasks.length);
     set("#hud-workers",state.workers.length);set("#hud-tasks",tasks.length);
+    $("#order-count").textContent=String(tasks.length);
     const stock=state.inventory||{};
     $("#inventory").textContent=[
       "🪵 Madeira "+(stock.wood||0),
@@ -440,11 +476,12 @@
       const factor=w.skills.length===1?"+100%":w.skills.length===2?"+60%":w.skills.length===3?"+30%":"sem bônus";
       return '<div class="worker"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+title+'</div></div></div><div class="tags">'+positive+neg+'</div><div class="worker-bar"><i style="width:'+(w.progress*100)+'%"></i></div><div class="worker-role">Especialização: '+factor+'</div></div>';
     }).join("");
-    const list=tasks.slice().sort((a,b)=>state.priorities[b.type]-state.priorities[a.type]);
-    $("#tasks").innerHTML=list.length?list.slice(0,8).map(t=>{
+    const list=tasks.slice().sort((a,b)=>(a.status==="ready"?0:1)-(b.status==="ready"?0:1)||state.priorities[b.type]-state.priorities[a.type]);
+    $("#tasks").innerHTML=list.length?list.slice(0,45).map(t=>{
       const w=state.workers.find(w=>w.id===t.assigned);
-      return '<div class="task"><div>'+icons[t.type]+' '+labels[t.type]+'<small>Terreno '+(t.x+1)+', '+(t.y+1)+'</small></div><b>'+(w?escapeHtml(w.name):"Aguardando")+' · P'+state.priorities[t.type]+'</b></div>';
-    }).join("")+(list.length>8?'<div class="empty">+ '+(list.length-8)+' outras tarefas na fila</div>':""):'<div class="empty">Fila vazia. Marque mais terrenos para cultivar.</div>';
+      const jobState=w?escapeHtml(w.name)+" · trabalhando":t.status==="blocked"?escapeHtml(t.reason):"Disponível";
+      return '<div class="task order-task '+(t.status==="blocked"?"order-blocked":"")+'"><div>'+icons[t.type]+' '+labels[t.type]+'<small>Terreno '+(t.x+1)+', '+(t.y+1)+' · '+jobState+'</small></div><div class="order-task-controls"><b>P'+state.priorities[t.type]+'</b><button type="button" data-cancel-order="'+t.id+'" aria-label="Cancelar ordem '+labels[t.type]+' do terreno '+(t.x+1)+', '+(t.y+1)+'">✕</button></div></div>';
+    }).join("")+(list.length>45?'<div class="empty">+ '+(list.length-45)+' ordens adicionais</div>':""):'<div class="empty">Sem ordens. Escolha um trabalho e marque o terreno. A equipe não inicia outras etapas automaticamente.</div>';
     $("#journal").innerHTML=state.journal.map(s=>'<div class="log">✧ '+escapeHtml(s)+'</div>').join("");
     drawSidebarAvatars();
   }
@@ -491,15 +528,33 @@
   }
   function findPlot(x,y){return state.plots.find(p=>p.x===x&&p.y===y);}
   function inspect(p){
-    const task=getNext(p);
-    const names={tree:"Árvore",boulder:"Pedra",log:"Tronco",thicket:"Arbusto",
-      stump:"Toco",mushroom:"Cogumelos",flowers:"Flores",grass:"Grama",
-      herbs:"Ervas",twig:"Galhos"};
-    const object=World.at(state.world,p.x,p.y);
+    const planned=state.orders.filter(o=>o.x===p.x&&o.y===p.y);
     $("#tile-tooltip").hidden=false;
-    $("#tile-tooltip").textContent="Terreno "+(p.x+1)+", "+(p.y+1)+" · "+(p.selected?"Cultivo ativo":"Disponível")+
-      " · "+(object?(names[object.kind]||"Recurso natural"):(p.produce?"Colheita no chão":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural"))+
-      (task?" · Próxima tarefa: "+labels[task]:"");
+    $("#tile-tooltip").textContent="Terreno "+(p.x+1)+", "+(p.y+1)+
+      " · "+(p.produce?"Colheita pronta":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural")+
+      " · Ordens: "+(planned.length?planned.map(o=>labels[o.type]).join(" → "):"nenhuma");
+  }
+  function removeOrders(ids){
+    if(!ids.length)return;
+    const cancelled=new Set(ids);
+    state.orders=state.orders.filter(o=>!cancelled.has(o.id));
+    for(const worker of state.workers)if(cancelled.has(worker.task)){
+      worker.task=null;worker.progress=0;worker.route=[];worker.routeTask=null;worker.workGoal=null;
+    }
+    recalcTasks();refresh();save();
+  }
+  function placeOrder(type,x,y){
+    if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||World.waterAt(state.world,x,y)){
+      notify("Terreno indisponível para ordens.");return;
+    }
+    const plot=findPlot(x,y);
+    const result=Orders.add(state.orders,type,x,y,plot,World.at(state.world,x,y),state);
+    if(result.error){notify(result.error);return;}
+    state.orders.push(result.order);
+    plot.selected=true; // Marcador visual, sem criar etapas automáticas.
+    recalcTasks();refresh();save();
+    $("#tile-tooltip").hidden=true;
+    if(result.state==="blocked")notify(labels[type]+" adicionada: "+result.reason.toLowerCase()+".");
   }
   function buildCellFromEvent(event){
     const rect=canvas.getBoundingClientRect();
@@ -543,11 +598,17 @@
     const leaving=selectedTool==="construir"&&next!=="construir";
     if(entering)cameraPanBeforeBuilding={x:worldPanX,y:worldPanY};
     selectedTool=next;
+    const stage=Orders.TYPES.includes(next);
+    $("#order-selected").textContent=stage?labels[next]:"Ordens";
+    $("#orders-btn").classList.toggle("active",stage&&next!=="till");
+    $("#orders-btn").setAttribute("aria-pressed",String(stage&&next!=="till"));
+    if(!stage){$("#orders-panel").hidden=true;$("#orders-btn").setAttribute("aria-expanded","false");}
     document.querySelectorAll("[data-tool]").forEach(btn=>{
       const on=btn.dataset.tool===next;
       btn.classList.toggle("active",on);btn.setAttribute("aria-pressed",String(on));
     });
     $("#construction-panel").hidden=next!=="construir";
+    if(next==="construir")$("#orders-panel").hidden=true;
     $("#tile-tooltip").hidden=true;
     buildHover=null;
     if(next==="construir"){
@@ -596,7 +657,7 @@
     recalcTasks();refresh();save();updateBuildPanel();
     $("#build-status").textContent="Última alteração desfeita.";
   });
-  $("#build-exit").addEventListener("click",()=>setTool("cultivar"));
+  $("#build-exit").addEventListener("click",()=>setTool("till"));
   canvas.addEventListener("contextmenu",event=>{
     if(!playing||selectedTool!=="construir")return;
     event.preventDefault();const p=buildCellFromEvent(event);paintHouse(p.x,p.y,true);
@@ -605,9 +666,9 @@
   document.addEventListener("keydown",event=>{
     if(!playing||event.target.closest("input,textarea,select,[contenteditable]")||document.querySelector("dialog[open]"))return;
     const k=event.key.toLowerCase();
-    if(k==="b"){setTool(selectedTool==="construir"?"cultivar":"construir");return;}
+    if(k==="b"){setTool(selectedTool==="construir"?"till":"construir");return;}
     if(selectedTool!=="construir")return;
-    if(k==="escape"){setTool("cultivar");return;}
+    if(k==="escape"){setTool("till");return;}
     if(["1","2","3"].includes(k)){buildLayer=["floor","walls","roof"][Number(k)-1];updateBuildPanel();}
     if(k==="r"){state.house.roofHidden=!state.house.roofHidden;updateBuildPanel();save();}
     if((event.ctrlKey||event.metaKey)&&k==="z"){event.preventDefault();$("#build-undo").click();}
@@ -646,13 +707,32 @@
     const p=findPlot(x,y);
     if(!p){notify("Água ou limite do vale: escolha uma área de terra.");return;}
     if(selectedTool==="inspecionar"){inspect(p);return;}
-    p.selected=(selectedTool==="cultivar");
-    if(p.selected){p.dirty=Boolean(World.at(state.world,x,y))||p.dirty;}
-    $("#tile-tooltip").hidden=true;
-    if(!p.selected)for(const w of state.workers)if(w.task&&w.task.startsWith(keyOf(x,y)+":")){w.task=null;w.progress=0;}
-    recalcTasks();refresh();save();
+    if(selectedTool==="remover"){
+      const matches=state.orders.filter(o=>o.x===x&&o.y===y).map(o=>o.id);
+      if(!matches.length){notify("Nenhuma ordem nesse terreno.");return;}
+      removeOrders(matches);notify(matches.length+" ordem(ns) cancelada(s).");return;
+    }
+    if(Orders.TYPES.includes(selectedTool))placeOrder(selectedTool,x,y);
   });
   document.querySelectorAll("[data-tool]").forEach(b=>b.addEventListener("click",()=>setTool(b.dataset.tool)));
+  $("#orders-btn").addEventListener("click",()=>{
+    if(!playing)return;
+    const open=$("#orders-panel").hidden;
+    $("#orders-panel").hidden=!open;
+    $("#orders-btn").setAttribute("aria-expanded",String(open));
+  });
+  document.querySelectorAll("[data-order-type]").forEach(btn=>btn.addEventListener("click",()=>{
+    setTool(btn.dataset.orderType);
+    document.querySelectorAll("[data-order-type]").forEach(item=>{
+      const on=item===btn;item.classList.toggle("chosen",on);item.setAttribute("aria-pressed",String(on));
+    });
+    $("#orders-panel").hidden=true;$("#orders-btn").setAttribute("aria-expanded","false");
+    notify("Ordem "+labels[btn.dataset.orderType]+": clique nos terrenos onde ela deve ser executada.");
+  }));
+  $("#tasks").addEventListener("click",event=>{
+    const btn=event.target.closest("[data-cancel-order]");
+    if(btn){removeOrders([btn.dataset.cancelOrder]);notify("Ordem cancelada.");}
+  });
   document.querySelectorAll("[data-speed]").forEach(b=>b.addEventListener("click",()=>{simSpeed=Number(b.dataset.speed);updateSpeed();refresh();}));
   $("#priorities").addEventListener("click",e=>{
     const btn=e.target.closest("[data-priority]");if(!btn||!state)return;
@@ -895,7 +975,7 @@
   backdrop.addEventListener("click",dismissDrawer);
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("drawer-open")){dismissDrawer();}});
   $("#menu-btn").addEventListener("click",()=>{
-    save();playing=false;closeDrawer();setTool("cultivar");
+    save();playing=false;closeDrawer();setTool("till");
     document.body.classList.remove("play-session","focus-game");
     canvas.style.removeProperty("--pan-x");canvas.style.removeProperty("--pan-y");
     if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});

@@ -1,0 +1,58 @@
+
+/* Designação de trabalhos: popover compacto sobre o fullscreen. */
+.orders-panel[hidden]{display:none!important}
+.orders-panel{
+ position:relative;z-index:16;width:min(940px,100%);
+ margin:10px 0 0;padding:13px 15px;border:2px solid #8fae77;
+ border-radius:12px;background:#172f25f4;color:#eee9d2;
+ box-shadow:0 10px 32px #071a118c;backdrop-filter:blur(9px)
+}
+.orders-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.orders-heading strong{font:14px Sprout,system-ui,sans-serif;color:#f0dca6}
+.orders-heading span{font-size:11px;color:#c3d4ad}
+.orders-choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.orders-choices button{
+ display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+ min-height:55px;padding:9px 10px;text-align:left;
+ color:#eff2d9;background:#2e513c;border:1px solid #759365;border-radius:8px
+}
+.orders-choices button b{font-size:12px}
+.orders-choices button small{color:#b6cda9;font-size:10px}
+.orders-choices button:hover{background:#45684b}
+.orders-choices button.chosen,.orders-choices button[aria-pressed=true]{
+ background:#d5eaa8;border-color:#f1ffbf;color:#24432e
+}
+.orders-choices button.chosen small,.orders-choices button[aria-pressed=true] small{color:#567449}
+.orders-panel p{margin-top:9px;line-height:1.5;font-size:11px;color:#d1e1c2}
+.order-task{align-items:center}
+.order-task small{max-width:215px;line-height:1.4}
+.order-blocked{border-color:#8a7961!important;background:#443f30!important}
+.order-blocked small{color:#edcf9f!important}
+.order-task-controls{display:flex;align-items:center;gap:6px}
+.order-task-controls button{
+ min-width:27px;min-height:27px;border:1px solid #996c5e;
+ border-radius:5px;color:#ffe3d4;background:#70493d;font-weight:850
+}
+.order-task-controls button:hover{background:#a85b4a}
+body.play-session .orders-panel{
+ position:fixed;z-index:16;left:50%;bottom:clamp(91px,11vh,113px);
+ transform:translateX(-50%);margin:0;width:min(940px,calc(100vw - 24px));
+ max-height:min(46dvh,300px);overflow-y:auto;overscroll-behavior:contain
+}
+body.play-session #tasks{max-height:min(44dvh,440px)}
+body.play-session .tooltray:has(#orders-btn[aria-expanded=true]){border-color:#f0da96}
+@media(max-width:650px){
+ body.play-session .orders-panel{bottom:146px;padding:9px;max-height:43dvh}
+ .orders-heading strong{font-size:11px}
+ .orders-choices{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ .orders-choices button{min-height:44px;padding:7px 8px}
+ .orders-choices button b{font-size:11px}
+ .orders-choices button small{font-size:9px}
+ .orders-panel p{font-size:10px}
+ body.play-session .tool-list .tool{min-width:0;padding:5px 3px}
+ body.play-session .tool-list .tool b{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.orders-panel *{animation:none!important;transition:none!important}}
+
+/* A confirmação temporária não pode esconder as opções de tarefas. */
+body.play-session:has(.orders-panel:not([hidden])) #toast{display:none!important}
