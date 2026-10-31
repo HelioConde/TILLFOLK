@@ -7,12 +7,13 @@
   const ITEMS_SPRITE=ASSET_ROOT+"Objects/Items/tools and meterials.png";
   const RECIPES=Object.freeze([
     {key:"axe",name:"Machado",icon:"🪓",cost:{twigs:8,grass:3},help:"Derrubar árvores e retirar troncos."},
+    {key:"stoneAxe",name:"Machado de pedra",icon:"🪓",cost:{twigs:8,grass:3,stone:3},help:"Remover o tronco caído que bloqueia a saída leste."},
     {key:"shovel",name:"Pá",icon:"🪏",cost:{twigs:8,grass:2},help:"Arrancar tocos e escavar terreno."},
     {key:"pickaxe",name:"Picareta",icon:"⛏️",cost:{twigs:10,wood:2},help:"Extrair pedras grandes."},
     {key:"hoe",name:"Enxada",icon:"🌱",cost:{twigs:8,wood:2},help:"Arar e preparar canteiros."},
     {key:"wateringCan",name:"Regador",icon:"💧",cost:{twigs:6,wood:2},help:"Irrigar as plantações."}
   ]);
-  const equipped=Object.freeze({axe:false,shovel:false,pickaxe:false,hoe:false,wateringCan:false});
+  const equipped=Object.freeze({axe:false,stoneAxe:false,shovel:false,pickaxe:false,hoe:false,wateringCan:false});
   function normalize(raw,legacy=false){
     // Saves anteriores tinham acesso irrestrito a ferramentas: preservar seu progresso.
     const equipment={...equipped};
@@ -43,6 +44,7 @@
     if(type==="water")return "wateringCan";
     if(type==="clear"){
       switch(object?.kind){
+        case "gateLog":return "stoneAxe";
         case "tree":case "log":case "thicket":return "axe";
         case "stump":return "shovel";
         case "boulder":return "pickaxe";
@@ -52,6 +54,7 @@
     return null;
   }
   function blocked(state,type,object){
+    if(type==="clear"&&object?.kind==="ridge")return "Encosta fechada: procure a passagem com o tronco caído.";
     const tool=requiredTool(type,object);
     const name=recipe(tool)?.name||"Ferramenta";
     return tool&&!has(state,tool)?"Precisa de "+name.toLowerCase()+" na Work Station":null;
