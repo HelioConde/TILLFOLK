@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="./top-speed.css?v=20261031-mobile-brand-clock">
   <link rel="stylesheet" href="./tutorial-missions.css?v=20261031-menu-missao-fix">
   <link rel="stylesheet" href="./hud-settings.css?v=20261031-icones-ajuste-v4">
-  <link rel="stylesheet" href="./crop-workshop.css?v=20261031-inventarios-farm-v6">
+  <link rel="stylesheet" href="./crop-workshop.css?v=20261031-prioridade-canto-v1">
   <script defer src="./src/menu.js?v=20261031-sync-preferencias"></script>
   <script defer src="./src/tutorial.js?v=20261031-fim-escolhas"></script>
   <script defer src="./src/house-renderer.js?v=20261031-fazenda-casa"></script>
@@ -37,7 +37,7 @@
   <script defer src="./src/crafting.js?v=20261031-no-stone-axe"></script>
   <script defer src="./src/task-orders.js?v=20261031-inventarios-farm-v6"></script>
   <script defer src="./src/missions.js?v=20261031-no-stone-axe"></script>
-  <script defer src="./src/game.js?v=20261031-no-stone-axe"></script>
+  <script defer src="./src/game.js?v=20261031-prioridade-canto-v1"></script>
   <script defer src="./src/game-hud.js?v=20261031-atalho-direito"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
 </head>
@@ -142,12 +142,19 @@
             <button type="button" data-build-layer="field" aria-pressed="false">🌱 Plantação · Canteiros</button>
             <button type="button" data-build-layer="station" aria-pressed="false">🛠️ Work Station</button>
             <button type="button" id="open-workshop">⚒ Fabricar ferramentas</button>
-            <div class="construction-priority" role="group" aria-label="Prioridade das novas construções"><span>Prioridade das obras</span><button type="button" data-construction-priority="-1" aria-label="Reduzir prioridade das obras">−</button><strong id="build-priority-value">5</strong><button type="button" data-construction-priority="1" aria-label="Aumentar prioridade das obras">+</button><small>P1–P9 · igual a Oxygen Not Included</small></div>
+
             <button type="button" id="build-erase" aria-pressed="false">⌫ Apagar</button>
             <button type="button" id="build-roof">◌ Ocultar telhado</button>
             <button type="button" id="build-undo">↶ Desfazer</button>
           </div>
           <p id="build-status" role="status" aria-live="polite">Escolha uma peça, Cabana ou Plantação. Prévia azul = posição válida; vermelha = bloqueada. Canteiros criam ordens de arar e semear.</p>
+        </div>
+        <div id="construction-priority" class="construction-priority" role="group" aria-label="Prioridade das novas construções" hidden>
+          <span>Prioridade das obras</span>
+          <button type="button" data-construction-priority="-1" aria-label="Reduzir prioridade das obras">−</button>
+          <strong id="build-priority-value" aria-live="polite">5</strong>
+          <button type="button" data-construction-priority="1" aria-label="Aumentar prioridade das obras">+</button>
+          <small>P1–P9 · maior número, mais urgente</small>
         </div>
         <div class="hint-bar"><span>💡</span><p><strong>Como começar:</strong> Sua equipe chegou sem ferramentas. Recolha gravetos e grama com as mãos, junte 10 gravetos e monte uma Work Station. Fabrique ferramentas nela. Depois, Universal cria uma ordem por toque: solo livre → arar, arado → semear, plantado → regar, maduro → colher. Arraste para marcar áreas. Use Ordens para ações específicas; limpe obstáculos para encontrar sementes e madeira. O vale começa <strong>sem animais</strong>; a fertilização com esterco fica para uma fase posterior. Construa três casas para liberar o terceiro ajudante.</p></div>
         <div class="footnote">TILLFOLK · Gerencie o vale e organize sua equipe</div>
