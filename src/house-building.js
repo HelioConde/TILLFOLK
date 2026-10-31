@@ -103,6 +103,11 @@
       const [x,y]=decode(id);
       part(sprites.walls,16,16,16,16,x*TILE,y*TILE,TILE,TILE);
     }
+    // Uma casa concluída usa EXATAMENTE o mesmo atlas e a montagem do menu.
+    // As peças antigas continuam no save e podem ser editadas/desfeitas.
+    const assembled=floor.size>=2&&wall.size>0&&roof.size>0&&
+      !!window.TillfolkHouse?.positionForFootprint;
+    if(!assembled){
     for(const id of wall) {
       const [x,y]=decode(id);
       const left=wall.has(key(x-1,y)),right=wall.has(key(x+1,y));
@@ -128,9 +133,10 @@
       part(sprites.door,frame*16,0,16,32,doorX*TILE,doorY*TILE-TILE,TILE,TILE*2);
 
     }
+    }
     // No editor, a cobertura se recolhe ao pintar piso/parede.
     const showRoof = (building && layer==="roof") || (!building && !house.roofHidden);
-    if(showRoof && roof.size) {
+    if(!assembled && showRoof && roof.size) {
       const rows=house.roof.map(v=>decode(v)[1]),top=Math.min(...rows),bottom=Math.max(...rows);
       const ridge=Math.round((top+bottom)/2);
       ctx.save();
@@ -144,6 +150,18 @@
         part(sprites.roof,atlasX*16,atlasY*16,16,16,x*TILE,y*TILE,TILE,TILE);
       }
       ctx.restore();
+    }
+    if(assembled){
+      const footprint=[...floor].map(decode);
+      const left=Math.min(...footprint.map(tile=>tile[0]));
+      const right=Math.max(...footprint.map(tile=>tile[0]));
+      const top=Math.min(...footprint.map(tile=>tile[1]));
+      const bottom=Math.max(...footprint.map(tile=>tile[1]));
+      const placement=window.TillfolkHouse.positionForFootprint(
+        left*TILE,top*TILE,(right-left+1)*TILE,(bottom-top+1)*TILE,1);
+      window.TillfolkHouse.draw(ctx,{
+        roof:sprites.roof,walls:sprites.walls,door:sprites.door
+      },placement.x,placement.y,{scale:1,roofVisible:showRoof});
     }
     if(building && ["floor","walls","roof"].includes(layer)&&
       Number.isInteger(options.previewX)&&Number.isInteger(options.previewY)){
