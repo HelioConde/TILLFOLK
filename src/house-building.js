@@ -2,7 +2,13 @@
 /* Casa de TILLFOLK: portabilidade web da arquitetura em camadas de
    Slime-Harvest/scripts/building/house_builder.gd. Sem assets novos. */
 (() => {
-  const TILE = 32, WIDTH = 28, HEIGHT = 18, MAX_FLOORS = 25;
+  const TILE = 32, MAX_FLOORS = 25;
+  let WIDTH=28,HEIGHT=18;
+  function setBounds(w,h){
+    if(Number.isInteger(w)&&Number.isInteger(h)&&w>=28&&h>=18){
+      WIDTH=w;HEIGHT=h;
+    }
+  }
   let doorOpenness=0,doorTimestamp=0;
   const key = (x,y) => x + "-" + y;
   const decode = value => value.split("-").map(Number);
@@ -149,5 +155,5 @@
       ctx.restore();
     }
   }
-  window.TillfolkHouseBuilder=Object.freeze({initial,normalize,edit,draw,occupied,contains,MAX_FLOORS});
+  window.TillfolkHouseBuilder=Object.freeze({initial,normalize,edit,draw,occupied,contains,MAX_FLOORS,setBounds});
 })();
