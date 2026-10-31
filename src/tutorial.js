@@ -57,7 +57,6 @@
    document.querySelector("#help-prev").disabled=selected===0;
    document.querySelector("#help-next").hidden=selected===last;
    document.querySelector("#help-close").hidden=selected!==last;
-   document.querySelector("#guide-play").hidden=selected!==last;
    document.querySelector("#guide-counter").textContent=(selected+1)+" de "+slides.length;
    drawSlides();
  }
