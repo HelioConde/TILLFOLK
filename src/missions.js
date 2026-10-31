@@ -4,7 +4,7 @@
   const STEPS=Object.freeze([
     {key:"workstation",goal:1,icon:"🛠️",title:"Nossa primeira Work Station",
       subtitle:"Junte 10 gravetos e construa a bancada",
-      help:"Começamos SEM ferramentas. Limpe gravetos caídos e grama alta com a mão. Com 10 gravetos no estoque, abra Construir → Work Station, escolha um lugar livre e espere a equipe montar a estação. Clique nela para fabricar ferramentas.",
+      help:"Começamos SEM ferramentas. Limpe gravetos caídos e grama alta com a mão. Com 10 gravetos no estoque, abra Objetos → Work Station, escolha um lugar livre e espere a equipe montar a estação. Clique nela para fabricar ferramentas.",
       complete:"Agora temos uma bancada! É daqui que vão sair nossas ferramentas.",
       dialogue:{
         intro:["Antes de tudo, precisamos de um lugar pra fazer ferramentas. Olha quantos galhos caídos por aí!","A gente não tem nem machado ainda. Que tal juntar gravetos e montar nossa bancada?"],

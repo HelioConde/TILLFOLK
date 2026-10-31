@@ -16,7 +16,7 @@
     carry:["TRANSPORTAR","Leve os itens colhidos para o estoque"],
     remover:["CANCELAR","Clique ou arraste para cancelar ordens pendentes"],
     inspecionar:["INSPECIONAR","Clique no cenário para ver os detalhes"],
-    construir:["CONSTRUIR","Escolha piso, paredes ou telhado"]
+    construir:["OBJETOS","Escolha uma cabana ou Work Station"]
   };
   function sync(){
     if(!document.body.classList.contains("play-session"))return;
@@ -48,7 +48,6 @@
     if(document.querySelector("dialog[open]"))return;
     if(event.target.closest("input,textarea,select,button,[contenteditable]"))return;
     const key=event.key.toLowerCase();
-    if(!$("#construction-panel").hidden && ["1","2","3"].includes(key))return; // camadas existentes
     const actions={"1":".tool[data-tool='universal']","2":"#orders-btn",
       "3":".tool[data-tool='remover']","4":".tool[data-tool='inspecionar']",
       "5":".tool[data-tool='construir']",

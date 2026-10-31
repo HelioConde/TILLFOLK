@@ -528,7 +528,7 @@
     speechScene.step=-1;speechScene.sequence=0;speechScene.text="";
     speechScene.workerId=null;speechScene.until=0;speechScene.next=0;
   }
-  let state = null, tasks = [], selectedTool = "universal", buildLayer = "floor", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
+  let state = null, tasks = [], selectedTool = "universal", buildLayer = "home", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
     return {x,y,selected,dirty:false,tilled:false,fertilized:false,seeded:false,watered:false,growth:0,produce:false};
@@ -1496,7 +1496,7 @@
     if($("#homes-count"))$("#homes-count").textContent=state.homes.length+"/"+state.workers.length;
     set("#hud-workers",state.workers.length);set("#hud-tasks",tasks.length);
     $("#order-count").textContent=String(tasks.length);
-    $("#selected-crop-label").textContent=(Crops.get(state.selectedCrop)?.name||"Cenoura")+" · "+(state.cropSeeds[state.selectedCrop]||0)+" sementes";
+    if($("#selected-crop-label"))$("#selected-crop-label").textContent=(Crops.get(state.selectedCrop)?.name||"Cenoura")+" · "+(state.cropSeeds[state.selectedCrop]||0)+" sementes";
     const stock=state.inventory||{};
     const inventoryItems=[
       ["twigs","🌿","Gravetos"],["wood","🪵","Madeira"],["stone","🪨","Pedra"],
@@ -1680,6 +1680,10 @@
        occupiedByHome(x,y)||occupiedByStation(x,y)||window.TillfolkHouseBuilder.occupied(state.house,x,y))return null;
     if(World.at(state.world,x,y)?.kind==="ridge")return null;
     if(World.at(state.world,x,y)||plot.dirty)return "clear";
+    if(plot.tilled&&!(state.cropSeeds[state.selectedCrop]>0)){
+      const available=Object.keys(state.cropSeeds).find(id=>state.cropSeeds[id]>0&&Crops.get(id));
+      if(available)state.selectedCrop=available;
+    }
     const terrain=World.terrainAt?.(state.world,x,y);
     if(terrain&&!terrain.farmable)return null;
     if(plot.produce)return "carry";
@@ -1862,18 +1866,12 @@
     $("#build-stock").textContent=String(state.inventory?.wood||0);
     const p=$("#build-priority-value");if(p)p.textContent=state.buildPriority;
     const sticks=$("#build-twigs");if(sticks)sticks.textContent=String(state.inventory?.twigs||0);
-    $("#build-floor-count").textContent=String(state.house.floor.length);
     if($("#build-homes-count"))$("#build-homes-count").textContent=String(state.homes.length);
     document.querySelectorAll("[data-build-layer]").forEach(btn=>{
       const on=btn.dataset.buildLayer===buildLayer;
       btn.classList.toggle("chosen",on);btn.setAttribute("aria-pressed",String(on));
     });
-    const plans=buildLayer==="home"||buildLayer==="field"||buildLayer==="station";
-    $("#build-erase").disabled=plans;
-    $("#build-erase").title=plans?"Clique direito cancela os blueprints planejados.":"Apagar peças da construção";
-    $("#build-erase").setAttribute("aria-pressed",String(eraseBuild));
-    $("#build-erase").classList.toggle("chosen",eraseBuild);
-    $("#build-roof").textContent=state.house.roofHidden?"◉ Mostrar telhado":"◌ Ocultar telhado";
+    // Exibir somente os objetos completos no painel.
   }
   let cameraPanBeforeBuilding=null;
   function focusHouseCamera(){
@@ -1921,15 +1919,6 @@
     if(!playing||selectedTool!=="construir")return;
     const result=getBuildEdit(x,y,erase);
     if(!result.house){$("#build-status").textContent=result.error;return;}
-    if(buildLayer==="field"){
-      pushBuildHistory();
-      const plan=queueFieldBlueprint(x,y);
-      if(!plan.count){houseHistory.pop();$("#build-status").textContent=plan.error;return;}
-      recalcTasks();refresh();save();
-      buildHover=null;
-      $("#build-status").textContent="🌱 Canteiro planejado: arar e semear. A equipe executará as ordens.";
-      return;
-    }
     if(buildLayer==="station"){
       const test=Orders.add(state.orders,"buildStation",x,y,findPlot(x,y),World.at(state.world,x,y),state);
       if(!test.order){$("#build-status").textContent=test.error;return;}
@@ -1953,49 +1942,16 @@
       $("#build-status").textContent="🏠 Cabana 2×2 planejada: aguardando equipe e 8 madeiras.";
       return;
     }
-    pushBuildHistory();
-    state.house=result.house;
-    state.inventory.wood=Math.max(0,state.inventory.wood+(erase?1:-1));
-    syncLegacyHome();
-    if(buildLayer==="floor"){
-      if(!erase)state.plots=state.plots.filter(p=>p.x!==x||p.y!==y);
-      else if(!blocked(x,y)&&!state.plots.some(p=>p.x===x&&p.y===y))state.plots.push(makePlot(x,y));
-    }
-    state.workers.forEach(w=>{w.route=[];w.routeTask=null;});
-    recalcTasks();refresh();save();updateBuildPanel();
-    $("#build-status").textContent=(erase?"Removido: ":"Construído: ")+
-      ({floor:"piso",walls:"parede",roof:"telhado"})[buildLayer]+" em "+(x+1)+", "+(y+1)+".";
   }
   document.querySelectorAll("[data-build-layer]").forEach(btn=>btn.addEventListener("click",()=>{
     buildLayer=btn.dataset.buildLayer;
     eraseBuild=false;buildHover=null;updateBuildPanel();
     $("#build-status").textContent=buildLayer==="home"?
       "Cabana: prévia azul 2×2. Clique para atribuir à equipe; botão direito cancela.":
-      buildLayer==="field"?
-        "Plantação: prévia azul. Clique ou arraste para criar canteiros (arar + semear).":
       buildLayer==="station"?
         "Work Station: junte 10 gravetos e planeje a bancada no chão livre. Clique direito cancela.":
         "Camada: "+btn.textContent.trim()+". Clique para construir ou use o botão direito para apagar.";
   }));
-  $("#build-erase").addEventListener("click",()=>{
-    eraseBuild=!eraseBuild;updateBuildPanel();
-    $("#build-status").textContent=eraseBuild?"Toque no mapa para apagar peças.":"Toque no mapa para construir.";
-  });
-  $("#build-roof").addEventListener("click",()=>{
-    state.house.roofHidden=!state.house.roofHidden;updateBuildPanel();save();
-  });
-  $("#build-undo").addEventListener("click",()=>{
-    const snapshot=houseHistory.pop();
-    if(!snapshot){$("#build-status").textContent="Nenhuma mudança para desfazer.";return;}
-    const previous=JSON.parse(snapshot);
-    state.house=window.TillfolkHouseBuilder.normalize(previous.house);
-    syncLegacyHome();
-    state.plots=previous.plots;state.inventory.wood=previous.wood;
-    if(previous.orders)state.orders=previous.orders;
-    state.workers.forEach(w=>{w.route=[];w.routeTask=null;});
-    recalcTasks();refresh();save();updateBuildPanel();
-    $("#build-status").textContent="Última alteração desfeita.";
-  });
   $("#build-exit").addEventListener("click",()=>setTool("universal"));
   function openWorkerInventory(worker){
     Crafting.normalizeWorker(worker);
@@ -2055,8 +2011,6 @@
     if(k==="b"){setTool(selectedTool==="construir"?"universal":"construir");return;}
     if(selectedTool!=="construir")return;
     if(k==="escape"){setTool("universal");return;}
-    if(["1","2","3"].includes(k)){buildLayer=["floor","walls","roof"][Number(k)-1];updateBuildPanel();}
-    if(k==="r"){state.house.roofHidden=!state.house.roofHidden;updateBuildPanel();save();}
     if((event.ctrlKey||event.metaKey)&&k==="z"){event.preventDefault();$("#build-undo").click();}
   });
   // Clique individual ou arraste para selecionar um retângulo de tarefas.
@@ -2283,47 +2237,11 @@
       "stock-crop",true)).join("");
     Crops.drawIcons(grid);
   }
-  function renderCropCatalog(){
-    const grid=$("#crop-catalog-grid");
-    grid.innerHTML=Crops.ALL.map(crop=>cropTile(crop,
-      (state.cropSeeds[crop.id]||0)+" sementes","choose-crop",false,state.selectedCrop===crop.id)).join("");
-    Crops.drawIcons(grid);
-    $("#crop-catalog-status").textContent="Selecionado: "+Crops.get(state.selectedCrop).name+
-      ". A próxima ordem Semear usará esta cultura quando houver sementes.";
-  }
-  const workshopAtlas=new Image();
-  workshopAtlas.src=Crafting.ITEMS_SPRITE;
-  workshopAtlas.addEventListener("load",()=>{if(state&&$("#workshop-dialog").open)paintWorkshopTools();});
-  function paintWorkshopTools(){
-    document.querySelectorAll(".workstation-tool-sprite").forEach(canvas=>{
-      const recipe=Crafting.RECIPES[Number(canvas.dataset.toolIndex)];
-      const ctx=canvas.getContext("2d");
-      if(!recipe||!ctx)return;
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      // Não desenhar falsos objetos: usar recorte exato do pacote premium.
-      const frame=Crafting.itemFrame(recipe.key);
-      const loaded=workshopAtlas.complete&&workshopAtlas.naturalWidth>0;
-      ctx.imageSmoothingEnabled=false;
-      if(frame&&loaded&&frame.x+frame.w<=workshopAtlas.naturalWidth&&
-         frame.y+frame.h<=workshopAtlas.naturalHeight){
-        ctx.drawImage(workshopAtlas,frame.x,frame.y,frame.w,frame.h,3,3,42,42);
-        canvas.setAttribute("aria-label","Sprite original: "+recipe.name);
-      }else if(!frame){
-        // Somente receitas ainda sem sprite identificado recebem ícone provisório.
-        ctx.fillStyle="#213e30";ctx.font="29px system-ui, sans-serif";
-        ctx.textAlign="center";ctx.textBaseline="middle";
-        ctx.fillText(recipe.icon,24,25);
-        canvas.setAttribute("aria-label","Ícone provisório: "+recipe.name);
-      }else{
-        canvas.setAttribute("aria-label","Carregando sprite de "+recipe.name);
-      }
-    });
-  }
   function renderWorkshop(){
     const ready=Boolean(state.crafting?.station);
     $("#workshop-status").textContent=ready?
       "Work Station pronta! Faça ferramentas e transforme colheitas em sementes.":
-      "A Work Station ainda não está pronta. Colete 10 gravetos e use Construir → Work Station.";
+      "A Work Station ainda não está pronta. Colete 10 gravetos e use Objetos → Work Station.";
     $("#workshop-tools").innerHTML=Crafting.RECIPES.map((recipe,index)=>{
       const holders=state.workers.filter(w=>Crafting.has(state,recipe.key,w)).length;
       const made=holders===state.workers.length&&state.workers.length>0;
@@ -2348,15 +2266,6 @@
       "craft-crop",!ready||(state.cropProduce[crop.id]||0)<2||state.food<2)).join("");
     Crops.drawIcons(grid);
   }
-  $("#open-crop-catalog").addEventListener("click",()=>{
-    if(!playing)return;renderCropCatalog();$("#crop-catalog-dialog").showModal();
-  });
-  $("#crop-catalog-grid").addEventListener("click",event=>{
-    const button=event.target.closest("[data-choose-crop]");
-    if(!button||!Crops.get(button.dataset.chooseCrop))return;
-    state.selectedCrop=button.dataset.chooseCrop;
-    renderCropCatalog();refresh();save();
-  });
   function openWorkshop(){
     if(!playing||$("#workshop-dialog").open)return;
     renderWorkshop();
