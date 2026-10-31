@@ -942,3 +942,51 @@ test('HUD pixel art: cabe na tela, mantém ações utilizáveis e captura estado
   await page.screenshot({path:'screenshots/hud-pixel-mobile-390x844.png',animations:'disabled'});
   expect(errors).toEqual([]);
 });
+
+
+test('Sprout Lands UI: atlas original em botões, painel, slots e celular',async({page})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.setViewportSize({width:1366,height:768});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.locator('#new-game').click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator('#starter-confirm').click();
+  await page.waitForFunction(()=>document.documentElement.classList.contains('sprout-inventory-ready')&&document.documentElement.classList.contains('sprout-sheet-ready'));
+  const result=await page.evaluate(()=>{
+    const style=s=>getComputedStyle(document.querySelector(s));
+    const bounds=s=>document.querySelector(s).getBoundingClientRect();
+    const slot=style('.tool.active span').backgroundImage;
+    const button=style('.speed-wrap button.chosen').borderImageSource;
+    const tooltip=style('.hud-selection').borderImageSource;
+    const dock=bounds('.tooltray');
+    return {slot,button,tooltip,dock:{left:dock.left,right:dock.right,bottom:dock.bottom},
+      viewport:{width:innerWidth,height:innerHeight}};
+  });
+  expect(result.slot).toContain('data:image/png');
+  expect(result.button).toContain('data:image/png');
+  expect(result.tooltip).toContain('dialog%20box%20big.png');
+  expect(result.dock.left).toBeGreaterThanOrEqual(0);
+  expect(result.dock.right).toBeLessThanOrEqual(result.viewport.width+1);
+  expect(result.dock.bottom).toBeLessThanOrEqual(result.viewport.height+1);
+  await page.screenshot({path:'screenshots/sprout-ui-jogo-desktop-1366x768.png',animations:'disabled'});
+  await page.locator('#open-workers').click();
+  await page.screenshot({path:'screenshots/sprout-ui-equipe-1366x768.png',animations:'disabled'});
+  await page.locator('#drawer-close').click();
+  await page.locator('#orders-btn').click();
+  await page.screenshot({path:'screenshots/sprout-ui-ordens-1366x768.png',animations:'disabled'});
+  await page.locator('#orders-btn').click();
+  await page.setViewportSize({width:390,height:844});
+  await page.waitForTimeout(250);
+  const mobile=await page.evaluate(()=>{
+    const r=document.querySelector('.tooltray').getBoundingClientRect();
+    const tools=[...document.querySelectorAll('.tool')].map(t=>t.getBoundingClientRect());
+    return {left:r.left,right:r.right,bottom:r.bottom,width:innerWidth,height:innerHeight,
+      allToolsVisible:tools.every(t=>t.left>=-1&&t.right<=innerWidth+1)};
+  });
+  expect(mobile.left).toBeGreaterThanOrEqual(-1);
+  expect(mobile.right).toBeLessThanOrEqual(mobile.width+1);
+  expect(mobile.bottom).toBeLessThanOrEqual(mobile.height+1);
+  expect(mobile.allToolsVisible).toBe(true);
+  await page.screenshot({path:'screenshots/sprout-ui-jogo-mobile-390x844.png',animations:'disabled'});
+  expect(errors).toEqual([]);
+});
