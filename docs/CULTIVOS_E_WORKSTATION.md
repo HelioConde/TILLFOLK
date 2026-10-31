@@ -1,5 +1,8 @@
 # TILLFOLK — Cultivos, sementes e Work Station
 
+> Registro de uma etapa agrícola do protótipo. **Objetivo central do jogo: manter a colônia viva.** Colheitas devem sustentar refeições individuais; falta de alimento causará fome e morte quando o marco de sobrevivência for implementado. Ver [GDD](./GDD_TILLFOLK.md) e [Roadmap](./ROADMAP_SOBREVIVENCIA.md).
+
+
 ## Recursos originais encontrados
 
 - `public/assets/assets/crops/`: **19 plantas com arquivos `growth_basic`** (bambu, beterraba, frutinhas, brócolis, cenoura, couve-flor, aipo, milho, berinjela, uva, alho-poró, alface, cebola, pimentão, batata, abóbora, rabanete, tomate e trigo). As 19 têm ícones `icon`. `tallgrass` também existe, mas funciona como grama ambiental e não como cultura cultivável no catálogo.
@@ -14,9 +17,9 @@
 2. Limpar grama alta conserva a chance de 25% de descobrir uma semente; agora a variedade encontrada é identificada e guardada em `state.cropSeeds`. A primeira descoberta passa a ser a cultura selecionada por padrão.
 3. No menu **Ordens → Escolher cultura**, o jogador define o tipo da próxima semeadura. Uma ordem de semear grava seu tipo de cultura para não ser alterada caso a seleção mude durante o trabalho.
 4. Ao colher e transportar, o estoque recebe alimentos identificados em `state.cropProduce`, um pouco de comida e uma semente do mesmo cultivo. O menu Estoque mostra as quantidades por espécie.
-5. A **Work Station** é uma construção única: o jogador primeiro junta **30 gravetos**, coloca o blueprint em **Construir → Work Station**, e a equipe monta a bancada. O estado fica em `state.crafting.station` e é sincronizado com `state.workstations` de versões anteriores.
+5. A **Work Station** é uma construção única: o jogador primeiro junta **10 gravetos**, coloca o blueprint em **Construir → Work Station**, e a equipe monta a bancada. O estado fica em `state.crafting.station` e é sincronizado com `state.workstations` de versões anteriores.
 6. Abrir a bancada mostra as receitas originais de ferramentas de `src/crafting.js` (incluindo machado, ferramentas para mineração e cultivo) e o reaproveitamento agrícola: **2 alimentos armazenados de uma espécie → 3 sementes dessa espécie**. O jogo valida os custos antes de retirar recursos.
-7. A Work Station pode ser aberta pelo botão **Bancada e receitas** ou clicando diretamente na bancada no mapa. Equipamentos fabricados servem à equipe inteira.
+7. A Work Station pode ser aberta pelo botão **Bancada e receitas** ou clicando diretamente na bancada no mapa. As ferramentas são fabricadas na estação e o protótipo registra ferramentas por trabalhador; verifique os custos e a atribuição em `src/crafting.js` e `src/game.js`.
 8. Partidas antigas migram sem apagar canteiros ou recursos. Os dados permanecem no `localStorage`; não é necessário banco de dados.
 
 ## Validações
