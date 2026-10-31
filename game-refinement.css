@@ -1,0 +1,177 @@
+/* TILLFOLK — HUD compacto e feedback de colônia, 2026-10-31.
+   Camada final e não destrutiva: mantém Sprout Lands e regras do motor. */
+:root{--tf-cream:#f8edca;--tf-gold:#e8cc91;--tf-wood:#5b4833;--tf-ink:#263326;--tf-moss:#4c6745}
+body.play-session .topbar{
+  min-height:60px!important;height:60px!important;max-height:60px!important;
+  padding:5px 13px!important;border-bottom-width:3px!important;
+  grid-template-columns:minmax(140px,160px) minmax(0,1fr) auto 42px!important;
+  gap:7px!important;
+}
+body.play-session .topbar .brand{font-size:16px!important;gap:8px!important;letter-spacing:.3px!important}
+body.play-session .topbar .brand small{font-size:8px!important;margin-top:3px!important}
+body.play-session .topbar .brand-icon{width:33px!important;height:33px!important;font-size:19px!important}
+body.play-session .metric{min-height:36px!important;padding:2px 7px!important;grid-template-rows:14px 13px!important}
+body.play-session .metric span{font-size:14px!important}
+body.play-session .metric small{font-size:8px!important}
+body.play-session .metric b{font-size:13px!important}
+body.play-session .hud-panels button,body.play-session #menu-btn{
+  min-height:36px!important;height:38px!important;font-size:11px!important;
+}
+body.play-session .scene-head{
+  top:72px!important;left:12px!important;
+  width:max-content!important;max-width:min(310px,calc(100vw - 24px))!important;
+  min-height:0!important;gap:7px!important;padding:3px 7px!important;
+}
+body.play-session .scene-head h1{font-size:16px!important;line-height:1.08!important;margin-top:3px!important}
+body.play-session .scene-head .overline{font-size:8px!important;letter-spacing:.5px!important}
+body.play-session .scene-actions{margin-left:4px!important;gap:0!important}
+body.play-session .focus-game-btn{
+  font-size:10px!important;min-height:32px!important;
+  padding:0 4px!important;white-space:nowrap!important;
+}
+body.play-session .scene-head:hover{box-shadow:0 5px 0 #3d3122,0 11px 24px #122017a0!important}
+body.play-session .tooltray{
+  bottom:12px!important;max-width:calc(100vw - 22px)!important;
+  padding:2px 7px!important;gap:6px!important;
+  box-shadow:0 4px 0 #291f15,0 10px 25px #081b0d7c!important;
+}
+body.play-session .tool-list{gap:2px!important;padding-right:7px!important}
+body.play-session .tool{
+  height:69px!important;min-height:69px!important;width:73px!important;min-width:68px!important;
+  grid-template-rows:40px 16px!important;gap:0!important;padding:2px!important;
+}
+body.play-session .tool span{width:39px!important;height:39px!important;font-size:22px!important}
+body.play-session .tool b{font-size:11px!important;letter-spacing:.1px!important}
+body.play-session .tool.active{
+  background:linear-gradient(180deg,#65754c,#3e553b)!important;
+  outline:2px solid #d7c48b;outline-offset:-4px;
+}
+body.play-session .tool:focus-visible,
+body.play-session .hud-panels button:focus-visible,
+body.play-session .speed-wrap button:focus-visible{
+  outline:3px solid #fff1c2!important;outline-offset:2px!important;
+}
+body.play-session .speed-wrap{gap:3px!important}
+body.play-session .speed-wrap > span{font-size:8px!important;margin-right:2px!important}
+body.play-session .speed-wrap button{min-height:35px!important;min-width:35px!important;padding:0 5px!important}
+body.play-session .speed-wrap button.chosen{
+  filter:drop-shadow(0 0 3px #f8d886);
+  font-weight:900!important;
+}
+body.play-session .hud-selection{
+  bottom:99px!important;min-height:32px!important;padding:0 9px!important;
+  max-width:calc(100vw - 20px)!important;
+}
+body.play-session .hud-selection strong{font-size:11px!important}
+body.play-session .hud-selection small{font-size:10px!important}
+body.play-session .world-tag{
+  bottom:20px!important;left:10px!important;
+  padding:2px 5px!important;max-width:min(320px,45vw)!important;
+  opacity:.84;transition:opacity .15s ease;
+}
+body.play-session .world-tag:hover{opacity:1}
+body.play-session .tile-tooltip{bottom:116px!important}
+body.play-session #toast{bottom:104px!important;right:12px!important;max-width:260px!important}
+body.play-session .sidebar .panel{
+  padding:10px!important;gap:9px!important;
+}
+body.play-session .sidebar .panel-top h2{font-size:15px!important}
+body.play-session .worker{
+  display:block;gap:7px!important;
+  border:2px solid #9da674!important;
+  padding:9px!important;
+  box-shadow:inset 0 0 0 1px #1e3b2a,0 3px 0 #1d291d;
+}
+body.play-session .worker-head{display:flex;align-items:center;gap:10px}
+body.play-session .worker-identity{min-width:0;display:grid;gap:4px}
+body.play-session .worker-name{font-size:14px!important;line-height:1.1!important}
+body.play-session .worker-job{font-size:11px!important;line-height:1.25!important}
+body.play-session .worker-status{
+  width:max-content;max-width:100%;font-size:9px!important;
+  text-transform:uppercase;letter-spacing:.6px;font-weight:900;
+  padding:3px 6px;border:1px solid #83935f;background:#243a2e;color:#e0e5b5;
+}
+body.play-session .worker[data-worker-state="working"] .worker-status{
+  color:#ffe4a4;background:#54452b;border-color:#ab915a;
+}
+body.play-session .worker[data-worker-state="moving"] .worker-status{
+  color:#c9eaf0;background:#2c4f53;border-color:#73a8ad;
+}
+body.play-session .worker-bar{
+  height:9px!important;background:#26352c!important;
+  border:1px solid #8fa16e!important;border-radius:0!important;overflow:hidden;
+}
+body.play-session .worker-bar i{display:block;height:100%!important;background:#e7c980!important}
+body.play-session .resource-slot{
+  min-width:0;display:grid;grid-template-rows:38px auto auto;justify-items:center;
+  gap:3px;padding:3px 2px 5px;color:var(--tf-cream);
+  background:transparent;border:0;position:relative;
+}
+body.play-session .wild-inventory{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:4px!important;padding:8px!important;background:#2b392e!important;
+}
+body.play-session .resource-art{
+  display:grid;place-items:center;width:39px;height:39px;
+  background-image:var(--sprout-inventory-slot);
+  background-repeat:no-repeat;background-position:center;background-size:100% 100%;
+  image-rendering:pixelated;font-size:21px;
+}
+body.play-session .resource-amount{font:800 13px/1.1 system-ui,sans-serif;color:#ffe8a9;font-variant-numeric:tabular-nums}
+body.play-session .resource-slot small{font:700 9px/1 system-ui,sans-serif;color:#e2dfbc}
+body.play-session .resource-slot.housing .resource-art{color:#ece2ab;font-size:27px}
+body.play-session .orders-panel,
+body.play-session .construction-panel{bottom:100px!important}
+body.play-session .orders-choices button,
+body.play-session .construction-actions button{min-height:46px}
+body.play-session .orders-choices button:focus-visible,
+body.play-session .construction-actions button:focus-visible{outline:3px solid #ffe9b0;outline-offset:2px}
+@media(max-width:1050px){
+  body.play-session .topbar{grid-template-columns:minmax(112px,140px) minmax(0,1fr) auto 40px!important;padding-inline:7px!important;gap:4px!important}
+  body.play-session .brand{font-size:14px!important}
+  body.play-session .metrics{gap:3px!important}
+  body.play-session .metric{padding-inline:4px!important}
+  body.play-session .hud-panels button{padding:0 3px!important}
+  body.play-session .tool{width:68px!important;min-width:61px!important}
+}
+@media(max-width:760px){
+  body.play-session .topbar{
+    min-height:93px!important;height:93px!important;max-height:105px!important;
+    grid-template-columns:minmax(0,1fr) auto 40px!important;grid-template-rows:34px 34px!important;
+    padding:7px 7px!important;row-gap:6px!important;
+  }
+  body.play-session .topbar .brand{grid-column:1!important;grid-row:1!important}
+  body.play-session .hud-panels{grid-column:2!important;grid-row:1!important}
+  body.play-session #menu-btn{grid-column:3!important;grid-row:1!important}
+  body.play-session .metrics{grid-column:1/-1!important;grid-row:2!important}
+  body.play-session .scene-head{top:103px!important;max-width:min(290px,calc(100vw - 20px))!important}
+  body.play-session .scene-head h1{font-size:14px!important}
+  body.play-session .focus-game-btn{font-size:0!important;min-width:34px!important}
+  body.play-session .tooltray{bottom:8px!important}
+  body.play-session .tool{height:60px!important;min-height:60px!important;grid-template-rows:36px 14px!important;flex:1!important;width:auto!important;min-width:0!important}
+  body.play-session .tool span{width:35px!important;height:35px!important;font-size:19px!important}
+  body.play-session .tool b{font-size:10px!important}
+  body.play-session .speed-wrap button{min-width:30px!important;min-height:33px!important}
+  body.play-session .speed-wrap span{display:none!important}
+  body.play-session .hud-selection{bottom:85px!important}
+  body.play-session .world-tag{bottom:94px!important;max-width:35vw!important}
+  body.play-session .orders-panel,body.play-session .construction-panel{bottom:90px!important}
+}
+@media(max-width:460px){
+  body.play-session .topbar{max-height:98px!important;height:88px!important;min-height:88px!important;grid-template-rows:32px 29px!important}
+  body.play-session .scene-head{top:96px!important}
+  body.play-session .tooltray{width:calc(100vw - 12px)!important;flex-wrap:wrap!important;gap:2px!important}
+  body.play-session .tool-list{width:100%!important;flex-basis:100%!important;border-right:0!important;padding-right:0!important;padding-bottom:2px!important}
+  body.play-session .tool{max-width:none!important;min-height:56px!important;height:56px!important}
+  body.play-session .tool span{width:32px!important;height:32px!important}
+  body.play-session .tool b{font-size:9px!important}
+  body.play-session .speed-wrap{width:100%!important;justify-content:center!important}
+  body.play-session .speed-wrap button{min-height:29px!important;min-width:46px!important}
+  body.play-session .hud-selection{bottom:132px!important}
+  body.play-session .world-tag{bottom:147px!important;max-width:45vw!important;font-size:8px!important}
+  body.play-session .orders-panel,body.play-session .construction-panel{bottom:146px!important}
+  body.play-session .wild-inventory{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){
+ body.play-session .world-tag,body.play-session .tooltray{transition:none!important}
+}
