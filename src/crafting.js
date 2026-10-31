@@ -5,6 +5,17 @@
   const ASSET_ROOT="./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/";
   const STATION_SPRITE=ASSET_ROOT+"Objects/work station.png";
   const ITEMS_SPRITE=ASSET_ROOT+"Objects/Items/tools and meterials.png";
+  // Recortes verificados do atlas premium Objects/Items/tools and meterials.png (64×48).
+  // Cada frame mede 16×16, sem interpolação ou recriação manual da arte.
+  // Pá e picareta não possuem correspondência inequívoca nessa spritesheet;
+  // nesses dois casos o menu usa ícone provisório, sem fingir que é um sprite do pack.
+  const ITEM_FRAMES=Object.freeze({
+    wateringCan:Object.freeze({x:0,y:0,w:16,h:16}),
+    axe:Object.freeze({x:16,y:0,w:16,h:16}),
+    stoneAxe:Object.freeze({x:32,y:0,w:16,h:16}),
+    hoe:Object.freeze({x:0,y:16,w:16,h:16})
+  });
+  const itemFrame=key=>ITEM_FRAMES[key]||null;
   const RECIPES=Object.freeze([
     {key:"axe",name:"Machado",icon:"🪓",cost:{twigs:8,grass:3},help:"Derrubar árvores e retirar troncos."},
     {key:"stoneAxe",name:"Machado de pedra",icon:"🪓",cost:{twigs:8,grass:3,stone:3},help:"Remover o tronco caído que bloqueia a saída leste."},
@@ -71,7 +82,7 @@
     return Object.entries(cost).map(([key,n])=>n+" "+(labels[key]||key)).join(" · ");
   }
   window.TillfolkCrafting=Object.freeze({
-    STATION_COST,STATION_SPRITE,ITEMS_SPRITE,RECIPES,
+    STATION_COST,STATION_SPRITE,ITEMS_SPRITE,ITEM_FRAMES,itemFrame,RECIPES,
     normalize,has,missing,canBuild,recipe,craft,locked,requiredTool,blocked,formatCost
   });
 })();
