@@ -8,6 +8,25 @@
   const solidKinds=new Set(["tree","boulder","log","thicket","stump"]);
   const gatherKinds=new Set(["tree","boulder","log","thicket","stump","mushroom","flowers","herbs","grass","twig","pebble"]);
   const key=(x,y)=>x+","+y;
+  // Atlas original: variações 2,3,4,5 exibem frutos na copa.
+  // Nesta fase só usar árvores verdes para madeira (0,1 e 6).
+  const nonFruitTreeVariants=Object.freeze([0,1,6]);
+  const safeVariant=(kind,variant)=>kind==="tree"?
+    nonFruitTreeVariants.includes(variant)?variant:
+      nonFruitTreeVariants[Math.abs(Math.trunc(variant)||0)%nonFruitTreeVariants.length]:
+    variant;
+  const pickVariant=(kind,random)=>kind==="tree"?
+    nonFruitTreeVariants[Math.floor(random()*nonFruitTreeVariants.length)]:
+    Math.floor(random()*7);
+  function stripFruitTrees(world){
+    if(!world?.objects)return 0;
+    let changed=0;
+    for(const object of world.objects)if(object.kind==="tree"){
+      const next=safeVariant(object.kind,object.variant);
+      if(next!==object.variant){object.variant=next;changed++;}
+    }
+    return changed;
+  }
   const randSeed=seed=>{let a=(seed>>>0)||139931;return ()=>{a+=0x6D2B79F5;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;}};
   const noise=(seed,x,y)=>{let v=Math.imul(x+721,374761393)^Math.imul(y+1013,668265263)^(seed|0);v=Math.imul(v^(v>>>13),1274126177);return ((v^(v>>>16))>>>0)/4294967296;};
   const nearStart=(x,y,w,h)=>Math.hypot((x-(w>=60?w/2:13.6))/1.15,
@@ -60,7 +79,7 @@
       }
 
       if(kind){
-        world.objects.push({x,y,kind,variant:Math.floor(random()*7),age:0});
+        world.objects.push({x,y,kind,variant:pickVariant(kind,random),age:0});
         used.add(key(x,y));
       }
     }
@@ -71,7 +90,7 @@
       while(needed>0&&attempts++<600){
         const x=1+Math.floor(random()*(w-2)),y=1+Math.floor(random()*(h-2));
         if(nearStart(x,y,w,h)||used.has(key(x,y)))continue;
-        world.objects.push({x,y,kind,variant:Math.floor(random()*7),age:0});
+        world.objects.push({x,y,kind,variant:pickVariant(kind,random),age:0});
         used.add(key(x,y));needed--;
       }
     }
@@ -154,7 +173,7 @@
         biome==="w"?(rng()<.55?"mushroom":"herbs"):
         day%5===0&&rng()<.12?"tree":
         rng()<.30?"mushroom":rng()<.61?"flowers":"grass";
-      world.objects.push({x,y,kind,variant:Math.floor(rng()*7),age:0});
+      world.objects.push({x,y,kind,variant:pickVariant(kind,rng),age:0});
       occupied.add(id);newCount++;
     }
     world.lastRegrownDay=day;
@@ -184,6 +203,7 @@
       [64,96,32,16],[96,96,16,16],[112,96,32,16],[144,96,32,16]])
   });
   function spriteFrame(kind,variant=0){
+    variant=safeVariant(kind,variant);
     const options=atlasFrames[kind];
     if(!options)return null;
     const index=((Math.trunc(variant)||0)%options.length+options.length)%options.length;
@@ -254,7 +274,6 @@
       return;
     }
     if(kind==="pebble"){
-      // Pedrinha pequena recolhida com as mãos; usa o atlas de rochas existente.
       part(sprites.rocks,0,16,16,16,x+9,y+19,14,13);
       return;
     }
@@ -302,9 +321,11 @@
       cells[y*width+x]="g";
     enlarged.biomeMap=cells.join("");
     enlarged.lastRegrownDay=legacy?.lastRegrownDay||1;
+    stripFruitTrees(enlarged);
     return enlarged;
   }
   window.TillfolkWild=Object.freeze({create,expand,at,waterAt,blocked,clear,regrow,
     drawGround,drawObject,drawAmbient,spriteFrame,atlasFrames,
+    stripFruitTrees,nonFruitTreeVariants,
     terrainAt:Biomes.at,biomeAt:Biomes.kind});
 })();
