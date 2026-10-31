@@ -75,6 +75,7 @@
       latest.map(item=>'<div class="pickup-entry"><span>'+item.icon+'</span><span>+'+item.quantity+' '+item.name+'</span></div>').join("");
   }
   function taskDuration(task){
+    if(task.type==="craftTool")return 45;
     if(task.type==="clear"){
       const object=World.at(state.world,task.x,task.y);
       // Recolher pequenos itens à mão é bem diferente de cortar uma árvore.
@@ -542,11 +543,11 @@
     }
     const team = chosenStarters.slice(0,2).map((c,i)=>({
       id:i+1,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,
-      appearance:c.appearance ?? i,personalPriority:{},x:W/2-.5+i,y:H/2-.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
+      appearance:c.appearance ?? i,personalPriority:{},inventory:{tools:{},items:{}},x:W/2-.5+i,y:H/2-.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
     }));
     state = {day:1,minutes:8*60,seeds:0,water:0,food:8,firstHarvest:false,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",tutorial:Missions.create(),
       plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),
-      cropSeeds:Crops.normalizeStock({}),cropProduce:Crops.normalizeStock({}),selectedCrop:"carrot",workstations:[],crafting:Crafting.normalize(null),
+      cropSeeds:Crops.normalizeStock({}),cropProduce:Crops.normalizeStock({}),selectedCrop:"potato",workstations:[],crafting:Crafting.normalize(null),
       homes:[],animals:[],inventory:{wood:0,twigs:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},buildPriority:5,
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
@@ -573,7 +574,7 @@
       // Migração das sementes genéricas preserva todos os recursos de fazendas antigas.
       state.cropSeeds=Crops.normalizeStock(s.cropSeeds||{carrot:Number(s.seeds)||0});
       state.cropProduce=Crops.normalizeStock(s.cropProduce);
-      state.selectedCrop=Crops.get(s.selectedCrop)?s.selectedCrop:"carrot";
+      state.selectedCrop=Crops.get(s.selectedCrop)?s.selectedCrop:"potato";
       state.workstations=Array.isArray(s.workstations)?s.workstations.filter(ws=>
         Number.isInteger(ws.x)&&Number.isInteger(ws.y)&&ws.x>0&&ws.y>0&&ws.x<W-1&&ws.y<H-1):[];
       state.crafting=Crafting.normalize(s.crafting,!s.crafting);
@@ -583,7 +584,10 @@
         state.workstations.push({...state.crafting.station});
       state.seeds=Object.values(state.cropSeeds).reduce((sum,n)=>sum+n,0);
       state.plots.forEach(p=>{if((p.seeded||p.produce)&&!Crops.get(p.crop))p.crop="carrot";});
-      state.workers.forEach(homageSavedName);
+      state.workers.forEach(w=>{
+        homageSavedName(w);
+        Crafting.normalizeWorker(w,!w.inventory?s.crafting?.equipment:null);
+      });
       // Migração não destrutiva: os saves continuam utilizáveis, mas não há moeda.
       delete state.coins;
       state.food=Math.max(0,Number(state.food)||0);
@@ -778,6 +782,10 @@
       return "Traço negativo: não pode buscar água";
     if(t.type==="fertilize"&&state.inventory.manure<=0&&w.neg.includes("collectManure"))
       return "Traço negativo: não pode recolher esterco";
+    if(t.type==="craftTool"&&w.inventory?.tools?.[t.recipe])
+      return "Este colono já possui esta ferramenta";
+    const personalBlock=Crafting.blocked(state,t.type,World.at(state.world,t.x,t.y),w);
+    if(personalBlock)return personalBlock;
     if(t.type==="buildStation"&&!stationSiteValid(t.x,t.y))
       return "Escolha um terreno livre para a bancada";
     if(t.type==="buildHome"){
@@ -845,6 +853,18 @@
   }
   function finish(w,t){
     const p=findPlot(t.x,t.y);
+    if(t.type==="craftTool"){
+      if(!state.crafting.station||state.crafting.station.x!==t.x||state.crafting.station.y!==t.y)return false;
+      const result=Crafting.craft(state,t.recipe,w);
+      if(result.error){log("Fabricação aguardando: "+result.error);return false;}
+      const item=result.item;
+      showPickup(t.x,t.y,item.key,1);
+      if(item.key==="hoe")recordTutorial("hoe");
+      if(item.key==="wateringCan")recordTutorial("wateringCan");
+      if(item.key==="stoneAxe")recordTutorial("axe");
+      log(w.name+" terminou "+item.name+" na Work Station e guardou no próprio inventário.");
+      return true;
+    }
     if(t.type==="collectWater"){
       if(!World.waterAt(state.world,t.x,t.y))return false;
       state.water+=4;showPickup(t.x,t.y,"water",4);log(w.name+" buscou 4 baldes de água na lagoa.");return true;
@@ -861,6 +881,7 @@
       state.workstations.push({x:t.x,y:t.y});
       state.crafting.station={x:t.x,y:t.y};
       state.plots=state.plots.filter(plot=>plot.x!==t.x||plot.y!==t.y);
+      showPickup(t.x,t.y,"station");
       recordTutorial("workstation");
       log(w.name+" terminou a Work Station! Agora podemos fabricar ferramentas.");
       return true;
@@ -873,6 +894,7 @@
         state.plots=state.plots.filter(plot=>plot.x!==hx||plot.y!==hy);
       }
       assignHomes();
+      showPickup(t.x,t.y,"home");
       log(w.name+" concluiu uma cabana. "+housingVacancy()+" vaga(s) livres.");return true;
     }
     if(!p)return false;
@@ -881,8 +903,8 @@
       case "clear":{
         const obj=World.at(state.world,p.x,p.y);
         if(obj){
-          if(Crafting.blocked(state,"clear",obj))return false;
-          const kind=obj.kind, result=World.clear(state.world,p.x,p.y,{stoneAxe:Crafting.has(state,"stoneAxe")});
+          if(Crafting.blocked(state,"clear",obj,w))return false;
+          const kind=obj.kind, result=World.clear(state.world,p.x,p.y,{stoneAxe:Crafting.has(state,"stoneAxe",w)});
           if(result.blocked)return false;
           const types={tree:"wood",stump:"wood",log:"wood",gateLog:"wood",boulder:"stone",pebble:"stone",
             mushroom:"mushroom",flowers:"flower",herbs:"herbs",grass:"grass",thicket:"wood",twig:"twigs"};
@@ -891,6 +913,8 @@
           const resource=types[kind]||"grass";
           state.inventory[resource]=(state.inventory[resource]||0)+amount;
           showPickup(t.x,t.y,resource,amount);
+          const carried=Crafting.normalizeWorker(w).items;
+          carried[resource]=(carried[resource]||0)+amount;
           // Grama alta tem chance de soltar uma semente. Não existe semente infinita.
           if(kind==="grass"){
             recordTutorial("grass");
@@ -910,7 +934,7 @@
         // Limpar o terreno produz recursos naturais, nunca moedas.
         break;
       }
-      case "till":if(Crafting.blocked(state,"till"))return false;
+      case "till":if(Crafting.blocked(state,"till",null,w))return false;
         p.tilled=true;recordTutorial("till");break;
       case "fertilize":
         if(!w.carryingManure&&state.inventory.manure<=0)return false;
@@ -924,7 +948,7 @@
         recordTutorial("sow");break;
       }
       case "water":
-        if(Crafting.blocked(state,"water"))return false;
+        if(Crafting.blocked(state,"water",null,w))return false;
         if(!w.carryingWater&&state.water<=0)return false;
         if(w.carryingWater)w.carryingWater=false;else state.water--;
         p.watered=true;recordTutorial("water");break;
@@ -1574,7 +1598,7 @@
     const price=foodHireCost(c);
     if(state.food<price){notify("Comida insuficiente para a troca.");return;}
     state.food-=price;
-    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},x:state.spawn.x,y:state.spawn.y,task:null,progress:0,facing:"down",moving:false,walkFrame:0});
+    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},inventory:{tools:{},items:{}},x:state.spawn.x,y:state.spawn.y,task:null,progress:0,facing:"down",moving:false,walkFrame:0});
     assignHomes();
     state.candidates[i]=newCandidate();
     log(c.name+" entrou para a equipe.");
