@@ -36,9 +36,7 @@
   const grass=(x,y,n)=>stamp("grass",((n%6)+6)%6*16,80,16,16,x,y,16,16);
   const soil=(x,y)=>stamp("soil",0,80,16,16,x,y,16,16);
   function earth(x,y){stamp(ready("dark")?"dark":"soil",0,80,16,16,x,y,16,16);}
-  let menuTime=0;
   function tree(x,y,kind=0,scale=1){
-    x+=Math.sin(menuTime/1800+y*.032)*Math.min(2.5,scale*1.4);
     if(kind===2){stamp("trees",144,48,48,48,x-25*scale,y-48*scale,72*scale,72*scale);return;}
     // Cada copa completa ocupa sua célula original de 32px no atlas.
     // O primeiro arbusto é uma exceção: tem 16px de largura.
@@ -75,8 +73,7 @@
     const appearance=Math.min(index,Math.max(0,Math.floor(img.naturalHeight/192)-1));
     stamp("worker",frame*48,appearance*192,48,48,x,y,w,h,target);
   }
-  function paint(time=0){
-    menuTime=time;
+  function paint(){
     ctx.imageSmoothingEnabled=false;
     // Todos os pixels do fundo são tiles do pack original.
     ctx.fillStyle="#aad282";ctx.fillRect(0,0,W,H);
@@ -112,7 +109,7 @@
     }
     for(let i=0;i<7;i++)stamp("furniture",48,16,16,16,695+i*27,384,22,24);
     // Funcionários e animais: frames reais, sem emojis.
-    const frame=Math.floor(time/260)%4;
+    const frame=Math.floor(performance.now()/260)%4;
     walking(521,370,0,frame,ctx,68,68);
     walking(716,398,1,frame,ctx,64,64);
     stamp("chicken",0,0,16,16,804,464,31,31);
@@ -140,12 +137,21 @@
       walking(53,7,0,0,c,51,57);
       t("chest",0,0,32,32,138,20,42,43);
     }else if(which==="mode-relaxed"){
-      for(let x=0;x<192;x+=16)for(let y=0;y<72;y+=16)t("grass",16,80,16,16,x,y,16,16);
-      t("trees",144,48,48,48,90,-3,78,78);
-      t("trees",16,0,16,32,14,3,46,66);
-      for(let x=28;x<99;x+=17)t("crops",64,0,16,16,x,38,20,29);
-      t("well",0,0,32,32,135,27,43,43);
-      walking(65,12,1,0,c,51,57);
+      // Miniatura própria, com recortes INTEIROS do atlas original.
+      // Antes: trees (144,48,48,48) ultrapassava a imagem, e (16,0,16,32)
+      // mostrava apenas metade da copa. Também havia objetos fora do card.
+      for(let y=0;y<72;y+=16){
+        const h=Math.min(16,72-y);
+        for(let x=0;x<192;x+=16)t("grass",16,80,16,h,x,y,16,h);
+      }
+      // Caminho atrás do personagem, terminando exatamente na borda inferior.
+      for(let x=70;x<=118;x+=16)t("soil",0,80,16,16,x,56,16,16);
+      // Duas árvores completas (frame original 32×32, sem cortar a copa).
+      t("trees",16,0,32,32,12,8,48,48);
+      t("trees",16,0,32,32,134,6,42,42);
+      // Poço e colono inteiros, com margem interna em todas as direções.
+      t("well",0,0,32,32,147,41,30,30);
+      walking(74,6,1,0,c,50,54);
     }else{
       for(let x=0;x<192;x+=16)t("grass",0,80,16,16,x,55,16,16);
       t("well",0,0,32,32,17,5,65,65);
@@ -162,7 +168,7 @@
     const frame=paused?0:Math.floor((t||performance.now())/260);
     if(frame===latest && loaded===all.length)return;
     latest=frame;
-    paint(paused?0:(t||performance.now()));
+    paint();
     document.querySelectorAll(".title-card-preview,.mode-art").forEach(preview);
   }
   function loop(t){

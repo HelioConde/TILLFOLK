@@ -803,3 +803,52 @@ test('Tela inicial: créditos, som, tutorial visual e cartões no rodapé',async
  await page.locator('#help-close').click();
  await expect(page.locator('#help-dialog')).toBeHidden();
 });
+
+test('Fazenda tranquila: árvores completas, poço inteiro e nenhum sprite cortado',async({page})=>{
+  await page.setViewportSize({width:1366,height:768});
+  await page.addInitScript(()=>{
+    window.__relaxedFrames=[];
+    const original=CanvasRenderingContext2D.prototype.drawImage;
+    CanvasRenderingContext2D.prototype.drawImage=function(...args){
+      if(this.canvas?.dataset?.preview==='mode-relaxed'&&args.length===9){
+        const img=args[0];
+        window.__relaxedFrames.push({
+          src:img.currentSrc||img.src||'',sx:args[1],sy:args[2],sw:args[3],sh:args[4],
+          dx:args[5],dy:args[6],dw:args[7],dh:args[8],
+          imageWidth:img.naturalWidth||img.width,imageHeight:img.naturalHeight||img.height,
+          canvasWidth:this.canvas.width,canvasHeight:this.canvas.height
+        });
+        if(window.__relaxedFrames.length>200)window.__relaxedFrames.splice(0,100);
+      }
+      return original.apply(this,args);
+    };
+  });
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.locator('#new-game').click();
+  await expect(page.locator('#mode-dialog')).toBeVisible();
+  await page.waitForFunction(()=>window.__relaxedFrames?.filter(f=>f.src.includes('trees-and-bushes')).length>=2);
+  const frames=await page.evaluate(()=>window.__relaxedFrames);
+  const trees=frames.filter(f=>f.src.includes('trees-and-bushes'));
+  const wells=frames.filter(f=>f.src.includes('water-well'));
+  const workers=frames.filter(f=>f.src.includes('worker-variants'));
+  expect(trees.length).toBeGreaterThanOrEqual(2);
+  expect(wells.length).toBeGreaterThanOrEqual(1);
+  expect(workers.length).toBeGreaterThanOrEqual(1);
+  for(const frame of trees){
+    expect([frame.sx,frame.sy,frame.sw,frame.sh]).toEqual([16,0,32,32]);
+  }
+  for(const frame of [...trees,...wells,...workers]){
+    expect(frame.imageWidth).toBeGreaterThanOrEqual(frame.sx+frame.sw);
+    expect(frame.imageHeight).toBeGreaterThanOrEqual(frame.sy+frame.sh);
+    expect(frame.sx).toBeGreaterThanOrEqual(0);
+    expect(frame.sy).toBeGreaterThanOrEqual(0);
+    expect(frame.dx).toBeGreaterThanOrEqual(0);
+    expect(frame.dy).toBeGreaterThanOrEqual(0);
+    expect(frame.dx+frame.dw).toBeLessThanOrEqual(frame.canvasWidth);
+    expect(frame.dy+frame.dh).toBeLessThanOrEqual(frame.canvasHeight);
+  }
+  await page.locator('#mode-dialog').screenshot({
+    path:'screenshots/fazenda-tranquila-sprites-corrigidos-1366x768.png',
+    animations:'disabled'
+  });
+});
