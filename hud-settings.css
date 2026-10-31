@@ -1,0 +1,64 @@
+/* Camada final do HUD e das preferências — mantém o atlas Sprout Lands original. */
+body.play-session .tooltray{
+  left:50%!important;right:auto!important;transform:translateX(-50%)!important;
+  width:max-content!important;max-width:calc(100vw - 14px)!important;
+  justify-content:center!important;
+}
+body.play-session .tooltray .tool-list{
+  display:flex!important;justify-content:center!important;align-items:center!important;
+  gap:4px!important;margin-inline:auto!important;padding-inline:0!important;
+  border-right:0!important;
+}
+body.play-session .tooltray .tool{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+  justify-content:center!important;justify-items:center!important;align-items:center!important;
+  align-content:center!important;text-align:center!important;
+  padding-inline:2px!important;
+}
+body.play-session .tooltray .tool > span{
+  display:grid!important;place-items:center!important;place-content:center!important;
+  justify-self:center!important;align-self:center!important;margin:0 auto!important;
+  padding:0!important;text-align:center!important;line-height:1!important;
+  font-variant-emoji:text;
+}
+body.play-session .tooltray .tool > b{
+  display:block!important;justify-self:center!important;align-self:center!important;
+  width:100%!important;margin:0!important;text-align:center!important;line-height:1.2!important;
+}
+@media(max-width:460px){
+  body.play-session .tooltray{width:calc(100vw - 12px)!important;}
+  body.play-session .tooltray .tool-list{width:100%!important;justify-content:space-evenly!important;}
+  body.play-session .tooltray .tool{flex:1 1 0!important;min-width:0!important;max-width:none!important;}
+}
+#game-options-dialog #game-options-main[hidden],
+#game-options-dialog #game-settings-panel[hidden]{display:none!important}
+#game-options-dialog .game-settings-panel:not([hidden]){display:grid;gap:8px}
+#game-options-dialog .game-settings-panel h3{
+  margin:0;font:900 18px/1.25 system-ui,sans-serif;color:#ffebc0;
+}
+#game-options-dialog .game-settings-panel p{margin:0 0 4px}
+#game-options-dialog .title-setting{
+  margin:0;min-height:64px;padding:10px 12px;gap:12px;
+  border:1px solid #759b70;background:#304d3a;
+}
+#game-options-dialog .title-setting input[type="checkbox"]{flex:0 0 22px;}
+#game-options-dialog .title-setting input[type="range"]{
+  width:min(155px,40%);min-width:85px;flex:0 0 auto;accent-color:#c9e6a3;
+}
+#game-options-dialog .game-settings-actions{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+}
+#game-options-dialog .game-settings-actions button{min-height:43px;padding:8px 5px;}
+#game-options-dialog #game-settings-back{min-height:45px;margin-top:3px}
+body.tf-reduced-animations.play-session .tooltray,
+body.tf-reduced-animations.play-session .tool,
+body.tf-reduced-animations.play-session .world-tag,
+body.tf-reduced-animations.play-session .tile-tooltip{
+  animation:none!important;transition:none!important;
+}
+@media(max-width:520px){
+  #game-options-dialog .game-settings-actions{grid-template-columns:1fr;}
+  #game-options-dialog .game-settings-panel h3{font-size:16px;}
+  #game-options-dialog .title-setting{padding:9px;min-height:58px}
+  #game-options-dialog .title-setting small{line-height:1.3}
+}
