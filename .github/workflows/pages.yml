@@ -37,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
-          cp index.html styles.css menu.css menu-layout.css menu-refinement.css game-hud.css sprout-ui.css game-refinement.css camera-ui.css game-interface.css game-polish.css fullscreen-game.css house-building.css task-orders.css team-ux.css ui-polish.css _site/
+          cp index.html styles.css menu.css menu-layout.css menu-refinement.css game-hud.css sprout-ui.css game-refinement.css camera-ui.css top-speed.css game-interface.css game-polish.css fullscreen-game.css house-building.css task-orders.css team-ux.css ui-polish.css _site/
           cp src/biomes.js src/game.js src/wild-world.js src/blueprints.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
@@ -59,6 +59,8 @@ jobs:
           test -f _site/game-refinement.css
           test -f _site/game-interface.css
           test -f _site/camera-ui.css
+          test -f _site/top-speed.css
+          grep -q 'top-speed.css' _site/index.html
           grep -q 'game-refinement.css' _site/index.html
           test -f _site/src/sprout-ui-skin.js
           grep -q 'sprout-ui.css' _site/index.html
