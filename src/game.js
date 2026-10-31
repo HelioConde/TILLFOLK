@@ -7,6 +7,14 @@
   const canvas = document.querySelector("#world"), ctx = canvas.getContext("2d");
   const $ = (s) => document.querySelector(s);
   let worldPanX=0,worldPanY=0,panPointer=null,suppressMapClick=false;
+  let hoveredTile=null;
+  const feedbackParticles=[];
+  const reducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
+  function showMapFeedback(x,y,color="#f4df9e"){
+    if(reducedMotion.matches)return;
+    feedbackParticles.push({x,y,color,start:performance.now()});
+    if(feedbackParticles.length>22)feedbackParticles.shift();
+  }
   function clampWorldPan(){
     if(!document.body.classList.contains("play-session"))return;
     const view=$(".canvas-scroll").getBoundingClientRect();
@@ -283,7 +291,7 @@
     recalcTasks(); // Limpar ordens já concluídas antes da primeira renderização.
     playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false;
     document.body.classList.add("play-session","focus-game");
-    worldPanX=0;worldPanY=0;closeDrawer();refresh();save();
+    worldPanX=0;worldPanY=0;hoveredTile=null;feedbackParticles.length=0;closeDrawer();refresh();save();
     requestAnimationFrame(fitWorldCanvas);
     // O HUD contextual já explica a ação; não obstruir o mapa com aviso ao iniciar.
   }
@@ -488,6 +496,7 @@
       w.progress+=scaled*bonus(w,t.type)/baseTime[t.type];
       if(w.progress>=1){
         const complete=finish(w,t);
+        if(complete)showMapFeedback(t.x,t.y,"#ddf2a2");
         if(complete)state.orders=state.orders.filter(order=>order.id!==t.id);
         w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
         recalcTasks();
@@ -603,20 +612,49 @@
           const fxFrame=simSpeed===0?0:Math.floor(performance.now()/150)%9;
           part(sprite.wateringFx,fxFrame*48,0,48,48,px+4,py-24,48,48);
         }
-        // Placa de identificação menor para não cobrir o personagem.
+        // Placa de colono com estado — mesma paleta do HUD, sem cobrir o sprite.
         const name=String(w.name||"Colono").slice(0,17);
+        const moving=Boolean(w.moving),busy=Boolean(active),badgeColor=working?"#e7d27c":busy?"#91c7e5":"#abc891";
+        const neighbor=state.workers.some(other=>other.id!==w.id&&
+          Math.abs(other.x-w.x)<2.2&&Math.abs(other.y-w.y)<1.3);
+        const nameY=py-67-(neighbor&&w.id%2?16:0);
         ctx.font="bold 10px system-ui";ctx.textAlign="center";
-        const nameWidth=Math.min(118,Math.max(32,Math.ceil(ctx.measureText(name).width)+13));
-        ctx.fillStyle="#173124de";ctx.fillRect(Math.round(px-nameWidth/2),Math.round(py-65),nameWidth,15);
-        write(name,px,py-54,"#fff4d5",10);
-        if(working){
-          // Indicador abaixo do personagem: não encobre a ferramenta nem o nome.
-          ctx.fillStyle="#142a22";ctx.fillRect(Math.round(px-17),Math.round(py+5),34,5);
-          ctx.fillStyle="#f3d28b";ctx.fillRect(Math.round(px-16),Math.round(py+6),32*Math.min(1,w.progress),3);
+        const nameWidth=Math.min(118,Math.max(47,Math.ceil(ctx.measureText(name).width)+25));
+        const left=Math.round(px-nameWidth/2),top=Math.round(nameY);
+        ctx.fillStyle="#2c3929ef";ctx.fillRect(left,top,nameWidth,18);
+        ctx.fillStyle="#b59b70";ctx.fillRect(left,top,nameWidth,2);
+        ctx.fillStyle=badgeColor;ctx.fillRect(left+5,top+6,6,6);
+        write(name,px+4,top+13,"#fff0ca",10);
+        if(busy&&!moving){
+          ctx.fillStyle="#1c3223";ctx.fillRect(Math.round(px-19),Math.round(py+5),38,7);
+          ctx.fillStyle=badgeColor;ctx.fillRect(Math.round(px-18),Math.round(py+6),36*Math.min(1,w.progress),5);
         }
       }
     }
     World.drawAmbient(ctx,state.world,performance.now(),TILE);
+    // Ordem sob o cursor: destaque de tile, não adiciona tarefas automaticamente.
+    if(playing&&hoveredTile&&selectedTool!=="construir"&&!panPointer){
+      const {x,y}=hoveredTile,validTile=x>=0&&x<W&&y>=0&&y<H;
+      if(validTile){
+        const px=x*TILE,py=y*TILE;
+        const canOrder=Boolean(findPlot(x,y)||selectedTool==="collectWater"||selectedTool==="remover");
+        ctx.fillStyle=canOrder?"#f8ec9440":"#ed8f7a33";
+        ctx.fillRect(px+1,py+1,TILE-2,TILE-2);
+        ctx.lineWidth=2;ctx.strokeStyle=canOrder?"#fff5b2":"#f3ae9b";
+        ctx.strokeRect(px+2,py+2,TILE-4,TILE-4);
+      }
+    }
+    // Feedback breve e descartável ao concluir ou atribuir uma ordem.
+    const now=performance.now();
+    for(let i=feedbackParticles.length-1;i>=0;i--){
+      const particle=feedbackParticles[i],elapsed=(now-particle.start)/650;
+      if(elapsed>=1){feedbackParticles.splice(i,1);continue;}
+      const cx=(particle.x+.5)*TILE,cy=(particle.y+.5)*TILE;
+      ctx.globalAlpha=1-elapsed;
+      ctx.strokeStyle=particle.color;ctx.lineWidth=2;
+      ctx.strokeRect(cx-5-elapsed*10,cy-5-elapsed*10,10+elapsed*20,10+elapsed*20);
+      ctx.globalAlpha=1;
+    }
   }
   function refresh(){
     if(!state)return;
@@ -629,16 +667,19 @@
     set("#hud-workers",state.workers.length);set("#hud-tasks",tasks.length);
     $("#order-count").textContent=String(tasks.length);
     const stock=state.inventory||{};
-    $("#inventory").textContent=[
-      "🪵 Madeira "+(stock.wood||0),
-      "🪨 Pedra "+(stock.stone||0),
-      "🍄 Cogumelos "+(stock.mushroom||0),
-      "🌸 Flores "+(stock.flower||0),
-      "🌿 Ervas "+(stock.herbs||0),
-      "🌾 Fibras "+(stock.grass||0),
-      "💩 Esterco "+(stock.manure||0),
-      "⌂ Moradias "+state.homes.length+" / "+state.workers.length
-    ].join(" · ");
+    const inventoryItems=[
+      ["wood","🪵","Madeira"],["stone","🪨","Pedra"],
+      ["mushroom","🍄","Cogumelos"],["flower","🌸","Flores"],
+      ["herbs","🌿","Ervas"],["grass","🌾","Fibras"],
+      ["manure","💩","Esterco"]
+    ];
+    $("#inventory").innerHTML=inventoryItems.map(([kind,icon,label])=>
+      '<div class="resource-slot" title="'+label+': '+(stock[kind]||0)+'" aria-label="'+label+': '+(stock[kind]||0)+'">'+
+      '<span class="resource-art" aria-hidden="true">'+icon+'</span>'+
+      '<span class="resource-amount">'+(stock[kind]||0)+'</span>'+
+      '<small>'+label+'</small></div>').join("")+
+      '<div class="resource-slot housing" aria-label="Moradias: '+state.homes.length+' de '+state.workers.length+'">'+
+      '<span class="resource-art" aria-hidden="true">⌂</span><span class="resource-amount">'+state.homes.length+'/'+state.workers.length+'</span><small>Casas</small></div>';
     set("#farm-title",state.farmName||"Minha Fazenda");
     set("#mode-label",(state.mode==="relaxed"?"FAZENDA TRANQUILA":"SOBREVIVÊNCIA")+" · DIA "+state.day);
     $("#status").textContent=simSpeed===0?"Ⅱ Simulação pausada":"● Fazenda em funcionamento";
@@ -652,7 +693,7 @@
       const positive=w.skills.length?w.skills.map(s=>'<span class="tag">✦ '+labels[s]+'</span>').join(""):'<span class="tag">Generalista</span>';
       const neg=w.neg.map(s=>'<span class="tag negative">✕ '+labels[s]+'</span>').join("");
       const factor=w.skills.length===1?"+100%":w.skills.length===2?"+60%":w.skills.length===3?"+30%":"sem bônus";
-      return '<div class="worker"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+title+'</div></div></div><div class="tags">'+positive+neg+'</div><div class="worker-bar"><i style="width:'+(w.progress*100)+'%"></i></div><div class="worker-role">Especialização: '+factor+'</div></div>';
+      return '<div class="worker" data-worker-state="'+(t?"working":w.moving?"moving":"idle")+'"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div class="worker-identity"><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+escapeHtml(title)+'</div><span class="worker-status">'+(t?"● Em atividade":w.moving?"➤ Caminhando":"● Disponível")+'</span></div></div><div class="tags">'+positive+neg+'</div><div class="worker-bar" role="progressbar" aria-label="Progresso de '+escapeHtml(w.name)+'" aria-valuenow="'+Math.round(w.progress*100)+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+(w.progress*100)+'%"></i></div><div class="worker-role">Especialização: '+factor+'</div></div>';
     }).join("");
     const list=tasks.slice().sort((a,b)=>(a.status==="ready"?0:1)-(b.status==="ready"?0:1)||state.priorities[b.type]-state.priorities[a.type]);
     $("#tasks").innerHTML=list.length?list.slice(0,45).map(t=>{
@@ -743,6 +784,7 @@
     const result=Orders.add(state.orders,type,x,y,plot,World.at(state.world,x,y),state);
     if(result.error){notify(result.error);return;}
     state.orders.push(result.order);
+    showMapFeedback(x,y,result.state==="blocked"?"#d4a779":"#fff5af");
     if(plot&&type!=="buildHome"&&type!=="collectWater"&&type!=="collectManure")
       plot.selected=true; // Marcador visual, sem criar etapas automáticas.
     recalcTasks();refresh();save();
@@ -858,7 +900,7 @@
     if(!playing||selectedTool!=="construir")return;
     event.preventDefault();const p=buildCellFromEvent(event);paintHouse(p.x,p.y,true);
   });
-  canvas.addEventListener("pointerleave",()=>{buildHover=null;});
+  canvas.addEventListener("pointerleave",()=>{buildHover=null;hoveredTile=null;});
   document.addEventListener("keydown",event=>{
     if(!playing||event.target.closest("input,textarea,select,[contenteditable]")||document.querySelector("dialog[open]"))return;
     const k=event.key.toLowerCase();
@@ -875,10 +917,12 @@
     if(!playing||!document.body.classList.contains("play-session"))return;
     suppressMapClick=false;
     if(event.pointerType!=="touch"&&!event.shiftKey&&event.button!==1)return;
+    hoveredTile=null;
     panPointer={id:event.pointerId,x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false};
     canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener("pointermove",event=>{
+    if(playing&&!panPointer&&event.pointerType!=="touch")hoveredTile=buildCellFromEvent(event);
     if(playing&&selectedTool==="construir"&&!panPointer)buildHover=buildCellFromEvent(event);
     if(!panPointer||panPointer.id!==event.pointerId)return;
     const dx=event.clientX-panPointer.lastX,dy=event.clientY-panPointer.lastY;
