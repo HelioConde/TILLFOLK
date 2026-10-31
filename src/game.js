@@ -499,6 +499,7 @@
     }catch{return false;}
   }
   function readSave(){
+    const previousState=state;
     try {
       const s=JSON.parse(localStorage.getItem(SAVE_KEY));
       if(!s||!Array.isArray(s.plots)||!Array.isArray(s.workers))return false;
@@ -577,6 +578,7 @@
       simSpeed=[0,1,3,6].includes(s.sessionSpeed)?s.sessionSpeed:1;
       updateSpeed();return true;
     }catch(error){
+      state=previousState; // Save danificado não substitui nem estraga a cena corrente.
       console.warn("Não foi possível restaurar a partida salva:",error);
       return false;
     }
@@ -584,7 +586,11 @@
   function save(){
     if(!state||!playing)return;
     try{
-      state.sessionSpeed=simSpeed;
+      // Se um modal pausou temporariamente a simulação, guardar a velocidade
+      // de antes da janela para a retomada não abrir pausada por engano.
+      const gameOptions=$("#game-options-dialog"),management=$("#management-dialog");
+      state.sessionSpeed=gameOptions?.open?speedBeforeOptions:
+        management?.open?speedBeforeManagement:simSpeed;
       localStorage.setItem(SAVE_KEY,JSON.stringify(state));
     }catch(error){console.warn("Não foi possível salvar:",error);}
   }
