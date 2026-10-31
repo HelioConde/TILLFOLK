@@ -5,7 +5,13 @@
   const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry","collectWater","collectManure","buildHome"]);
   const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa"});
   const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠"});
-  const validCell=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=1&&x<27&&y>=1&&y<17;
+  let worldWidth=28,worldHeight=18;
+  function setBounds(width,height){
+    if(Number.isInteger(width)&&Number.isInteger(height)&&width>=28&&height>=18){
+      worldWidth=width;worldHeight=height;
+    }
+  }
+  const validCell=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=1&&x<worldWidth-1&&y>=1&&y<worldHeight-1;
   const id=(type,x,y)=>x+"-"+y+":"+type;
   function normalize(raw) {
     if(!Array.isArray(raw))return [];
@@ -15,7 +21,7 @@
       const key=id(order.type,order.x,order.y);
       if(seen.has(key))continue;
       seen.add(key);result.push({id:key,type:order.type,x:order.x,y:order.y});
-      if(result.length>=450)break;
+      if(result.length>=1500)break;
     }
     return result;
   }
@@ -41,6 +47,9 @@
         :{state:"blocked",reason:"Aguardando 8 madeiras"};
     }
     if(!plot)return {state:"blocked",reason:"Terreno indisponível"};
+    const biome=window.TillfolkWild?.terrainAt?.(resources?.world,order.x,order.y);
+    if(biome&&!biome.farmable&&["till","fertilize","sow","water","harvest","carry"].includes(order.type))
+      return {state:"blocked",reason:"O terreno "+biome.name.toLowerCase()+" não permite cultivo"};
     const seeds=Number(resources?.seeds)||0,water=Number(resources?.water)||0;
     const dirty=!!(object||plot.dirty);
     switch(order.type){
@@ -84,10 +93,10 @@
     if(!TYPES.includes(type)||!validCell(x,y)||(!plot&&!["collectWater","collectManure"].includes(type)))return {error:"Escolha um terreno válido."};
     const key=id(type,x,y);
     if(orders.some(o=>o.id===key))return {error:"Esta ordem já está na lista."};
-    if(orders.length>=450)return {error:"Fila cheia. Cancele algumas ordens."};
+    if(orders.length>=1500)return {error:"Fila cheia. Cancele algumas ordens."};
     const check=status({type},plot,object,resources);
     if(check.state==="done")return {error:check.reason+"."};
     return {order:{id:key,type,x,y},state:check.state,reason:check.reason};
   }
-  window.TillfolkOrders=Object.freeze({TYPES,LABELS,ICONS,id,normalize,status,add});
+  window.TillfolkOrders=Object.freeze({TYPES,LABELS,ICONS,id,normalize,status,add,setBounds});
 })();
