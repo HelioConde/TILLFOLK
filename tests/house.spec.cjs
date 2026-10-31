@@ -1,3 +1,7 @@
+async function continueIfMenuVisible(page){
+  if(await page.locator('#menu').isVisible())await page.locator('#continue').click();
+  await expect(page.locator('#menu')).toBeHidden();
+}
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:4173/';
 async function startGame(page){
@@ -54,7 +58,7 @@ test('Vale selvagem: construir casa, desfazer, salvar e proteger fundação',asy
   await page.locator('#build-roof').click();
   expect((await snapshot(page)).house.roofHidden).toBe(true);
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   const resumed=await snapshot(page);
   expect(resumed.world.seed).toBe(start.world.seed);
   expect(resumed.house.floor).toContain('14-11');
@@ -85,7 +89,7 @@ test('Construtor mobile: câmera, atalhos, save antigo e UI',async({page})=>{
     delete s.house;localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   expect((await snapshot(page)).house.floor).toHaveLength(0);
   expect((await snapshot(page)).inventory.wood).toBeGreaterThanOrEqual(0);
 });
