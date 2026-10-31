@@ -55,6 +55,7 @@ jobs:
           mkdir -p "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items"
           cp "public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items/tools and meterials.png" "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items/"
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
+          cp "public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles/Grass_Tile_Layers_MAPEAR.html" _site/mapear_grama.html
           test -f _site/public/assets/sprout-lands/characters/worker-basic.png
           test -f _site/public/assets/sprout-lands/characters/worker-variants.png
           test -f _site/public/assets/sprout-lands/characters/worker-actions.png
