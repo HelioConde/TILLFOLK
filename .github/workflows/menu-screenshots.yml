@@ -8,6 +8,8 @@ on:
       - 'index.html'
       - 'menu.css'
       - 'menu-layout.css'
+      - 'menu-refinement.css'
+      - 'src/tutorial.js'
       - 'ui-polish.css'
       - 'src/menu.js'
       - 'src/menu-scene.js'
