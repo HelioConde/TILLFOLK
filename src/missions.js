@@ -105,7 +105,7 @@
   ]);
 
   const artNames=Object.freeze({
-    workstation:"Work Station",hoe:"Enxada",wateringCan:"Regador",axe:"Machado de pedra",exit:"Tronco caído na passagem",
+    workstation:"Work Station",hoe:"Enxada",wateringCan:"Regador",shovel:"Pá",pickaxe:"Picareta",axe:"Machado de pedra",exit:"Tronco caído na passagem",
     grass:"Tufo de grama alta",seed:"Grama alta: pode soltar sementes",
     till:"Terra arada",sow:"Semente plantada",water:"Planta regada",
     harvest:"Plantação madura",carry:"Colheita",plan:"Cabana"
@@ -148,7 +148,7 @@
       if(image?.complete&&image.naturalWidth)
         ctx.drawImage(image,0,0,image.naturalWidth,image.naturalHeight,x+size*.1,y+size*.1,size*.8,size*.8);
       else soil();
-    }else if(key==="hoe"||key==="axe"||key==="wateringCan"){
+    }else if(key==="hoe"||key==="axe"||key==="shovel"||key==="pickaxe"||key==="wateringCan"){
       // Miniatura pixelada desenhada com silhueta correta para cada ferramenta:
       // evita exibir o regador do primeiro quadro do atlas na missão do machado.
       ctx.save();ctx.translate(x+size*.5,y+size*.48);ctx.scale(size/48,size/48);
@@ -158,6 +158,8 @@
       ctx.fillStyle="#344d49";
       if(key==="hoe"){ctx.fillRect(-18,-18,20,5);ctx.fillRect(-18,-14,6,5);}
       else if(key==="axe"){ctx.fillRect(-14,-17,22,15);ctx.fillStyle="#97b6a5";ctx.fillRect(-15,-15,10,11);}
+      else if(key==="shovel"){ctx.fillRect(-8,14,15,12);ctx.fillStyle="#95b0a2";ctx.fillRect(-7,17,13,7);}
+      else if(key==="pickaxe"){ctx.fillRect(-21,-20,40,6);ctx.fillStyle="#95b0a2";ctx.fillRect(-20,-18,8,7);}
       else {ctx.rotate(0);ctx.fillRect(-18,-11,28,20);ctx.fillStyle="#9bb9ae";ctx.fillRect(-15,-9,23,16);
         ctx.fillStyle="#344d49";ctx.fillRect(10,-17,5,14);ctx.fillRect(14,-18,9,5);}
       ctx.restore();
