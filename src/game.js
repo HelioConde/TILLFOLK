@@ -55,7 +55,7 @@
     grass:A+"terrain/grass.png", dirt:A+"terrain/tilled-dirt.png", soil:A+"terrain/soil.png",
     crops:A+"farming/crops.png", trees:A+"environment/trees-and-bushes.png",
     worker:A+"characters/worker-basic.png", premium:A+"characters/worker-variants.png", actions:A+"characters/worker-actions.png", wateringFx:A+"characters/watering-effects.png",
-    well:A+"structures/water-well.png", fences:A+"structures/fences.png",
+    cow:A+"animals/cow.png", well:A+"structures/water-well.png", fences:A+"structures/fences.png",
     roof:A+"structures/wood-roof.png",walls:A+"structures/wood-walls.png",door:A+"structures/wood-door.png",furniture:A+"structures/furniture.png",chest:A+"structures/chest.png",paths:A+"structures/paths.png",fenceGates:A+"structures/fence-gates.png",
     rocks:A+"environment/forageables.png"
   };
@@ -115,17 +115,17 @@
   sprite.premium.addEventListener("load",()=>{workerPaletted.clear();redrawStarterAvatars();});
   sprite.worker.addEventListener("load",()=>{workerPaletted.clear();redrawStarterAvatars();});
   sprite.actions.addEventListener("load",()=>workerPaletted.clear());
-  const labels = {clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar"};
-  const icons = {clear:"🪓",till:"⛏️",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦"};
-  const baseTime = {clear:120,till:90,fertilize:60,sow:60,water:90,harvest:120,carry:60};
-  const startPriorities = {clear:7,till:6,fertilize:5,sow:6,water:8,harvest:9,carry:8};
+  const labels = {clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa"};
+  const icons = {clear:"🪓",till:"⛏️",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠"};
+  const baseTime = {clear:120,till:90,fertilize:60,sow:60,water:90,harvest:120,carry:60,collectWater:65,collectManure:45,buildHome:180};
+  const startPriorities = {clear:7,till:6,fertilize:5,sow:6,water:8,harvest:9,carry:8,collectWater:7,collectManure:5,buildHome:7};
   const initialCandidates = [
     {name:"Mila",skills:["water"],neg:["clear"],cost:70,color:"#fff2bd"},
     {name:"Bento",skills:["till","sow","harvest"],neg:["fertilize"],cost:80,color:"#d3d6fc"},
     {name:"Lina",skills:["carry","fertilize"],neg:[],cost:90,color:"#ffcfc5"}
   ];
   const keyOf=(x,y)=>x+"-"+y;
-  const blocked=(x,y)=>World.blocked(state?.world,x,y,W,H)||Boolean(state?.house&&window.TillfolkHouseBuilder.occupied(state.house,x,y));
+  const blocked=(x,y)=>World.blocked(state?.world,x,y,W,H)||Boolean(state?.house&&window.TillfolkHouseBuilder.occupied(state.house,x,y))||occupiedByHome(x,y);
   // Caminhos em grade impedem que colonos atravessem a casa, árvores e objetos.
   // Só a navegação usa esta malha; o cultivo continua seguindo as regras existentes.
   const directions=[[1,0],[-1,0],[0,1],[0,-1]];
@@ -174,8 +174,8 @@
       id:i+1,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,
       appearance:c.appearance ?? i,personalPriority:{},x:13.5+i,y:9.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
     }));
-    state = {day:1,minutes:8*60,coins:220,seeds:18,water:30,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
-      plots,orders:[],world,house:window.TillfolkHouseBuilder.initial(),inventory:{wood:15,stone:0,mushroom:0,flower:0,herbs:0,grass:0}, workers:team,
+    state = {day:1,minutes:8*60,coins:220,seeds:0,water:0,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
+      plots,orders:[],world,house:window.TillfolkHouseBuilder.initial(),homes:[],animals:[{id:1,kind:"cow",x:16.5,y:9.5,manure:1,timer:0}],inventory:{wood:15,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     tasks=[]; simSpeed=1; updateSpeed();
@@ -197,6 +197,16 @@
         ]);
       }
       state.inventory=state.inventory||{wood:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0};
+      state.inventory.manure=Math.max(0,Number(state.inventory.manure)||0);
+      state.homes=Array.isArray(s.homes)?s.homes.filter(h=>Number.isInteger(h.x)&&Number.isInteger(h.y)&&h.x>=2&&h.y>=2):[];
+      // Construções legadas com piso, parede e telhado passam a valer como moradia.
+      if(!state.homes.some(h=>h.legacy)&&state.house.floor.length>=2&&state.house.walls.length>0&&state.house.roof.length>0){
+        const [x,y]=state.house.anchor.split("-").map(Number);
+        state.homes.push({x,y,residentId:null,legacy:true});
+      }
+      state.animals=Array.isArray(s.animals)?s.animals:[{id:1,kind:"cow",x:16.5,y:9.5,manure:1,timer:0}];
+      state.animals=state.animals.filter(a=>Number.isFinite(a.x)&&Number.isFinite(a.y)).map(a=>({...a,manure:Math.max(0,Number(a.manure)||0),timer:Number(a.timer)||0}));
+      assignHomes();
       state.mode=state.mode||"survival";
       state.farmName=state.farmName||"Minha Fazenda";
       state.priorities={...startPriorities,...s.priorities};
@@ -280,11 +290,11 @@
         state.coins+=2;break;
       }
       case "till":p.tilled=true;break;
-      case "fertilize":p.fertilized=true;break;
+      case "fertilize":if(state.inventory.manure<=0)return false;state.inventory.manure--;p.fertilized=true;break;
       case "sow":if(state.seeds<=0)return false;p.seeded=true;p.growth=0;state.seeds--;break;
       case "water":if(state.water<=0)return false;p.watered=true;state.water--;break;
       case "harvest":p.produce=true;p.seeded=false;p.watered=false;p.growth=0;break;
-      case "carry":p.produce=false;p.fertilized=false;state.food+=3;state.coins+=15;state.seeds+=2;log(w.name+" armazenou a colheita (+3 comida, +15 moedas).");break;
+      case "carry":p.produce=false;p.fertilized=false;state.food+=3;state.coins+=15;state.seeds++;log(w.name+" armazenou a colheita (+3 comida, +1 semente, +15 moedas).");break;
     }
     if(complete&&t.type!=="carry"&&t.type!=="harvest")log(w.name+" terminou: "+labels[t.type].toLowerCase()+".");
     return complete;
@@ -295,7 +305,7 @@
     state.minutes+=scaled*1.25;
     if(state.minutes>=1440){
       state.minutes-=1440;state.day++;
-      if(state.world?.water?.length)state.water=Math.min(100,state.water+3);
+      // A água agora vem somente de ordens manuais para a lagoa.
       const houseCells=[...state.house.floor,...state.house.walls].map(id=>{const [x,y]=id.split("-").map(Number);return {x,y,selected:true};});
       const births=World.regrow(state.world,state.day,W,H,[...state.plots,...houseCells]);
       if(births>0)log("A natureza renovou "+births+" pequenos elementos do vale.");
@@ -304,6 +314,13 @@
         log("Um novo dia começou. A equipe consumiu alimentos.");
         if(state.food===0)log("Atenção: sem comida para a equipe!");
       }else log("Um novo dia começou na fazenda tranquila.");
+    }
+    for(const animal of state.animals){
+      animal.timer=(animal.timer||0)+scaled;
+      while(animal.timer>=120){
+        animal.timer-=120;
+        animal.manure=Math.min(3,(animal.manure||0)+1);
+      }
     }
     for(const p of state.plots)if(p.seeded&&p.watered&&p.growth<1)p.growth=Math.min(1,p.growth+scaled/180);
     recalcTasks();
