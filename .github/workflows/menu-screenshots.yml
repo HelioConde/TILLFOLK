@@ -23,6 +23,8 @@ on:
       - 'src/wild-world.js'
       - 'styles.css'
       - 'game-polish.css'
+      - 'game-hud.css'
+      - 'src/game-hud.js'
       - 'fullscreen-game.css'
       - '.github/workflows/pages.yml'
       - 'tests/menu.spec.cjs'
