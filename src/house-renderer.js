@@ -71,7 +71,7 @@
     stats.doors++;
 
     // Cobertura por último no Canvas (z-index visual superior).
-    const roofDrop=6*TILE;
+    const roofDrop=5*TILE;
     if(roofVisible){
       for(let row=0;row<ROOF_ROWS;row++){
         for(let col=0;col<ROOF_COLS;col++){

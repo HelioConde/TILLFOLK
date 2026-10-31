@@ -542,8 +542,8 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
   expect(result.stats.walls).toBe(20);
   expect(result.windows.map(w=>[w.dx,w.dy])).toEqual([[64,192],[128,192]]);
   expect(result.doors.map(d=>[d.dx,d.dy,d.dw,d.dh])).toEqual([[96,192,32,32]]);
-  expect(result.roofMin).toBe(96);
-  expect(result.roofMax).toBe(256);
+  expect(result.roofMin).toBe(80);
+  expect(result.roofMax).toBe(240);
   expect(result.rooftopCount).toBe(36);
   expect(result.allUniform).toBe(true);
   expect(result.roofBeforeWindows).toBe(false);
@@ -551,7 +551,7 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
   expect(result.windowsDrawnAboveRoof).toBe(false);
   // Cobertura em primeiro plano E a janela começa exatamente onde termina
   // o último tile do beiral: não existem recortes nem sobreposição indevida.
-  expect(result.windows.every(w=>w.dy===result.roofMax-64)).toBe(true);
+  expect(result.windows.every(w=>w.dy===result.roofMax-48)).toBe(true);
 });
 
 
