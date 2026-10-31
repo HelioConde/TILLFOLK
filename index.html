@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="./top-speed.css?v=20261031-mobile-brand-clock">
   <link rel="stylesheet" href="./tutorial-missions.css?v=20261031-menu-missao-fix">
   <link rel="stylesheet" href="./hud-settings.css?v=20261031-icones-centrados">
+  <link rel="stylesheet" href="./crop-workshop.css?v=20261031-crop-workshop">
   <script defer src="./src/menu.js?v=20261031-sync-preferencias"></script>
   <script defer src="./src/tutorial.js?v=20261031-fim-escolhas"></script>
   <script defer src="./src/house-renderer.js?v=20261031-fazenda-casa"></script>
@@ -32,7 +33,8 @@
   <script defer src="./src/wild-world.js?v=20261031-sem-frutiferas"></script>
   <script defer src="./src/blueprints.js?v=20261031-fazenda-casa"></script>
   <script defer src="./src/house-building.js?v=20261031-fazenda-casa"></script>
-  <script defer src="./src/task-orders.js"></script>
+  <script defer src="./src/crop-catalog.js?v=20261031-crop-workshop"></script>
+  <script defer src="./src/task-orders.js?v=20261031-crop-workshop"></script>
   <script defer src="./src/missions.js?v=20261031-alvos-visuais"></script>
   <script defer src="./src/game.js?v=20261031-alvos-visuais"></script>
   <script defer src="./src/game-hud.js?v=20261031-atalho-direito"></script>
@@ -117,12 +119,14 @@
             <button type="button" data-order-type="till" aria-pressed="false"><b>⛏ Arar</b><small>Preparar a terra</small></button>
             <button type="button" data-order-type="fertilize" aria-pressed="false"><b>🌿 Fertilizar</b><small>Melhorar o solo</small></button>
             <button type="button" data-order-type="sow" aria-pressed="false"><b>🌱 Semear</b><small>Plantar sementes</small></button>
+            <button type="button" id="open-crop-catalog"><b>🌽 Escolher cultura</b><small id="selected-crop-label">Cenoura · estoque</small></button>
             <button type="button" data-order-type="water" aria-pressed="false"><b>💧 Regar</b><small>Irrigar cultivo</small></button>
             <button type="button" data-order-type="harvest" aria-pressed="false"><b>🥕 Colher</b><small>Colher quando maduro</small></button>
             <button type="button" data-order-type="carry" aria-pressed="false"><b>📦 Transportar</b><small>Guardar a colheita</small></button>
             <button type="button" data-order-type="collectWater" aria-pressed="false"><b>🪣 Buscar água</b><small>Clique na lagoa para recolher 4 unidades</small></button>
             <button type="button" data-order-type="collectManure" aria-pressed="false"><b>🐄 Recolher esterco</b><small>Clique no animal com esterco disponível</small></button>
             <button type="button" data-order-type="buildHome" aria-pressed="false"><b>🏠 Construir casa</b><small>Área livre 2×2 · 8 madeiras · 1 morador</small></button>
+            <button type="button" data-order-type="buildStation" aria-pressed="false"><b>🛠️ Montar oficina</b><small>5 madeiras + 2 pedras</small></button>
           </div>
           <p>Escolha uma tarefa específica ou use Universal para a próxima etapa conforme o solo. Arraste sobre o mapa para várias ordens; no celular ative Área.</p>
         </div>
@@ -134,6 +138,8 @@
             <button type="button" data-build-layer="roof" aria-pressed="false">⌂ Telhado</button>
             <button type="button" data-build-layer="home" aria-pressed="false">🏠 Cabana · Equipe</button>
             <button type="button" data-build-layer="field" aria-pressed="false">🌱 Plantação · Canteiros</button>
+            <button type="button" data-build-layer="station" aria-pressed="false">🛠️ Oficina · Sementes</button>
+            <button type="button" id="open-workshop">⚒ Bancada e receitas</button>
             <button type="button" id="build-erase" aria-pressed="false">⌫ Apagar</button>
             <button type="button" id="build-roof">◌ Ocultar telhado</button>
             <button type="button" id="build-undo">↶ Desfazer</button>
@@ -362,6 +368,20 @@
     <p>Você aprendeu a recolher recursos, encontrar sementes, cultivar, regar, colher, armazenar alimentos e planejar construções.</p>
     <p><strong>A fazenda continua exatamente como você a deixou.</strong> Qual será seu próximo capítulo?</p>
     <div class="tutorial-end-actions"><button id="tutorial-continue-game" type="button" class="large-primary">▶ Continuar jogando</button><button id="tutorial-back-menu" type="button" class="large-secondary">↩ Voltar ao menu inicial</button></div>
+  </dialog>
+  <dialog id="crop-catalog-dialog" class="game-modal farm-catalog-dialog" aria-labelledby="crop-catalog-title">
+    <form method="dialog"><button class="modal-x" aria-label="Fechar sementes">✕</button></form>
+    <span class="overline">SEMENTES · 19 CULTURAS</span><h2 id="crop-catalog-title">Escolher o que plantar</h2>
+    <p>As sementes vêm da limpeza da grama, das colheitas e das receitas da oficina. Selecione uma cultura antes de semear.</p>
+    <div id="crop-catalog-grid" class="farm-crop-grid" role="group" aria-label="Tipos de sementes"></div>
+    <p id="crop-catalog-status" role="status">Selecione uma cultura para as próximas ordens de semeadura.</p>
+  </dialog>
+  <dialog id="workshop-dialog" class="game-modal farm-catalog-dialog" aria-labelledby="workshop-title">
+    <form method="dialog"><button class="modal-x" aria-label="Fechar oficina">✕</button></form>
+    <span class="overline">OFICINA DA FAZENDA</span><h2 id="workshop-title">Bancada de sementes</h2>
+    <p>Monte uma oficina com 5 madeiras e 2 pedras. Depois, transforme 2 unidades de um cultivo armazenado em 3 sementes do mesmo tipo.</p>
+    <p id="workshop-status" role="status"></p>
+    <div id="workshop-recipes" class="farm-crop-grid" aria-label="Receitas da oficina"></div>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>
