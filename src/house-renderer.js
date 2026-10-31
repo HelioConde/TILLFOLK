@@ -4,16 +4,15 @@
    _add_front_windows e _add_roof_chimney.
    Sem criar prédios automaticamente na área jogável. */
 (() => {
-  const TILE=16,ROOF_COLS=7,ROOF_ROWS=4,WALL_COLS=5,WALL_ROWS=4;
+  const TILE=16,ROOF_COLS=7,ROOF_ROWS=5,WALL_COLS=5,WALL_ROWS=4;
 
   function roofAtlas(col,row,width=ROOF_COLS,height=ROOF_ROWS){
     if(!Number.isInteger(col)||!Number.isInteger(row)||
        col<0||row<0||col>=width||row>=height)
       throw new RangeError("Célula do telhado inválida");
     const x=col===0?0:col===width-1?2:1;
-    // Quatro faixas: topo, corpo, cumeeira e beiral (linha 4 do atlas).
-    const y=height===4?[0,1,2,4][row]:
-      row===0?0:row===height-1?4:row<Math.floor(height/2)?1:3;
+    const ridge=Math.floor((height-1)/2);
+    const y=row===0?0:row===height-1?4:row===ridge?2:row<ridge?1:3;
     return [x,y];
   }
 
@@ -36,10 +35,7 @@
     if(!ctx||typeof ctx.drawImage!=="function")
       throw new TypeError("Canvas 2D obrigatório");
     const cell=TILE*scale,originX=Math.round(x),originY=Math.round(y);
-    // O telhado mantém seu topo; a primeira fileira de parede fica sob o beiral.
-    // Coordenadas absolutas das janelas/porta permanecem as mesmas.
-    const roofDrop=6*TILE;
-    const facadeX=originX+cell,facadeY=originY+roofDrop+(ROOF_ROWS-1)*cell;
+    const facadeX=originX+cell,facadeY=originY+(ROOF_ROWS-1)*cell;
     const stats={drawn:0,stretched:0,roof:0,walls:0,windows:0,doors:0,chimneys:0};
     ctx.imageSmoothingEnabled=false;
 
@@ -55,8 +51,7 @@
       stats.drawn++;
     }
 
-    // 1. Fachada atrás do telhado. Preserva os tiles e o alinhamento horizontal
-    // de portas/janelas; o encaixe vertical evita que fiquem à frente do beiral.
+    // Base: paredes na primeira camada, como em uma construção do Slime-Harvest.
     for(let row=0;row<WALL_ROWS;row++){
       for(let col=0;col<WALL_COLS;col++){
         const [sx,sy]=wallAtlas(col,row);
@@ -64,16 +59,13 @@
         stats.walls++;
       }
     }
-    for(const col of [1,3]){
-      stamp("walls",3,2,facadeX+col*cell,facadeY+2*cell);
-      stats.windows++;
-    }
-    stamp("door",5,0,facadeX+2*cell,facadeY+2*cell,1,2);
-    stats.doors++;
 
-    // Cobertura em primeiro plano, beiral inteiro, sem máscaras.
+    // Telhado abaixado mais 1 tile original (+16 px), total 6×16 px.
+    // No Canvas, a ordem das chamadas equivale ao z-index: desenhar o
+    // telhado DEPOIS das paredes faz o beiral cobrir a parte superior da
+    // fachada, sem ficar escondido por trás dela.
+    const roofDrop=6*TILE;
     if(roofVisible){
-      // Sem máscaras ou recortes: nenhum buraco sobre as janelas.
       for(let row=0;row<ROOF_ROWS;row++){
         for(let col=0;col<ROOF_COLS;col++){
           const [sx,sy]=roofAtlas(col,row);
@@ -83,9 +75,16 @@
       }
       stamp("roof",5,0,originX+3*cell,originY+roofDrop+2*cell);
       stats.chimneys++;
-      // Evitar que o clip da casa recorte outros sprites desenhados no mapa.
-      // O beiral termina uma fileira acima das janelas.
     }
+
+    // Aberturas ficam na frente da cobertura. O beiral termina exatamente
+    // no topo da última fileira, sem esconder as janelas nem a porta.
+    for(const col of [1,3]){
+      stamp("walls",3,2,facadeX+col*cell,facadeY+3*cell);
+      stats.windows++;
+    }
+    stamp("door",5,0,facadeX+2*cell,facadeY+3*cell);
+    stats.doors++;
 
     return {...stats,...dimensions(scale),x:originX,y:originY,scale};
   }
