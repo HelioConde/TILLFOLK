@@ -274,6 +274,15 @@
     <p>Até 3 habilidades positivas e 3 restrições. Contratar exige uma moradia livre depois de abrigar todos os trabalhadores.</p><p id="housing-status" role="status" aria-live="polite"></p>
     <div id="candidates" class="candidate-list"></div>
   </dialog>
+  <dialog id="prologue-dialog" class="modal prologue-dialog" aria-labelledby="prologue-dialog-title">
+    <form method="dialog"><button type="submit" class="modal-x" aria-label="Fechar detalhes da missão">✕</button></form>
+    <span class="overline" id="prologue-dialog-step">PRÓLOGO · MISSÃO</span>
+    <h2 id="prologue-dialog-title">Próximo objetivo</h2>
+    <p id="prologue-dialog-description"></p>
+    <div id="prologue-dialog-goals" class="prologue-goals"></div>
+    <p class="prologue-dialog-note">Conclua tarefas reais no mapa. A campanha tem um fim e não cria ordens automaticamente.</p>
+    <button type="button" id="prologue-dialog-craft" class="large-primary">🛠️ Abrir oficina</button>
+  </dialog>
   <dialog id="workshop-dialog" class="modal workshop-dialog" aria-labelledby="workshop-title">
     <form method="dialog"><button type="submit" class="modal-x" aria-label="Fechar oficina">✕</button></form>
     <span class="overline">OFICINA DA COLÔNIA</span>
