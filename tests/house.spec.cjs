@@ -12,7 +12,7 @@ async function clickTile(page,x,y,button='left'){
     const r=canvas.getBoundingClientRect();
     canvas.dispatchEvent(new MouseEvent(button==='right'?'contextmenu':'click',{
       bubbles:true,cancelable:true,button:button==='right'?2:0,
-      clientX:r.left+(x+.5)*r.width/28,clientY:r.top+(y+.5)*r.height/18
+      clientX:r.left+(x+.5)*r.width/(canvas.width/32),clientY:r.top+(y+.5)*r.height/(canvas.height/32)
     }));
   },{x,y,button});
 }
@@ -71,7 +71,7 @@ test('Construtor mobile: câmera, atalhos, save antigo e UI',async({page})=>{
   await page.waitForTimeout(180);
   const focus=await page.evaluate(()=>{
     const r=document.querySelector('#world').getBoundingClientRect();
-    return r.left+r.width*(13.5/28);
+    return r.left+r.width*(40.5/(document.querySelector("#world").width/32));
   });
   expect(focus).toBeGreaterThan(65);
   expect(focus).toBeLessThan(325);
