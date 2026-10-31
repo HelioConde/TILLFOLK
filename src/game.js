@@ -919,7 +919,10 @@
           if(kind==="grass"){
             recordTutorial("grass");
             if(Math.random()<.25){
-              const variety=Crops.pickWild();
+              const region=World.terrainAt(state.world,t.x,t.y)?.id||"g";
+              // A primeira semente do jogador sempre é batata, própria do vale inicial.
+              const variety=state.tutorial?.active&&!state.tutorial.stats?.seed?
+                "potato":Crops.pickWild(Math.random,region);
               if(state.seeds===0)state.selectedCrop=variety;
               state.cropSeeds[variety]++;
               state.seeds++;showPickup(t.x,t.y,"seed");
