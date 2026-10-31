@@ -124,10 +124,12 @@ test("Salvar antigo conserva ferramentas desbloqueadas e não reinicia prólogo"
 test("UI mobile: missão pode expandir e oficina não corta a tela",async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await newFarm(page);
-  await page.locator("#prologue-open").click();
-  await expect(page.locator("#prologue-details")).toBeVisible();
   await page.screenshot({path:"screenshots/tutorial-primeira-missao-390x844.png",animations:"disabled"});
-  await page.locator("#workshop-open").click();
+  await page.locator("#prologue-open").click();
+  await expect(page.locator("#prologue-dialog")).toBeVisible();
+  await expect(page.locator("#prologue-dialog-description")).toContainText("gravat");
+  await page.screenshot({path:"screenshots/tutorial-missao-detalhes-390x844.png",animations:"disabled"});
+  await page.locator("#prologue-dialog-craft").click();
   await expect(page.locator("#workshop-dialog")).toBeVisible();
   const box=await page.locator("#workshop-dialog").boundingBox();
   expect(box.x).toBeGreaterThanOrEqual(0);
