@@ -1050,6 +1050,7 @@
       }
     }
     World.drawAmbient(ctx,state.world,animationsEnabled()?performance.now():0,TILE);
+    drawTutorialSpeech();
     // Prévia ANTES de construir: azul transparente para posição válida,
     // vermelho transparente se a regra de terreno/ocupação impedir a obra.
     if(playing&&selectedTool==="construir"&&buildHover&&!panPointer&&!areaSelection){
@@ -1094,6 +1095,39 @@
       ctx.strokeRect(cx-5-elapsed*10,cy-5-elapsed*10,10+elapsed*20,10+elapsed*20);
       ctx.globalAlpha=1;
     }
+  }
+  // Balões de fala no próprio canvas, ligados aos trabalhadores e sem novos assets.
+  function drawTutorialSpeech(){
+    if(!playing||document.querySelector("dialog[open]"))return;
+    const quest=Missions.current(state),workers=state.workers;
+    if(!quest||!workers?.length)return;
+    const worker=workers[Math.floor(performance.now()/8500)%Math.min(2,workers.length)];
+    if(!inView(worker.x,worker.y,6))return;
+    const message=Missions.speech(state,worker);
+    if(!message)return;
+    ctx.save();
+    ctx.font="bold 11px system-ui,sans-serif";
+    const lines=[],words=message.split(/\s+/);
+    let line="";
+    for(const word of words){
+      const candidate=line?line+" "+word:word;
+      if(ctx.measureText(candidate).width>185&&line){lines.push(line);line=word;}
+      else line=candidate;
+    }
+    if(line)lines.push(line);
+    const display=lines.slice(0,4),width=216,height=15+display.length*16;
+    const px=Math.round(worker.x*TILE),py=Math.round(worker.y*TILE);
+    const left=Math.max(5,Math.min(W*TILE-width-5,px-width/2));
+    const top=Math.max(6,py-78-height);
+    ctx.fillStyle="#fff3d7";ctx.strokeStyle="#395744";ctx.lineWidth=3;
+    ctx.beginPath();ctx.roundRect(left,top,width,height,7);ctx.fill();ctx.stroke();
+    const tailX=Math.max(left+13,Math.min(left+width-13,px));
+    ctx.beginPath();ctx.moveTo(tailX-7,top+height-1);
+    ctx.lineTo(tailX,top+height+9);ctx.lineTo(tailX+7,top+height-1);
+    ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle="#273b2c";ctx.textAlign="left";
+    display.forEach((text,index)=>ctx.fillText(text,left+12,top+21+index*16));
+    ctx.restore();
   }
   function refresh(){
     if(!state)return;
@@ -1301,6 +1335,7 @@
     const result=Orders.add(state.orders,type,x,y,plot,World.at(state.world,x,y),state);
     if(result.error)return result;
     state.orders.push(result.order);
+    if(type==="buildHome")recordTutorial("plan");
     if(plot&&!["buildHome","collectWater","collectManure"].includes(type))plot.selected=true;
     showMapFeedback(x,y,result.state==="blocked"?"#d4a779":"#fff5af");
     return result;
@@ -1351,6 +1386,7 @@
     const result=Orders.add(state.orders,type,x,y,plot,World.at(state.world,x,y),state);
     if(result.error){notify(result.error);return;}
     state.orders.push(result.order);
+    if(type==="buildHome")recordTutorial("plan");
     showMapFeedback(x,y,result.state==="blocked"?"#d4a779":"#fff5af");
     if(plot&&type!=="buildHome"&&type!=="collectWater"&&type!=="collectManure")
       plot.selected=true; // Marcador visual, sem criar etapas automáticas.
@@ -1410,6 +1446,7 @@
       const result=Orders.add(state.orders,type,x,y,p,World.at(state.world,x,y),state);
       if(result.order){state.orders.push(result.order);count++;}
     }
+    if(count)recordTutorial("plan");
     return {count,error:count?null:"Canteiro já está planejado."};
   }
   function applyBuildingArea(from,to,cancel=false){
@@ -1510,6 +1547,7 @@
       if(!test.order){$("#build-status").textContent=test.error;return;}
       pushBuildHistory();
       state.orders.push(test.order);
+      recordTutorial("plan");
       recalcTasks();refresh();save();
       buildHover=null;
       $("#build-status").textContent="🏠 Cabana 2×2 planejada: aguardando equipe e 8 madeiras.";
