@@ -537,3 +537,74 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
   expect(result.allUniform).toBe(true);
   expect(result.roofBeforeWindows).toBe(true);
 });
+
+
+test('Atlas selvagem: recortes completos e pranchas visuais de todas as variações',async({page})=>{
+  const errors=[];
+  page.on('pageerror',error=>errors.push(String(error)));
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  const result=await page.evaluate(async()=>{
+    const wild=window.TillfolkWild;
+    const load=async path=>{
+      const img=new Image();
+      img.src='./public/assets/sprout-lands/environment/'+path;
+      await img.decode();return img;
+    };
+    const trees=await load('trees-and-bushes.png');
+    const rocks=await load('forageables.png');
+    const rects=wild.atlasFrames;
+    const groups=Object.entries(rects);
+    const frameData=[],missing=[];
+    for(const [kind,frames] of groups){
+      const source= ['tree','thicket','log','stump'].includes(kind)?trees:rocks;
+      const ctx=document.createElement('canvas').getContext('2d');
+      for(const [i,[sx,sy,sw,sh]] of frames.entries()){
+        if(sx<0||sy<0||sx+sw>source.naturalWidth||sy+sh>source.naturalHeight){
+          missing.push(kind+' '+i+' sai da imagem');continue;
+        }
+        ctx.canvas.width=sw;ctx.canvas.height=sh;
+        ctx.clearRect(0,0,sw,sh);
+        ctx.drawImage(source,sx,sy,sw,sh,0,0,sw,sh);
+        const data=ctx.getImageData(0,0,sw,sh).data;
+        let opaque=0;
+        for(let px=3;px<data.length;px+=4)if(data[px]>0)opaque++;
+        frameData.push({kind,i,rect:[sx,sy,sw,sh],opaque});
+        if(opaque<10)missing.push(kind+' '+i+' sem pixels de arte');
+      }
+    }
+    const board=document.createElement('canvas');
+    board.width=1200;board.height=1200;
+    board.id='wild-art-audit';
+    const ctx=board.getContext('2d');ctx.imageSmoothingEnabled=false;
+    ctx.fillStyle='#d4d7b5';ctx.fillRect(0,0,board.width,board.height);
+    const sprites={trees,rocks};
+    const drawPart=(img,sx,sy,sw,sh,x,y,w,h)=>{
+      ctx.drawImage(img,sx,sy,sw,sh,Math.round(x),Math.round(y),Math.round(w),Math.round(h));
+    };
+    for(const [row,[kind,frames]] of groups.entries()){
+      const y=15+row*126;
+      ctx.fillStyle='#284a36';ctx.font='bold 18px sans-serif';
+      ctx.fillText(kind.toUpperCase(),10,y+20);
+      for(let i=0;i<frames.length;i++){
+        const cx=150+i*108;
+        ctx.fillStyle=i%2?'#a9ce85':'#b6d890';ctx.fillRect(cx,y,100,102);
+        wild.drawObject(ctx,{kind,variant:i,x:(cx+34)/32,y:(y+40)/32},sprites,32,drawPart);
+        ctx.fillStyle='#193021';ctx.font='bold 13px monospace';
+        ctx.fillText(kind+' '+i,cx+5,y+96);
+      }
+    }
+    board.style.cssText='position:fixed;z-index:999999;left:0;top:0;width:1200px;height:1200px';
+    document.body.appendChild(board);
+    return {missing,frameData,treeWidth:trees.width,treeHeight:trees.height,
+      rockWidth:rocks.width,rockHeight:rocks.height};
+  });
+  expect(result.missing).toEqual([]);
+  expect(result.frameData.filter(f=>f.kind==='tree').length).toBe(7);
+  expect(result.frameData.filter(f=>f.kind==='thicket').every(f=>f.rect[1]===48)).toBe(true);
+  expect(result.frameData.filter(f=>f.kind==='tree').slice(0,6).map(f=>f.rect[0]))
+    .toEqual([0,16,48,80,112,144]);
+  expect(result.frameData.filter(f=>f.kind==='boulder'&&f.rect[2]===32)
+    .every(f=>f.rect[3]===32)).toBe(true);
+  await page.locator('#wild-art-audit').screenshot({path:'screenshots/atlas-objetos-celulas-completas.png'});
+  expect(errors).toEqual([]);
+});
