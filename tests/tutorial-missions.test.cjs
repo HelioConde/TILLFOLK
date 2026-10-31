@@ -35,6 +35,32 @@ test("oito ações reais concluem tutorial apenas uma vez",()=>{
  assert.equal(Missions.record(state,"plan").finished,false);
 });
 
+test("cada missão oferece conversas naturais de apresentação, espera e trabalho",()=>{
+ const state=world();
+ assert.equal(Missions.STEPS.length,8);
+ for(const [index,step] of Missions.STEPS.entries()){
+   state.tutorial.step=index;
+   for(const mode of ["intro","waiting","working"]){
+     const first=Missions.speech(state,state.workers[0],mode,0);
+     const other=Missions.speech(state,state.workers[1],mode,0);
+     assert.ok(first.length>=25&&first.length<=145,step.key+" "+mode+" tamanho");
+     assert.ok(other.length>=25&&other.length<=145,step.key+" "+mode+" tamanho 2");
+     assert.notEqual(first,other,step.key+" "+mode+" variação entre colonos");
+     assert.notEqual(first,Missions.speech(state,state.workers[0],mode,1),step.key+" "+mode+" alternância");
+   }
+   assert.ok(step.help.length>80,step.key+" ajuda detalhada");
+   assert.ok(step.complete.length>10,step.key+" celebração");
+ }
+});
+
+test("a fala acompanha a missão atual e não aparece ao terminar",()=>{
+ const state=world();
+ const before=Missions.speech(state,state.workers[0],"intro");
+ Missions.record(state,"grass");Missions.record(state,"seed");
+ assert.notEqual(Missions.speech(state,state.workers[0],"intro"),before);
+ for(const key of ["till","sow","water","harvest","carry","plan"])Missions.record(state,key);
+ assert.equal(Missions.speech(state,state.workers[0],"intro"),"");
+});
 test("save antigo não inicia missões, e progresso novo restaura",()=>{
  assert.equal(Missions.normalize(null).active,false);
  const state=world();
