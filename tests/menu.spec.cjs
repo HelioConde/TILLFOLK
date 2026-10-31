@@ -688,7 +688,10 @@ test('Recrutamento v2: resumo legível, rodapé fixo e screenshots desktop/mobil
   await firstSpecialty.focus();
   await expect(page.locator('#starter-specialty-tooltip')).toBeVisible();
   await page.keyboard.press('Tab');
+  await expect(page.locator('#starter-specialty-tooltip')).toBeVisible();
+  await page.keyboard.press('Escape');
   await expect(page.locator('#starter-specialty-tooltip')).toBeHidden();
+  await expect(page.locator('#starter-dialog')).toBeVisible();
   await page.locator('#farm-name').fill('Minha Fazenda de Teste');
   await page.locator('#starter-confirm').click();
   await expect(page.locator('#starter-dialog')).toBeHidden();
