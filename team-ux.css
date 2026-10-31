@@ -179,8 +179,8 @@
  #starter-dialog .starter-slots{grid-template-columns:1fr}
  #starter-dialog .starter-content{padding:10px 12px}
  #starter-dialog .starter-footer{grid-template-columns:1fr;padding:10px 12px;gap:9px}
- #starter-dialog .starter-actions{justify-content:stretch}
- #starter-dialog .starter-actions button{flex:1;white-space:normal}
+ #starter-dialog .starter-actions{flex-direction:row;justify-content:stretch;align-items:stretch;gap:7px}
+ #starter-dialog .starter-actions button{flex:1 1 0;min-width:0;white-space:normal}
  #starter-dialog .starter-actions .large-primary{min-width:0;flex:1.5}
  #starter-dialog .starter-note{font-size:10px}
 }
