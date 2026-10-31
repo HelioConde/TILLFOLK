@@ -1291,13 +1291,13 @@
   let cameraPanBeforeBuilding=null;
   function focusHouseCamera(){
     if(!playing||!document.body.classList.contains("play-session"))return;
-    const viewport=$(".canvas-scroll").getBoundingClientRect(),bounds=canvas.getBoundingClientRect();
-    if(bounds.width<=viewport.width+80)return; // Desktop: a casa ja esta visivel.
     const anchor=state.house?.anchor?.split("-").map(Number);
-    const focusX=anchor?.length===2&&Number.isFinite(anchor[0])?anchor[0]+.5:13.5;
-    const houseX=(focusX*TILE/canvas.width)*bounds.width;
-    worldPanX+=viewport.left+viewport.width*.5-(bounds.left+houseX);
-    clampWorldPan();
+    const validAnchor=anchor?.length===2&&anchor.every(Number.isFinite);
+    // A câmera acompanha a casa existente; em partidas novas centraliza na
+    // clareira dos colonos, e nunca em 13,11 (coordenada do mapa antigo 28×18).
+    const x=validAnchor?anchor[0]+.5:state.spawn?.x??W/2;
+    const y=validAnchor?anchor[1]+.5:state.spawn?.y??H/2;
+    focusCameraAt(x,y);
   }
   function setTool(next){
     const entering=next==="construir"&&selectedTool!=="construir";
