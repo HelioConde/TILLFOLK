@@ -86,26 +86,26 @@
         working:["Deixa que eu carrego! Só não me faz tropeçar com tudo isso.","Essa comida vai render um jantar daqueles. Tô até com fome!"]
       },tool:"carry",target:"carry"},
     {key:"axe",goal:1,icon:"🪓",title:"Prepare a saída do vale",
-      subtitle:"Fabrique um machado de pedra na Work Station",
-      help:"Abra Bancada e receitas. Colete 8 gravetos, 3 fibras de grama e 3 pedras pequenas. Fabrique o machado de pedra para cortar o tronco da saída leste.",
+      subtitle:"Fabrique um machado na Work Station",
+      help:"Abra a Work Station depois de colher sua primeira plantação. Separe 8 gravetos e 3 fibras de grama, escolha Machado e espere o colono terminar a fabricação. Equipe quem for limpar o tronco da saída leste.",
       complete:"Finalmente um machado! Agora podemos cortar madeira de verdade.",
       dialogue:{
-        intro:["Nossa primeira colheita já está guardada! Hora de construir o machado de pedra.","Já temos comida! Agora vamos fazer o machado para abrir a passagem."],
+        intro:["Nossa primeira colheita já está guardada! Que tal preparar um machado pra abrir caminho?","Já temos comida! Agora a gente pode fabricar um machado e explorar além do vale."],
         waiting:["A receita do machado tá na bancada. Confere os gravetos e as fibras.","Se estiver faltando material, ainda tem mato pra limpar por aí."],
         working:["Pronto, vou separar os materiais. Cuidado com a lâmina!","Com o machado feito, nosso trabalho vai render muito mais."]
       },tool:"construir",target:"axe"},
     {key:"exit",goal:1,icon:"🪵",title:"Abra a passagem",subtitle:"Corte o tronco caído na saída leste",
-      help:"Use o botão Mostrar no mapa para localizar o único corredor na encosta a leste. Com o machado de pedra já fabricado, selecione Limpar e clique no tronco caído. Espere um trabalhador abrir o caminho.",
+      help:"Use Mostrar no mapa para encontrar o corredor a leste. Com um machado comum no inventário de um trabalhador, escolha Limpar e marque o tronco caído. Aguarde a equipe abrir a passagem.",
       complete:"Passagem aberta! Você concluiu o tutorial e pode explorar o vale!",
       dialogue:{
-        intro:["Olha ali aquele tronco atravessado. Nosso machado de pedra deve dar conta!","A montanha fecha o vale inteiro, mas tem uma passagem a leste. Vamos lá?"],
+        intro:["Olha aquele tronco atravessado. Com o machado novo, já dá pra abrir caminho!","A montanha fecha o vale inteiro, mas tem uma passagem a leste. Vamos lá?"],
         waiting:["O tronco está bloqueando a saída. Marca ele pra gente cortar!","Vai ser bom conhecer o que existe do outro lado. Vamos abrir caminho?"],
         working:["Cuidado com as lascas! Mais um pouquinho e a passagem abre.","Já estou trabalhando nesse tronco. Dá até pra enxergar o outro lado!"]
       },tool:"clear",target:"exit"}
   ]);
 
   const artNames=Object.freeze({
-    workstation:"Work Station",hoe:"Enxada",wateringCan:"Regador",shovel:"Pá",pickaxe:"Picareta",axe:"Machado de pedra",exit:"Tronco caído na passagem",
+    workstation:"Work Station",hoe:"Enxada",wateringCan:"Regador",shovel:"Pá",pickaxe:"Picareta",axe:"Machado",exit:"Tronco caído na passagem",
     grass:"Tufo de grama alta",seed:"Grama alta: pode soltar sementes",
     till:"Terra arada",sow:"Semente plantada",water:"Planta regada",
     harvest:"Plantação madura",carry:"Colheita",plan:"Cabana"
@@ -149,11 +149,9 @@
         ctx.drawImage(image,0,0,image.naturalWidth,image.naturalHeight,x+size*.1,y+size*.1,size*.8,size*.8);
       else soil();
     }else if(["hoe","axe","shovel","pickaxe","wateringCan"].includes(key)){
-      const originalKey=key==="axe"?"stoneAxe":key;
-      const frame=window.TillfolkCrafting?.itemFrame(originalKey);
+      const frame=window.TillfolkCrafting?.itemFrame(key);
       if(frame){
         // A missão e a Work Station usam os MESMOS pixels da spritesheet premium.
-        // O objetivo Machado de pedra aponta para seu quadro próprio, não para regador.
         stamp(ctx,"items",frame.x,frame.y,frame.w,frame.h,
           x+size*.12,y+size*.12,size*.76,size*.76);
       }else{
