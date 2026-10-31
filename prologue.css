@@ -22,7 +22,7 @@ body.play-session .prologue-card{
 .prologue-details small{color:#c2d8b3;line-height:1.5}
 .prologue-craft{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:10px;min-height:42px;padding:9px 11px;border:1px solid #c5e4a4;border-radius:8px;background:#cde5a4;color:#203928;font-weight:900;cursor:pointer}
 .prologue-craft span{color:#35523e}
-.workshop-dialog{width:min(660px,calc(100vw - 24px));max-height:min(85dvh,750px);overflow-y:auto}
+.workshop-dialog{width:min(660px,calc(100vw - 24px));max-height:min(92dvh,780px);overflow-y:auto}
 .workshop-dialog h2{margin:4px 0 8px}
 .workshop-stock{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .workshop-stock span{border:1px solid #6b906d;background:#253e30;padding:7px 9px;border-radius:7px;color:#f8ecc8;font-weight:750}
@@ -39,7 +39,7 @@ body.play-session .prologue-card{
  body.play-session .prologue-card{top:clamp(148px,24vh,206px);max-height:36dvh;width:min(300px,calc(100vw - 20px))}
 }
 @media(max-width:520px){
- body.play-session .prologue-card{top:138px;left:8px;width:min(265px,calc(100vw - 16px));max-height:26dvh;padding:8px 10px}
+ body.play-session .prologue-card{top:165px;left:8px;width:min(265px,calc(100vw - 16px));max-height:min(34dvh,275px);padding:8px 10px}
  #prologue-title{font-size:13px}
  #prologue-summary{font-size:11px;margin:4px 0}
  .prologue-goal{padding:4px 6px;font-size:11px}
@@ -48,3 +48,19 @@ body.play-session .prologue-card{
  .workshop-recipes{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){.prologue-card,.workshop-dialog{scroll-behavior:auto}}
+
+/* Missões extensas no celular: detalhes em diálogo em vez de cortar o mapa. */
+.prologue-dialog{width:min(500px,calc(100vw - 24px));max-height:90dvh;overflow-y:auto}
+.prologue-dialog h2{margin:5px 0 10px;color:#f7efcb;font-size:clamp(20px,3vw,25px);line-height:1.25}
+#prologue-dialog-description{font:500 14px/1.6 system-ui,sans-serif;color:#e4eed5;margin:0 0 13px}
+.prologue-dialog .prologue-goals{gap:9px;margin:12px 0}
+.prologue-dialog .prologue-goal{min-height:39px;font-size:13px}
+.prologue-dialog-note{font:500 12px/1.5 system-ui,sans-serif;color:#c4d7b5}
+#prologue-dialog-craft{width:100%;min-height:44px;margin:12px 0 2px;border-radius:8px}
+.workshop-dialog{scrollbar-width:thin;scrollbar-color:#9fc58b #294334}
+.workshop-scroll-hint{display:none!important}
+@media(max-width:520px){
+ .prologue-dialog{max-height:84dvh}
+ .workshop-scroll-hint{display:block!important;margin:0 0 9px!important;font-weight:700!important;color:#d7e9ad!important}
+ .workshop-dialog{max-height:85dvh}
+}
