@@ -7,6 +7,10 @@ const M=global.window.TillfolkMissions;
 const make=()=>({tutorial:M.create(),workers:[{name:"Mone"},{name:"Luna"}]});
 const keys=M.STEPS.map(item=>item.key);
 
+test("a enxada precede o cultivo e o machado de pedra só vem após a colheita",()=>{
+  assert.deepEqual(keys,["workstation","hoe","grass","seed","till","sow",
+    "wateringCan","water","harvest","carry","axe","exit"]);
+});
 test("o tutorial inicia na primeira missão sem cumprir objetivos automaticamente",()=>{
  const state=make();
  assert.equal(M.current(state)?.key,keys[0]);
