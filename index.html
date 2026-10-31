@@ -67,6 +67,14 @@
             <button id="minimap-toggle" type="button" aria-controls="minimap" aria-expanded="true" title="Mostrar ou ocultar minimapa (M)">−</button>
           </div>
           <canvas id="minimap" width="224" height="144" tabindex="0" role="button" aria-label="Minimapa interativo: clique ou use as setas para deslocar a câmera" title="Clique para deslocar a câmera"></canvas>
+          <div id="biome-legend" class="biome-legend" role="group" aria-label="Ir para um bioma">
+            <button type="button" data-visit-biome="g" title="Ir para a pradaria"><i style="--swatch:#a4d17c"></i>Grama</button>
+            <button type="button" data-visit-biome="f" title="Ir para a floresta"><i style="--swatch:#638b57"></i>Bosque</button>
+            <button type="button" data-visit-biome="s" title="Ir para o deserto"><i style="--swatch:#e2c083"></i>Areia</button>
+            <button type="button" data-visit-biome="i" title="Ir para a região gelada"><i style="--swatch:#b8dce0"></i>Gelo</button>
+            <button type="button" data-visit-biome="w" title="Ir para o pântano"><i style="--swatch:#63866a"></i>Pântano</button>
+            <button type="button" data-visit-biome="p" title="Ir para a área venenosa"><i style="--swatch:#8b719e"></i>Veneno</button>
+          </div>
           <div class="camera-controls" role="group" aria-label="Controle de zoom do mapa">
             <button id="zoom-out" type="button" aria-label="Diminuir zoom">−</button>
             <output id="zoom-value" aria-live="polite">100%</output>
