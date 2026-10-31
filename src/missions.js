@@ -3,31 +3,23 @@
 (() => {
   const STEPS=Object.freeze([
     {key:"workstation",goal:1,icon:"🛠️",title:"Nossa primeira Work Station",
-      subtitle:"Junte 30 gravetos e construa a bancada",
-      help:"Começamos SEM ferramentas. Limpe gravetos caídos e grama alta com a mão. Com 30 gravetos no estoque, abra Construir → Work Station, escolha um lugar livre e espere a equipe montar a estação. Clique nela para fabricar ferramentas.",
+      subtitle:"Junte 10 gravetos e construa a bancada",
+      help:"Começamos SEM ferramentas. Limpe gravetos caídos e grama alta com a mão. Com 10 gravetos no estoque, abra Construir → Work Station, escolha um lugar livre e espere a equipe montar a estação. Clique nela para fabricar ferramentas.",
       complete:"Agora temos uma bancada! É daqui que vão sair nossas ferramentas.",
       dialogue:{
         intro:["Antes de tudo, precisamos de um lugar pra fazer ferramentas. Olha quantos galhos caídos por aí!","A gente não tem nem machado ainda. Que tal juntar gravetos e montar nossa bancada?"],
         waiting:["Falta um bocado de graveto, mas dá pra juntar com as mãos.","Marca os gravetos espalhados. Depois a gente escolhe um cantinho pra bancada."],
         working:["Tô trazendo mais uns galhos! Essa bancada vai ficar boa.","Já dá pra imaginar nossas ferramentas aqui. Só falta terminar a montagem."]
       },tool:"construir",target:"workstation"},
-    {key:"axe",goal:1,icon:"🪓",title:"Nossa primeira ferramenta",
-      subtitle:"Fabrique um machado de pedra na Work Station",
-      help:"Abra Bancada e receitas. Colete 8 gravetos, 3 fibras de grama e 3 pedras pequenas. Fabrique o machado de pedra para cortar o tronco da saída leste.",
-      complete:"Finalmente um machado! Agora podemos cortar madeira de verdade.",
-      dialogue:{
-        intro:["Nossa, finalmente uma bancada! Agora só falta fazer um machado.","Será que dá pra montar um machado com esses materiais? Vamos tentar!"],
-        waiting:["A receita do machado tá na bancada. Confere os gravetos e as fibras.","Se estiver faltando material, ainda tem mato pra limpar por aí."],
-        working:["Pronto, vou separar os materiais. Cuidado com a lâmina!","Com o machado feito, nosso trabalho vai render muito mais."]
-      },tool:"construir",target:"axe"},
-    {key:"exit",goal:1,icon:"🪵",title:"Abra a passagem",subtitle:"Corte o tronco caído na saída leste",
-      help:"Use o botão Mostrar no mapa para localizar o único corredor na encosta a leste. Com o machado de pedra já fabricado, selecione Limpar e clique no tronco caído. Espere um trabalhador abrir o caminho.",
-      complete:"Agora o vale ficou maior! A passagem para as outras regiões está aberta.",
-      dialogue:{
-        intro:["Olha ali aquele tronco atravessado. Nosso machado de pedra deve dar conta!","A montanha fecha o vale inteiro, mas tem uma passagem a leste. Vamos lá?"],
-        waiting:["O tronco está bloqueando a saída. Marca ele pra gente cortar!","Vai ser bom conhecer o que existe do outro lado. Vamos abrir caminho?"],
-        working:["Cuidado com as lascas! Mais um pouquinho e a passagem abre.","Já estou trabalhando nesse tronco. Dá até pra enxergar o outro lado!"]
-      },tool:"clear",target:"exit"},
+    {key:"hoe",goal:1,icon:"🌱",title:"A primeira enxada",
+  subtitle:"Fabrique uma enxada na Work Station",
+  help:"Junte 4 gravetos e 2 fibras recolhendo capim. Clique na Work Station ou em Fabricar ferramentas e escolha Enxada. Assim a equipe poderá arar a primeira horta.",
+  complete:"Com essa enxada, finalmente podemos começar a plantação!",
+  dialogue:{
+    intro:["Primeiro precisamos plantar. Bora fabricar uma enxada!","Antes do machado, vamos preparar uma horta pra ter o que comer."],
+    waiting:["A bancada já está pronta. Faltam gravetos ou fibras pra enxada?","Separamos os materiais e fazemos a enxada. O resto vem depois!"],
+    working:["Já imagino nosso primeiro canteiro aqui perto.","Uma enxada muda tudo: agora dá pra preparar a terra."]
+  },tool:"construir",target:"hoe"},
     {key:"grass",goal:1,icon:"🌾",title:"Um cantinho para chamar de nosso",subtitle:"Limpe um tufo de grama alta",
       help:"Na barra de ferramentas, abra Ordens → Limpar e clique em um tufo de grama alta. Universal também funciona sobre o tufo. A equipe vai até lá e limpa quando terminar o caminho.",
       complete:"Aí sim! Já temos um pedacinho de chão livre.",
@@ -60,6 +52,15 @@
         waiting:["A terra já tá pronta. Vamos colocar aquela semente pra morar aqui?","Eu já consigo imaginar as folhas nascendo. Só falta plantar!"],
         working:["Prontinho, semente. Agora vê se cresce forte, tá?","Tô cobrindo com carinho. Essa vai ser especial!"]
       },tool:"sow",target:"sow"},
+    {key:"wateringCan",goal:1,icon:"💧",title:"Um regador para a horta",
+  subtitle:"Fabrique um regador na Work Station",
+  help:"Depois de semear, volte à Work Station e fabrique o regador com 4 gravetos e 2 fibras. Assim a equipe poderá buscar água e regar o canteiro.",
+  complete:"Regador prontinho! Nossa plantinha já pode receber água.",
+  dialogue:{
+    intro:["A terra tá plantada, mas precisamos de um regador.","Agora a planta precisa beber água. Bora fazer um regador!"],
+    waiting:["É só juntar 4 gravetos e 2 fibras para o regador.","A receita do regador está na bancada. Vamos conferir?"],
+    working:["Tá quase! Depois disso a gente rega tudo.","Agora sim, vamos cuidar dessa mudinha!"]
+  },tool:"construir",target:"wateringCan"},
     {key:"water",goal:1,icon:"💧",title:"Um gole de esperança",subtitle:"Regue sua primeira plantação",
       help:"Selecione Universal sobre o canteiro semeado ou Ordens → Regar. Sem água no estoque, quem receber a ordem tentará buscá-la na lagoa e voltar para regar. É preciso ter caminho livre até a água.",
       complete:"Água na medida! Nossa plantinha agradece.",
@@ -84,18 +85,27 @@
         waiting:["A colheita tá esperando ali no canteiro. Vamos levar pro estoque?","Eu levo se você quiser. É só marcar o que ficou pra trás."],
         working:["Deixa que eu carrego! Só não me faz tropeçar com tudo isso.","Essa comida vai render um jantar daqueles. Tô até com fome!"]
       },tool:"carry",target:"carry"},
-    {key:"plan",goal:1,icon:"🏠",title:"O vale tem futuro",subtitle:"Planeje uma cabana ou um novo canteiro",
-      help:"Abra Construir. Escolha Cabana · Equipe e marque uma área livre de 2×2, ou escolha Plantação · Canteiros para planejar mais cultivo. Azul indica uma posição válida; a construção exige trabalho e recursos. Clique direito cancela o plano.",
-      complete:"Olha só... já parece o começo de uma vila!",
+    {key:"axe",goal:1,icon:"🪓",title:"Prepare a saída do vale",
+      subtitle:"Fabrique um machado de pedra na Work Station",
+      help:"Abra Bancada e receitas. Colete 8 gravetos, 3 fibras de grama e 3 pedras pequenas. Fabrique o machado de pedra para cortar o tronco da saída leste.",
+      complete:"Finalmente um machado! Agora podemos cortar madeira de verdade.",
       dialogue:{
-        intro:["Pensa só: um dia esse lugar pode virar uma vilazinha cheia de gente.","Começamos com um tufo de mato. Agora já dá até pra sonhar com uma casa!"],
-        waiting:["Que tal desenhar onde vai ficar a próxima cabana ou mais uma horta?","Se a gente planejar direitinho, vai sobrar espaço pra todo mundo."],
-        working:["Opa, já tô vendo o lugar! Um pouquinho por dia, a vila aparece.","Adoro ver um plano tomando forma. Esse vale tem futuro, viu?"]
-      },tool:"construir",target:"plan"}
+        intro:["Nossa primeira colheita já está guardada! Hora de construir o machado de pedra.","Já temos comida! Agora vamos fazer o machado para abrir a passagem."],
+        waiting:["A receita do machado tá na bancada. Confere os gravetos e as fibras.","Se estiver faltando material, ainda tem mato pra limpar por aí."],
+        working:["Pronto, vou separar os materiais. Cuidado com a lâmina!","Com o machado feito, nosso trabalho vai render muito mais."]
+      },tool:"construir",target:"axe"},
+    {key:"exit",goal:1,icon:"🪵",title:"Abra a passagem",subtitle:"Corte o tronco caído na saída leste",
+      help:"Use o botão Mostrar no mapa para localizar o único corredor na encosta a leste. Com o machado de pedra já fabricado, selecione Limpar e clique no tronco caído. Espere um trabalhador abrir o caminho.",
+      complete:"Passagem aberta! Você concluiu o tutorial e pode explorar o vale!",
+      dialogue:{
+        intro:["Olha ali aquele tronco atravessado. Nosso machado de pedra deve dar conta!","A montanha fecha o vale inteiro, mas tem uma passagem a leste. Vamos lá?"],
+        waiting:["O tronco está bloqueando a saída. Marca ele pra gente cortar!","Vai ser bom conhecer o que existe do outro lado. Vamos abrir caminho?"],
+        working:["Cuidado com as lascas! Mais um pouquinho e a passagem abre.","Já estou trabalhando nesse tronco. Dá até pra enxergar o outro lado!"]
+      },tool:"clear",target:"exit"}
   ]);
 
   const artNames=Object.freeze({
-    workstation:"Work Station",axe:"Machado de pedra",exit:"Tronco caído na passagem",
+    workstation:"Work Station",hoe:"Enxada",wateringCan:"Regador",axe:"Machado de pedra",exit:"Tronco caído na passagem",
     grass:"Tufo de grama alta",seed:"Grama alta: pode soltar sementes",
     till:"Terra arada",sow:"Semente plantada",water:"Planta regada",
     harvest:"Plantação madura",carry:"Colheita",plan:"Cabana"
@@ -138,10 +148,19 @@
       if(image?.complete&&image.naturalWidth)
         ctx.drawImage(image,0,0,image.naturalWidth,image.naturalHeight,x+size*.1,y+size*.1,size*.8,size*.8);
       else soil();
-    }else if(key==="axe"){
-      const image=atlasImage("items");
-      if(image?.complete&&image.naturalWidth>=16)
-        ctx.drawImage(image,0,0,16,16,x+size*.19,y+size*.17,size*.62,size*.62);
+    }else if(key==="hoe"||key==="axe"||key==="wateringCan"){
+      // Miniatura pixelada desenhada com silhueta correta para cada ferramenta:
+      // evita exibir o regador do primeiro quadro do atlas na missão do machado.
+      ctx.save();ctx.translate(x+size*.5,y+size*.48);ctx.scale(size/48,size/48);
+      ctx.rotate(key==="wateringCan"?0:-.65);
+      ctx.fillStyle="#5a3d29";ctx.fillRect(-2,-15,5,35);
+      ctx.fillStyle="#d8b984";ctx.fillRect(-1,-14,2,32);
+      ctx.fillStyle="#344d49";
+      if(key==="hoe"){ctx.fillRect(-18,-18,20,5);ctx.fillRect(-18,-14,6,5);}
+      else if(key==="axe"){ctx.fillRect(-14,-17,22,15);ctx.fillStyle="#97b6a5";ctx.fillRect(-15,-15,10,11);}
+      else {ctx.rotate(0);ctx.fillRect(-18,-11,28,20);ctx.fillStyle="#9bb9ae";ctx.fillRect(-15,-9,23,16);
+        ctx.fillStyle="#344d49";ctx.fillRect(10,-17,5,14);ctx.fillRect(14,-18,9,5);}
+      ctx.restore();
     }else if(key==="grass"||key==="seed"){
       // O mesmo frame que o cenário usa em wild-world.js para grass.
       stamp(ctx,"forage",0,32,16,16,x+size*.1,y+size*.08,size*.8,size*.8);
@@ -194,16 +213,29 @@
     return canvas;
   }
   const emptyStats=()=>Object.fromEntries(STEPS.map(step=>[step.key,0]));
-  function create(){return {active:true,step:0,stats:emptyStats(),finished:false,version:3};}
+  function create(){return {active:true,step:0,stats:emptyStats(),finished:false,version:4};}
   function normalize(raw){
     if(!raw||typeof raw!=="object")return {active:false,step:0,stats:emptyStats(),finished:false,version:1};
     const stats=emptyStats();
     for(const key of Object.keys(stats))stats[key]=Math.max(0,Math.min(9999,Number(raw.stats?.[key])||0));
     const version=Number(raw.version)||1;
-    const previous=Math.floor(Number(raw.step)||0);
-    // Saves v1 não tinham oficina; saves v2 não tinham a missão da passagem.
-    const step=Math.max(0,Math.min(STEPS.length,version<2?previous+3:version<3&&previous>=2?previous+1:previous));
-    return {active:raw.active===true,step,stats,finished:raw.finished===true||step>=STEPS.length,version:3};
+    let step=0;
+    if(version>=4)step=Math.max(0,Math.min(STEPS.length,Math.floor(Number(raw.step)||0)));
+    else if(raw.finished===true)step=STEPS.length;
+    else {
+      // Reorganizar a progressão sem obrigar novos jogadores a usar o machado antes da horta.
+      // Preservar conquistas já registradas e retomar no primeiro objetivo pendente.
+      const oldKeys=version>=3?
+        ["workstation","axe","exit","grass","seed","till","sow","water","harvest","carry","plan"]:
+        version===2?["workstation","axe","grass","seed","till","sow","water","harvest","carry","plan"]:
+        ["grass","seed","till","sow","water","harvest","carry","plan"];
+      for(const key of oldKeys.slice(0,Math.max(0,Number(raw.step)||0)))
+        if(Object.hasOwn(stats,key))stats[key]=Math.max(1,stats[key]);
+      if(stats.till||stats.sow)stats.hoe=1;
+      if(stats.water)stats.wateringCan=1;
+      while(step<STEPS.length&&stats[STEPS[step].key]>=STEPS[step].goal)step++;
+    }
+    return {active:raw.active===true,step,stats,finished:raw.finished===true||step>=STEPS.length,version:4};
   }
   function current(state){
     const progress=state?.tutorial;
