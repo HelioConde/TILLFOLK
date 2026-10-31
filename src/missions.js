@@ -2,6 +2,24 @@
 // Falas naturais, variadas e situacionais. O save guarda apenas progresso, não temporizadores de diálogo.
 (() => {
   const STEPS=Object.freeze([
+    {key:"workstation",goal:1,icon:"🛠️",title:"Nossa primeira Work Station",
+      subtitle:"Junte 30 gravetos e construa a bancada",
+      help:"Começamos SEM ferramentas. Limpe gravetos caídos e grama alta com a mão. Com 30 gravetos no estoque, abra Construir → Work Station, escolha um lugar livre e espere a equipe montar a estação. Clique nela para fabricar ferramentas.",
+      complete:"Agora temos uma bancada! É daqui que vão sair nossas ferramentas.",
+      dialogue:{
+        intro:["Antes de tudo, precisamos de um lugar pra fazer ferramentas. Olha quantos galhos caídos por aí!","A gente não tem nem machado ainda. Que tal juntar gravetos e montar nossa bancada?"],
+        waiting:["Falta um bocado de graveto, mas dá pra juntar com as mãos.","Marca os gravetos espalhados. Depois a gente escolhe um cantinho pra bancada."],
+        working:["Tô trazendo mais uns galhos! Essa bancada vai ficar boa.","Já dá pra imaginar nossas ferramentas aqui. Só falta terminar a montagem."]
+      },tool:"construir",target:"workstation"},
+    {key:"axe",goal:1,icon:"🪓",title:"Nossa primeira ferramenta",
+      subtitle:"Fabrique um machado na Work Station",
+      help:"Clique na bancada pronta ou em Bancada e receitas. Junte 8 gravetos e 3 fibras de grama, abra as receitas e escolha Fabricar machado. A ferramenta ficará disponível para toda a equipe.",
+      complete:"Finalmente um machado! Agora podemos cortar madeira de verdade.",
+      dialogue:{
+        intro:["Nossa, finalmente uma bancada! Agora só falta fazer um machado.","Será que dá pra montar um machado com esses materiais? Vamos tentar!"],
+        waiting:["A receita do machado tá na bancada. Confere os gravetos e as fibras.","Se estiver faltando material, ainda tem mato pra limpar por aí."],
+        working:["Pronto, vou separar os materiais. Cuidado com a lâmina!","Com o machado feito, nosso trabalho vai render muito mais."]
+      },tool:"construir",target:"axe"},
     {key:"grass",goal:1,icon:"🌾",title:"Um cantinho para chamar de nosso",subtitle:"Limpe um tufo de grama alta",
       help:"Na barra de ferramentas, abra Ordens → Limpar e clique em um tufo de grama alta. Universal também funciona sobre o tufo. A equipe vai até lá e limpa quando terminar o caminho.",
       complete:"Aí sim! Já temos um pedacinho de chão livre.",
@@ -69,13 +87,15 @@
   ]);
 
   const artNames=Object.freeze({
+    workstation:"Work Station",axe:"Machado da oficina",
     grass:"Tufo de grama alta",seed:"Grama alta: pode soltar sementes",
     till:"Terra arada",sow:"Semente plantada",water:"Planta regada",
     harvest:"Plantação madura",carry:"Colheita",plan:"Cabana"
   });
   const atlasPaths={ground:"terrain/grass.png",forage:"environment/forageables.png",
     dirt:"terrain/tilled-dirt.png",crops:"farming/crops.png",
-    roof:"structures/wood-roof.png",walls:"structures/wood-walls.png",door:"structures/wood-door.png"};
+    roof:"structures/wood-roof.png",walls:"structures/wood-walls.png",door:"structures/wood-door.png",
+    station:"structures/work-station.png",items:"items/tools-materials.png"};
   const atlas={};
   function atlasImage(id){
     if(typeof Image!=="function")return null;
@@ -85,7 +105,9 @@
         const canvas=typeof document!=="undefined"?document.querySelector("#mission-objective-sprite"):null;
         if(canvas?.dataset.key)paintTarget(canvas,canvas.dataset.key);
       });
-      image.src="./public/assets/sprout-lands/"+atlasPaths[id];
+      image.src=(id==="station"?window.TillfolkCrafting?.STATION_SPRITE:
+        id==="items"?window.TillfolkCrafting?.ITEMS_SPRITE:null)||
+        "./public/assets/sprout-lands/"+atlasPaths[id];
     }
     return atlas[id];
   }
@@ -103,7 +125,16 @@
     stamp(ctx,"ground",0,80,16,16,x,y,size,size);
     const soil=()=>stamp(ctx,"dirt",0,80,16,16,x+2,y+2,size-4,size-4);
     const crop=(sx,sy=0)=>stamp(ctx,"crops",sx,sy,16,16,x+size*.15,y+size*.09,size*.7,size*.77);
-    if(key==="grass"||key==="seed"){
+    if(key==="workstation"){
+      const image=atlasImage("station");
+      if(image?.complete&&image.naturalWidth)
+        ctx.drawImage(image,0,0,image.naturalWidth,image.naturalHeight,x+size*.1,y+size*.1,size*.8,size*.8);
+      else soil();
+    }else if(key==="axe"){
+      const image=atlasImage("items");
+      if(image?.complete&&image.naturalWidth>=16)
+        ctx.drawImage(image,0,0,16,16,x+size*.19,y+size*.17,size*.62,size*.62);
+    }else if(key==="grass"||key==="seed"){
       // O mesmo frame que o cenário usa em wild-world.js para grass.
       stamp(ctx,"forage",0,32,16,16,x+size*.1,y+size*.08,size*.8,size*.8);
       if(key==="seed"){
@@ -153,13 +184,14 @@
     return canvas;
   }
   const emptyStats=()=>Object.fromEntries(STEPS.map(step=>[step.key,0]));
-  function create(){return {active:true,step:0,stats:emptyStats(),finished:false,version:1};}
+  function create(){return {active:true,step:0,stats:emptyStats(),finished:false,version:2};}
   function normalize(raw){
     if(!raw||typeof raw!=="object")return {active:false,step:0,stats:emptyStats(),finished:false,version:1};
     const stats=emptyStats();
     for(const key of Object.keys(stats))stats[key]=Math.max(0,Math.min(9999,Number(raw.stats?.[key])||0));
-    const step=Math.max(0,Math.min(STEPS.length,Math.floor(Number(raw.step)||0)));
-    return {active:raw.active===true,step,stats,finished:raw.finished===true||step>=STEPS.length,version:1};
+    const legacy=Number(raw.version||1)<2;
+    const step=Math.max(0,Math.min(STEPS.length,Math.floor(Number(raw.step)||0)+(legacy?2:0)));
+    return {active:raw.active===true,step,stats,finished:raw.finished===true||step>=STEPS.length,version:2};
   }
   function current(state){
     const progress=state?.tutorial;
