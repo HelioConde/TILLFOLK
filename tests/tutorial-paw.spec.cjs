@@ -250,8 +250,11 @@ test("A Work Station sugere o espaço central válido, mesmo com o colono longe"
   const previousPan=parseFloat(canvas.style.getPropertyValue("--pan-x"))||0;
   canvas.style.setProperty("--pan-x",`${previousPan+viewport.left+viewport.width/2-farX}px`);
   guide();
-  const point={x:rect.left+rect.width*(nearCenter.x+.5)/80,
-   y:rect.top+rect.height*(nearCenter.y+.5)/50};
+  // O deslocamento da câmera altera o bounding rect do canvas.
+  // Medir novamente depois do pan, como o guia faz.
+  const shiftedRect=canvas.getBoundingClientRect();
+  const point={x:shiftedRect.left+shiftedRect.width*(nearCenter.x+.5)/80,
+   y:shiftedRect.top+shiftedRect.height*(nearCenter.y+.5)/50};
   const stillVisible=point.x>=viewport.left+24&&point.x<=viewport.right-24&&
    point.y>=viewport.top+24&&point.y<=viewport.bottom-25;
   return {nearCenter,nearWorker,suggested,afterPan:paw.dataset.targetCell||null,
