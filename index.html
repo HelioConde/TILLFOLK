@@ -83,11 +83,14 @@
             <button type="button" data-order-type="water" aria-pressed="false"><b>💧 Regar</b><small>Irrigar cultivo</small></button>
             <button type="button" data-order-type="harvest" aria-pressed="false"><b>🥕 Colher</b><small>Colher quando maduro</small></button>
             <button type="button" data-order-type="carry" aria-pressed="false"><b>📦 Transportar</b><small>Guardar a colheita</small></button>
+            <button type="button" data-order-type="collectWater" aria-pressed="false"><b>🪣 Buscar água</b><small>Clique na lagoa para recolher 4 unidades</small></button>
+            <button type="button" data-order-type="collectManure" aria-pressed="false"><b>🐄 Recolher esterco</b><small>Clique no animal com esterco disponível</small></button>
+            <button type="button" data-order-type="buildHome" aria-pressed="false"><b>🏠 Construir casa</b><small>Área livre 2×2 · 8 madeiras · 1 morador</small></button>
           </div>
           <p>Selecione uma tarefa e clique em vários terrenos. Etapas futuras aguardam seus pré-requisitos; nenhuma é acrescentada automaticamente.</p>
         </div>
         <div id="construction-panel" class="construction-panel" role="region" aria-label="Construção da casa" hidden>
-          <div class="construction-heading"><strong>⌂ CONSTRUIR CASA</strong><span>🪵 Madeira: <b id="build-stock">15</b> · Piso <b id="build-floor-count">0</b>/25</span><button id="build-exit" type="button">✕ Fechar</button></div>
+          <div class="construction-heading"><strong>⌂ CONSTRUÇÃO</strong><span>🪵 Madeira: <b id="build-stock">15</b> · Piso <b id="build-floor-count">0</b>/25 · Casas: <b id="build-homes-count">0</b></span><button id="build-exit" type="button">✕ Fechar</button></div>
           <div class="construction-actions" role="group" aria-label="Camadas de construção">
             <button type="button" data-build-layer="floor" aria-pressed="true">▦ Piso</button>
             <button type="button" data-build-layer="walls" aria-pressed="false">▥ Paredes</button>
@@ -96,14 +99,14 @@
             <button type="button" id="build-roof">◌ Ocultar telhado</button>
             <button type="button" id="build-undo">↶ Desfazer</button>
           </div>
-          <p id="build-status" role="status" aria-live="polite">Marque a primeira fundação no vale. Cada peça custa uma madeira; os colonos podem coletar mais.</p>
+          <p id="build-status" role="status" aria-live="polite">Editor clássico: peças individuais. Para novas casas feitas pela equipe, use Ordens → Construir casa (8 madeiras).</p>
         </div>
-        <div class="hint-bar"><span>💡</span><p><strong>Como começar:</strong> abra <em>Ordens</em>, escolha <em>Limpar</em> para retirar obstáculos e <em>Arar</em> para preparar o solo. Semear, regar, colher e transportar exigem ordens separadas. Os ajudantes escolhem os trabalhos conforme prioridades e habilidades.</p></div>
+        <div class="hint-bar"><span>💡</span><p><strong>Como começar:</strong> corte grama para ter 25% de chance de conseguir sementes; busque água na lagoa e recolha esterco da vaca. Corte árvores para madeira. Faça cabanas por <em>Ordens → Construir casa</em>: três casas liberam contratar o terceiro ajudante.</p></div>
         <div class="footnote">TILLFOLK · Gerencie o vale e organize sua equipe</div>
       </section>
       <aside class="sidebar" id="farm-sidebar" aria-label="Painel de trabalhadores e tarefas" aria-hidden="true" inert><div class="drawer-heading"><strong>Gestão da fazenda</strong><button type="button" id="drawer-close" aria-label="Fechar painel de gestão">✕ Fechar</button></div>
         <div class="panel worker-panel">
-          <div class="panel-top"><div><span class="overline">PESSOAS DA FAZENDA</span><h2>Trabalhadores <span id="worker-count">1</span></h2></div><button id="hire-btn" class="small-primary">+ Contratar</button></div>
+          <div class="panel-top"><div><span class="overline">PESSOAS DA FAZENDA</span><h2>Trabalhadores <span id="worker-count">1</span></h2><small>🏠 Moradias: <b id="homes-count">0/2</b></small></div><button id="hire-btn" class="small-primary">+ Contratar</button></div>
           <div id="workers" class="workers"></div>
         </div>
         <div class="panel">
@@ -113,7 +116,7 @@
           <div id="priorities" class="priorities"></div>
         </div>
         <div class="panel inventory-panel"><div class="panel-top"><div><span class="overline">RECURSOS DO VALE</span><h2>Coletas da equipe</h2></div></div>
-          <div id="inventory" class="wild-inventory" aria-live="polite">🌳 Madeira 0 · 🪨 Pedra 0 · 🍄 Cogumelos 0</div>
+          <div id="inventory" class="wild-inventory" aria-live="polite">🌳 Madeira 0 · 🪨 Pedra 0 · 💩 Esterco 0</div>
         </div>
         <div class="panel journal-panel"><span class="overline">DIÁRIO DA FAZENDA</span><div id="journal" class="journal"></div></div>
       </aside>
@@ -233,7 +236,7 @@
   <dialog id="hire-dialog" class="modal">
     <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
     <span class="overline">CASA DE RECRUTAMENTO</span><h2>Encontre sua próxima ajuda</h2>
-    <p>Até 3 habilidades positivas e 3 restrições. Menos habilidades significam bônus maiores.</p>
+    <p>Até 3 habilidades positivas e 3 restrições. Contratar exige uma moradia livre depois de abrigar todos os trabalhadores.</p><p id="housing-status" role="status" aria-live="polite"></p>
     <div id="candidates" class="candidate-list"></div>
   </dialog>
   <dialog id="help-dialog" class="modal help-guide" aria-labelledby="guide-title">
