@@ -129,7 +129,7 @@ test("UI mobile: missão pode expandir e oficina não corta a tela",async({page}
   await page.setViewportSize({width:390,height:844});
   await newFarm(page);
   await expect(page.locator("#tutorial-speech")).toBeVisible();
-  await expect(page.locator("#tutorial-speech-text")).toContainText("gravat");
+  await expect(page.locator("#tutorial-speech-text")).toContainText("gravetos");
   await page.screenshot({path:"screenshots/tutorial-primeira-missao-390x844.png",animations:"disabled"});
   await page.locator("#prologue-open").click();
   await expect(page.locator("#prologue-dialog")).toBeVisible();
