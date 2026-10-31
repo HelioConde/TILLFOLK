@@ -764,18 +764,26 @@ test('Recrutamento: tooltip de especialidade por hover, foco e toque',async({pag
 });
 
 
-test('Tela inicial: créditos, som, tutorial visual e cartões no rodapé',async({page})=>{
+test('Tela inicial limpa: navegação, rodapé, créditos, som e tutorial',async({page})=>{
+ for(const size of [{width:1366,height:768},{width:390,height:844}]){
+   await page.setViewportSize(size);
+   await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+   await expect(page.locator('#menu .title-cards')).toHaveCount(0);
+   await expect(page.locator('.title-card-preview')).toHaveCount(0);
+   await expect(page.locator('#new-game')).toBeVisible();
+   const positions=await page.evaluate(()=>{
+     const navigation=document.querySelector('#menu .title-navigation').getBoundingClientRect();
+     const footer=document.querySelector('#menu .title-version').getBoundingClientRect();
+     const menu=document.querySelector('#menu').getBoundingClientRect();
+     return {navBottom:navigation.bottom,footerTop:footer.top,footerBottom:footer.bottom,
+       menuHeight:menu.height,hasHorizontalOverflow:document.documentElement.scrollWidth>window.innerWidth+1};
+   });
+   expect(positions.navBottom).toBeLessThanOrEqual(positions.footerTop+2);
+   expect(positions.footerBottom).toBeLessThanOrEqual(positions.menuHeight+3);
+   expect(positions.hasHorizontalOverflow).toBe(false);
+   await page.screenshot({path:'screenshots/menu-limpo-'+size.width+'x'+size.height+'.png',animations:'disabled'});
+ }
  await page.setViewportSize({width:1366,height:768});
- await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
- const positions=await page.evaluate(()=>{
-   const cards=document.querySelector('#menu .title-cards').getBoundingClientRect();
-   const navigation=document.querySelector('#menu .title-navigation').getBoundingClientRect();
-   const footer=document.querySelector('#menu .title-version').getBoundingClientRect();
-   return {cardTop:cards.top,navBottom:navigation.bottom,cardBottom:cards.bottom,footerTop:footer.top};
- });
- expect(positions.cardTop).toBeGreaterThan(positions.navBottom-1);
- expect(positions.cardBottom).toBeLessThanOrEqual(positions.footerTop+2);
- await page.screenshot({path:'screenshots/menu-rodape-v2-1366x768.png',animations:'disabled'});
  await page.locator('#title-credits').click();
  await expect(page.locator('#title-credits-dialog')).toContainText('Hélio Conde');
  await expect(page.locator('#title-credits-dialog')).toContainText('Cup Nooble');
