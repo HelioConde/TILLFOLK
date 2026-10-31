@@ -2,9 +2,9 @@
 /* Um colono pode escolher uma ordem existente, mas nunca criar novas ordens.
    A lista pertence ao jogador e é salva em state.orders. Sem backend. */
 (() => {
-  const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry"]);
-  const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar"});
-  const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦"});
+  const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry","collectWater","collectManure","buildHome"]);
+  const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa"});
+  const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠"});
   const validCell=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=1&&x<27&&y>=1&&y<17;
   const id=(type,x,y)=>x+"-"+y+":"+type;
   function normalize(raw) {
@@ -22,6 +22,22 @@
   /* Uma etapa pode ser enfileirada antes de seus pré-requisitos: fica aguardando.
      "Aguardando" não inicia trabalhos adicionais por conta própria. */
   function status(order,plot,object,resources){
+    // Ordens de coleta da lagoa não precisam de terreno cultivável.
+    if(order.type==="collectWater")
+      return resources?.world?.water?.some(w=>w.x===order.x&&w.y===order.y)
+        ?{state:"ready",reason:"Buscar água na margem da lagoa"}
+        :{state:"blocked",reason:"Escolha um ponto da lagoa"};
+    if(order.type==="collectManure"){
+      const animal=resources?.animals?.find(a=>Math.floor(a.x)===order.x&&Math.floor(a.y)===order.y);
+      return animal?.manure>0?{state:"ready",reason:"Esterco disponível"}
+        :{state:"blocked",reason:"Aguardando esterco do animal"};
+    }
+    if(order.type==="buildHome"){
+      const already=resources?.homes?.some(h=>h.x===order.x&&h.y===order.y);
+      if(already)return {state:"done",reason:"Casa já concluída"};
+      return (resources?.inventory?.wood||0)>=8?{state:"ready",reason:"Madeira suficiente para construir"}
+        :{state:"blocked",reason:"Aguardando 8 madeiras"};
+    }
     if(!plot)return {state:"blocked",reason:"Terreno indisponível"};
     const seeds=Number(resources?.seeds)||0,water=Number(resources?.water)||0;
     const dirty=!!(object||plot.dirty);
@@ -34,7 +50,8 @@
         if(plot.fertilized)return {state:"done",reason:"Solo já fertilizado"};
         if(plot.seeded)return {state:"done",reason:"Planta já semeada"};
         if(dirty)return {state:"blocked",reason:"Aguardando limpeza"};
-        return plot.tilled?{state:"ready",reason:"Pronta"}:{state:"blocked",reason:"Aguardando arar o solo"};
+        if(!plot.tilled)return {state:"blocked",reason:"Aguardando arar o solo"};
+        return (resources?.inventory?.manure||0)>0?{state:"ready",reason:"Esterco disponível"}:{state:"blocked",reason:"Sem esterco: recolha junto aos animais"};
       case "sow":
         if(plot.seeded)return {state:"done",reason:"Já semeado"};
         if(plot.produce)return {state:"blocked",reason:"Retire a colheita anterior"};
@@ -55,7 +72,7 @@
     }
   }
   function add(orders,type,x,y,plot,object,resources){
-    if(!TYPES.includes(type)||!validCell(x,y)||!plot)return {error:"Escolha um terreno válido."};
+    if(!TYPES.includes(type)||!validCell(x,y)||(!plot&&!["collectWater","collectManure"].includes(type)))return {error:"Escolha um terreno válido."};
     const key=id(type,x,y);
     if(orders.some(o=>o.id===key))return {error:"Esta ordem já está na lista."};
     if(orders.length>=450)return {error:"Fila cheia. Cancele algumas ordens."};
