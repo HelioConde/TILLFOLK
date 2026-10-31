@@ -520,6 +520,9 @@
         state.prologue={stage:Prologue.CHAPTERS.length,done:true};
       }
       Prologue.normalize(state);
+      // Se o último objetivo foi salvo antes da troca de modo (ou em versões
+      // anteriores), carregar a MESMA colônia já em Sobrevivência normal.
+      if(state.mode==="tutorial"&&state.prologue.done)state.mode="survival";
       state.homes=Array.isArray(s.homes)?s.homes.filter(h=>Number.isInteger(h.x)&&Number.isInteger(h.y)&&h.x>=2&&h.y>=2):[];
       // Construções legadas com piso, parede e telhado passam a valer como moradia.
       if(!state.homes.some(h=>h.legacy)&&state.house.floor.length>=2&&state.house.walls.length>0&&state.house.roof.length>0){
