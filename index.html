@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="./sprout-ui.css?v=3">
   <link rel="stylesheet" href="./game-refinement.css?v=1">
   <link rel="stylesheet" href="./camera-ui.css?v=1">
+  <link rel="stylesheet" href="./top-speed.css?v=1">
   <link rel="stylesheet" href="./game-interface.css?v=20261031">
   <script defer src="./src/menu.js"></script>
   <script defer src="./src/tutorial.js"></script>
@@ -42,6 +43,7 @@
         <div class="metric"><span>◷</span><small>Hora</small><b id="clock">08:00</b></div>
 
       </div>
+      <div class="speed-wrap" role="group" aria-label="Velocidade da simulação"><span>VELOCIDADE</span><button type="button" data-speed="0" aria-label="Pausar simulação" title="Pausar">Ⅱ</button><button type="button" data-speed="1" class="chosen" aria-label="Velocidade normal, 1 vez">1×</button><button type="button" data-speed="3" aria-label="Velocidade rápida, 3 vezes">3×</button><button type="button" data-speed="6" aria-label="Velocidade muito rápida, 6 vezes">6×</button></div>
       <div class="management-nav" role="group" aria-label="Gestão da fazenda">
         <button id="nav-priorities" type="button">☷ Prioridades</button>
         <button id="nav-skills" type="button">✦ Habilidades</button>
@@ -90,7 +92,7 @@
             <button class="tool" data-tool="inspecionar" aria-pressed="false"><span>⌕</span><b>Inspecionar</b><small>Ver estado</small></button>
             <button class="tool" data-tool="construir" aria-pressed="false"><span>⌂</span><b>Construir</b><small>Editar casa</small></button>
           </div>
-          <div class="speed-wrap" role="group" aria-label="Velocidade da simulação"><span>VELOCIDADE</span><button type="button" data-speed="0" aria-label="Pausar simulação" title="Pausar">Ⅱ</button><button type="button" data-speed="1" class="chosen" aria-label="Velocidade normal, 1 vez">1×</button><button type="button" data-speed="3" aria-label="Velocidade rápida, 3 vezes">3×</button><button type="button" data-speed="6" aria-label="Velocidade muito rápida, 6 vezes">6×</button></div>
+          
         </div>
         <div class="hud-selection" role="status" aria-live="polite">
           <span class="hud-key">AÇÃO</span>

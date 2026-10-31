@@ -1,0 +1,119 @@
+/* Controles de tempo na barra superior — apenas composição visual.
+   Os mesmos data-speed e listeners do motor continuam intactos. */
+body.play-session .topbar{
+  grid-template-columns:minmax(116px,145px) minmax(0,1fr) auto auto 40px!important;
+  align-items:center!important;
+  gap:6px!important;
+}
+body.play-session .topbar .brand{grid-column:1!important;grid-row:1!important;min-width:0}
+body.play-session .topbar .metrics{
+  grid-column:2!important;grid-row:1!important;
+  min-width:0!important;max-width:100%!important;
+  justify-content:flex-start!important;overflow-x:auto!important;
+}
+body.play-session .topbar .speed-wrap{
+  grid-column:3!important;grid-row:1!important;
+  display:flex!important;flex:0 0 auto!important;
+  align-items:center!important;justify-content:center!important;
+  width:max-content!important;max-width:none!important;
+  min-height:38px!important;gap:3px!important;padding:0 3px!important;
+  border-left:1px solid #806b50;
+  white-space:nowrap!important;
+}
+body.play-session .topbar .speed-wrap > span{
+  margin-right:3px!important;font-size:9px!important;
+  color:#e9d6a5!important;letter-spacing:.3px!important;
+}
+body.play-session .topbar .speed-wrap button{
+  display:grid!important;place-items:center!important;
+  min-width:33px!important;width:35px!important;
+  min-height:36px!important;height:36px!important;
+  padding:0 4px!important;font-size:12px!important;line-height:1!important;
+  flex:0 0 auto!important;
+}
+body.play-session .topbar .speed-wrap button.chosen{
+  outline:2px solid #ffecb8!important;
+  outline-offset:-2px!important;
+}
+body.play-session .topbar .hud-panels{
+  grid-column:4!important;grid-row:1!important;
+  min-width:0!important;gap:4px!important;
+}
+body.play-session .topbar #menu-btn{
+  grid-column:5!important;grid-row:1!important;
+}
+body.play-session .tooltray{
+  width:max-content!important;
+  max-width:calc(100vw - 14px)!important;
+  justify-content:center!important;
+}
+body.play-session .tooltray .tool-list{
+  border-right:0!important;padding-right:0!important;
+}
+
+/* Primeiro compactar a barra de ritmo, depois dividir a barra em duas linhas. */
+@media(max-width:1440px){
+  body.play-session .topbar .speed-wrap > span{display:none!important}
+}
+@media(max-width:1120px) and (min-width:841px){
+  body.play-session .topbar{
+    grid-template-columns:minmax(104px,130px) minmax(0,1fr) auto auto 39px!important;
+    padding-inline:7px!important;gap:4px!important;
+  }
+  body.play-session .topbar .speed-wrap{gap:2px!important;padding:0 2px!important}
+  body.play-session .topbar .speed-wrap button{
+    width:30px!important;min-width:30px!important;height:34px!important;min-height:34px!important;
+  }
+  body.play-session .topbar .hud-panels{gap:3px!important}
+  body.play-session .topbar .hud-panels button{padding-inline:5px!important;font-size:10px!important}
+}
+@media(max-width:840px){
+  body.play-session .topbar{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto 40px!important;
+    grid-template-rows:39px 37px!important;
+    min-height:96px!important;height:96px!important;max-height:108px!important;
+    gap:5px!important;padding:6px 8px!important;
+  }
+  body.play-session .topbar .brand{grid-column:1!important;grid-row:1!important}
+  body.play-session .topbar .hud-panels{grid-column:2!important;grid-row:1!important}
+  body.play-session .topbar #menu-btn{grid-column:3!important;grid-row:1!important}
+  body.play-session .topbar .metrics{
+    grid-column:1!important;grid-row:2!important;
+    width:100%!important;justify-content:flex-start!important;
+    overflow-x:auto!important;gap:3px!important;min-width:0!important;
+  }
+  body.play-session .topbar .speed-wrap{
+    grid-column:2/4!important;grid-row:2!important;
+    width:max-content!important;padding:0 0 0 5px!important;
+    min-width:0!important;justify-self:end!important;
+    gap:2px!important;
+  }
+  body.play-session .topbar .speed-wrap button{
+    width:31px!important;min-width:31px!important;
+    height:32px!important;min-height:32px!important;
+    padding:0 2px!important;font-size:11px!important;
+  }
+}
+@media(max-width:460px){
+  body.play-session .topbar{
+    height:96px!important;min-height:96px!important;max-height:102px!important;
+    grid-template-rows:39px 35px!important;
+  }
+  body.play-session .topbar .speed-wrap button{
+    width:30px!important;min-width:30px!important;
+    min-height:31px!important;height:31px!important;
+  }
+  body.play-session .topbar .metrics{padding-right:4px!important}
+  body.play-session .topbar .hud-panels button{padding-inline:4px!important}
+  body.play-session .tooltray{flex-wrap:nowrap!important}
+  body.play-session .tooltray .tool-list{
+    flex-basis:auto!important;width:100%!important;
+    border-bottom:0!important;padding-bottom:0!important;
+  }
+  body.play-session .hud-selection{bottom:96px!important}
+  body.play-session .world-tag{bottom:118px!important}
+  body.play-session .orders-panel,
+  body.play-session .construction-panel{bottom:104px!important}
+  body.play-session #toast{bottom:116px!important}
+}
