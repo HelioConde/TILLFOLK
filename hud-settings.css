@@ -30,6 +30,41 @@ body.play-session .tooltray .tool > b{
   body.play-session .tooltray .tool-list{width:100%!important;justify-content:space-evenly!important;}
   body.play-session .tooltray .tool{flex:1 1 0!important;min-width:0!important;max-width:none!important;}
 }
+/* Alinhamento ótico real: a moldura Sprout Lands permanece fixa.
+   O caractere Unicode tem ascendentes/descendentes variáveis; mover somente
+   o glifo evita que estrela, X e casa pareçam caídos na base do botão. */
+body.play-session .tooltray .tool > span{
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  font-size:0!important;
+}
+body.play-session .tooltray .tool > span > .tool-glyph{
+  display:block!important;
+  position:relative!important;
+  width:max-content!important;
+  height:auto!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:none!important;
+  color:inherit!important;
+  font:normal 22px/1 system-ui,sans-serif!important;
+  font-style:normal!important;
+  text-align:center!important;
+  text-shadow:0 1px 0 #fce7bc!important;
+  transform:translate(var(--tool-icon-x,0px),var(--tool-icon-y,-3px))!important;
+  pointer-events:none!important;
+}
+body.play-session .tooltray .tool[data-tool="universal"] .tool-glyph{--tool-icon-x:-2px;--tool-icon-y:-3px}
+body.play-session .tooltray #orders-btn .tool-glyph{--tool-icon-y:-2px}
+body.play-session .tooltray .tool[data-tool="remover"] .tool-glyph{--tool-icon-y:-3px}
+body.play-session .tooltray .tool[data-tool="inspecionar"] .tool-glyph{--tool-icon-x:1px;--tool-icon-y:-3px}
+body.play-session .tooltray .tool[data-tool="construir"] .tool-glyph{--tool-icon-x:-1px;--tool-icon-y:-5px}
+@media(max-width:760px){
+  body.play-session .tooltray .tool > span > .tool-glyph{font-size:19px!important}
+}
+
 #game-options-dialog #game-options-main[hidden],
 #game-options-dialog #game-settings-panel[hidden]{display:none!important}
 #game-options-dialog .game-settings-panel:not([hidden]){display:grid;gap:8px}
