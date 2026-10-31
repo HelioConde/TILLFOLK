@@ -43,8 +43,9 @@
     // Cada copa completa ocupa sua célula original de 32px no atlas.
     // O primeiro arbusto é uma exceção: tem 16px de largura.
     if(kind===0){stamp("trees",0,0,16,32,x-8*scale,y-30*scale,27*scale,43*scale);return;}
-    const sx=({1:16,3:80,4:112,5:144})[kind]??48;
-    stamp("trees",sx,0,32,32,x-16*scale,y-30*scale,48*scale,43*scale);
+    // Durante a fase de agricultura inicial, não exibir árvores com
+    // frutos nem no cenário animado do menu (atlas x=48,80,112,144; y=0).
+    stamp("trees",16,0,32,32,x-16*scale,y-30*scale,48*scale,43*scale);
   }
   function lane(x0,y0,width,height,texture="soil"){
     for(let y=y0;y<y0+height;y+=16)for(let x=x0;x<x0+width;x+=16){
