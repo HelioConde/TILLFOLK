@@ -56,3 +56,6 @@ body.play-session .tooltray:has(#orders-btn[aria-expanded=true]){border-color:#f
 
 /* A confirmação temporária não pode esconder as opções de tarefas. */
 body.play-session:has(.orders-panel:not([hidden])) #toast{display:none!important}
+
+/* Ordens de recursos de animais só aparecem quando existirem animais no vale. */
+.orders-choices button[hidden]{display:none!important}
