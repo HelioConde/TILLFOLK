@@ -24,6 +24,46 @@ body:not(.play-session) #crop-catalog-dialog,body:not(.play-session) #workshop-d
 .farm-tools-list button:focus-visible,.farm-tools-list button:hover:not(:disabled){outline:2px solid #dff6a1;outline-offset:2px}
 .farm-item-atlas{display:block;max-width:min(100%,420px);max-height:105px;image-rendering:pixelated;object-fit:contain;object-position:left center;border:1px solid #7e9e73;background:#21362b;margin:5px 0 12px}
 
+/* Painel da Work Station: cada item tem sprite próprio, título e receita separados.
+   Pixel art sempre usa nearest-neighbor e preserva a transparência da spritesheet. */
+.farm-catalog-dialog .farm-tools-list{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:12px;align-items:stretch;margin:14px 0 22px
+}
+.farm-catalog-dialog .farm-tools-list button{
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  gap:9px;min-width:0;min-height:190px;padding:13px 12px;
+  text-align:left;white-space:normal;overflow-wrap:break-word
+}
+.farm-tools-list .workstation-tool-sprite{
+  display:block;flex:none;width:96px;height:96px;max-width:100%;
+  margin:0 auto;border:2px solid #a9c991;border-radius:5px;
+  background:#9cc56d;image-rendering:pixelated;
+  image-rendering:crisp-edges
+}
+.farm-tools-list .workstation-tool-text{
+  display:block;min-width:0;width:100%;max-width:100%;
+  overflow-wrap:anywhere
+}
+.farm-tools-list .workstation-tool-text strong{
+  display:block;margin:0 0 6px;font-size:13px;line-height:1.38;
+  color:#f6e8bd;white-space:normal
+}
+.farm-tools-list .workstation-tool-text small{
+  display:block;margin-top:5px;font-size:11px;line-height:1.48;
+  color:#cbe4b7;font-weight:500;white-space:normal
+}
+.farm-tools-list .workstation-tool-text .workstation-art-note{
+  font-size:10px;font-style:italic;color:#e5c99b
+}
+@media(max-width:520px){
+ .farm-catalog-dialog .farm-tools-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .farm-catalog-dialog .farm-tools-list button{padding:8px;min-height:175px;gap:7px}
+ .farm-tools-list .workstation-tool-sprite{width:72px;height:72px}
+ .farm-tools-list .workstation-tool-text strong{font-size:12px}
+ .farm-tools-list .workstation-tool-text small{font-size:10px}
+}
+
 /* Coleta e produção: indicador temporário no canto do mapa. */
 .pickup-feed{position:absolute;right:12px;top:12px;z-index:3;pointer-events:none;
  display:grid;gap:4px;width:min(215px,34%);padding:9px 11px;color:#f6f1d3;
