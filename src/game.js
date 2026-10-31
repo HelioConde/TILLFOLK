@@ -512,7 +512,7 @@
       plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),
       cropSeeds:Crops.normalizeStock({}),cropProduce:Crops.normalizeStock({}),selectedCrop:"carrot",workstations:[],crafting:Crafting.normalize(null),
       homes:[],animals:[],inventory:{wood:0,twigs:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
-      candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
+      candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},buildPriority:5,
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     tasks=[]; simSpeed=1; updateSpeed();
   }
@@ -604,6 +604,7 @@
       state.mode=state.mode||"survival";
       state.farmName=state.farmName||"Minha Fazenda";
       state.priorities={...startPriorities,...s.priorities};
+      state.buildPriority=Math.max(1,Math.min(9,Number(s.buildPriority)||5));
       state.workers.forEach(w=>{
         // Uma carga interrompida por recarregamento retorna ao depósito.
         if(w.carryingWater)state.water=(Number(state.water)||0)+1;
@@ -780,11 +781,11 @@
     if(w.task)return;
     const available=tasks.filter(t=>t.status==="ready"&&!t.assigned&&!workerTaskBlocker(w,t));
     const priorityScore=t=>{
-      const global=state.priorities[t.type]||5;
+      const global=Number.isInteger(t.priority)?t.priority:state.priorities[t.type]||5;
       const individual=w.personalPriority?.[t.type]??5;
       const expertise=bonus(w,t.type);
       const distance=Math.abs(w.x-(t.x+.5))+Math.abs(w.y-(t.y+.5));
-      return global*20+individual*14+expertise*9-distance*.3;
+      return global*100+individual*14+expertise*9-distance*.3;
     };
     available.sort((a,b)=>priorityScore(b)-priorityScore(a));
     if(available.length){w.task=available[0].id;w.progress=0;w.routeTask=null;w.route=[];available[0].assigned=w.id;}
@@ -1416,7 +1417,12 @@
         '<strong>'+labels[t.type]+'</strong><span class="order-state">'+statusText+'</span></div>'+
         '<small>Terreno '+(t.x+1)+', '+(t.y+1)+' · '+escapeHtml(statusDetail)+'</small>'+
         (w?'<div class="order-progress" role="progressbar" aria-label="Progresso da tarefa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+progress+'"><i style="width:'+progress+'%"></i></div>':'')+
-        '</div><div class="order-task-controls"><b>P'+state.priorities[t.type]+'</b>'+
+        '</div><div class="order-task-controls">'+
+        (["buildHome","buildStation"].includes(t.type)?
+          '<button class="order-priority-edit" data-order-priority="'+t.id+'" data-delta="-1" aria-label="Diminuir prioridade da construção">−</button>'+
+          '<b title="Prioridade da construção, de 1 a 9">P'+(t.priority??5)+'</b>'+
+          '<button class="order-priority-edit" data-order-priority="'+t.id+'" data-delta="1" aria-label="Aumentar prioridade da construção">+</button>':
+          '<b>P'+state.priorities[t.type]+'</b>')+
         '<button type="button" data-cancel-order="'+t.id+'" aria-label="Cancelar ordem '+labels[t.type]+' do terreno '+(t.x+1)+', '+(t.y+1)+'">✕</button></div></div>';
     };
     // Recalcular o painel não fecha os grupos que o jogador abriu.
@@ -1552,7 +1558,8 @@
     const result=Orders.add(state.orders,type,x,y,plot,World.at(state.world,x,y),state);
     if(result.error)return result;
     if(type==="sow")result.order.crop=state.selectedCrop;
-    if(type==="sow")result.order.crop=state.selectedCrop;
+    if(type==="buildHome"||type==="buildStation")result.order.priority=state.buildPriority;
+    if(type==="buildHome"||type==="buildStation")result.order.priority=state.buildPriority;
     state.orders.push(result.order);
     if(type==="buildHome")recordTutorial("plan");
     if(plot&&!["buildHome","collectWater","collectManure"].includes(type))plot.selected=true;
@@ -1703,6 +1710,7 @@
   function updateBuildPanel(){
     if(!state)return;
     $("#build-stock").textContent=String(state.inventory?.wood||0);
+    const p=$("#build-priority-value");if(p)p.textContent=state.buildPriority;
     const sticks=$("#build-twigs");if(sticks)sticks.textContent=String(state.inventory?.twigs||0);
     $("#build-floor-count").textContent=String(state.house.floor.length);
     if($("#build-homes-count"))$("#build-homes-count").textContent=String(state.homes.length);
@@ -1775,9 +1783,10 @@
       const test=Orders.add(state.orders,"buildStation",x,y,findPlot(x,y),World.at(state.world,x,y),state);
       if(!test.order){$("#build-status").textContent=test.error;return;}
       pushBuildHistory();
+      test.order.priority=state.buildPriority;
       state.orders.push(test.order);
       recalcTasks();refresh();save();buildHover=null;
-      $("#build-status").textContent="🛠️ Work Station planejada: aguardando 30 gravetos.";
+      $("#build-status").textContent="🛠️ Work Station planejada: aguardando 10 gravetos.";
       return;
     }
     if(buildLayer==="home"){
@@ -1785,6 +1794,7 @@
         World.at(state.world,x,y),state);
       if(!test.order){$("#build-status").textContent=test.error;return;}
       pushBuildHistory();
+      test.order.priority=state.buildPriority;
       state.orders.push(test.order);
       recordTutorial("plan");
       recalcTasks();refresh();save();
@@ -1813,7 +1823,7 @@
       buildLayer==="field"?
         "Plantação: prévia azul. Clique ou arraste para criar canteiros (arar + semear).":
       buildLayer==="station"?
-        "Work Station: junte 30 gravetos e planeje a bancada no chão livre. Clique direito cancela.":
+        "Work Station: junte 10 gravetos e planeje a bancada no chão livre. Clique direito cancela.":
         "Camada: "+btn.textContent.trim()+". Clique para construir ou use o botão direito para apagar.";
   }));
   $("#build-erase").addEventListener("click",()=>{
@@ -2038,10 +2048,23 @@
     notify("Ordem "+labels[btn.dataset.orderType]+": clique nos terrenos onde ela deve ser executada.");
   }));
   $("#tasks").addEventListener("click",event=>{
+    const priority=event.target.closest("[data-order-priority]");
+    if(priority){
+      const order=state.orders.find(o=>o.id===priority.dataset.orderPriority);
+      if(!order)return;
+      order.priority=Math.max(1,Math.min(9,(order.priority??5)+Number(priority.dataset.delta)));
+      recalcTasks();refresh();save();return;
+    }
     const btn=event.target.closest("[data-cancel-order]");
     if(btn){removeOrders([btn.dataset.cancelOrder]);notify("Ordem cancelada.");}
   });
   document.querySelectorAll("[data-speed]").forEach(b=>b.addEventListener("click",()=>{simSpeed=Number(b.dataset.speed);updateSpeed();refresh();save();}));
+  $("#construction-panel").addEventListener("click",event=>{
+    const button=event.target.closest("[data-construction-priority]");
+    if(!button||!state)return;
+    state.buildPriority=Math.max(1,Math.min(9,state.buildPriority+Number(button.dataset.constructionPriority)));
+    updateBuildPanel();save();
+  });
   $("#priorities").addEventListener("click",e=>{
     const btn=e.target.closest("[data-priority]");if(!btn||!state)return;
     const type=btn.dataset.priority;
@@ -2091,7 +2114,7 @@
     const ready=Boolean(state.crafting?.station);
     $("#workshop-status").textContent=ready?
       "Work Station pronta! Faça ferramentas e transforme colheitas em sementes.":
-      "A Work Station ainda não está pronta. Colete 30 gravetos e use Construir → Work Station.";
+      "A Work Station ainda não está pronta. Colete 10 gravetos e use Construir → Work Station.";
     $("#workshop-tools").innerHTML=Crafting.RECIPES.map((recipe,index)=>{
       const made=Crafting.has(state,recipe.key);
       const lacking=Crafting.missing(state,recipe.cost).length>0;
