@@ -685,7 +685,7 @@
   // permanente da seleção. Limpa inclusive saves antigos que tinham selected=true.
   let lastSelectionPlots=null,lastSelectionSignature=null;
   function syncOrderSelections(){
-    const signature=state.orders.filter(o=>!["collectWater","collectManure","buildHome"].includes(o.type))
+    const signature=state.orders.filter(o=>!["collectWater","collectManure","buildHome","buildStation"].includes(o.type))
       .map(o=>o.x+","+o.y).sort().join("|");
     if(lastSelectionPlots===state.plots&&lastSelectionSignature===signature)return;
     const selected=new Set(signature?signature.split("|"):[]);
@@ -1087,6 +1087,11 @@
     for(const order of state.orders){
       if(order.type==="buildStation"&&inView(order.x,order.y,2)){
         const x=order.x*TILE,y=order.y*TILE;
+        if(valid(sprite.workstation)){
+          const sw=Math.min(32,sprite.workstation.naturalWidth);
+          const sh=Math.min(32,sprite.workstation.naturalHeight);
+          Blueprint.part(ctx,sprite.workstation,0,0,sw,sh,x-4,y-20,40,49,true,.55);
+        }
         ctx.fillStyle="#56aee280";ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
         ctx.strokeStyle="#a0e5ff";ctx.lineWidth=2;ctx.strokeRect(x+2,y+2,TILE-4,TILE-4);
       }else if(order.type==="buildHome"&&inView(order.x,order.y,4))
@@ -1269,7 +1274,7 @@
         return;
       }
       // Checar se o jogador já marcou o serviço. Nunca criar tarefas pelo diálogo.
-      const desired=step<=1?"clear":({till:"till",sow:"sow",water:"water",
+      const desired=quest.key==="workstation"?"buildStation":quest.key==="axe"?null:step<=3?"clear":({till:"till",sow:"sow",water:"water",
         harvest:"harvest",carry:"carry",plan:"buildHome"})[quest.key];
       const relevantOrders=state.orders.filter(order=>order.type===desired);
       const assigned=visible.filter(w=>relevantOrders.some(order=>order.id===w.task));
@@ -1339,7 +1344,7 @@
     $("#selected-crop-label").textContent=(Crops.get(state.selectedCrop)?.name||"Cenoura")+" · "+(state.cropSeeds[state.selectedCrop]||0)+" sementes";
     const stock=state.inventory||{};
     const inventoryItems=[
-      ["wood","🪵","Madeira"],["stone","🪨","Pedra"],
+      ["twigs","🌿","Gravetos"],["wood","🪵","Madeira"],["stone","🪨","Pedra"],
       ["mushroom","🍄","Cogumelos"],["flower","🌸","Flores"],
       ["herbs","🌿","Ervas"],["grass","🌾","Fibras"],
       ["manure","💩","Esterco"]
@@ -1621,6 +1626,8 @@
       return {error:"Escolha uma área dentro do vale."};
     if(buildLayer==="field")return canPlanField(x,y);
     if(buildLayer==="station")return stationSiteValid(x,y)?{house:true}:{error:"Oficina exige chão firme livre."};
+    if(buildLayer==="station")return stationSiteValid(x,y)?
+      {house:true}:{error:"Work Station precisa de um terreno livre."};
     if(buildLayer==="home")return homeSiteValid(x,y)?
       {house:true}:{error:"A cabana exige 2×2 livres e terreno firme."};
     if(!World.terrainAt(state.world,x,y).buildable)
@@ -1678,6 +1685,7 @@
   function updateBuildPanel(){
     if(!state)return;
     $("#build-stock").textContent=String(state.inventory?.wood||0);
+    const sticks=$("#build-twigs");if(sticks)sticks.textContent=String(state.inventory?.twigs||0);
     $("#build-floor-count").textContent=String(state.house.floor.length);
     if($("#build-homes-count"))$("#build-homes-count").textContent=String(state.homes.length);
     document.querySelectorAll("[data-build-layer]").forEach(btn=>{
@@ -1751,7 +1759,7 @@
       pushBuildHistory();
       state.orders.push(test.order);
       recalcTasks();refresh();save();buildHover=null;
-      $("#build-status").textContent="🛠️ Oficina planejada: aguardando 5 madeiras e 2 pedras.";
+      $("#build-status").textContent="🛠️ Work Station planejada: aguardando 30 gravetos.";
       return;
     }
     if(buildLayer==="home"){
@@ -1787,7 +1795,7 @@
       buildLayer==="field"?
         "Plantação: prévia azul. Clique ou arraste para criar canteiros (arar + semear).":
       buildLayer==="station"?
-        "Oficina: planeje uma bancada no chão livre (5 madeiras, 2 pedras). Clique direito cancela.":
+        "Work Station: junte 30 gravetos e planeje a bancada no chão livre. Clique direito cancela.":
         "Camada: "+btn.textContent.trim()+". Clique para construir ou use o botão direito para apagar.";
   }));
   $("#build-erase").addEventListener("click",()=>{
@@ -1977,6 +1985,7 @@
     if(suppressMapClick){suppressMapClick=false;return;}
     if(!playing||!state)return;
     const rect=canvas.getBoundingClientRect(),x=Math.floor((event.clientX-rect.left)/rect.width*W),y=Math.floor((event.clientY-rect.top)/rect.height*H);
+    if(occupiedByStation(x,y)){openWorkshop();return;}
     if(selectedTool==="construir"){paintHouse(x,y);return;}
     if(window.TillfolkHouseBuilder.occupied(state.house,x,y)){notify("Esta área já faz parte da casa.");return;}
     const p=findPlot(x,y);
