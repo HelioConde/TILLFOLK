@@ -524,14 +524,16 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
     const rooftop=calls.filter(c=>c.asset==='roof');
     return {stats,windows,doors,rooftopCount:rooftop.length,
       roofMin:Math.min(...rooftop.map(c=>c.dy)),roofMax:Math.max(...rooftop.map(c=>c.dy+c.dh)),
-      facadeMin:128,allUniform:calls.every(c=>c.dw*c.sh===c.dh*c.sw)};
+      facadeMin:128,allUniform:calls.every(c=>c.dw*c.sh===c.dh*c.sw),
+      roofBeforeWindows:calls.findIndex(c=>c.asset==='roof')<calls.findIndex(c=>c.asset==='walls'&&c.sx===48&&c.sy===32)};
   });
   expect(result.stats.stretched).toBe(0);
   expect(result.stats.walls).toBe(20);
-  expect(result.windows.map(w=>[w.dx,w.dy])).toEqual([[64,192],[128,192]]);
+  expect(result.windows.map(w=>[w.dx,w.dy])).toEqual([[64,224],[128,224]]);
   expect(result.doors.map(d=>[d.dx,d.dy])).toEqual([[96,224]]);
-  expect(result.roofMin).toBe(0);
-  expect(result.roofMax).toBe(160);
+  expect(result.roofMin).toBe(48);
+  expect(result.roofMax).toBe(208);
   expect(result.rooftopCount).toBe(36);
   expect(result.allUniform).toBe(true);
+  expect(result.roofBeforeWindows).toBe(true);
 });
