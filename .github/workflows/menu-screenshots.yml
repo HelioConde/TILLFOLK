@@ -23,6 +23,7 @@ on:
       - 'src/task-orders.js'
       - 'house-building.css'
       - 'tests/house.spec.cjs'
+      - 'src/biomes.js'
       - 'src/wild-world.js'
       - 'styles.css'
       - 'game-polish.css'
