@@ -73,7 +73,7 @@
     // Cobertura por último no Canvas (z-index visual superior).
     const roofDrop=4*TILE;
     if(roofVisible){
-      // Reduzir SOMENTE a cobertura em 6,25%, mantendo o topo e o centro.
+      // Reduzir 6,25% APENAS NA HORIZONTAL; a altura do telhado permanece original.
       // A fachada, janelas, porta e as coordenadas originais não mudam.
       const roofScale=0.9375;
       const canTransform=["save","translate","scale","restore"]
@@ -83,7 +83,7 @@
         const topY=originY+roofDrop;
         ctx.save();
         ctx.translate(centerX,topY);
-        ctx.scale(roofScale,roofScale);
+        ctx.scale(roofScale,1);
         ctx.translate(-centerX,-topY);
       }
       for(let row=0;row<ROOF_ROWS;row++){
