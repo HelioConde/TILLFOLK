@@ -12,7 +12,9 @@
   const ITEM_FRAMES=Object.freeze({
     wateringCan:Object.freeze({x:0,y:0,w:16,h:16}),
     axe:Object.freeze({x:16,y:0,w:16,h:16}),
-    hoe:Object.freeze({x:0,y:16,w:16,h:16})
+    // Este é o recorte que antes estava incorretamente marcado "Machado de pedra".
+    // A arte mostra uma enxada e deve ser reutilizada na carta Enxada.
+    hoe:Object.freeze({x:32,y:0,w:16,h:16})
   });
   const itemFrame=key=>ITEM_FRAMES[key]||null;
   const RECIPES=Object.freeze([
