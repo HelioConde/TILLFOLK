@@ -6,9 +6,13 @@ on:
       - 'src/biomes.js'
       - 'src/wild-world.js'
       - 'src/game.js'
+      - 'src/blueprints.js'
+      - 'src/house-building.js'
+      - 'house-building.css'
       - 'src/task-orders.js'
       - 'tests/biomes.spec.cjs'
       - 'tests/order-cancel-fruittrees.spec.cjs'
+      - 'tests/blueprints.spec.cjs'
       - 'src/game-hud.js'
       - 'index.html'
       - 'camera-ui.css'
@@ -30,6 +34,8 @@ jobs:
           node --check src/biomes.js
           node --check src/wild-world.js
           node --check src/game.js
+          node --check src/blueprints.js
+          node --check src/house-building.js
           node --check src/task-orders.js
       - name: Instalar Playwright
         run: |
@@ -40,7 +46,7 @@ jobs:
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-smoke.log 2>&1 &
           sleep 2
       - name: Testar mundo e capturar telas
-        run: npx playwright test tests/biomes.spec.cjs tests/order-cancel-fruittrees.spec.cjs --browser chromium --reporter=line --workers=1
+        run: npx playwright test tests/biomes.spec.cjs tests/order-cancel-fruittrees.spec.cjs tests/blueprints.spec.cjs --browser chromium --reporter=line --workers=1
       - name: Anexar imagens e relatório
         uses: actions/upload-artifact@v4
         if: always()
@@ -52,6 +58,7 @@ jobs:
             screenshots/cancelamento-*.png
             screenshots/floresta-*.png
             screenshots/mobile-*.png
+            screenshots/blueprint-*.png
             test-results/
           if-no-files-found: warn
           retention-days: 14
