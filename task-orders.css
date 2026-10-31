@@ -59,3 +59,32 @@ body.play-session:has(.orders-panel:not([hidden])) #toast{display:none!important
 
 /* Ordens de recursos de animais só aparecem quando existirem animais no vale. */
 .orders-choices button[hidden]{display:none!important}
+
+/* Fila de trabalhos legível: tarefas prontas à vista, dependências recolhidas. */
+#tasks .task-list-summary {
+ display:flex;flex-wrap:wrap;align-items:center;gap:7px;
+ padding:8px 0 11px;margin-bottom:7px;
+ border-bottom:1px solid #54765a;
+ font:700 11px/1.4 system-ui,sans-serif;color:#e5efd8;
+}
+#tasks .task-list-summary span {
+ display:inline-flex;padding:5px 8px;border:1px solid #678568;
+ border-radius:6px;background:#203c2c;
+}
+#tasks .task-list-summary span:last-child {background:#463d2b;border-color:#978663}
+#tasks .task-waiting-group {
+ margin:10px 0;padding:0;border:1px solid #928366;
+ border-radius:8px;background:#2d3225;overflow:visible;
+}
+#tasks .task-waiting-group > summary {
+ list-style:none;cursor:pointer;padding:12px;min-height:42px;
+ color:#f3dfae;font:800 12px/1.5 system-ui,sans-serif;
+}
+#tasks .task-waiting-group > summary::-webkit-details-marker {display:none}
+#tasks .task-waiting-group > summary:after {content:"⌄";float:right;font-size:16px}
+#tasks .task-waiting-group[open] > summary:after {content:"⌃"}
+#tasks .task-waiting-group > .order-task {margin:6px 8px}
+#tasks .task-blocked-hint {margin:0 10px 8px;color:#f3e5c9;font:500 12px/1.45 system-ui,sans-serif}
+#tasks .task-waiting-group > summary:focus-visible {
+ outline:3px solid #f4d997;outline-offset:-3px;
+}
