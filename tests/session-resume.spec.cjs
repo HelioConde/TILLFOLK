@@ -53,17 +53,23 @@ test("uma nova aba também encontra a fazenda em andamento",async({page})=>{
 
 test("retornar ao menu é respeitado no reload; Continuar reativa retomada automática",async({page})=>{
   await beginFarm(page);
+  await expect(page.locator("#mission-card")).toBeVisible();
   const before=await snapshot(page);
   await page.locator("#menu-btn").click();
   await expect(page.locator("#game-options-dialog")).toBeVisible();
   await page.locator("#game-return-title").click();
   await expect(page.locator("#menu")).toBeVisible();
+  await expect(page.locator("#mission-card")).toBeHidden();
+  await expect(page.locator("#mission-card")).toHaveAttribute("hidden","");
+  await page.screenshot({path:"screenshots/menu-sem-missao-sobreposta.png",animations:"disabled"});
   expect(await page.evaluate(()=>localStorage.getItem("tillfolk-session-mode"))).toBe("menu");
   await page.reload({waitUntil:"networkidle"});
   await expect(page.locator("#menu")).toBeVisible();
+  await expect(page.locator("#mission-card")).toBeHidden();
   await expect(page.locator("#continue")).toBeEnabled();
   await page.locator("#continue").click();
   await expect(page.locator("#menu")).toBeHidden();
+  await expect(page.locator("#mission-card")).toBeVisible();
   expect((await snapshot(page)).world.seed).toBe(before.world.seed);
   expect(await page.evaluate(()=>localStorage.getItem("tillfolk-session-mode"))).toBe("play");
   await page.reload({waitUntil:"networkidle"});
