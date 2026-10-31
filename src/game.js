@@ -105,7 +105,16 @@
       clampWorldPan();
     }
     if(Math.abs(targetCameraZoom-cameraZoom)<.0001){
-      cameraZoom=targetCameraZoom;cameraAnchor=null;return;
+      cameraZoom=targetCameraZoom;
+      // Pinça com dois dedos também permite arrastar, mesmo sem mudar a distância.
+      if(pinchGesture&&cameraAnchor){
+        const view=$(".canvas-scroll").getBoundingClientRect();
+        const rect=canvas.getBoundingClientRect();
+        worldPanX=cameraAnchor.screenX-(view.left+view.width/2)-(cameraAnchor.u-.5)*rect.width;
+        worldPanY=cameraAnchor.screenY-(view.top+view.height/2)-(cameraAnchor.v-.5)*rect.height;
+        clampWorldPan();
+      }else cameraAnchor=null;
+      return;
     }
     const fraction=reducedMotion.matches?1:1-Math.exp(-dt/95);
     cameraZoom+=(targetCameraZoom-cameraZoom)*fraction;
@@ -190,7 +199,8 @@
   document.addEventListener("keydown",event=>{
     if(!playing||!document.body.classList.contains("play-session")||
        event.altKey||event.ctrlKey||event.metaKey||
-       event.target.closest("input,textarea,select,button,[contenteditable]")||
+       event.target.closest("input,textarea,select,[contenteditable]")||
+       event.target===minimap||
        document.querySelector("dialog[open]")||
        document.body.classList.contains("drawer-open"))return;
     const key=event.key.toLowerCase();
