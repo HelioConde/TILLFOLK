@@ -115,17 +115,19 @@
           </div>
           <p>Escolha uma tarefa específica ou use Universal para a próxima etapa conforme o solo. Arraste sobre o mapa para várias ordens; no celular ative Área.</p>
         </div>
-        <div id="construction-panel" class="construction-panel" role="region" aria-label="Construção da casa" hidden>
+        <div id="construction-panel" class="construction-panel" role="region" aria-label="Construção da colônia" hidden>
           <div class="construction-heading"><strong>⌂ CONSTRUÇÃO</strong><span>🪵 Madeira: <b id="build-stock">15</b> · Piso <b id="build-floor-count">0</b>/25 · Casas: <b id="build-homes-count">0</b></span><button id="build-exit" type="button">✕ Fechar</button></div>
-          <div class="construction-actions" role="group" aria-label="Camadas de construção">
+          <div class="construction-actions" role="group" aria-label="Ferramentas de construção, cabanas e plantações">
             <button type="button" data-build-layer="floor" aria-pressed="true">▦ Piso</button>
             <button type="button" data-build-layer="walls" aria-pressed="false">▥ Paredes</button>
             <button type="button" data-build-layer="roof" aria-pressed="false">⌂ Telhado</button>
+            <button type="button" data-build-layer="home" aria-pressed="false">🏠 Cabana · Equipe</button>
+            <button type="button" data-build-layer="field" aria-pressed="false">🌱 Plantação · Canteiros</button>
             <button type="button" id="build-erase" aria-pressed="false">⌫ Apagar</button>
             <button type="button" id="build-roof">◌ Ocultar telhado</button>
             <button type="button" id="build-undo">↶ Desfazer</button>
           </div>
-          <p id="build-status" role="status" aria-live="polite">Editor clássico: peças individuais. Para novas casas feitas pela equipe, use Ordens → Construir casa (8 madeiras).</p>
+          <p id="build-status" role="status" aria-live="polite">Escolha uma peça, Cabana ou Plantação. Prévia azul = posição válida; vermelha = bloqueada. Canteiros criam ordens de arar e semear.</p>
         </div>
         <div class="hint-bar"><span>💡</span><p><strong>Como começar:</strong> Universal cria uma ordem por toque: solo livre → arar, arado → semear, plantado → regar, maduro → colher. Arraste para marcar áreas. Use Ordens para ações específicas; limpe obstáculos para encontrar sementes e madeira. O vale começa <strong>sem animais</strong>; a fertilização com esterco fica para uma fase posterior. Construa três casas para liberar o terceiro ajudante.</p></div>
         <div class="footnote">TILLFOLK · Gerencie o vale e organize sua equipe</div>
