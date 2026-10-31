@@ -117,3 +117,38 @@
     padding:8px 10px;
   }
 }
+
+/* Tutorial: concluir não fecha o jogo silenciosamente, apresenta duas rotas.
+   Mantém os botões acessíveis e sem cortes em telas pequenas. */
+.help-guide .guide-actions #help-close,
+.help-guide .guide-actions #guide-play{font-weight:800}
+.help-guide .guide-actions #help-close:not([hidden]){
+ background:#304f3c;border:1px solid #91b788;color:#f9efce;
+}
+.help-guide .guide-actions #guide-play:not([hidden]){
+ background:linear-gradient(#e2f5b9,#b5df8b);
+ border:2px solid #f1f7c0;color:#24462b;
+}
+.help-guide .guide-actions :is(#help-close,#guide-play,#help-next)[hidden]{
+ display:none!important;
+}
+@media(max-width:650px){
+ .help-guide .guide-actions:has(#guide-play:not([hidden])){
+   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+   width:100%;gap:8px;
+ }
+ .help-guide .guide-actions:has(#guide-play:not([hidden])) #help-prev{
+   grid-column:1;grid-row:1;
+ }
+ .help-guide .guide-actions:has(#guide-play:not([hidden])) #guide-counter{
+   grid-column:2;grid-row:1;justify-self:end;align-self:center;
+ }
+ .help-guide .guide-actions:has(#guide-play:not([hidden])) #help-close{
+   grid-column:1;grid-row:2;white-space:normal;min-width:0;
+   line-height:1.2;padding:9px 6px;
+ }
+ .help-guide .guide-actions:has(#guide-play:not([hidden])) #guide-play{
+   grid-column:2;grid-row:2;white-space:normal;min-width:0;
+   line-height:1.2;padding:9px 6px;
+ }
+}
