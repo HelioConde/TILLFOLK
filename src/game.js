@@ -1,8 +1,9 @@
 "use strict";
 (() => {
   const TILE = 32, W = 80, H = 50, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
-  const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops;
+  const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting;
   if(!Crops)throw new Error("Carregue src/crop-catalog.js antes do motor TILLFOLK.");
+  if(!Crafting)throw new Error("Carregue src/crafting.js antes do motor TILLFOLK.");
   if(!Missions)throw new Error("Carregue src/missions.js antes do motor TILLFOLK.");
   if(!Orders)throw new Error("Carregue src/task-orders.js antes do motor TILLFOLK.");
   Orders.setBounds(W,H);
@@ -375,16 +376,16 @@
     {name:"Mônica",skills:["till","sow","harvest"],neg:["fertilize"],cost:10,color:"#d3d6fc"},
     {name:"Manu",skills:["carry","fertilize"],neg:[],cost:8,color:"#ffcfc5"}
   ];
-  const HOME_WOOD_COST=8,STATION_WOOD_COST=5,STATION_STONE_COST=2;
+  const HOME_WOOD_COST=8;
   const homeTiles=(x,y)=>[[x,y],[x+1,y],[x,y+1],[x+1,y+1]];
   function occupiedByHome(x,y){
     return Boolean(state?.homes?.some(h=>!h.legacy&&x>=h.x&&x<=h.x+1&&y>=h.y&&y<=h.y+1));
   }
   function occupiedByStation(x,y){
-    return Boolean(state?.workstations?.some(ws=>ws.x===x&&ws.y===y));
+    return Boolean(state?.workstations?.some(ws=>ws.x===x&&ws.y===y)||state?.crafting?.station?.x===x&&state?.crafting?.station?.y===y);
   }
   function stationSiteValid(x,y){
-    if(!state||x<2||y<2||x>=W-2||y>=H-2)return false;
+    if(!state||state.workstations?.length||state.crafting?.station||x<2||y<2||x>=W-2||y>=H-2)return false;
     const plot=findPlot(x,y);
     return Boolean(plot&&World.terrainAt(state.world,x,y).buildable&&
       !plot.dirty&&!plot.seeded&&!plot.produce&&!plot.tilled&&
@@ -498,8 +499,8 @@
     }));
     state = {day:1,minutes:8*60,seeds:0,water:0,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",tutorial:Missions.create(),
       plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),
-      cropSeeds:Crops.normalizeStock({}),cropProduce:Crops.normalizeStock({}),selectedCrop:"carrot",workstations:[],
-      homes:[],animals:[],inventory:{wood:15,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
+      cropSeeds:Crops.normalizeStock({}),cropProduce:Crops.normalizeStock({}),selectedCrop:"carrot",workstations:[],crafting:Crafting.normalize(null),
+      homes:[],animals:[],inventory:{wood:0,twigs:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     tasks=[]; simSpeed=1; updateSpeed();
@@ -528,6 +529,11 @@
       state.selectedCrop=Crops.get(s.selectedCrop)?s.selectedCrop:"carrot";
       state.workstations=Array.isArray(s.workstations)?s.workstations.filter(ws=>
         Number.isInteger(ws.x)&&Number.isInteger(ws.y)&&ws.x>0&&ws.y>0&&ws.x<W-1&&ws.y<H-1):[];
+      state.crafting=Crafting.normalize(s.crafting,!s.crafting);
+      if(!state.crafting.station&&state.workstations.length)
+        state.crafting.station={x:state.workstations[0].x,y:state.workstations[0].y};
+      if(state.crafting.station&&!state.workstations.some(ws=>ws.x===state.crafting.station.x&&ws.y===state.crafting.station.y))
+        state.workstations.push({...state.crafting.station});
       state.seeds=Object.values(state.cropSeeds).reduce((sum,n)=>sum+n,0);
       state.plots.forEach(p=>{if((p.seeded||p.produce)&&!Crops.get(p.crop))p.crop="carrot";});
       state.workers.forEach(homageSavedName);
@@ -566,6 +572,7 @@
       World.stripFruitTrees(state.world);
       state.inventory=state.inventory||{wood:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0};
       state.inventory.manure=Math.max(0,Number(state.inventory.manure)||0);
+      state.inventory.twigs=Math.max(0,Math.floor(Number(state.inventory.twigs)||0));
       state.homes=Array.isArray(s.homes)?s.homes.filter(h=>Number.isInteger(h.x)&&Number.isInteger(h.y)&&h.x>=2&&h.y>=2):[];
       // Construções legadas com piso, parede e telhado passam a valer como moradia.
       if(!state.homes.some(h=>h.legacy)&&state.house.floor.length>=2&&state.house.walls.length>0&&state.house.roof.length>0){
@@ -722,16 +729,8 @@
       return "Traço negativo: não pode buscar água";
     if(t.type==="fertilize"&&state.inventory.manure<=0&&w.neg.includes("collectManure"))
       return "Traço negativo: não pode recolher esterco";
-    if(t.type==="buildStation"){
-      if(state.inventory.wood<STATION_WOOD_COST||state.inventory.stone<STATION_STONE_COST||
-         !stationSiteValid(t.x,t.y))return false;
-      state.inventory.wood-=STATION_WOOD_COST;
-      state.inventory.stone-=STATION_STONE_COST;
-      state.workstations.push({x:t.x,y:t.y});
-      state.plots=state.plots.filter(plot=>plot.x!==t.x||plot.y!==t.y);
-      log(w.name+" montou uma oficina. Receitas de sementes liberadas!");
-      return true;
-    }
+    if(t.type==="buildStation"&&!stationSiteValid(t.x,t.y))
+      return "Escolha um terreno livre para a bancada";
     if(t.type==="buildHome"){
       const alreadyAssigned=state.workers.filter(other=>other.id!==w.id&&other.task&&
         tasks.some(job=>job.id===other.task&&job.type==="buildHome")).length;
@@ -807,6 +806,16 @@
       animal.manure--;state.inventory.manure++;
       log(w.name+" recolheu esterco de "+(animal.kind==="cow"?"vaca":"animal")+".");return true;
     }
+    if(t.type==="buildStation"){
+      if(!Crafting.canBuild(state)||!stationSiteValid(t.x,t.y))return false;
+      state.inventory.twigs-=Crafting.STATION_COST;
+      state.workstations.push({x:t.x,y:t.y});
+      state.crafting.station={x:t.x,y:t.y};
+      state.plots=state.plots.filter(plot=>plot.x!==t.x||plot.y!==t.y);
+      recordTutorial("workstation");
+      log(w.name+" terminou a Work Station! Agora podemos fabricar ferramentas.");
+      return true;
+    }
     if(t.type==="buildHome"){
       if(state.inventory.wood<HOME_WOOD_COST||!homeSiteValid(t.x,t.y))return false;
       state.inventory.wood-=HOME_WOOD_COST;
@@ -823,14 +832,16 @@
       case "clear":{
         const obj=World.at(state.world,p.x,p.y);
         if(obj){
+          if(Crafting.blocked(state,"clear",obj))return false;
           const kind=obj.kind, result=World.clear(state.world,p.x,p.y);
           const types={tree:"wood",stump:"wood",log:"wood",boulder:"stone",
-            mushroom:"mushroom",flowers:"flower",herbs:"herbs",grass:"grass",thicket:"wood",twig:"wood"};
-          const amount={tree:3,stump:2,log:2,boulder:3}[kind]||1;
+            mushroom:"mushroom",flowers:"flower",herbs:"herbs",grass:"grass",thicket:"wood",twig:"twigs"};
+          const amount={tree:3,stump:2,log:2,boulder:3,twig:3}[kind]||1;
           const resource=types[kind]||"grass";
           state.inventory[resource]=(state.inventory[resource]||0)+amount;
           // Grama alta tem chance de soltar uma semente. Não existe semente infinita.
           if(kind==="grass"){
+            state.inventory.twigs++;
             recordTutorial("grass");
             if(Math.random()<.25){
               const variety=Crops.pickWild();
@@ -848,7 +859,8 @@
         // Limpar o terreno produz recursos naturais, nunca moedas.
         break;
       }
-      case "till":p.tilled=true;recordTutorial("till");break;
+      case "till":if(Crafting.blocked(state,"till"))return false;
+        p.tilled=true;recordTutorial("till");break;
       case "fertilize":
         if(!w.carryingManure&&state.inventory.manure<=0)return false;
         if(w.carryingManure)w.carryingManure=false;else state.inventory.manure--;
@@ -861,6 +873,7 @@
         recordTutorial("sow");break;
       }
       case "water":
+        if(Crafting.blocked(state,"water"))return false;
         if(!w.carryingWater&&state.water<=0)return false;
         if(w.carryingWater)w.carryingWater=false;else state.water--;
         p.watered=true;recordTutorial("water");break;
