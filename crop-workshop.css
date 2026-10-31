@@ -87,3 +87,16 @@ body:not(.play-session) #crop-catalog-dialog,body:not(.play-session) #workshop-d
 @media(max-width:610px){.pickup-feed{right:7px;top:7px;padding:6px 7px;width:155px;font-size:10px}
 .pickup-entry span:first-child{font-size:13px}.pickup-heading{font-size:9px}
 .construction-priority small{flex-basis:100%}}
+
+/* Inventário individual dos colonos: somente ferramentas realmente fabricadas. */
+.worker-inventory-dialog{width:min(480px,calc(100vw - 22px));max-height:85dvh;overflow:auto}
+.worker-inventory-dialog h3{color:#e9e8ba;font-size:14px;margin:15px 0 8px}
+.worker-inventory-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.worker-tool-card{display:flex;align-items:center;gap:10px;background:#314d3b;
+  border:1px solid #819e74;border-radius:7px;padding:10px;min-width:0}
+.worker-tool-card span{font-size:22px;flex:none}
+.worker-tool-card strong{font:800 12px/1.4 system-ui;overflow-wrap:break-word}
+.worker-inventory-items{display:flex;flex-wrap:wrap;gap:7px}
+.worker-inventory-items>span{background:#405842;border:1px solid #769373;
+  color:#f0eacb;border-radius:5px;padding:6px 9px;font:700 11px system-ui}
+.worker-inventory-tools p,.worker-inventory-items p{grid-column:1/-1;font-size:12px;line-height:1.5}
