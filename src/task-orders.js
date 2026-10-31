@@ -51,7 +51,11 @@
         if(plot.seeded)return {state:"done",reason:"Planta já semeada"};
         if(dirty)return {state:"blocked",reason:"Aguardando limpeza"};
         if(!plot.tilled)return {state:"blocked",reason:"Aguardando arar o solo"};
-        return (resources?.inventory?.manure||0)>0?{state:"ready",reason:"Esterco disponível"}:{state:"blocked",reason:"Sem esterco: recolha junto aos animais"};
+        const stock=Number(resources?.inventory?.manure)||0;
+        const animalReady=resources?.animals?.some(a=>a.manure>0);
+        return stock>0?{state:"ready",reason:"Esterco no depósito"}:
+          animalReady?{state:"ready",reason:"Buscar esterco no animal"}:
+          {state:"blocked",reason:"Aguardando o animal produzir esterco"};
       case "sow":
         if(plot.seeded)return {state:"done",reason:"Já semeado"};
         if(plot.produce)return {state:"blocked",reason:"Retire a colheita anterior"};
@@ -61,7 +65,9 @@
       case "water":
         if(plot.watered&&plot.seeded)return {state:"done",reason:"Já irrigado"};
         if(!plot.seeded)return {state:"blocked",reason:"Aguardando semeadura"};
-        return water>0?{state:"ready",reason:"Pronta"}:{state:"blocked",reason:"Sem água"};
+        return water>0?{state:"ready",reason:"Água disponível"}:
+          resources?.world?.water?.length?{state:"ready",reason:"Buscar água na lagoa"}:
+          {state:"blocked",reason:"Sem fonte de água"};
       case "harvest":
         if(plot.produce)return {state:"done",reason:"Colheita já no chão"};
         if(!plot.seeded)return {state:"blocked",reason:"Aguardando plantio"};
