@@ -1,3 +1,7 @@
+async function continueIfMenuVisible(page){
+  if(await page.locator('#menu').isVisible())await page.locator('#continue').click();
+  await expect(page.locator('#menu')).toBeHidden();
+}
 const {test,expect}=require('@playwright/test');
 const BASE='http://127.0.0.1:4173/';
 async function newGame(page){
@@ -74,7 +78,7 @@ test('Salvar e continuar migra mapa legado sem apagar recursos, cultivos ou trab
    return {wood:s.inventory.wood,plots:s.plots.length,workers:s.workers.length};
  });
  await page.reload({waitUntil:'networkidle'});
- await page.locator('#continue').click();
+ await continueIfMenuVisible(page);
  const result=await page.evaluate(()=>{
    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
    return {wood:s.inventory.wood,seeds:s.seeds,food:s.food,
