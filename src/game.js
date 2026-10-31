@@ -1905,6 +1905,7 @@
       btn.classList.toggle("active",on);btn.setAttribute("aria-pressed",String(on));
     });
     $("#construction-panel").hidden=next!=="construir";
+    $("#construction-priority").hidden=next!=="construir";
     if(next==="construir")$("#orders-panel").hidden=true;
     $("#tile-tooltip").hidden=true;
     buildHover=null;
@@ -2254,7 +2255,7 @@
     if(btn){removeOrders([btn.dataset.cancelOrder]);notify("Ordem cancelada.");}
   });
   document.querySelectorAll("[data-speed]").forEach(b=>b.addEventListener("click",()=>{simSpeed=Number(b.dataset.speed);updateSpeed();refresh();save();}));
-  $("#construction-panel").addEventListener("click",event=>{
+  $("#construction-priority").addEventListener("click",event=>{
     const button=event.target.closest("[data-construction-priority]");
     if(!button||!state)return;
     state.buildPriority=Math.max(1,Math.min(9,state.buildPriority+Number(button.dataset.constructionPriority)));
