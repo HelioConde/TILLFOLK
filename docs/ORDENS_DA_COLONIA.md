@@ -15,6 +15,8 @@ O botão **Universal** substitui o atalho Arar. Um clique gera **uma única orde
 
 A ferramenta universal **não automatiza uma cadeia inteira**. Os colonos apenas executam as ordens que o jogador coloca na fila; depois é necessário clicar novamente ou marcar outra área. Fertilizar continua uma ordem manual opcional em **Ordens**.
 
+**Cancelamento rápido:** clique com o **botão direito** sobre qualquer terreno para cancelar todas as ordens ainda pendentes naquela célula, independentemente da ferramenta ativa. Também é possível **arrastar com o botão direito** sobre uma área para cancelar várias ordens de uma vez, com prévia avermelhada. O cultivo pronto e o terreno já transformado não são desfeitos. Ao concluir/cancelar todas as ordens, o destaque temporário desaparece, inclusive em saves anteriores. Na ferramenta **Construir**, o clique direito mantém a função de remover peça de construção.
+
 **Seleção por arrasto:** no computador, pressione o botão esquerdo e arraste para desenhar um retângulo de terrenos. Solte para criar uma ordem por célula aplicável, sem duplicar ordens existentes. Em **Ordens** isso designa a mesma tarefa para todos os terrenos; em **Cancelar** remove as ordens da área. Shift+arrastar ou botão do meio continuam movendo a câmera; a seleção usa a transformação atual do zoom. No celular, use o botão **Área: ligada/desligada** acima da barra de ferramentas para alternar entre selecionar com o dedo e deslocar o mapa. O gesto de pinça mantém a função de zoom.
 
 ## Como designar
