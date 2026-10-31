@@ -67,6 +67,91 @@
         working:["Opa, já tô vendo o lugar! Um pouquinho por dia, a vila aparece.","Adoro ver um plano tomando forma. Esse vale tem futuro, viu?"]
       },tool:"construir",target:"plan"}
   ]);
+
+  const artNames=Object.freeze({
+    grass:"Tufo de grama alta",seed:"Grama alta: pode soltar sementes",
+    till:"Terra arada",sow:"Semente plantada",water:"Planta regada",
+    harvest:"Plantação madura",carry:"Colheita",plan:"Cabana"
+  });
+  const atlasPaths={ground:"terrain/grass.png",forage:"environment/forageables.png",
+    dirt:"terrain/tilled-dirt.png",crops:"farming/crops.png",
+    roof:"structures/wood-roof.png",walls:"structures/wood-walls.png",door:"structures/wood-door.png"};
+  const atlas={};
+  function atlasImage(id){
+    if(typeof Image!=="function")return null;
+    if(!atlas[id]){
+      const image=new Image();atlas[id]=image;
+      image.addEventListener("load",()=>{
+        const canvas=typeof document!=="undefined"?document.querySelector("#mission-objective-sprite"):null;
+        if(canvas?.dataset.key)paintTarget(canvas,canvas.dataset.key);
+      });
+      image.src="./public/assets/sprout-lands/"+atlasPaths[id];
+    }
+    return atlas[id];
+  }
+  function stamp(ctx,id,sx,sy,sw,sh,x,y,w,h){
+    const img=atlasImage(id);
+    if(!img?.complete||!img.naturalWidth||sx+sw>img.naturalWidth||sy+sh>img.naturalHeight)return false;
+    ctx.drawImage(img,sx,sy,sw,sh,Math.round(x),Math.round(y),Math.round(w),Math.round(h));
+    return true;
+  }
+  function drawTarget(ctx,step,x=0,y=0,size=48){
+    const key=typeof step==="string"?step:step?.key;
+    if(!ctx||!artNames[key])return;
+    ctx.save();ctx.imageSmoothingEnabled=false;
+    ctx.fillStyle="#6d9853";ctx.fillRect(x,y,size,size);
+    stamp(ctx,"ground",0,80,16,16,x,y,size,size);
+    const soil=()=>stamp(ctx,"dirt",0,80,16,16,x+2,y+2,size-4,size-4);
+    const crop=(sx,sy=0)=>stamp(ctx,"crops",sx,sy,16,16,x+size*.15,y+size*.09,size*.7,size*.77);
+    if(key==="grass"||key==="seed"){
+      // O mesmo frame que o cenário usa em wild-world.js para grass.
+      stamp(ctx,"forage",0,32,16,16,x+size*.1,y+size*.08,size*.8,size*.8);
+      if(key==="seed"){
+        ctx.fillStyle="#603b20";ctx.fillRect(x+size*.7,y+size*.71,size*.12,size*.12);
+        ctx.fillStyle="#edcc78";ctx.fillRect(x+size*.73,y+size*.73,size*.07,size*.07);
+      }
+    }else if(key==="till")soil();
+    else if(key==="sow"){
+      soil();ctx.fillStyle="#563925";ctx.fillRect(x+size*.39,y+size*.4,size*.23,size*.2);
+      ctx.fillStyle="#d8bd78";ctx.fillRect(x+size*.46,y+size*.44,size*.1,size*.1);
+    }else if(key==="water"){
+      soil();crop(16);ctx.fillStyle="#9fddf0";
+      ctx.fillRect(x+size*.73,y+size*.17,size*.08,size*.18);
+    }else if(key==="harvest"){soil();crop(64);}
+    else if(key==="carry"){soil();crop(48,16);}
+    else if(key==="plan"){
+      const roof=atlasImage("roof"),walls=atlasImage("walls"),door=atlasImage("door");
+      if(window.TillfolkHouse?.draw&&[roof,walls,door].every(i=>i?.complete&&i.naturalWidth)){
+        ctx.save();ctx.translate(x+size*.07,y+size*.08);ctx.scale(size/120,size/120);
+        window.TillfolkHouse.draw(ctx,{roof,walls,door},0,-27,{scale:1});ctx.restore();
+      }else soil();
+    }
+    ctx.restore();
+  }
+  function paintTarget(canvas,key){
+    const ctx=canvas.getContext("2d");if(!ctx)return;
+    canvas.dataset.key=key;canvas.setAttribute("aria-label","Sprite: "+artNames[key]);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawTarget(ctx,key,0,0,canvas.width);
+  }
+  function ensureTargetUI(){
+    let canvas=document.querySelector("#mission-objective-sprite");
+    if(canvas)return canvas;
+    const title=document.querySelector("#mission-title"),goal=document.querySelector("#mission-goal");
+    if(!title||!goal)return null;
+    const row=document.createElement("div");
+    row.className="mission-target-row";
+    row.style.cssText="display:flex;align-items:center;gap:10px;margin:9px 0 10px;min-width:0";
+    canvas=document.createElement("canvas");canvas.id="mission-objective-sprite";
+    canvas.width=48;canvas.height=48;canvas.setAttribute("role","img");
+    canvas.style.cssText="width:48px;height:48px;flex:0 0 48px;image-rendering:pixelated;border:2px solid #9fbd81;border-radius:7px;background:#486a42";
+    const copy=document.createElement("div");copy.style.cssText="min-width:0;flex:1";
+    const label=document.createElement("div");label.id="mission-objective-label";
+    label.style.cssText="font:bold 10px system-ui;color:#c6e8a4;line-height:1.3";
+    title.before(row);row.append(canvas,copy);copy.append(title,goal,label);
+    title.style.marginTop="0";goal.style.marginBottom="3px";
+    return canvas;
+  }
   const emptyStats=()=>Object.fromEntries(STEPS.map(step=>[step.key,0]));
   function create(){return {active:true,step:0,stats:emptyStats(),finished:false,version:1};}
   function normalize(raw){
@@ -104,12 +189,16 @@
       const detailBtn=document.querySelector("#mission-details-toggle");
       detailBtn.setAttribute("aria-expanded","false");
       document.querySelector("#mission-chapter").textContent="MISSÃO "+(progress.step+1)+" / "+STEPS.length;
-      document.querySelector("#mission-title").textContent=step.icon+" "+step.title;
+      document.querySelector("#mission-title").textContent=step.title;
       document.querySelector("#mission-goal").textContent=step.subtitle;
       document.querySelector("#mission-help").textContent=step.help;
       document.querySelector("#mission-progress").max=step.goal;
       document.querySelector("#mission-progress").setAttribute("aria-label",step.subtitle);
     }
+    const preview=ensureTargetUI();
+    if(preview)paintTarget(preview,step.key);
+    const label=document.querySelector("#mission-objective-label");
+    if(label)label.textContent="Procure: "+artNames[step.key];
     const currentCount=Math.min(step.goal,progress.stats[step.key]);
     document.querySelector("#mission-progress").value=currentCount;
     document.querySelector("#mission-count").textContent=currentCount+" / "+step.goal;
@@ -123,5 +212,5 @@
     const index=Math.max(0,state.workers?.indexOf(worker)??0);
     return choices[((index+Math.max(0,Math.floor(variation)))%choices.length)];
   }
-  window.TillfolkMissions=Object.freeze({STEPS,create,normalize,current,record,render,speech});
+  window.TillfolkMissions=Object.freeze({STEPS,artNames,drawTarget,create,normalize,current,record,render,speech});
 })();

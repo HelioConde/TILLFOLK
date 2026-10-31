@@ -1211,7 +1211,7 @@
       worker.y<visibleBounds.y0+2||worker.y>visibleBounds.y1)return;
     ctx.save();
     ctx.font="bold 10px system-ui,sans-serif";
-    const width=205,inner=width-22,words=speechScene.text.split(/\s+/);
+    const width=248,artSize=38,inner=width-22-artSize-6,words=speechScene.text.split(/\s+/);
     const lines=[];let line="";
     for(const word of words){
       const proposal=line?line+" "+word:word;
@@ -1220,7 +1220,7 @@
       }else line=proposal;
     }
     if(line)lines.push(line);
-    const display=lines.slice(0,5),height=16+display.length*15;
+    const display=lines.slice(0,5),height=Math.max(54,16+display.length*15);
     const px=Math.round(worker.x*TILE),py=Math.round(worker.y*TILE);
     const left=Math.max(5,Math.min(W*TILE-width-5,px-width/2));
     // Placas de nome ocupam aproximadamente py-67: preservar espaço entre elas e o balão.
@@ -1233,8 +1233,11 @@
     ctx.beginPath();ctx.moveTo(tailX-7,top+height-1);
     ctx.lineTo(tailX,top+height+8);ctx.lineTo(tailX+7,top+height-1);
     ctx.closePath();ctx.fill();ctx.stroke();
+    Missions.drawTarget(ctx,quest,left+8,top+Math.round((height-artSize)/2),artSize);
+    ctx.strokeStyle="#789b73";ctx.lineWidth=1;
+    ctx.strokeRect(left+8.5,top+Math.round((height-artSize)/2)+.5,artSize-1,artSize-1);
     ctx.fillStyle="#273b2c";ctx.textAlign="left";
-    display.forEach((message,index)=>ctx.fillText(message,left+11,top+20+index*15));
+    display.forEach((message,index)=>ctx.fillText(message,left+artSize+18,top+20+index*15));
     ctx.restore();
   }
   function refresh(){
