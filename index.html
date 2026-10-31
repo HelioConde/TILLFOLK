@@ -34,6 +34,7 @@
   <script defer src="./src/blueprints.js?v=20261031-fazenda-casa"></script>
   <script defer src="./src/house-building.js?v=20261031-fazenda-casa"></script>
   <script defer src="./src/crop-catalog.js?v=20261031-crop-workshop"></script>
+  <script defer src="./src/crafting.js?v=20261031-workstation-v1"></script>
   <script defer src="./src/task-orders.js?v=20261031-crop-workshop"></script>
   <script defer src="./src/missions.js?v=20261031-alvos-visuais"></script>
   <script defer src="./src/game.js?v=20261031-alvos-visuais"></script>
@@ -126,7 +127,7 @@
             <button type="button" data-order-type="collectWater" aria-pressed="false"><b>🪣 Buscar água</b><small>Clique na lagoa para recolher 4 unidades</small></button>
             <button type="button" data-order-type="collectManure" aria-pressed="false"><b>🐄 Recolher esterco</b><small>Clique no animal com esterco disponível</small></button>
             <button type="button" data-order-type="buildHome" aria-pressed="false"><b>🏠 Construir casa</b><small>Área livre 2×2 · 8 madeiras · 1 morador</small></button>
-            <button type="button" data-order-type="buildStation" aria-pressed="false"><b>🛠️ Montar oficina</b><small>5 madeiras + 2 pedras</small></button>
+            <button type="button" data-order-type="buildStation" aria-pressed="false"><b>🛠️ Montar Work Station</b><small>30 gravetos · fabricar ferramentas</small></button>
           </div>
           <p>Escolha uma tarefa específica ou use Universal para a próxima etapa conforme o solo. Arraste sobre o mapa para várias ordens; no celular ative Área.</p>
         </div>
@@ -138,7 +139,7 @@
             <button type="button" data-build-layer="roof" aria-pressed="false">⌂ Telhado</button>
             <button type="button" data-build-layer="home" aria-pressed="false">🏠 Cabana · Equipe</button>
             <button type="button" data-build-layer="field" aria-pressed="false">🌱 Plantação · Canteiros</button>
-            <button type="button" data-build-layer="station" aria-pressed="false">🛠️ Oficina · Sementes</button>
+            <button type="button" data-build-layer="station" aria-pressed="false">🛠️ Work Station</button>
             <button type="button" id="open-workshop">⚒ Bancada e receitas</button>
             <button type="button" id="build-erase" aria-pressed="false">⌫ Apagar</button>
             <button type="button" id="build-roof">◌ Ocultar telhado</button>
@@ -378,8 +379,10 @@
   </dialog>
   <dialog id="workshop-dialog" class="game-modal farm-catalog-dialog" aria-labelledby="workshop-title">
     <form method="dialog"><button class="modal-x" aria-label="Fechar oficina">✕</button></form>
-    <span class="overline">OFICINA DA FAZENDA</span><h2 id="workshop-title">Bancada de sementes</h2>
-    <p>Monte uma oficina com 5 madeiras e 2 pedras. Depois, transforme 2 unidades de um cultivo armazenado em 3 sementes do mesmo tipo.</p>
+    <span class="overline">FERRAMENTAS E AGRICULTURA</span><h2 id="workshop-title">Work Station · Oficina</h2>
+    <p>A primeira bancada é construída com 30 gravetos. Fabrique ferramentas para sua equipe e converta alimentos armazenados em novas sementes.</p>
+    <div id="workshop-tools" class="farm-tools-list" aria-label="Receitas de ferramentas"></div>
+    <h3>🌱 Preparar sementes</h3><p>Troque 2 unidades de um cultivo armazenado por 3 sementes da mesma cultura.</p>
     <p id="workshop-status" role="status"></p>
     <div id="workshop-recipes" class="farm-crop-grid" aria-label="Receitas da oficina"></div>
   </dialog>
