@@ -124,6 +124,40 @@
     {name:"Bento",skills:["till","sow","harvest"],neg:["fertilize"],cost:80,color:"#d3d6fc"},
     {name:"Lina",skills:["carry","fertilize"],neg:[],cost:90,color:"#ffcfc5"}
   ];
+  const HOME_WOOD_COST=8;
+  const homeTiles=(x,y)=>[[x,y],[x+1,y],[x,y+1],[x+1,y+1]];
+  function occupiedByHome(x,y){
+    return Boolean(state?.homes?.some(h=>!h.legacy&&x>=h.x&&x<=h.x+1&&y>=h.y&&y<=h.y+1));
+  }
+  function homeSiteValid(x,y){
+    if(x<2||y<2||x>=W-3||y>=H-3)return false;
+    return homeTiles(x,y).every(([tx,ty])=>
+      !World.waterAt(state.world,tx,ty)&&!World.at(state.world,tx,ty)&&
+      !window.TillfolkHouseBuilder.occupied(state.house,tx,ty)&&
+      !occupiedByHome(tx,ty)&&
+      !state.plots.some(p=>p.x===tx&&p.y===ty&&(p.selected||p.tilled||p.seeded||p.produce))&&
+      !state.orders.some(o=>o.type==="buildHome"&&
+        !(o.x===x&&o.y===y)&&homeTiles(o.x,o.y).some(([ox,oy])=>ox===tx&&oy===ty))
+    );
+  }
+  function assignHomes(){
+    if(!state)return;
+    const residents=new Set(state.workers.map(w=>w.id));
+    const taken=new Set();
+    for(const home of state.homes){
+      if(!residents.has(home.residentId)||taken.has(home.residentId))home.residentId=null;
+      else taken.add(home.residentId);
+    }
+    for(const worker of state.workers){
+      if(taken.has(worker.id))continue;
+      const vacant=state.homes.find(h=>h.residentId==null);
+      if(vacant){vacant.residentId=worker.id;taken.add(worker.id);}
+    }
+  }
+  function housingVacancy(){
+    assignHomes();
+    return Math.max(0,state.homes.length-state.workers.length);
+  }
   const keyOf=(x,y)=>x+"-"+y;
   const blocked=(x,y)=>World.blocked(state?.world,x,y,W,H)||Boolean(state?.house&&window.TillfolkHouseBuilder.occupied(state.house,x,y))||occupiedByHome(x,y);
   // Caminhos em grade impedem que colonos atravessem a casa, árvores e objetos.
@@ -271,6 +305,26 @@
   }
   function finish(w,t){
     const p=state.plots.find(p=>p.x===t.x&&p.y===t.y);
+    if(t.type==="collectWater"){
+      if(!World.waterAt(state.world,t.x,t.y))return false;
+      state.water+=4;log(w.name+" buscou 4 baldes de água na lagoa.");return true;
+    }
+    if(t.type==="collectManure"){
+      const animal=state.animals.find(a=>Math.floor(a.x)===t.x&&Math.floor(a.y)===t.y&&a.manure>0);
+      if(!animal)return false;
+      animal.manure--;state.inventory.manure++;
+      log(w.name+" recolheu esterco de "+(animal.kind==="cow"?"vaca":"animal")+".");return true;
+    }
+    if(t.type==="buildHome"){
+      if(state.inventory.wood<HOME_WOOD_COST||!homeSiteValid(t.x,t.y))return false;
+      state.inventory.wood-=HOME_WOOD_COST;
+      state.homes.push({x:t.x,y:t.y,residentId:null,legacy:false});
+      for(const [hx,hy] of homeTiles(t.x,t.y)){
+        state.plots=state.plots.filter(plot=>plot.x!==hx||plot.y!==hy);
+      }
+      assignHomes();
+      log(w.name+" concluiu uma cabana. "+housingVacancy()+" vaga(s) livres.");return true;
+    }
     if(!p)return false;
     let complete=true;
     switch(t.type){
@@ -283,6 +337,8 @@
           const amount={tree:3,stump:2,log:2,boulder:3}[kind]||1;
           const resource=types[kind]||"grass";
           state.inventory[resource]=(state.inventory[resource]||0)+amount;
+          // Grama alta tem chance de soltar uma semente. Não existe semente infinita.
+          if(kind==="grass"&&Math.random()<.25){state.seeds++;log(w.name+" encontrou uma semente ao cortar grama!");}
           if(result.resource)log(w.name+" coletou "+result.resource+".");
           p.dirty=result.remaining;
           if(result.remaining)complete=false; // Continuar a mesma ordem até retirar o toco.
@@ -307,6 +363,8 @@
       state.minutes-=1440;state.day++;
       // A água agora vem somente de ordens manuais para a lagoa.
       const houseCells=[...state.house.floor,...state.house.walls].map(id=>{const [x,y]=id.split("-").map(Number);return {x,y,selected:true};});
+      for(const home of state.homes.filter(h=>!h.legacy))for(const [x,y] of homeTiles(home.x,home.y))houseCells.push({x,y,selected:true});
+      for(const order of state.orders.filter(o=>o.type==="buildHome"))for(const [x,y] of homeTiles(order.x,order.y))houseCells.push({x,y,selected:true});
       const births=World.regrow(state.world,state.day,W,H,[...state.plots,...houseCells]);
       if(births>0)log("A natureza renovou "+births+" pequenos elementos do vale.");
       if(state.mode==="survival"){
@@ -579,7 +637,7 @@
       y:Math.floor((event.clientY-rect.top)/rect.height*H)};
   }
   function isBuildCellBusy(x,y){
-    if(World.waterAt(state.world,x,y)||World.at(state.world,x,y))return true;
+    if(occupiedByHome(x,y)||World.waterAt(state.world,x,y)||World.at(state.world,x,y))return true;
     if(state.workers.some(w=>Math.max(Math.abs(Math.floor(w.x)-x),Math.abs(Math.floor(w.y)-y))<=1))return true;
     return state.plots.some(p=>p.x===x&&p.y===y&&(p.selected||p.tilled||p.seeded||p.produce));
   }
