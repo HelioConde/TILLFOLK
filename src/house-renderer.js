@@ -96,7 +96,8 @@
       }
       stamp("roof",5,0,originX+3*cell,originY+roofDrop+2*cell);
       stats.chimneys++;
-      // Nenhuma máscara: a cobertura tem precedência visual real.
+      // Evitar que o clip da casa recorte outros sprites desenhados no mapa.
+      if(canClip)ctx.restore();
     }
 
     return {...stats,...dimensions(scale),x:originX,y:originY,scale};
