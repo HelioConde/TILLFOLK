@@ -1903,7 +1903,6 @@
       btn.classList.toggle("active",on);btn.setAttribute("aria-pressed",String(on));
     });
     $("#construction-panel").hidden=next!=="construir";
-    $("#construction-priority").hidden=next!=="construir";
     if(next==="construir")$("#orders-panel").hidden=true;
     $("#tile-tooltip").hidden=true;
     buildHover=null;
@@ -2011,7 +2010,6 @@
     if(k==="b"){setTool(selectedTool==="construir"?"universal":"construir");return;}
     if(selectedTool!=="construir")return;
     if(k==="escape"){setTool("universal");return;}
-    if((event.ctrlKey||event.metaKey)&&k==="z"){event.preventDefault();$("#build-undo").click();}
   });
   // Clique individual ou arraste para selecionar um retângulo de tarefas.
   // Shift+arrastar ou botão central sempre move a câmera.
@@ -2209,12 +2207,6 @@
     if(btn){removeOrders([btn.dataset.cancelOrder]);notify("Ordem cancelada.");}
   });
   document.querySelectorAll("[data-speed]").forEach(b=>b.addEventListener("click",()=>{simSpeed=Number(b.dataset.speed);updateSpeed();refresh();save();}));
-  $("#construction-priority").addEventListener("click",event=>{
-    const button=event.target.closest("[data-construction-priority]");
-    if(!button||!state)return;
-    state.buildPriority=Math.max(1,Math.min(9,state.buildPriority+Number(button.dataset.constructionPriority)));
-    updateBuildPanel();save();
-  });
   $("#priorities").addEventListener("click",e=>{
     const btn=e.target.closest("[data-priority]");if(!btn||!state)return;
     const type=btn.dataset.priority;
