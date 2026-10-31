@@ -559,12 +559,57 @@
   function save(){if(!state||!playing)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch(e){console.warn("Não foi possível salvar:",e);}}
   function log(text){state.journal.unshift(text);state.journal.length=Math.min(5,state.journal.length);}
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
+  // Falas flutuantes são desenhadas sobre o personagem existente, sem sprites
+  // externos e sem mudar a lógica de movimento ou a câmera.
+  let speechUntil=0,speechText="",speechWorkerId=null;
+  function sayTutorial(text,seconds=12){
+    if(!state?.workers?.length)return;
+    const worker=state.workers.find(w=>!w.neg.includes("clear"))||state.workers[0];
+    speechWorkerId=worker.id;speechText=text;
+    speechUntil=performance.now()+seconds*1000;
+    $("#tutorial-speaker").textContent=worker.name;
+    $("#tutorial-speech-text").textContent=text;
+    updateTutorialSpeech();
+  }
+  function updateTutorialSpeech(){
+    const bubble=$("#tutorial-speech");
+    if(!playing||!state||!speechText||performance.now()>speechUntil){
+      bubble.hidden=true;return;
+    }
+    const worker=state.workers.find(w=>w.id===speechWorkerId)||state.workers[0];
+    const bounds=canvas.getBoundingClientRect();
+    const viewport=$(".canvas-scroll").getBoundingClientRect();
+    if(!worker||bounds.width<1||bounds.height<1){bubble.hidden=true;return;}
+    const x=bounds.left+worker.x/W*bounds.width;
+    const y=bounds.top+worker.y/H*bounds.height;
+    if(x<viewport.left+12||x>viewport.right-12||y<viewport.top+25||y>viewport.bottom-3){
+      bubble.hidden=true;return;
+    }
+    bubble.hidden=false;
+    const width=bubble.offsetWidth||190,height=bubble.offsetHeight||70;
+    bubble.style.left=Math.round(Math.max(8,Math.min(innerWidth-width-8,x-width/2)))+"px";
+    bubble.style.top=Math.round(Math.max(viewport.top+8,y-height-48))+"px";
+  }
+  function tutorialHint(){
+    const mission=Prologue.snapshot(state).mission;
+    return mission?mission.short+" Abra a missão para mais detalhes.":"";
+  }
   function announceMission(previous){
-    if(state.prologue.stage<=previous)return;
-    if(state.prologue.done)notify("🏅 Prólogo concluído! A fazenda agora é sua.");
-    else notify("✓ Missão concluída! Próximo objetivo: "+Prologue.CHAPTERS[state.prologue.stage].title+".");
+    if(state.mode!=="tutorial"||state.prologue.stage<=previous)return;
+    if(state.prologue.done){
+      // A última cabana é o encerramento. Não apaga ou recria o estado da fazenda.
+      state.mode="survival";
+      $("#prologue-card").hidden=true;
+      notify("🏅 Tutorial concluído! Continue jogando na mesma fazenda.");
+      sayTutorial("Conseguimos! O tutorial acabou. Agora vamos cuidar da nossa fazenda!",16);
+    }else{
+      notify("✓ Missão concluída! "+Prologue.CHAPTERS[state.prologue.stage].title);
+      sayTutorial(tutorialHint(),12);
+    }
   }
   function recordPrologue(action,amount=1){
+    // Normal/Sobrevivência e Fazenda tranquila nunca exibem ou avançam missões.
+    if(state.mode!=="tutorial")return;
     const previous=state.prologue.stage;
     Prologue.event(state,action,amount);
     announceMission(previous);
@@ -572,6 +617,7 @@
   function renderPrologue(){
     if(!state)return;
     const info=Prologue.snapshot(state),mission=info.mission;
+    $("#prologue-card").hidden=state.mode!=="tutorial"||info.done;
     $("#prologue-step").textContent=info.done?"✓ PRÓLOGO CONCLUÍDO":"PRÓLOGO · MISSÃO "+(info.stage+1)+"/"+info.total;
     $("#prologue-title").textContent=mission?mission.icon+" "+mission.title:"🏅 Você aprendeu a sobreviver!";
     $("#prologue-summary").textContent=mission?mission.short:"A campanha terminou. Agora explore o vale e expanda sua colônia livremente.";
@@ -623,11 +669,13 @@
     $("#prologue-dialog").close();
     $("#workshop-open").click();
   });
-  $("#workshop-open").addEventListener("click",()=>{
+  const openWorkshop=()=>{
     if(!playing)return;
     renderWorkshop();$("#workshop-message").textContent="Fabrique uma ferramenta quando tiver todos os recursos.";
-    $("#workshop-dialog").showModal();
-  });
+    if(!$("#workshop-dialog").open)$("#workshop-dialog").showModal();
+  };
+  $("#workshop-open").addEventListener("click",openWorkshop);
+  $("#workshop-hud-button").addEventListener("click",openWorkshop);
   $("#workshop-recipes").addEventListener("click",event=>{
     const button=event.target.closest("[data-craft-tool]");
     if(!button||!state)return;
@@ -653,11 +701,14 @@
     $("#minimap-toggle").setAttribute("aria-expanded",String(!minimap.hidden));
     $("#minimap-toggle").textContent=minimap.hidden?"+":"−";
     syncCameraButtons();
+    speechUntil=0;speechText="";$("#tutorial-speech").hidden=true;
     requestAnimationFrame(()=>{
       fitWorldCanvas();
       focusCameraAt(state.spawn?.x??W/2,state.spawn?.y??H/2);
+      if(state.mode==="tutorial"&&!state.prologue.done)
+        sayTutorial("Bem-vindo ao vale! "+tutorialHint(),15);
     });
-    // O HUD contextual já explica a ação; não obstruir o mapa com aviso ao iniciar.
+    // O HUD contextual já explica a ação; não obstruir o mapa com aviso no modo normal.
   }
   // Somente ordens solicitadas pelo jogador entram na fila. Nenhuma etapa é
   // fabricada depois de limpar, arar, semear, regar ou colher.
@@ -1166,7 +1217,7 @@
       '<div class="resource-slot housing" aria-label="Moradias: '+state.homes.length+' de '+state.workers.length+'">'+
       '<span class="resource-art" aria-hidden="true">⌂</span><span class="resource-amount">'+state.homes.length+'/'+state.workers.length+'</span><small>Casas</small></div>';
     set("#farm-title",state.farmName||"Minha Fazenda");
-    set("#mode-label",(state.mode==="relaxed"?"FAZENDA TRANQUILA":"SOBREVIVÊNCIA")+" · DIA "+state.day);
+    set("#mode-label",(state.mode==="tutorial"?"TUTORIAL GUIADO":state.mode==="relaxed"?"FAZENDA TRANQUILA":"SOBREVIVÊNCIA")+" · DIA "+state.day);
     $("#status").textContent=simSpeed===0?"Ⅱ Simulação pausada":"● Fazenda em funcionamento";
     $("#workers").innerHTML=state.workers.map(w=>{
       const t=tasks.find(t=>t.id===w.task);
