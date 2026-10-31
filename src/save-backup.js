@@ -14,11 +14,16 @@
     if(!state||typeof state!=="object"||Array.isArray(state))return false;
     if(!Array.isArray(state.workers)||state.workers.length<1||state.workers.length>100)return false;
     if(!Array.isArray(state.plots)||state.plots.length>5000)return false;
-    if(!state.world||typeof state.world!=="object"||!Array.isArray(state.world.water)||!Array.isArray(state.world.objects))return false;
-    if(state.world.water.length>5000||state.world.objects.length>10000)return false;
+    // Saves antigos podem não ter "world": o motor reconstrói esse campo ao continuar.
+    if(state.world!==undefined){
+      if(!state.world||typeof state.world!=="object"||!Array.isArray(state.world.water)||
+        !Array.isArray(state.world.objects))return false;
+      if(state.world.water.length>5000||state.world.objects.length>10000)return false;
+    }
     if(!finite(state.day,0,100000)||!finite(state.coins,0,1e12))return false;
     if(!finite(state.seeds,0,1e9)||!finite(state.water,0,1e9)||!finite(state.food,0,1e9))return false;
-    if(typeof state.farmName!=="string"||state.farmName.length>120)return false;
+    if(state.farmName!==undefined&&
+      (typeof state.farmName!=="string"||state.farmName.length>120))return false;
     if(!state.workers.every(w=>w&&Number.isInteger(w.id)&&
       typeof w.name==="string"&&w.name.length<=80&&
       Array.isArray(w.skills)&&Array.isArray(w.neg)&&
@@ -65,7 +70,7 @@
     if(file.size>MAX_BYTES){status("Arquivo excede o limite de 6 MB.",false);return;}
     try{
       const text=await file.text(),state=decode(text);
-      const preview=state.farmName+" · "+state.workers.length+" habitantes · dia "+state.day;
+      const preview=(state.farmName||"Fazenda antiga")+" · "+state.workers.length+" habitantes · dia "+state.day;
       if(!window.confirm("Importar esta partida?\\n"+preview+
         "\\nO salvamento local atual será substituído. Exporte um backup antes de continuar."))return;
       localStorage.setItem(KEY,JSON.stringify(state));
