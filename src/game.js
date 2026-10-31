@@ -776,12 +776,15 @@
         '</div><div class="order-task-controls"><b>P'+state.priorities[t.type]+'</b>'+
         '<button type="button" data-cancel-order="'+t.id+'" aria-label="Cancelar ordem '+labels[t.type]+' do terreno '+(t.x+1)+', '+(t.y+1)+'">✕</button></div></div>';
     };
+    // Recalcular o painel não fecha os grupos que o jogador abriu.
+    const expandedGroups=new Set([...$("#tasks").querySelectorAll('details[data-task-group][open]')]
+      .map(el=>el.dataset.taskGroup));
     const now=[...active,...ready];
     const preview=now.slice(0,30).map(renderOrder).join("");
-    const rest=now.length>30?'<details class="task-waiting-group"><summary>Mostrar mais '+(now.length-30)+' ordens prontas</summary>'+
+    const rest=now.length>30?'<details class="task-waiting-group" data-task-group="more"><summary>Mostrar mais '+(now.length-30)+' ordens prontas</summary>'+
       now.slice(30).map(renderOrder).join("")+'</details>':"";
     const waitingBlock=waiting.length?
-      '<details class="task-waiting-group"><summary>⏳ '+waiting.length+
+      '<details class="task-waiting-group" data-task-group="waiting"><summary>⏳ '+waiting.length+
       ' aguardando recursos, desbloqueio ou caminho</summary>'+
       '<div class="task-blocked-hint">Essas ordens não são executáveis ainda. Abra para ver o motivo de cada uma; não é preciso cancelá-las.</div>'+
       waiting.slice(0,80).map(renderOrder).join("")+
@@ -793,6 +796,9 @@
     $("#tasks").innerHTML=tasks.length?
       totals+preview+rest+waitingBlock:
       '<div class="empty">Sem ordens. Escolha um trabalho e marque o terreno. A equipe não inicia etapas automaticamente.</div>';
+    for(const group of $("#tasks").querySelectorAll('details[data-task-group]')){
+      if(expandedGroups.has(group.dataset.taskGroup))group.open=true;
+    }
     $("#journal").innerHTML=state.journal.map(s=>'<div class="log">✧ '+escapeHtml(s)+'</div>').join("");
     drawSidebarAvatars();
   }
