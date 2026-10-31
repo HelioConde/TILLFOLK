@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="./game-refinement.css?v=1">
   <link rel="stylesheet" href="./camera-ui.css?v=1">
   <script defer src="./src/menu.js"></script>
+  <script defer src="./src/save-backup.js?v=1"></script>
   <script defer src="./src/tutorial.js"></script>
   <script defer src="./src/house-renderer.js"></script>
   <script defer src="./src/menu-scene.js?v=20261031-tronco-vacas-restauradas"></script>
@@ -182,6 +183,16 @@
     <label class="title-setting"><span><strong>Volume</strong><small id="title-volume-label">40%</small></span><input id="title-volume" type="range" min="0" max="100" step="5" value="40" aria-label="Volume dos efeitos sonoros"></label>
     <button type="button" id="title-sound-test" class="large-secondary">♫ Testar som</button>
     <button type="button" id="title-fullscreen-setting" class="large-secondary">⛶ Alternar tela cheia</button>
+    <section class="save-backup-actions" aria-labelledby="save-backup-heading">
+      <h3 id="save-backup-heading">Proteja sua fazenda</h3>
+      <p>Seus dados ficam somente neste navegador. Faça backup antes de limpar o histórico ou trocar de computador.</p>
+      <div class="save-backup-buttons">
+        <button id="save-export" type="button" class="large-secondary">↓ Exportar partida</button>
+        <button id="save-import" type="button" class="large-secondary">↑ Importar partida</button>
+      </div>
+      <input id="save-import-file" type="file" accept="application/json,.json" hidden aria-label="Selecionar backup JSON do TILLFOLK">
+      <p id="save-backup-status" role="status" aria-live="polite"></p>
+    </section>
   </dialog>
   <dialog id="title-credits-dialog" class="modal title-modal">
     <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
