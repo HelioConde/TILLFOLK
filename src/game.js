@@ -2068,6 +2068,7 @@
     if(playing){simSpeed=speedBeforeManagement;updateSpeed();refresh();save();}
   });
   $("#new-game").addEventListener("click",()=>$("#mode-dialog").showModal());
+  $("#tutorial-start").addEventListener("click",()=>$("#mode-dialog").showModal());
   $("#mode-dialog").addEventListener("click",event=>{
     const btn=event.target.closest("[data-game-mode]");
     if(!btn)return;
@@ -2077,17 +2078,55 @@
   });
   $("#continue").addEventListener("click",()=>{start(true);renderPriorityControls();});
   $("#help-btn").addEventListener("click",()=>$("#help-dialog").showModal());
-  // Conclusão do tutorial: preservar a partida e a navegação do menu.
-  // Com save existente, usa exatamente o botão Continuar. Sem save,
-  // segue o fluxo normal de escolha de modo + recrutamento inicial.
-  $("#guide-play").addEventListener("click",()=>{
-    $("#help-dialog").close();
-    if($("#continue").disabled)$("#new-game").click();
-    else $("#continue").click();
-  });
+  // "Como jogar" continua como guia de consulta. A conclusão só ocorre jogando.
   $("#help-close").addEventListener("click",()=>{
     $("#help-dialog").close();
     $("#help-btn").focus({preventScroll:true});
+  });
+  $("#mission-details-toggle").addEventListener("click",()=>{
+    const card=$("#mission-card"),open=card.classList.toggle("expanded");
+    $("#mission-details-toggle").setAttribute("aria-expanded",String(open));
+  });
+  $("#mission-locate").addEventListener("click",()=>{
+    if(!playing)return;
+    const step=Missions.current(state);
+    if(!step)return;
+    const distance=p=>(p.x-(state.spawn?.x??W/2))**2+(p.y-(state.spawn?.y??H/2))**2;
+    const nearest=items=>items.sort((a,b)=>distance(a)-distance(b))[0];
+    const objects=state.world.objects||[];
+    let candidates=[];
+    if(step.target==="grass")candidates=objects.filter(item=>item.kind==="grass");
+    else if(step.target==="till")candidates=state.plots.filter(p=>
+      !p.tilled&&!p.seeded&&!p.dirty&&!World.at(state.world,p.x,p.y)&&
+      World.terrainAt(state.world,p.x,p.y).farmable&&!occupiedByHome(p.x,p.y));
+    else if(step.target==="sow")candidates=state.plots.filter(p=>p.tilled&&!p.seeded&&!p.produce);
+    else if(step.target==="water")candidates=state.plots.filter(p=>p.seeded&&!p.watered);
+    else if(step.target==="harvest"){
+      candidates=state.plots.filter(p=>p.seeded&&p.growth>=1);
+      if(!candidates.length)candidates=state.plots.filter(p=>p.seeded&&p.watered);
+    }
+    else if(step.target==="carry")candidates=state.plots.filter(p=>p.produce);
+    else if(step.target==="plan")candidates=state.plots.filter(p=>homeSiteValid(p.x,p.y));
+    const target=nearest(candidates);
+    if(step.tool==="construir"){
+      setTool("construir");
+      $('[data-build-layer="home"]').click();
+    }else setTool(step.tool);
+    if(target){
+      focusCameraAt(target.x+.5,target.y+.5);
+      showMapFeedback(target.x,target.y,"#ecf8a8");
+      notify(step.target==="grass"?"Tufo de grama encontrado! Marque a ordem de Limpar.":"Local sugerido destacado. Clique no terreno para dar a ordem.");
+    }else{
+      notify(step.target==="harvest"?"A cultura ainda está crescendo. Use 3× ou 6× para esperar.":"Não encontrei alvo pronto. Explore o mapa ou use Ordens.");
+    }
+  });
+  const tutorialDone=$("#tutorial-done-dialog");
+  tutorialDone.addEventListener("cancel",event=>event.preventDefault());
+  $("#tutorial-continue-game").addEventListener("click",()=>{
+    tutorialDone.close();simSpeed=tutorialSpeedBeforeFinish;updateSpeed();refresh();save();
+  });
+  $("#tutorial-back-menu").addEventListener("click",()=>{
+    tutorialDone.close();save();$("#game-return-title").click();
   });
   const sidebar=$("#farm-sidebar"),backdrop=$("#drawer-backdrop");
   let drawerReturnFocus=null;
