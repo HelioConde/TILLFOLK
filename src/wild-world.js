@@ -30,7 +30,7 @@
   const randSeed=seed=>{let a=(seed>>>0)||139931;return ()=>{a+=0x6D2B79F5;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;}};
   const noise=(seed,x,y)=>{let v=Math.imul(x+721,374761393)^Math.imul(y+1013,668265263)^(seed|0);v=Math.imul(v^(v>>>13),1274126177);return ((v^(v>>>16))>>>0)/4294967296;};
   const nearStart=(x,y,w,h)=>Math.hypot((x-(w>=60?w/2:13.6))/1.15,
-    (y-(h>=40?h/2:9.5))/1.05)<4.8;
+    (y-(h>=40?h/2:9.5))/1.05)<(w>=60&&h>=40?8.1:4.8);
   const inMap=(x,y,w,h)=>x>=1&&y>=1&&x<w-1&&y<h-1;
   // Área inicial 25x23 no interior do anel; saída única ao leste.
   function valleyBounds(w,h){
@@ -74,11 +74,18 @@
     const random=randSeed(seed), reserved=new Set(exclude.map(p=>key(p.x,p.y)));
     const world={version:2,seed,width:w,height:h,objects:[],water:[],lastRegrownDay:1};
     world.biomeMap=Biomes.generate(seed,w,h);
+    // Abrir uma clareira fértil de verdade no centro do território cercado.
+    if(w>=60&&h>=40&&options.gated!==false){
+      const b=valleyBounds(w,h),cells=world.biomeMap.split("");
+      for(let y=b.top+1;y<b.bottom;y++)for(let x=b.left+1;x<b.right;x++)
+        cells[y*w+x]="g";
+      world.biomeMap=cells.join("");
+    }
     const used=new Set(reserved),waters=new Set();
     // Lagoa natural pequena, em um canto variável, sem cortar a clareira.
     const right=random()>.4;
-    const px=w>=60?Math.round(w/2)+(right?7:-7):right?w-5:5;
-    const py=h>=40?Math.round(h/2)+(random()>.5?5:-5):random()>.5?4:h-5;
+    const px=w>=60?Math.round(w/2)+(right?10:-10):right?w-5:5;
+    const py=h>=40?Math.round(h/2)+(random()>.5?7:-7):random()>.5?4:h-5;
     for(let y=py-2;y<=py+2;y++)for(let x=px-2;x<=px+2;x++){
       const d=((x-px)/2.2)**2+((y-py)/1.7)**2;
       if(d < .85+noise(seed,x,y)*.24&&inMap(x,y,w,h)&&!nearStart(x,y,w,h)&&!reserved.has(key(x,y))){
