@@ -16,10 +16,10 @@ test("a primeira bancada requer muitos gravetos e não nasce pronta",()=>{
   const s=state();assert.equal(s.crafting.station,null);
   assert.equal(Object.keys(s.crafting.equipment).length,C.RECIPES.length);
   assert.ok(Object.values(s.crafting.equipment).every(value=>value===false));
-  assert.equal(C.STATION_COST,30);
+  assert.equal(C.STATION_COST,10);
   assert.equal(C.canBuild(s),false);
   assert.equal(O.status({type:"buildStation",x:10,y:10},plot,null,s).state,"blocked");
-  s.inventory.twigs=30;
+  s.inventory.twigs=10;
   assert.equal(C.canBuild(s),true);
   assert.equal(O.status({type:"buildStation",x:10,y:10},plot,null,s).state,"ready");
 });
@@ -50,7 +50,7 @@ test("fabricar consome recursos, persiste ferramenta e libera a ordem",()=>{
 test("o regador continua bloqueado até ser fabricado",()=>{
   const s=state();s.crafting.station={x:10,y:10};
   assert.match(C.blocked(s,"water"),/regador/);
-  s.inventory.twigs=6;s.inventory.wood=2;
+  s.inventory.twigs=4;s.inventory.grass=2;
   assert.equal(C.craft(s,"wateringCan").item.key,"wateringCan");
   assert.equal(C.blocked(s,"water"),null);
 });
