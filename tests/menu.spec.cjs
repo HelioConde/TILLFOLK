@@ -910,7 +910,7 @@ test('HUD pixel art: cabe na tela, mantém ações utilizáveis e captura estado
   await page.locator('[data-game-mode="relaxed"]').click();
   await page.locator('#starter-confirm').click();
   await expect(page.locator('body')).toHaveClass(/play-session/);
-  await expect(page.locator('#hud-tool-name')).toHaveText('ARAR');
+  await expect(page.locator('#hud-tool-name')).toHaveText('UNIVERSAL');
   await expect(page.locator('.tooltray')).toBeVisible();
   await page.waitForTimeout(400);
   const desktop=await page.evaluate(()=>{

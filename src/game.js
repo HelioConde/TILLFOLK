@@ -9,6 +9,7 @@
   canvas.width=W*TILE;canvas.height=H*TILE;
   const $ = (s) => document.querySelector(s);
   let worldPanX=0,worldPanY=0,panPointer=null,suppressMapClick=false;
+  let selectionPointer=null,areaSelection=null,areaMode=false;
   // A câmera tem escala renderizada e escala desejada: a roda não salta entre quadros.
   let cameraZoom=1,targetCameraZoom=1,cameraAnchor=null,lastCameraFrame=0,lastMinimapFrame=-1000;
   const ZOOM_MIN=1,ZOOM_MAX=6;
@@ -411,7 +412,7 @@
     if(!path.length){const [x,y]=reached.split(",").map(Number);path.push({x:x+.5,y:y+.5});}
     return path;
   }
-  let state = null, tasks = [], selectedTool = "till", buildLayer = "floor", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
+  let state = null, tasks = [], selectedTool = "universal", buildLayer = "floor", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
     return {x,y,selected,dirty:false,tilled:false,fertilized:false,seeded:false,watered:false,growth:0,produce:false};
@@ -507,7 +508,7 @@
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
   function start(continueSaved=false, chosenStarters = [], config = {}){
     if(!continueSaved||!readSave())reset(chosenStarters,config);
-    houseHistory=[];buildHover=null;setTool("till");
+    houseHistory=[];buildHover=null;areaSelection=null;selectionPointer=null;setTool("universal");
     recalcTasks(); // Limpar ordens já concluídas antes da primeira renderização.
     playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false;
     document.body.classList.add("play-session","focus-game");
@@ -944,6 +945,16 @@
         ctx.strokeRect(px+2,py+2,TILE-4,TILE-4);
       }
     }
+    // Prévia da seleção em área: cada célula fica destacada sem mudar o save.
+    if(areaSelection){
+      const a=areaSelection.from,b=areaSelection.to;
+      const x0=Math.max(0,Math.min(a.x,b.x)),x1=Math.min(W-1,Math.max(a.x,b.x));
+      const y0=Math.max(0,Math.min(a.y,b.y)),y1=Math.min(H-1,Math.max(a.y,b.y));
+      ctx.fillStyle="#e6f7ad3d";
+      ctx.fillRect(x0*TILE,y0*TILE,(x1-x0+1)*TILE,(y1-y0+1)*TILE);
+      ctx.lineWidth=2;ctx.strokeStyle="#f9ed9b";
+      ctx.strokeRect(x0*TILE+1,y0*TILE+1,(x1-x0+1)*TILE-2,(y1-y0+1)*TILE-2);
+    }
     // Feedback breve e descartável ao concluir ou atribuir uma ordem.
     const now=performance.now();
     for(let i=feedbackParticles.length-1;i>=0;i--){
@@ -1125,6 +1136,63 @@
     }
     recalcTasks();refresh();save();
   }
+  // A ferramenta universal atribui APENAS a próxima etapa ao clicar.
+  // Ela nunca cria tarefas após a conclusão do trabalho.
+  function nextUniversalOrder(x,y){
+    const plot=findPlot(x,y);
+    if(!plot||World.waterAt(state.world,x,y)||
+       occupiedByHome(x,y)||window.TillfolkHouseBuilder.occupied(state.house,x,y))return null;
+    if(World.at(state.world,x,y)||plot.dirty)return "clear";
+    const terrain=World.terrainAt?.(state.world,x,y);
+    if(terrain&&!terrain.farmable)return null;
+    if(plot.produce)return "carry";
+    if(plot.seeded)return plot.growth>=1?"harvest":!plot.watered?"water":null;
+    if(plot.tilled)return "sow";
+    return "till";
+  }
+  function queueAt(type,x,y){
+    if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||occupiedByHome(x,y)||
+       (World.waterAt(state.world,x,y)&&type!=="collectWater"))return {error:"Terreno indisponível"};
+    if(type==="buildHome"&&!homeSiteValid(x,y))return {error:"Casa precisa de área 2×2 livre"};
+    if(type==="collectManure"&&!state.animals.some(a=>Math.floor(a.x)===x&&Math.floor(a.y)===y))
+      return {error:"Selecione um animal com esterco"};
+    const plot=findPlot(x,y);
+    const result=Orders.add(state.orders,type,x,y,plot,World.at(state.world,x,y),state);
+    if(result.error)return result;
+    state.orders.push(result.order);
+    if(plot&&!["buildHome","collectWater","collectManure"].includes(type))plot.selected=true;
+    showMapFeedback(x,y,result.state==="blocked"?"#d4a779":"#fff5af");
+    return result;
+  }
+  function applyToArea(from,to){
+    const x0=Math.max(0,Math.min(from.x,to.x)),x1=Math.min(W-1,Math.max(from.x,to.x));
+    const y0=Math.max(0,Math.min(from.y,to.y)),y1=Math.min(H-1,Math.max(from.y,to.y));
+    let added=0,cancelled=0,skipped=0;
+    const removals=[];
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+      if(selectedTool==="remover"){
+        const ids=state.orders.filter(o=>o.x===x&&o.y===y).map(o=>o.id);
+        removals.push(...ids);cancelled+=ids.length;continue;
+      }
+      const type=selectedTool==="universal"?nextUniversalOrder(x,y):selectedTool;
+      if(!type||!Orders.TYPES.includes(type)){skipped++;continue;}
+      const result=queueAt(type,x,y);
+      if(result.error)skipped++;else added++;
+    }
+    if(cancelled){
+      const ids=new Set(removals);
+      state.orders=state.orders.filter(o=>!ids.has(o.id));
+      for(const worker of state.workers)if(ids.has(worker.task)){
+        releaseSupply(worker);
+        worker.task=null;worker.progress=0;worker.route=[];worker.routeTask=null;worker.workGoal=null;
+      }
+    }
+    if(added||cancelled){recalcTasks();refresh();save();}
+    $("#tile-tooltip").hidden=true;
+    notify(added?added+" ordem(ns) adicionada(s)"+(skipped?" · "+skipped+" ignorada(s)":"")+"."
+      :cancelled?cancelled+" ordem(ns) cancelada(s).":
+      "Nenhuma ordem aplicável nesta área.");
+  }
   function placeOrder(type,x,y){
     if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||occupiedByHome(x,y)||
        (World.waterAt(state.world,x,y)&&type!=="collectWater")){
@@ -1194,10 +1262,11 @@
     const leaving=selectedTool==="construir"&&next!=="construir";
     if(entering)cameraPanBeforeBuilding={x:worldPanX,y:worldPanY};
     selectedTool=next;
+    areaSelection=null;selectionPointer=null;
     const stage=Orders.TYPES.includes(next);
-    $("#order-selected").textContent=stage?labels[next]:"Ordens";
-    $("#orders-btn").classList.toggle("active",stage&&next!=="till");
-    $("#orders-btn").setAttribute("aria-pressed",String(stage&&next!=="till"));
+    $("#order-selected").textContent=stage?labels[next]:"Especificar";
+    $("#orders-btn").classList.toggle("active",stage);
+    $("#orders-btn").setAttribute("aria-pressed",String(stage));
     if(!stage){$("#orders-panel").hidden=true;$("#orders-btn").setAttribute("aria-expanded","false");}
     document.querySelectorAll("[data-tool]").forEach(btn=>{
       const on=btn.dataset.tool===next;
@@ -1255,7 +1324,7 @@
     recalcTasks();refresh();save();updateBuildPanel();
     $("#build-status").textContent="Última alteração desfeita.";
   });
-  $("#build-exit").addEventListener("click",()=>setTool("till"));
+  $("#build-exit").addEventListener("click",()=>setTool("universal"));
   canvas.addEventListener("contextmenu",event=>{
     if(!playing||selectedTool!=="construir")return;
     event.preventDefault();const p=buildCellFromEvent(event);paintHouse(p.x,p.y,true);
@@ -1264,14 +1333,29 @@
   document.addEventListener("keydown",event=>{
     if(!playing||event.target.closest("input,textarea,select,[contenteditable]")||document.querySelector("dialog[open]"))return;
     const k=event.key.toLowerCase();
-    if(k==="b"){setTool(selectedTool==="construir"?"till":"construir");return;}
+    if(k==="b"){setTool(selectedTool==="construir"?"universal":"construir");return;}
     if(selectedTool!=="construir")return;
-    if(k==="escape"){setTool("till");return;}
+    if(k==="escape"){setTool("universal");return;}
     if(["1","2","3"].includes(k)){buildLayer=["floor","walls","roof"][Number(k)-1];updateBuildPanel();}
     if(k==="r"){state.house.roofHidden=!state.house.roofHidden;updateBuildPanel();save();}
     if((event.ctrlKey||event.metaKey)&&k==="z"){event.preventDefault();$("#build-undo").click();}
   });
-  // Segure Shift e arraste no desktop; no celular, arraste com o dedo para explorar.
+  // Clique individual ou arraste para selecionar um retângulo de tarefas.
+  // Shift+arrastar ou botão central sempre move a câmera.
+  // No celular, ativar Área faz o dedo selecionar; desativar volta ao pan.
+  function canSelectArea(){
+    return selectedTool==="universal"||selectedTool==="remover"||Orders.TYPES.includes(selectedTool);
+  }
+  function pointerTile(event){
+    const p=buildCellFromEvent(event);
+    return {x:Math.max(0,Math.min(W-1,p.x)),y:Math.max(0,Math.min(H-1,p.y))};
+  }
+  $("#drag-mode").addEventListener("click",()=>{
+    areaMode=!areaMode;areaSelection=null;selectionPointer=null;
+    $("#drag-mode").setAttribute("aria-pressed",String(areaMode));
+    $("#drag-mode").classList.toggle("chosen",areaMode);
+    $("#drag-mode").textContent=areaMode?"▣ Área: ligada":"▧ Área: desligada";
+  });
   // O cálculo da célula utiliza o retângulo real do canvas expandido/cortado.
   function pinchCoordinates(){
     const list=[...activeTouches.values()];
@@ -1284,20 +1368,35 @@
     if(event.pointerType==="touch"){
       activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
       if(activeTouches.size===2){
+        selectionPointer=null;areaSelection=null;
         const p=pinchCoordinates();
         pinchGesture={distance:p.distance,zoom:targetCameraZoom,
           anchor:captureCameraAnchor(p.x,p.y)};
         panPointer=null;suppressMapClick=true;
       }else if(activeTouches.size===1){
         suppressMapClick=false;
-        panPointer={id:event.pointerId,x:event.clientX,y:event.clientY,
-          lastX:event.clientX,lastY:event.clientY,moved:false};
+        if(areaMode&&canSelectArea()){
+          selectionPointer={id:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
+          const cell=pointerTile(event);
+          areaSelection={from:cell,to:cell};
+          panPointer=null;
+        }else{
+          panPointer={id:event.pointerId,x:event.clientX,y:event.clientY,
+            lastX:event.clientX,lastY:event.clientY,moved:false};
+        }
       }
       canvas.setPointerCapture(event.pointerId);
       hoveredTile=null;
       return;
     }
     suppressMapClick=false;
+    if(event.button===0&&!event.shiftKey&&canSelectArea()){
+      const cell=pointerTile(event);
+      selectionPointer={id:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
+      areaSelection={from:cell,to:cell};hoveredTile=null;
+      canvas.setPointerCapture(event.pointerId);
+      return;
+    }
     if(!event.shiftKey&&event.button!==1)return;
     hoveredTile=null;
     panPointer={id:event.pointerId,x:event.clientX,y:event.clientY,
@@ -1305,6 +1404,13 @@
     canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener("pointermove",event=>{
+    if(selectionPointer&&selectionPointer.id===event.pointerId){
+      const tile=pointerTile(event);
+      areaSelection.to=tile;
+      if(Math.hypot(event.clientX-selectionPointer.x,event.clientY-selectionPointer.y)>6)
+        selectionPointer.moved=true;
+      return;
+    }
     if(playing&&!panPointer&&event.pointerType!=="touch")hoveredTile=buildCellFromEvent(event);
     if(playing&&selectedTool==="construir"&&!panPointer)buildHover=buildCellFromEvent(event);
     if(event.pointerType==="touch"&&activeTouches.has(event.pointerId)){
@@ -1326,6 +1432,20 @@
     panPointer.lastX=event.clientX;panPointer.lastY=event.clientY;
   });
   function finishMapPan(event){
+    if(selectionPointer&&selectionPointer.id===event.pointerId){
+      const selection=areaSelection,moved=selectionPointer.moved;
+      const cancel=event.type==="pointercancel"||pinchGesture!=null;
+      // Um único toque continua produzindo o clique convencional.
+      if(moved&&!cancel&&selection){
+        selection.to=pointerTile(event);
+        applyToArea(selection.from,selection.to);
+        suppressMapClick=true;
+      }
+      selectionPointer=null;areaSelection=null;
+      if(event.pointerType==="touch")activeTouches.delete(event.pointerId);
+      if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
+      return;
+    }
     if(event.pointerType==="touch"){
       activeTouches.delete(event.pointerId);
       if(pinchGesture){
@@ -1354,6 +1474,12 @@
       const matches=state.orders.filter(o=>o.x===x&&o.y===y).map(o=>o.id);
       if(!matches.length){notify("Nenhuma ordem nesse terreno.");return;}
       removeOrders(matches);notify(matches.length+" ordem(ns) cancelada(s).");return;
+    }
+    if(selectedTool==="universal"){
+      const type=nextUniversalOrder(x,y);
+      if(type)placeOrder(type,x,y);
+      else notify("Não há uma nova etapa disponível neste terreno.");
+      return;
     }
     if(Orders.TYPES.includes(selectedTool))placeOrder(selectedTool,x,y);
   });
@@ -1683,7 +1809,7 @@
   backdrop.addEventListener("click",dismissDrawer);
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("drawer-open")){dismissDrawer();}});
   $("#menu-btn").addEventListener("click",()=>{
-    save();playing=false;closeDrawer();setTool("till");
+    save();playing=false;closeDrawer();setTool("universal");
     document.body.classList.remove("play-session","focus-game");
     canvas.style.removeProperty("--pan-x");canvas.style.removeProperty("--pan-y");
     cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;movementKeys.clear();syncCameraButtons();

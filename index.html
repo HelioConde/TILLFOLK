@@ -77,8 +77,8 @@
         </section>
         <div class="tooltray">
           <div class="tool-list" role="group" aria-label="Ferramentas do mapa">
-            <button class="tool active" data-tool="till" aria-pressed="true"><span>⛏</span><b>Arar</b><small>Somente arar</small></button>
-            <button class="tool" id="orders-btn" type="button" aria-pressed="false" aria-expanded="false" aria-controls="orders-panel"><span>☷</span><b>Ordens</b><small id="order-selected">Arar</small></button>
+            <button class="tool active" data-tool="universal" aria-pressed="true"><span>✦</span><b>Universal</b><small>Próxima tarefa</small></button>
+            <button class="tool" id="orders-btn" type="button" aria-pressed="false" aria-expanded="false" aria-controls="orders-panel"><span>☷</span><b>Ordens</b><small id="order-selected">Especificar</small></button>
             <button class="tool" data-tool="remover" aria-pressed="false"><span>✕</span><b>Cancelar</b><small>Parar cultivo</small></button>
             <button class="tool" data-tool="inspecionar" aria-pressed="false"><span>⌕</span><b>Inspecionar</b><small>Ver estado</small></button>
             <button class="tool" data-tool="construir" aria-pressed="false"><span>⌂</span><b>Construir</b><small>Editar casa</small></button>
@@ -87,14 +87,14 @@
         </div>
         <div class="hud-selection" role="status" aria-live="polite">
           <span class="hud-key">AÇÃO</span>
-          <strong id="hud-tool-name">ARAR</strong>
-          <small id="hud-tool-hint">Marque o solo para preparar o cultivo</small>
+          <strong id="hud-tool-name">UNIVERSAL</strong>
+          <small id="hud-tool-hint">Clique: próxima etapa · Arraste: vários terrenos</small><button type="button" id="drag-mode" aria-pressed="false" title="Ativar seleção por arrasto no celular; no computador arrastar já funciona">▧ Área: desligada</button>
         </div>
         <div id="orders-panel" class="orders-panel" role="region" aria-label="Lista de ordens para os trabalhadores" hidden>
           <div class="orders-heading"><strong>☷ DESIGNAR TRABALHO</strong><span><b id="order-count">0</b> ordens na fila · a equipe escolhe qual executar</span></div>
           <div class="orders-choices" role="group" aria-label="Tipo de tarefa">
             <button type="button" data-order-type="clear" aria-pressed="false"><b>🪓 Limpar</b><small>Remover recursos naturais</small></button>
-            <button type="button" data-order-type="till" aria-pressed="true"><b>⛏ Arar</b><small>Preparar a terra</small></button>
+            <button type="button" data-order-type="till" aria-pressed="false"><b>⛏ Arar</b><small>Preparar a terra</small></button>
             <button type="button" data-order-type="fertilize" aria-pressed="false"><b>🌿 Fertilizar</b><small>Melhorar o solo</small></button>
             <button type="button" data-order-type="sow" aria-pressed="false"><b>🌱 Semear</b><small>Plantar sementes</small></button>
             <button type="button" data-order-type="water" aria-pressed="false"><b>💧 Regar</b><small>Irrigar cultivo</small></button>
@@ -104,7 +104,7 @@
             <button type="button" data-order-type="collectManure" aria-pressed="false"><b>🐄 Recolher esterco</b><small>Clique no animal com esterco disponível</small></button>
             <button type="button" data-order-type="buildHome" aria-pressed="false"><b>🏠 Construir casa</b><small>Área livre 2×2 · 8 madeiras · 1 morador</small></button>
           </div>
-          <p>Selecione uma tarefa e clique em vários terrenos. Etapas futuras aguardam seus pré-requisitos; nenhuma é acrescentada automaticamente.</p>
+          <p>Escolha uma tarefa específica ou use Universal para a próxima etapa conforme o solo. Arraste sobre o mapa para várias ordens; no celular ative Área.</p>
         </div>
         <div id="construction-panel" class="construction-panel" role="region" aria-label="Construção da casa" hidden>
           <div class="construction-heading"><strong>⌂ CONSTRUÇÃO</strong><span>🪵 Madeira: <b id="build-stock">15</b> · Piso <b id="build-floor-count">0</b>/25 · Casas: <b id="build-homes-count">0</b></span><button id="build-exit" type="button">✕ Fechar</button></div>
@@ -118,7 +118,7 @@
           </div>
           <p id="build-status" role="status" aria-live="polite">Editor clássico: peças individuais. Para novas casas feitas pela equipe, use Ordens → Construir casa (8 madeiras).</p>
         </div>
-        <div class="hint-bar"><span>💡</span><p><strong>Como começar:</strong> corte grama para ter 25% de chance de conseguir sementes; busque água na lagoa e corte árvores para obter madeira. O vale começa <strong>sem animais</strong>; a fertilização com esterco fica para uma fase posterior. Construa três casas para liberar o terceiro ajudante.</p></div>
+        <div class="hint-bar"><span>💡</span><p><strong>Como começar:</strong> Universal cria uma ordem por toque: solo livre → arar, arado → semear, plantado → regar, maduro → colher. Arraste para marcar áreas. Use Ordens para ações específicas; limpe obstáculos para encontrar sementes e madeira. O vale começa <strong>sem animais</strong>; a fertilização com esterco fica para uma fase posterior. Construa três casas para liberar o terceiro ajudante.</p></div>
         <div class="footnote">TILLFOLK · Gerencie o vale e organize sua equipe</div>
       </section>
       <aside class="sidebar" id="farm-sidebar" aria-label="Painel de trabalhadores e tarefas" aria-hidden="true" inert><div class="drawer-heading"><strong>Gestão da fazenda</strong><button type="button" id="drawer-close" aria-label="Fechar painel de gestão">✕ Fechar</button></div>

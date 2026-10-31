@@ -195,7 +195,7 @@ test('Câmera ONI: limites do zoom e atalhos sem alterar as ferramentas',async({
   expect(high).toBeLessThanOrEqual(400);
   await page.keyboard.press('0');
   await expect(page.locator('#zoom-value')).toHaveText('100%');
-  await expect(page.locator('.tool.active[data-tool="till"]')).toBeVisible();
+  await expect(page.locator('.tool.active[data-tool="universal"]')).toBeVisible();
   await page.keyboard.press('m');
   await expect(page.locator('#minimap')).toBeHidden();
   await page.keyboard.press('m');
