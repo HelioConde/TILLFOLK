@@ -133,9 +133,11 @@
     if(x<2||y<2||x>=W-3||y>=H-3)return false;
     return homeTiles(x,y).every(([tx,ty])=>
       !World.waterAt(state.world,tx,ty)&&!World.at(state.world,tx,ty)&&
+      !state.animals?.some(a=>Math.floor(a.x)===tx&&Math.floor(a.y)===ty)&&
       !window.TillfolkHouseBuilder.occupied(state.house,tx,ty)&&
       !occupiedByHome(tx,ty)&&
-      !state.plots.some(p=>p.x===tx&&p.y===ty&&(p.selected||p.tilled||p.seeded||p.produce))&&
+      !state.plots.some(p=>p.x===tx&&p.y===ty&&(p.tilled||p.seeded||p.produce||
+        (p.selected&&!state.orders.some(o=>o.type==="buildHome"&&o.x===x&&o.y===y))))&&
       !state.orders.some(o=>o.type==="buildHome"&&
         !(o.x===x&&o.y===y)&&homeTiles(o.x,o.y).some(([ox,oy])=>ox===tx&&oy===ty))
     );
@@ -449,7 +451,7 @@
       if(p.watered&&p.seeded){ctx.fillStyle="#6cc8e5";ctx.fillRect(x+2,y+26,4,3);}
     }
     // Marcadores discretos: ordens prontas (creme) ou aguardando (marrom).
-    const markers={clear:"L",till:"A",fertilize:"F",sow:"S",water:"R",harvest:"C",carry:"T"};
+    const markers={clear:"L",till:"A",fertilize:"F",sow:"S",water:"R",harvest:"C",carry:"T",collectWater:"💧",collectManure:"E",buildHome:"⌂"};
     const byTile=new Map();
     for(const job of tasks){
       const id=keyOf(job.x,job.y),entry=byTile.get(id)||[];
@@ -619,14 +621,20 @@
     recalcTasks();refresh();save();
   }
   function placeOrder(type,x,y){
-    if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||World.waterAt(state.world,x,y)){
+    if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||occupiedByHome(x,y)||
+       (World.waterAt(state.world,x,y)&&type!=="collectWater")){
       notify("Terreno indisponível para ordens.");return;
+    }
+    if(type==="buildHome"&&!homeSiteValid(x,y)){notify("Casa precisa de uma área livre 2×2 (sem árvores, água ou plantações).");return;}
+    if(type==="collectManure"&&!state.animals.some(a=>Math.floor(a.x)===x&&Math.floor(a.y)===y)){
+      notify("Selecione a posição de um animal para recolher esterco.");return;
     }
     const plot=findPlot(x,y);
     const result=Orders.add(state.orders,type,x,y,plot,World.at(state.world,x,y),state);
     if(result.error){notify(result.error);return;}
     state.orders.push(result.order);
-    plot.selected=true; // Marcador visual, sem criar etapas automáticas.
+    if(plot&&type!=="buildHome"&&type!=="collectWater"&&type!=="collectManure")
+      plot.selected=true; // Marcador visual, sem criar etapas automáticas.
     recalcTasks();refresh();save();
     $("#tile-tooltip").hidden=true;
     if(result.state==="blocked")notify(labels[type]+" adicionada: "+result.reason.toLowerCase()+".");
@@ -780,8 +788,8 @@
     if(selectedTool==="construir"){paintHouse(x,y);return;}
     if(window.TillfolkHouseBuilder.occupied(state.house,x,y)){notify("Esta área já faz parte da casa.");return;}
     const p=findPlot(x,y);
-    if(!p){notify("Água ou limite do vale: escolha uma área de terra.");return;}
-    if(selectedTool==="inspecionar"){inspect(p);return;}
+    if(!p&&selectedTool!=="collectWater"&&selectedTool!=="remover"){notify("Para buscar água escolha a lagoa; para outras tarefas, escolha terra.");return;}
+    if(selectedTool==="inspecionar"){if(p)inspect(p);return;}
     if(selectedTool==="remover"){
       const matches=state.orders.filter(o=>o.x===x&&o.y===y).map(o=>o.id);
       if(!matches.length){notify("Nenhuma ordem nesse terreno.");return;}
