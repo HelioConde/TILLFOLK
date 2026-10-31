@@ -35,7 +35,9 @@
     if(!ctx||typeof ctx.drawImage!=="function")
       throw new TypeError("Canvas 2D obrigatório");
     const cell=TILE*scale,originX=Math.round(x),originY=Math.round(y);
-    const facadeX=originX+cell,facadeY=originY+(ROOF_ROWS-1)*cell;
+    // Subir somente a fachada 1 tile (32px com escala 2x).
+    // A posição e a geometria do telhado permanecem inalteradas.
+    const facadeX=originX+cell,facadeY=originY+(ROOF_ROWS-2)*cell;
     const stats={drawn:0,stretched:0,roof:0,walls:0,windows:0,doors:0,chimneys:0};
     ctx.imageSmoothingEnabled=false;
 
