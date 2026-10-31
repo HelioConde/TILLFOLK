@@ -834,6 +834,7 @@
             recordTutorial("grass");
             if(Math.random()<.25){
               const variety=Crops.pickWild();
+              if(state.seeds===0)state.selectedCrop=variety;
               state.cropSeeds[variety]++;
               state.seeds++;
               log(w.name+" encontrou uma semente de "+Crops.get(variety).name+" na grama!");
@@ -1191,6 +1192,12 @@
         const valid=Boolean(getBuildEdit(x,y,eraseBuild).house);
         if(buildLayer==="home")Blueprint.home(ctx,sprite,x,y,TILE,valid);
         else if(buildLayer==="field")Blueprint.field(ctx,sprite,x,y,TILE,valid,true);
+        else if(buildLayer==="station"){
+          ctx.fillStyle=valid?"#56aee288":"#e97f7588";
+          ctx.fillRect(x*TILE+2,y*TILE+2,TILE-4,TILE-4);
+          ctx.strokeStyle=valid?"#acebff":"#ffac9e";ctx.lineWidth=2;
+          ctx.strokeRect(x*TILE+2,y*TILE+2,TILE-4,TILE-4);
+        }
       }
     }
     // Ordem sob o cursor: destaque de tile, não adiciona tarefas automaticamente.
@@ -1472,6 +1479,7 @@
     const planned=state.orders.filter(o=>o.x===p.x&&o.y===p.y);
     $("#tile-tooltip").hidden=false;
     $("#tile-tooltip").textContent="Terreno "+(p.x+1)+", "+(p.y+1)+
+      ((p.seeded||p.produce)?" · "+(Crops.get(p.crop||"carrot")?.name||"Cultivo"):"")+
       " · "+World.terrainAt(state.world,p.x,p.y).name+" · "+(p.produce?"Colheita pronta":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural")+
       " · Ordens: "+(planned.length?planned.map(o=>labels[o.type]).join(" → "):"nenhuma");
   }
@@ -2002,6 +2010,53 @@
   });
   $("#candidates").addEventListener("click",e=>{const b=e.target.closest("[data-hire]");if(b)hire(Number(b.dataset.hire));});
   $("#hire-btn").addEventListener("click",()=>{if(!playing)return;renderCandidates();$("#hire-dialog").showModal();});
+  function cropTile(crop,extra,action,disabled=false,chosen=false){
+    return '<button type="button" data-'+action+'="'+crop.id+'" '+(disabled?'disabled':'')+
+      ' aria-pressed="'+Boolean(chosen)+'" title="'+escapeHtml(crop.name)+'">'+
+      '<canvas data-crop-icon="'+crop.id+'" width="40" height="40" aria-hidden="true"></canvas>'+
+      '<span><strong>'+escapeHtml(crop.name)+'</strong><small>'+extra+'</small></span></button>';
+  }
+  function renderCropCatalog(){
+    const grid=$("#crop-catalog-grid");
+    grid.innerHTML=Crops.ALL.map(crop=>cropTile(crop,
+      (state.cropSeeds[crop.id]||0)+" sementes","choose-crop",false,state.selectedCrop===crop.id)).join("");
+    Crops.drawIcons(grid);
+    $("#crop-catalog-status").textContent="Selecionado: "+Crops.get(state.selectedCrop).name+
+      ". A próxima ordem Semear usará esta cultura quando houver sementes.";
+  }
+  function renderWorkshop(){
+    const ready=(state.workstations?.length||0)>0;
+    $("#workshop-status").textContent=ready?
+      "Oficina em funcionamento! Produção reservada para receitas: 2 alimentos → 3 sementes.":
+      "Nenhuma oficina pronta. Use Construir → Oficina e espere a equipe montar a bancada (5 madeiras + 2 pedras).";
+    const grid=$("#workshop-recipes");
+    grid.innerHTML=Crops.ALL.map(crop=>cropTile(crop,
+      (state.cropProduce[crop.id]||0)+" colhidos · fabricar 3 sementes",
+      "craft-crop",!ready||(state.cropProduce[crop.id]||0)<2||state.food<2)).join("");
+    Crops.drawIcons(grid);
+  }
+  $("#open-crop-catalog").addEventListener("click",()=>{
+    if(!playing)return;renderCropCatalog();$("#crop-catalog-dialog").showModal();
+  });
+  $("#crop-catalog-grid").addEventListener("click",event=>{
+    const button=event.target.closest("[data-choose-crop]");
+    if(!button||!Crops.get(button.dataset.chooseCrop))return;
+    state.selectedCrop=button.dataset.chooseCrop;
+    renderCropCatalog();refresh();save();
+  });
+  $("#open-workshop").addEventListener("click",()=>{
+    if(!playing)return;renderWorkshop();$("#workshop-dialog").showModal();
+  });
+  $("#workshop-recipes").addEventListener("click",event=>{
+    const button=event.target.closest("[data-craft-crop]");
+    if(!button||button.disabled)return;
+    const id=button.dataset.craftCrop;
+    if(!Crops.get(id)||!state.workstations?.length||
+       state.food<2||(state.cropProduce[id]||0)<2)return;
+    state.cropProduce[id]-=2;state.food-=2;state.cropSeeds[id]+=3;state.seeds+=3;
+    log("A oficina preparou 3 sementes de "+Crops.get(id).name+".");
+    renderWorkshop();refresh();save();
+  });
 
   // Tela obrigatória antes da nova partida: dois espaços de recrutamento gratuitos.
   function randomStarter(excludeNames = [], excludeAppearances = []){
