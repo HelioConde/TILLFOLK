@@ -4,12 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#192c27">
+  <meta name="tillfolk-build" content="dev">
   <meta name="description" content="TILLFOLK: administre uma fazenda, contrate trabalhadores e automatize o cultivo.">
   <link rel="icon" href="data:,">
   <title>TILLFOLK — Sua fazenda, sua equipe</title>
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./design-system.css">
   <link rel="stylesheet" href="./survival.css">
+  <link rel="stylesheet" href="./live-update.css">
   <link rel="stylesheet" href="./menu.css">
   <link rel="stylesheet" href="./menu-layout.css">
   <link rel="stylesheet" href="./ui-polish.css">
@@ -48,6 +50,7 @@
   <script defer src="./src/game.js?v=20261031-tutorial-workstation-gap-v1"></script>
   <script defer src="./src/game-hud.js?v=20261031-painel-autofecha-v1"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
+  <script defer src="./src/live-update.js"></script>
 </head>
 <body>
   <div class="app-shell" inert>
@@ -393,5 +396,9 @@
     <div id="worker-inventory-items" class="worker-inventory-items"></div>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
+  <div id="live-update-notice" role="status" aria-live="polite" hidden>
+    <span id="live-update-message">Nova versão do TILLFOLK disponível.</span>
+    <button id="live-update-reload" type="button">Atualizar jogo</button>
+  </div>
 </body>
 </html>
