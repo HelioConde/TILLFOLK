@@ -40,13 +40,39 @@
     ctx.strokeRect(Math.round(x)+2,Math.round(y)+2,Math.round(w)-4,Math.round(h)-4);
     ctx.setLineDash([]);ctx.restore();
   }
+  const homeCache=new WeakMap();
+  function tintedHome(sprites,valid){
+    if(!good(sprites.roof)||!good(sprites.walls)||!good(sprites.door)||
+      !window.TillfolkHouse)return null;
+    let entry=homeCache.get(sprites.roof);
+    if(!entry){entry={};homeCache.set(sprites.roof,entry);}
+    const tone=valid?"blue":"red";
+    if(entry[tone])return entry[tone];
+    const size=window.TillfolkHouse.dimensions(1);
+    const off=document.createElement("canvas");
+    off.width=size.width;off.height=size.height;
+    const g=off.getContext("2d");
+    window.TillfolkHouse.draw(g,{
+      roof:sprites.roof,walls:sprites.walls,door:sprites.door
+    },0,0,{scale:1});
+    g.globalCompositeOperation="source-in";
+    g.fillStyle=valid?"#70c9ff":"#ff817b";
+    g.fillRect(0,0,off.width,off.height);
+    g.globalCompositeOperation="source-over";
+    entry[tone]=off;
+    return off;
+  }
   function home(ctx,sprites,x,y,size=32,valid=true){
-    const px=x*size,py=y*size,scale=size/32;
+    const px=x*size,py=y*size;
+    // Silhueta REAL da casa do menu, em vez de blocos falsamente esticados.
+    const preview=tintedHome(sprites,valid);
+    if(preview){
+      const at=window.TillfolkHouse.positionForFootprint(px,py,2*size,2*size,1);
+      ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.64;
+      ctx.drawImage(preview,at.x,at.y);
+      ctx.restore();
+    }
     frame(ctx,px,py,2*size,2*size,valid,.09);
-    part(ctx,sprites.walls,16,16,16,16,px+4*scale,py+22*scale,56*scale,41*scale,valid,.65);
-    part(ctx,sprites.roof,16,0,16,16,px-5*scale,py-14*scale,74*scale,50*scale,valid,.62);
-    part(ctx,sprites.roof,32,16,16,16,px+27*scale,py-9*scale,38*scale,36*scale,valid,.62);
-    part(ctx,sprites.door,0,0,16,32,px+21*scale,py+28*scale,22*scale,34*scale,valid,.68);
   }
   function field(ctx,sprites,x,y,size=32,valid=true,grown=false){
     const px=x*size,py=y*size;
