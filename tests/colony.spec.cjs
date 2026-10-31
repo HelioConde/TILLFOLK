@@ -1,3 +1,7 @@
+async function continueIfMenuVisible(page){
+  if(await page.locator('#menu').isVisible())await page.locator('#continue').click();
+  await expect(page.locator('#menu')).toBeHidden();
+}
 const {test,expect}=require('@playwright/test');
 const BASE='http://127.0.0.1:4173/';
 const snap=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
@@ -74,7 +78,7 @@ test('Fertilização fica bloqueada sem esterco e funciona quando animais forem 
     localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   const initial=await snap(page);
   expect(initial.animals).toHaveLength(1);
   await expect(page.locator('[data-order-type="collectManure"]')).toBeAttached();
@@ -137,7 +141,7 @@ test('Casas de madeira são ordens e contratação exige três casas para dois c
     s.homes=[{x:4,y:4,residentId:null,legacy:false},{x:7,y:4,residentId:null,legacy:false}];
     localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
-  await page.reload({waitUntil:'networkidle'});await page.locator('#continue').click();
+  await page.reload({waitUntil:'networkidle'});await continueIfMenuVisible(page);
   await page.locator('#open-workers').click();await page.locator('#hire-btn').click();
   await expect(page.locator('#housing-status')).toContainText('Construa mais 1 casa');
   await expect(page.locator('[data-hire="0"]')).toBeDisabled();
@@ -147,7 +151,7 @@ test('Casas de madeira são ordens e contratação exige três casas para dois c
     s.homes.push({x:10,y:4,residentId:null,legacy:false});
     localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
-  await page.reload({waitUntil:'networkidle'});await page.locator('#continue').click();
+  await page.reload({waitUntil:'networkidle'});await continueIfMenuVisible(page);
   await page.locator('#open-workers').click();await page.locator('#hire-btn').click();
   await expect(page.locator('#housing-status')).toContainText('1 vaga(s) livre(s)');
   await expect(page.locator('[data-hire="0"]')).toBeEnabled();
@@ -171,7 +175,7 @@ test('Irrigação viaja à lagoa automaticamente e retorna ao canteiro',async({p
     localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   await page.locator('[data-speed="6"]').click();
   await expect.poll(async()=>{
     const s=await snap(page);return s.journal.some(x=>x.includes('encheu o balde na lagoa'));
@@ -199,7 +203,7 @@ test('Fertilização busca esterco da vaca e entrega na plantação',async({page
     localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   await page.locator('[data-speed="6"]').click();
   await expect.poll(async()=> (await snap(page)).plots.find(p=>p.x===13&&p.y===11).fertilized,
     {timeout:35000,intervals:[300,600]}).toBe(true);
@@ -216,7 +220,7 @@ test('Cabana é concluída por trabalhador com madeira, não ao clicar',async({p
     s.workers[0].neg=[];localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   await selectOrder(page,'buildHome');
   await tile(page,12,11);
   const before=await snap(page);
@@ -242,7 +246,7 @@ test('Carregar save anterior remove vaca inicial automática, sem apagar animais
     localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   const migrated=await snap(page);
   expect(migrated.animals).toHaveLength(1);
   expect(migrated.animals[0].id).toBe(3);
