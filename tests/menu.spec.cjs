@@ -852,3 +852,56 @@ test('Fazenda tranquila: árvores completas, poço inteiro e nenhum sprite corta
     animations:'disabled'
   });
 });
+
+
+test('HUD pixel art: cabe na tela, mantém ações utilizáveis e captura estados',async({page})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.setViewportSize({width:1366,height:768});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  await page.locator('#new-game').click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator('#starter-confirm').click();
+  await expect(page.locator('body')).toHaveClass(/play-session/);
+  await expect(page.locator('#hud-tool-name')).toHaveText('ARAR');
+  await expect(page.locator('.tooltray')).toBeVisible();
+  await page.waitForTimeout(400);
+  const desktop=await page.evaluate(()=>{
+    const box=s=>document.querySelector(s).getBoundingClientRect();
+    const dock=box('.tooltray'),header=box('.topbar'),info=box('.hud-selection');
+    const skins=getComputedStyle(document.querySelector('.tool span')).backgroundImage;
+    return {dockLeft:dock.left,dockRight:dock.right,dockBottom:dock.bottom,
+      hudTop:header.top,hudBottom:header.bottom,infoBottom:info.bottom,
+      viewportWidth:innerWidth,viewportHeight:innerHeight,skin:skins,
+      tools:[...document.querySelectorAll('.tool')].map(b=>({name:b.dataset.tool,
+        visible:b.getBoundingClientRect().height>=58}))};
+  });
+  expect(desktop.dockLeft).toBeGreaterThanOrEqual(0);
+  expect(desktop.dockRight).toBeLessThanOrEqual(desktop.viewportWidth);
+  expect(desktop.dockBottom).toBeLessThanOrEqual(desktop.viewportHeight);
+  expect(desktop.hudBottom).toBeLessThanOrEqual(90);
+  expect(desktop.skin).toMatch(/Square(?:%20|\\s)Buttons/);
+  expect(desktop.tools.every(t=>t.visible)).toBe(true);
+  await page.screenshot({path:'screenshots/hud-pixel-desktop-1366x768.png',animations:'disabled'});
+  await page.locator('#orders-btn').click();
+  await expect(page.locator('#orders-panel')).toBeVisible();
+  await page.locator('[data-order-type="clear"]').click();
+  await expect(page.locator('#hud-tool-name')).toHaveText('LIMPAR');
+  await page.screenshot({path:'screenshots/hud-pixel-ordens-1366x768.png',animations:'disabled'});
+  await page.locator('#open-workers').click();
+  await expect(page.locator('#farm-sidebar')).toBeVisible();
+  await page.screenshot({path:'screenshots/hud-pixel-equipe-1366x768.png',animations:'disabled'});
+  await page.locator('#drawer-close').click();
+  await page.setViewportSize({width:390,height:844});
+  await page.waitForTimeout(300);
+  const mobile=await page.evaluate(()=>{
+    const b=s=>document.querySelector(s).getBoundingClientRect();
+    return {dock:b('.tooltray').toJSON(),header:b('.topbar').toJSON(),width:innerWidth,height:innerHeight,
+      tools:[...document.querySelectorAll('.tool')].map(t=>t.getBoundingClientRect().toJSON())};
+  });
+  expect(mobile.dock.left).toBeGreaterThanOrEqual(-1);
+  expect(mobile.dock.right).toBeLessThanOrEqual(mobile.width+1);
+  expect(mobile.dock.bottom).toBeLessThanOrEqual(mobile.height+1);
+  expect(mobile.tools.every(t=>t.left>=-1&&t.right<=mobile.width+1)).toBe(true);
+  await page.screenshot({path:'screenshots/hud-pixel-mobile-390x844.png',animations:'disabled'});
+  expect(errors).toEqual([]);
+});
