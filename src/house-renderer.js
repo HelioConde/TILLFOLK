@@ -60,11 +60,11 @@
       }
     }
 
-    // Telhado abaixado mais 1 tile original (+16 px), total 4×16 px.
+    // Telhado abaixado mais 1 tile original (+16 px), total 6×16 px.
     // No Canvas, a ordem das chamadas equivale ao z-index: desenhar o
     // telhado DEPOIS das paredes faz o beiral cobrir a parte superior da
     // fachada, sem ficar escondido por trás dela.
-    const roofDrop=4*TILE;
+    const roofDrop=6*TILE;
     if(roofVisible){
       for(let row=0;row<ROOF_ROWS;row++){
         for(let col=0;col<ROOF_COLS;col++){
