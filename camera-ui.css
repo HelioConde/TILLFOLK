@@ -64,6 +64,11 @@ body.play-session .camera-ui button:disabled{
  body.play-session .camera-ui{width:145px;top:186px;right:7px}
  body.play-session .camera-title{font-size:8px}
 }
+.camera-ui .camera-help{
+  margin:0;color:#d6d5ad;font:600 9px/1.4 system-ui,sans-serif;
+  text-align:center;max-width:100%;white-space:normal
+}
+@media(max-width:900px){body.play-session .camera-help{display:none}}
 @media(prefers-reduced-motion:reduce){
  body.play-session .camera-ui *{animation:none!important;transition:none!important}
 }
