@@ -23,6 +23,8 @@ jobs:
           node --check src/biomes.js
           node --check src/wild-world.js
           node --check src/game.js
+          node --check src/missions.js
+          node --test tests/tutorial-missions.test.cjs
           node --check src/game-hud.js
           node --check src/sprout-ui-skin.js
           node --check src/task-orders.js
@@ -37,8 +39,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
-          cp index.html styles.css menu.css menu-layout.css menu-refinement.css game-hud.css sprout-ui.css game-refinement.css camera-ui.css top-speed.css game-interface.css game-polish.css fullscreen-game.css house-building.css task-orders.css team-ux.css ui-polish.css _site/
-          cp src/biomes.js src/game.js src/wild-world.js src/blueprints.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
+          cp index.html tutorial-missions.css styles.css menu.css menu-layout.css menu-refinement.css game-hud.css sprout-ui.css game-refinement.css camera-ui.css top-speed.css game-interface.css game-polish.css fullscreen-game.css house-building.css task-orders.css team-ux.css ui-polish.css _site/
+          cp src/missions.js src/biomes.js src/game.js src/wild-world.js src/blueprints.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
@@ -52,6 +54,10 @@ jobs:
           test -f _site/src/biomes.js
           test -f _site/src/wild-world.js
           test -f _site/src/menu.js
+          test -f _site/src/missions.js
+          test -f _site/tutorial-missions.css
+          grep -q 'src/missions.js' _site/index.html
+          grep -q 'tutorial-missions.css' _site/index.html
           test -f _site/src/tutorial.js
           test -f _site/menu-refinement.css
           test -f _site/game-hud.css
