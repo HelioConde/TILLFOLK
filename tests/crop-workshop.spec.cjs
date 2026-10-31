@@ -40,6 +40,9 @@ test("work station exibe artes e receitas mesmo antes da construção",async({pa
    const atlas=new Image();
    atlas.src=Crafting.ITEMS_SPRITE;
    await atlas.decode();
+   const hoe=Crafting.itemFrame("hoe");
+   if(!hoe||hoe.x!==32||hoe.y!==0||hoe.w!==16||hoe.h!==16)
+     return {matched:[],missing:"hoe: coordenadas incorretas"};
    const keys=["axe","hoe","wateringCan"];
    const matched=[];
    for(const key of keys){
