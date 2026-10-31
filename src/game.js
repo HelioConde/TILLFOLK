@@ -7,16 +7,31 @@
   const canvas = document.querySelector("#world"), ctx = canvas.getContext("2d");
   const $ = (s) => document.querySelector(s);
   let worldPanX=0,worldPanY=0,panPointer=null,suppressMapClick=false;
-  let cameraZoom=1,lastMinimapFrame=-1000;
+  // A câmera tem escala renderizada e escala desejada: a roda não salta entre quadros.
+  let cameraZoom=1,targetCameraZoom=1,cameraAnchor=null,lastCameraFrame=0,lastMinimapFrame=-1000;
+  const ZOOM_MIN=1,ZOOM_MAX=4;
+  const zoomSteps=[1,1.25,1.5,1.75,2,2.5,3,3.5,4];
+  const movementKeys=new Set(),activeTouches=new Map();
+  let pinchGesture=null;
   const minimap=document.querySelector("#minimap"),miniCtx=minimap?.getContext("2d");
   if(miniCtx)miniCtx.imageSmoothingEnabled=false;
-  const zoomSteps=[1,1.25,1.5,1.75,2,2.25];
-  function zoomIndex(){return zoomSteps.reduce((best,z,i)=>Math.abs(z-cameraZoom)<Math.abs(zoomSteps[best]-cameraZoom)?i:best,0);}
+  const zoomIndex=()=>zoomSteps.reduce((best,z,i)=>
+    Math.abs(z-targetCameraZoom)<Math.abs(zoomSteps[best]-targetCameraZoom)?i:best,0);
+  const clampZoom=value=>Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,value));
   function syncCameraButtons(){
     const percent=$("#zoom-value");
-    if(percent)percent.textContent=Math.round(cameraZoom*100)+"%";
-    $("#zoom-out").disabled=cameraZoom<=zoomSteps[0];
-    $("#zoom-in").disabled=cameraZoom>=zoomSteps.at(-1);
+    if(percent)percent.textContent=Math.round(targetCameraZoom*100)+"%";
+    $("#zoom-out").disabled=targetCameraZoom<=ZOOM_MIN+0.001;
+    $("#zoom-in").disabled=targetCameraZoom>=ZOOM_MAX-0.001;
+  }
+  function captureCameraAnchor(screenX,screenY){
+    const view=$(".canvas-scroll").getBoundingClientRect(),
+      rect=canvas.getBoundingClientRect();
+    const x=Number.isFinite(screenX)?screenX:view.left+view.width/2,
+      y=Number.isFinite(screenY)?screenY:view.top+view.height/2;
+    return {screenX:x,screenY:y,
+      u:(x-rect.left)/Math.max(1,rect.width),
+      v:(y-rect.top)/Math.max(1,rect.height)};
   }
   let hoveredTile=null;
   const feedbackParticles=[];
@@ -63,26 +78,60 @@
     if(canvas.style.width!==width+"px")canvas.style.width=width+"px";
     if(canvas.style.height!==height+"px")canvas.style.height=height+"px";
   }
-  function setCameraZoom(value){
+  function setCameraZoom(value,screenX,screenY){
     if(!playing||!document.body.classList.contains("play-session"))return;
-    const next=zoomSteps.reduce((a,b)=>Math.abs(b-value)<Math.abs(a-value)?b:a);
-    const oldRect=canvas.getBoundingClientRect(),centerX=.5-worldPanX/Math.max(1,oldRect.width),
-      centerY=.5-worldPanY/Math.max(1,oldRect.height);
-    cameraZoom=next;
+    const next=clampZoom(Number(value));
+    if(!Number.isFinite(next))return;
+    if(Math.abs(next-targetCameraZoom)<.0001)return;
+    // Calcular coordenadas relativas do ponto sob o mouse antes do zoom.
+    cameraAnchor=captureCameraAnchor(screenX,screenY);
+    targetCameraZoom=next;
+    syncCameraButtons();
+  }
+  function updateCamera(now){
+    if(!playing||!document.body.classList.contains("play-session")){lastCameraFrame=now;return;}
+    const dt=Math.min(50,Math.max(0,now-(lastCameraFrame||now)));
+    lastCameraFrame=now;
+    const speed=(eventSpeed=dt)=>eventSpeed*.6*(movementKeys.has("shift")?1.7:1);
+    let vx=Number(movementKeys.has("a")||movementKeys.has("arrowleft"))-
+      Number(movementKeys.has("d")||movementKeys.has("arrowright"));
+    let vy=Number(movementKeys.has("w")||movementKeys.has("arrowup"))-
+      Number(movementKeys.has("s")||movementKeys.has("arrowdown"));
+    if(vx||vy){
+      const norm=Math.hypot(vx,vy);
+      worldPanX+=vx/norm*speed();
+      worldPanY+=vy/norm*speed();
+      cameraAnchor=null;
+      clampWorldPan();
+    }
+    if(Math.abs(targetCameraZoom-cameraZoom)<.0001){
+      cameraZoom=targetCameraZoom;cameraAnchor=null;return;
+    }
+    const fraction=reducedMotion.matches?1:1-Math.exp(-dt/95);
+    cameraZoom+=(targetCameraZoom-cameraZoom)*fraction;
+    if(Math.abs(targetCameraZoom-cameraZoom)<.002)cameraZoom=targetCameraZoom;
     fitWorldCanvas();
-    const rect=canvas.getBoundingClientRect();
-    worldPanX=(.5-centerX)*rect.width;worldPanY=(.5-centerY)*rect.height;
-    clampWorldPan();syncCameraButtons();
+    if(cameraAnchor){
+      const view=$(".canvas-scroll").getBoundingClientRect();
+      const rect=canvas.getBoundingClientRect();
+      worldPanX=cameraAnchor.screenX-(view.left+view.width/2)-
+        (cameraAnchor.u-.5)*rect.width;
+      worldPanY=cameraAnchor.screenY-(view.top+view.height/2)-
+        (cameraAnchor.v-.5)*rect.height;
+    }
+    clampWorldPan();
+    if(cameraZoom===targetCameraZoom)cameraAnchor=null;
   }
   function focusCameraAt(x,y){
     if(!playing)return;
+    cameraAnchor=null;
     const rect=canvas.getBoundingClientRect();
     worldPanX=(.5-x/W)*rect.width;
     worldPanY=(.5-y/H)*rect.height;
     clampWorldPan();
   }
   function resetCamera(){
-    cameraZoom=1;worldPanX=0;worldPanY=0;
+    cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;worldPanX=0;worldPanY=0;
     fitWorldCanvas();clampWorldPan();syncCameraButtons();
   }
   function paintMinimap(){
@@ -137,19 +186,34 @@
         H/2-worldPanY/rect.height*H+move[1]);
     }else if(event.key==="Enter"||event.key===" "){event.preventDefault();resetCamera();}
   });
+  // Oxygen Not Included: WASD move a câmera, H volta para o centro da colônia.
   document.addEventListener("keydown",event=>{
-    if(!playing||event.altKey||event.ctrlKey||event.metaKey||event.repeat||
+    if(!playing||!document.body.classList.contains("play-session")||
+       event.altKey||event.ctrlKey||event.metaKey||
        event.target.closest("input,textarea,select,button,[contenteditable]")||
-       document.querySelector("dialog[open]"))return;
-    if(event.key==="m"||event.key==="M"){$("#minimap-toggle").click();return;}
-    if(event.key==="+"||event.key==="="){event.preventDefault();$("#zoom-in").click();}
-    if(event.key==="-"){event.preventDefault();$("#zoom-out").click();}
-    if(event.key==="0"){event.preventDefault();resetCamera();}
+       document.querySelector("dialog[open]")||
+       document.body.classList.contains("drawer-open"))return;
+    const key=event.key.toLowerCase();
+    if(["w","a","s","d","arrowup","arrowleft","arrowdown","arrowright"].includes(key)){
+      movementKeys.add(key);event.preventDefault();return;
+    }
+    if(key==="shift"){movementKeys.add("shift");return;}
+    if(event.repeat)return;
+    if(key==="h"){event.preventDefault();focusCameraAt(W/2,H/2);return;}
+    if(key==="m"){$("#minimap-toggle").click();return;}
+    if(key==="+"||key==="="){event.preventDefault();$("#zoom-in").click();}
+    if(key==="-"){event.preventDefault();$("#zoom-out").click();}
+    if(key==="0"){event.preventDefault();resetCamera();}
   });
+  document.addEventListener("keyup",event=>movementKeys.delete(event.key.toLowerCase()));
+  window.addEventListener("blur",()=>movementKeys.clear());
+  // Zoom contínuo: trackpad e roda do mouse compartilham a mesma sensibilidade.
   canvas.addEventListener("wheel",event=>{
     if(!playing||!document.body.classList.contains("play-session"))return;
     event.preventDefault();
-    setCameraZoom(zoomSteps[Math.max(0,Math.min(zoomSteps.length-1,zoomIndex()+(event.deltaY<0?1:-1)))]);
+    const unit=event.deltaMode===1?16:event.deltaMode===2?250:1;
+    const delta=Math.max(-180,Math.min(180,event.deltaY*unit));
+    setCameraZoom(targetCameraZoom*Math.exp(-delta*.0018),event.clientX,event.clientY);
   },{passive:false});
   syncCameraButtons();
   window.addEventListener("resize",fitWorldCanvas);
@@ -399,7 +463,8 @@
     recalcTasks(); // Limpar ordens já concluídas antes da primeira renderização.
     playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false;
     document.body.classList.add("play-session","focus-game");
-    worldPanX=0;worldPanY=0;cameraZoom=1;hoveredTile=null;feedbackParticles.length=0;closeDrawer();refresh();save();
+    worldPanX=0;worldPanY=0;cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;
+    movementKeys.clear();activeTouches.clear();pinchGesture=null;hoveredTile=null;feedbackParticles.length=0;closeDrawer();refresh();save();
     minimap.hidden=window.innerWidth<=700;
     $("#minimap-toggle").setAttribute("aria-expanded",String(!minimap.hidden));
     $("#minimap-toggle").textContent=minimap.hidden?"+":"−";
@@ -1133,28 +1198,71 @@
   });
   // Segure Shift e arraste no desktop; no celular, arraste com o dedo para explorar.
   // O cálculo da célula utiliza o retângulo real do canvas expandido/cortado.
+  function pinchCoordinates(){
+    const list=[...activeTouches.values()];
+    if(list.length<2)return null;
+    const [a,b]=list;
+    return {x:(a.x+b.x)/2,y:(a.y+b.y)/2,distance:Math.hypot(a.x-b.x,a.y-b.y)};
+  }
   canvas.addEventListener("pointerdown",event=>{
     if(!playing||!document.body.classList.contains("play-session"))return;
+    if(event.pointerType==="touch"){
+      activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+      if(activeTouches.size===2){
+        const p=pinchCoordinates();
+        pinchGesture={distance:p.distance,zoom:targetCameraZoom,
+          anchor:captureCameraAnchor(p.x,p.y)};
+        panPointer=null;suppressMapClick=true;
+      }else if(activeTouches.size===1){
+        suppressMapClick=false;
+        panPointer={id:event.pointerId,x:event.clientX,y:event.clientY,
+          lastX:event.clientX,lastY:event.clientY,moved:false};
+      }
+      canvas.setPointerCapture(event.pointerId);
+      hoveredTile=null;
+      return;
+    }
     suppressMapClick=false;
-    if(event.pointerType!=="touch"&&!event.shiftKey&&event.button!==1)return;
+    if(!event.shiftKey&&event.button!==1)return;
     hoveredTile=null;
-    panPointer={id:event.pointerId,x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,moved:false};
+    panPointer={id:event.pointerId,x:event.clientX,y:event.clientY,
+      lastX:event.clientX,lastY:event.clientY,moved:false};
     canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener("pointermove",event=>{
     if(playing&&!panPointer&&event.pointerType!=="touch")hoveredTile=buildCellFromEvent(event);
     if(playing&&selectedTool==="construir"&&!panPointer)buildHover=buildCellFromEvent(event);
+    if(event.pointerType==="touch"&&activeTouches.has(event.pointerId)){
+      activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
+      if(pinchGesture&&activeTouches.size>=2){
+        const p=pinchCoordinates();
+        cameraAnchor={...pinchGesture.anchor,screenX:p.x,screenY:p.y};
+        targetCameraZoom=clampZoom(pinchGesture.zoom*p.distance/Math.max(1,pinchGesture.distance));
+        syncCameraButtons();suppressMapClick=true;
+        return;
+      }
+    }
     if(!panPointer||panPointer.id!==event.pointerId)return;
     const dx=event.clientX-panPointer.lastX,dy=event.clientY-panPointer.lastY;
     if(Math.hypot(event.clientX-panPointer.x,event.clientY-panPointer.y)>6)panPointer.moved=true;
-    if(panPointer.moved){worldPanX+=dx;worldPanY+=dy;clampWorldPan();}
+    if(panPointer.moved){
+      cameraAnchor=null;worldPanX+=dx;worldPanY+=dy;clampWorldPan();
+    }
     panPointer.lastX=event.clientX;panPointer.lastY=event.clientY;
   });
   function finishMapPan(event){
-    if(!panPointer||panPointer.id!==event.pointerId)return;
-    suppressMapClick=panPointer.moved;
+    if(event.pointerType==="touch"){
+      activeTouches.delete(event.pointerId);
+      if(pinchGesture){
+        suppressMapClick=true;
+        if(activeTouches.size<2){pinchGesture=null;panPointer=null;}
+      }
+    }
+    if(panPointer&&panPointer.id===event.pointerId){
+      suppressMapClick=panPointer.moved||suppressMapClick;
+      panPointer=null;
+    }
     if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
-    panPointer=null;
   }
   canvas.addEventListener("pointerup",finishMapPan);
   canvas.addEventListener("pointercancel",finishMapPan);
@@ -1503,7 +1611,7 @@
     save();playing=false;closeDrawer();setTool("till");
     document.body.classList.remove("play-session","focus-game");
     canvas.style.removeProperty("--pan-x");canvas.style.removeProperty("--pan-y");
-    cameraZoom=1;syncCameraButtons();
+    cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;movementKeys.clear();syncCameraButtons();
     if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
     $(".app-shell").inert=true;$("#menu").hidden=false;
     $("#continue").disabled=!localStorage.getItem(SAVE_KEY);
@@ -1534,6 +1642,7 @@
       if(uiAccumulator>.3){refresh();uiAccumulator=0;}
       if(saveAccumulator>8){save();saveAccumulator=0;}
     }
+    updateCamera(now);
     draw();
     if(playing&&now-lastMinimapFrame>350){paintMinimap();lastMinimapFrame=now;}
     requestAnimationFrame(loop);
