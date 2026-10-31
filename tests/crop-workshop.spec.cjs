@@ -32,6 +32,7 @@ test("work station exibe artes e receitas mesmo antes da construção",async({pa
  await expect(page.locator("#workshop-tools button")).toHaveCount(await page.evaluate(()=>window.TillfolkCrafting.RECIPES.length));
  await expect(page.locator("#workshop-recipes button")).toHaveCount(19);
  await expect(page.locator('[data-craft-tool="axe"]')).toBeDisabled();
+ await expect(page.locator('[data-craft-tool="stoneAxe"]')).toHaveCount(0);
  await expect(page.locator("#workshop-status")).toContainText("10 gravetos");
  // Verifica pixels reais da spritesheet, não imagens geradas ou ícones inventados.
  const originalSprites=await page.evaluate(async()=>{
@@ -39,7 +40,7 @@ test("work station exibe artes e receitas mesmo antes da construção",async({pa
    const atlas=new Image();
    atlas.src=Crafting.ITEMS_SPRITE;
    await atlas.decode();
-   const keys=["axe","stoneAxe","hoe","wateringCan"];
+   const keys=["axe","hoe","wateringCan"];
    const matched=[];
    for(const key of keys){
      const frame=Crafting.itemFrame(key);
@@ -58,7 +59,7 @@ test("work station exibe artes e receitas mesmo antes da construção",async({pa
    return {matched,missing:null,atlasSize:[atlas.naturalWidth,atlas.naturalHeight]};
  });
  expect(originalSprites).toEqual({
-   matched:["axe","stoneAxe","hoe","wateringCan"],missing:null,atlasSize:[64,48]
+   matched:["axe","hoe","wateringCan"],missing:null,atlasSize:[64,48]
  });
  await expect(page.locator('[data-craft-tool="shovel"] .workstation-art-note')).toBeVisible();
  await expect(page.locator('[data-craft-tool="pickaxe"] .workstation-art-note')).toBeVisible();
