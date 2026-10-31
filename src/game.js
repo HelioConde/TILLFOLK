@@ -853,10 +853,17 @@
     specialtyTooltip.style.left="0px";
     specialtyTooltip.style.top="0px";
     const rect=button.getBoundingClientRect();
+    const dialog=$("#starter-dialog").getBoundingClientRect();
     const width=specialtyTooltip.offsetWidth,height=specialtyTooltip.offsetHeight;
-    const left=Math.max(10,Math.min(innerWidth-width-10,rect.left+rect.width/2-width/2));
-    const top=rect.top-height-10>=8?rect.top-height-10:
-      Math.min(Math.max(8,innerHeight-height-10),rect.bottom+10);
+    // Mantém a dica dentro da janela, inclusive nos cantos do desktop.
+    const minX=Math.max(10,dialog.left+10);
+    const maxX=Math.max(minX,Math.min(innerWidth-width-10,dialog.right-width-10));
+    const left=Math.max(minX,Math.min(maxX,rect.left+rect.width/2-width/2));
+    const topLimit=Math.max(8,dialog.top+8);
+    const bottomLimit=Math.min(innerHeight-8,dialog.bottom-8);
+    const above=rect.top-height-10;
+    const top=above>=topLimit?above:
+      Math.max(topLimit,Math.min(bottomLimit-height,rect.bottom+10));
     specialtyTooltip.style.left=Math.round(left)+"px";
     specialtyTooltip.style.top=Math.round(top)+"px";
   }
