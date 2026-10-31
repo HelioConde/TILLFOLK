@@ -2,27 +2,13 @@
 #menu .title-content{
   display:grid;
   grid-template-columns:minmax(285px,392px) minmax(0,1fr);
-  grid-template-rows:auto minmax(0,1fr) auto auto;
-  grid-template-areas:"top top" "nav space" "cards cards" "footer footer";
+  grid-template-rows:auto minmax(0,1fr) auto;
+  grid-template-areas:"top top" "nav ." "footer footer";
   gap:clamp(8px,1.4vh,13px);
   min-height:100dvh;
   padding:clamp(13px,2vh,25px) clamp(20px,3vw,48px) 12px;
 }
 #menu .title-navigation{grid-area:nav;align-self:center}
-#menu .title-cards{
-  grid-area:cards;position:relative;inset:auto;
-  justify-self:center;align-self:end;
-  margin:0;width:min(100%,920px);
-  gap:12px;grid-template-columns:repeat(3,minmax(0,1fr));
-}
-#menu .title-cards article{
-  min-height:0;padding:9px 12px 8px;
-  background:#0e2e21f2;box-shadow:0 7px 18px #061e17ac;
-}
-#menu .title-card-preview{
-  height:clamp(36px,5.6vh,53px);margin:5px 0;
-}
-#menu .title-cards p{font-size:11px;line-height:1.35}
 #menu .title-version{grid-area:footer;margin:0;min-height:18px}
 #menu .title-topline{grid-area:top}
 #menu .title-scene-canvas{
@@ -78,13 +64,9 @@
   justify-content:flex-start;gap:13px;min-height:100dvh;
  }
  #menu .title-navigation{align-self:center}
- #menu .title-cards{width:min(100%,690px);grid-template-columns:repeat(3,minmax(0,1fr));margin-top:8px;flex:0 0 auto}
  #menu .title-version{width:100%;margin-top:auto}
 }
 @media(max-width:550px){
- #menu .title-cards{grid-template-columns:1fr;gap:6px}
- #menu .title-cards article{padding:9px 11px}
- #menu .title-card-preview{display:none}
  .help-guide[open]{gap:11px}
  .help-guide .guide-step{grid-template-columns:1fr;gap:12px}
  .help-guide .guide-art{max-height:205px;object-fit:cover}
@@ -95,9 +77,6 @@
 }
 @media(max-height:640px) and (min-width:851px){
  #menu .title-content{gap:5px;padding-top:10px;padding-bottom:6px}
- #menu .title-cards article{padding:6px 9px}
- #menu .title-card-preview{height:32px;margin:2px 0}
- #menu .title-cards p{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){
  #menu .title-scene-canvas{animation:none!important;transform:none!important}
