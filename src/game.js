@@ -714,42 +714,41 @@
     carry:"Leva os produtos colhidos ao armazém e libera o canteiro."
   };
   function renderStarters(){
-    const tasks=Object.keys(labels);
+    const availableTasks=Object.keys(labels);
     $("#starter-slots").innerHTML=starters.map((person,index)=>{
-      const count=person.skills.length,bonus=count===1?100:count===2?60:count===3?30:0;
-      const kind=count===1?"Especialista":count===2?"Multitalento":count===3?"Versátil":"Generalista";
-      const positive=person.skills.length?person.skills.map(type=>
-        '<div class="recruit-trait positive"><span class="recruit-trait-icon">'+icons[type]+'</span><div><strong>'+labels[type]+'</strong><small>'+activityDetails[type]+'</small></div><b>+'+bonus+'%</b></div>'
-      ).join(""):'<p class="recruit-empty">Nenhuma especialidade: executa todas as tarefas permitidas na velocidade normal.</p>';
-      const negative=person.neg.length?person.neg.map(type=>
-        '<div class="recruit-trait forbidden"><span class="recruit-trait-icon">✕</span><div><strong>Não pode '+labels[type].toLowerCase()+'</strong><small>'+activityDetails[type]+'</small></div></div>'
-      ).join(""):'<p class="recruit-empty positive-note">✓ Sem restrições. Pode realizar todas as atividades da fazenda.</p>';
-      const permitted=tasks.length-person.neg.length;
-      const workTable=tasks.map(type=>{
+      const count=person.skills.length;
+      const bonus=count===1?100:count===2?60:count===3?30:0;
+      const profile=count===1?"Especialista":count===2?"Multitalento":count===3?"Versátil":"Generalista";
+      const allowed=availableTasks.length-person.neg.length;
+      const skills=person.skills.length
+        ?person.skills.map(type=>'<span class="starter-chip" title="'+escapeHtml(activityDetails[type])+'">'+icons[type]+' '+labels[type]+'</span>').join("")
+        :'<span class="starter-chip none">Sem especialidade · velocidade normal</span>';
+      const blocked=person.neg.length
+        ?person.neg.map(type=>'<span class="starter-chip negative" title="'+escapeHtml(activityDetails[type])+'">✕ '+labels[type]+'</span>').join("")
+        :'<span class="starter-chip none">✓ Nenhuma restrição</span>';
+      const times=availableTasks.map(type=>{
         const forbidden=person.neg.includes(type);
-        const duration=forbidden?'Proibido':Math.round(baseTime[type]/bonusForCandidate(person,type))+'s';
-        const active=person.skills.includes(type);
-        return '<div class="recruit-work-row '+(forbidden?'work-forbidden':active?'work-bonus':'')+'"><span>'+icons[type]+' '+labels[type]+'</span><b>'+duration+'</b></div>';
+        const faster=person.skills.includes(type);
+        const duration=forbidden?"Proibido":Math.round(baseTime[type]/bonusForCandidate(person,type))+"s";
+        return '<div class="recruit-work-row '+(forbidden?'work-forbidden':faster?'work-bonus':'')+'"><span>'+icons[type]+' '+labels[type]+'</span><b>'+duration+'</b></div>';
       }).join("");
       return '<article class="starter-slot" aria-label="Trabalhador inicial '+(index+1)+'">'+
-        '<div class="starter-card-top"><span>PERSONAGEM 0'+(index+1)+'</span><span class="starter-kind">'+kind+'</span></div>'+
-        '<div class="starter-stage"><div class="starter-stage-top">✦ NOVO TRABALHADOR <span>DISPONÍVEL</span></div>'+
-        '<canvas width="200" height="152" class="starter-portrait" data-slot="'+index+'" role="img" aria-label="Sprite ampliado de '+escapeHtml(person.name)+'"></canvas>'+
-        '<span class="starter-stage-bottom">✦ PRONTO PARA TRABALHAR ✦</span></div>'+
-        '<div class="starter-person"><div class="starter-name-wrap"><label for="starter-name-'+index+'">NOME DO PERSONAGEM <span>✎ EDITÁVEL</span></label>'+
+        '<div class="starter-card-top"><span>TRABALHADOR 0'+(index+1)+'</span><span class="starter-kind">'+profile+'</span></div>'+
+        '<div class="starter-identity"><div class="starter-avatar-frame"><canvas width="78" height="88" class="starter-portrait" data-slot="'+index+'" role="img" aria-label="Sprite de '+escapeHtml(person.name)+'"></canvas></div>'+
+        '<div class="starter-person"><div class="starter-name-wrap"><label for="starter-name-'+index+'">Nome do personagem <span>✎ Editável</span></label>'+
         '<input class="starter-name-input" id="starter-name-'+index+'" data-starter-name="'+index+'" maxlength="18" value="'+escapeHtml(person.name)+'" autocomplete="off" spellcheck="false">'+
-        '<small>'+count+' especialidade'+(count===1?'':'s')+' · '+person.neg.length+' restrição'+(person.neg.length===1?'':'ões')+'</small></div></div>'+
-        '<div class="recruit-summary"><div><span>BÔNUS DE TRABALHO</span><strong>+'+bonus+'%</strong></div><div><span>TAREFAS PERMITIDAS</span><strong>'+permitted+' / '+tasks.length+'</strong></div></div>'+
-        '<div class="starter-info-scroll">'+
-        '<div class="starter-section-title">✦ HABILIDADES POSITIVAS</div>'+
-        '<div class="starter-skills">'+positive+'</div>'+
-        '<div class="starter-section-title">✕ TRAÇOS NEGATIVOS</div>'+
-        '<div class="starter-negatives">'+negative+'</div>'+
-        '<details class="starter-activity-details"><summary>◷ Comparar tempo em todas as atividades</summary>'+
-        '<p>Tempo em velocidade 1×, sem contar deslocamento. Uma tarefa proibida não poderá ser executada por este trabalhador.</p>'+
-        '<div class="recruit-work-grid">'+workTable+'</div></details>'+
+        '<small>'+count+' especialidade'+(count===1?'':'s')+' · '+person.neg.length+' restrição'+(person.neg.length===1?'':'ões')+'</small></div></div></div>'+
+        '<div class="recruit-summary">'+
+        '<div><span>Bônus nas especialidades</span><strong>+'+bonus+'%</strong></div>'+
+        '<div><span>Tarefas permitidas</span><strong>'+allowed+'/'+availableTasks.length+'</strong></div></div>'+
+        '<div class="starter-highlights">'+
+        '<section aria-label="Especialidades de '+escapeHtml(person.name)+'"><h3 class="starter-highlight-heading">✦ Especialidades <small>'+count+'</small></h3><div class="starter-chip-list">'+skills+'</div></section>'+
+        '<section aria-label="Restrições de '+escapeHtml(person.name)+'"><h3 class="starter-highlight-heading">✕ Não pode realizar <small>'+person.neg.length+'</small></h3><div class="starter-chip-list">'+blocked+'</div></section>'+
         '</div>'+
-        '<button class="starter-reroll" type="button" data-reroll="'+index+'">↻ Sortear outro personagem</button>'+
+        '<details class="starter-activity-details"><summary>Comparar tempos por tarefa</summary>'+
+        '<p>Tempo estimado em 1×, sem deslocamento. Qualquer tarefa não proibida pode ser executada.</p>'+
+        '<div class="recruit-work-grid">'+times+'</div></details>'+
+        '<button class="starter-reroll" type="button" data-reroll="'+index+'" aria-label="Sortear outro trabalhador para a posição '+(index+1)+'">↻ Trocar este trabalhador</button>'+
         '</article>';
     }).join("");
     redrawStarterAvatars();
