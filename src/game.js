@@ -877,12 +877,14 @@
         "Nenhum trabalhador tem caminho livre até esta ordem":
         blockers[0]||"Nenhum trabalhador disponível";
     };
+    // Cache por atualização para não repetir busca de caminho em listas grandes.
+    const diagnostics=new Map(tasks.map(t=>[t.id,diagnose(t)]));
     const active=tasks.filter(t=>Boolean(t.assigned));
-    const ready=tasks.filter(t=>!t.assigned&&!diagnose(t));
-    const waiting=tasks.filter(t=>!t.assigned&&Boolean(diagnose(t)));
+    const ready=tasks.filter(t=>!t.assigned&&!diagnostics.get(t.id));
+    const waiting=tasks.filter(t=>!t.assigned&&Boolean(diagnostics.get(t.id)));
     const renderOrder=t=>{
       const w=state.workers.find(w=>w.id===t.assigned);
-      const reason=diagnose(t);
+      const reason=diagnostics.get(t.id);
       const status=reason?"waiting":w?"working":"ready";
       const statusText=reason?"Aguardando":w?"Em execução":"Pronta";
       const statusDetail=reason|| (w?escapeHtml(w.name)+" · trabalhando":"Aguardando atribuição");
