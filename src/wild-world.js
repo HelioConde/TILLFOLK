@@ -123,8 +123,13 @@
       const x=1+Math.floor(rng()*(w-2)),y=1+Math.floor(rng()*(h-2));
       const id=key(x,y);
       if(occupied.has(id)||waters.has(id)||cultivated.has(id)||nearStart(x,y,w,h))continue;
-      if(!Biomes.at(world,x,y).farmable&&rng()<.75)continue;
-      const kind=day%5===0&&rng()<.12?"tree":rng()<.30?"mushroom":rng()<.61?"flowers":"grass";
+      const biome=Biomes.kind(world,x,y);
+      // Neve e areia não geram grama tropical espontaneamente.
+      if(biome==="i"||biome==="s")continue;
+      const kind=biome==="p"?"mushroom":
+        biome==="w"?(rng()<.55?"mushroom":"herbs"):
+        day%5===0&&rng()<.12?"tree":
+        rng()<.30?"mushroom":rng()<.61?"flowers":"grass";
       world.objects.push({x,y,kind,variant:Math.floor(rng()*7),age:0});
       occupied.add(id);newCount++;
     }
