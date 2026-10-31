@@ -1,3 +1,7 @@
+async function continueIfMenuVisible(page){
+  if(await page.locator('#menu').isVisible())await page.locator('#continue').click();
+  await expect(page.locator('#menu')).toBeHidden();
+}
 const {test,expect}=require('@playwright/test');
 const BASE='http://127.0.0.1:4173/';
 const snap=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
@@ -39,7 +43,7 @@ test('O jogador decide cada etapa: arar não cria fertilizar, semear ou regar',a
     localStorage.setItem(key,JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   await expect(page.locator('#task-count')).toHaveText('0');
   state=await snap(page);
   const p=state.plots.find(p=>p.x===13&&p.y===11);
@@ -78,7 +82,7 @@ test('Fila manual aceita ordens futuras, aguarda pré-requisitos e salva no loca
   await page.screenshot({path:'screenshots/ordens-fila-prerequisitos.png',animations:'disabled'});
   await page.locator('#drawer-close').click();
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   s=await snap(page);
   expect(s.orders).toHaveLength(2);
   expect(s.orders.map(x=>x.type)).toEqual(['till','clear']);
@@ -95,7 +99,7 @@ test('Saves anteriores não são interpretados como ordem para cultivo automáti
     localStorage.setItem(key,JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   const s=await snap(page);
   expect(s.orders).toEqual([]);
   expect(s.plots.find(p=>p.x===13&&p.y===11).tilled).toBe(true);
@@ -132,7 +136,7 @@ test('Muitas ordens bloqueadas são agrupadas e um trabalhador ocioso explica a 
     localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   await page.locator('#open-tasks').click();
   const waiting=page.locator('#tasks [data-task-group="waiting"]');
   await expect(waiting).toBeVisible();
@@ -155,7 +159,7 @@ test('Muitas ordens bloqueadas são agrupadas e um trabalhador ocioso explica a 
     localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   await expect.poll(async()=>{
     const s=await snap(page);
     return s.workers.some(w=>w.task&&w.task.endsWith(':clear'));
@@ -192,7 +196,7 @@ test('Distribuição evita trabalhador parado com ordens compatíveis na fila',a
     localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   await expect.poll(async()=>{
     const s=await snap(page);
     return s.workers.map(w=>w.task);
@@ -224,7 +228,7 @@ test('Universal: uma ordem por clique, avançando pelo estado real do terreno',a
       localStorage.setItem(key,JSON.stringify(s));
     },{...fields,pos});
     await page.reload({waitUntil:'networkidle'});
-    await page.locator('#continue').click();
+    await continueIfMenuVisible(page);
     await tile(page,pos.x,pos.y);
     return (await snap(page)).orders.map(o=>o.type);
   }
@@ -241,7 +245,7 @@ test('Universal: uma ordem por clique, avançando pelo estado real do terreno',a
     localStorage.setItem(key,JSON.stringify(s));
   },pos);
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   await tile(page,pos.x,pos.y);
   expect((await snap(page)).orders.map(o=>o.type)).toEqual(['clear']);
 });
@@ -276,7 +280,7 @@ test('Arrastar no mapa enfileira uma área e funciona após zoom, sem duplicar o
   const after=await snap(page);
   expect(after.orders.length).toBeGreaterThan(before.orders.length);
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   expect((await snap(page)).orders).toEqual(after.orders);
   await page.locator('[data-tool="remover"]').click();
   await drag(a,b,a+3,b+2);
