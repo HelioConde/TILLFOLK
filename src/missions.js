@@ -12,14 +12,22 @@
         working:["Tô trazendo mais uns galhos! Essa bancada vai ficar boa.","Já dá pra imaginar nossas ferramentas aqui. Só falta terminar a montagem."]
       },tool:"construir",target:"workstation"},
     {key:"axe",goal:1,icon:"🪓",title:"Nossa primeira ferramenta",
-      subtitle:"Fabrique um machado na Work Station",
-      help:"Clique na bancada pronta ou em Bancada e receitas. Junte 8 gravetos e 3 fibras de grama, abra as receitas e escolha Fabricar machado. A ferramenta ficará disponível para toda a equipe.",
+      subtitle:"Fabrique um machado de pedra na Work Station",
+      help:"Abra Bancada e receitas. Colete 8 gravetos, 3 fibras de grama e 3 pedras pequenas. Fabrique o machado de pedra para cortar o tronco da saída leste.",
       complete:"Finalmente um machado! Agora podemos cortar madeira de verdade.",
       dialogue:{
         intro:["Nossa, finalmente uma bancada! Agora só falta fazer um machado.","Será que dá pra montar um machado com esses materiais? Vamos tentar!"],
         waiting:["A receita do machado tá na bancada. Confere os gravetos e as fibras.","Se estiver faltando material, ainda tem mato pra limpar por aí."],
         working:["Pronto, vou separar os materiais. Cuidado com a lâmina!","Com o machado feito, nosso trabalho vai render muito mais."]
       },tool:"construir",target:"axe"},
+    {key:"exit",goal:1,icon:"🪵",title:"Abra a passagem",subtitle:"Corte o tronco caído na saída leste",
+      help:"Use o botão Mostrar no mapa para localizar o único corredor na encosta a leste. Com o machado de pedra já fabricado, selecione Limpar e clique no tronco caído. Espere um trabalhador abrir o caminho.",
+      complete:"Agora o vale ficou maior! A passagem para as outras regiões está aberta.",
+      dialogue:{
+        intro:["Olha ali aquele tronco atravessado. Nosso machado de pedra deve dar conta!","A montanha fecha o vale inteiro, mas tem uma passagem a leste. Vamos lá?"],
+        waiting:["O tronco está bloqueando a saída. Marca ele pra gente cortar!","Vai ser bom conhecer o que existe do outro lado. Vamos abrir caminho?"],
+        working:["Cuidado com as lascas! Mais um pouquinho e a passagem abre.","Já estou trabalhando nesse tronco. Dá até pra enxergar o outro lado!"]
+      },tool:"clear",target:"exit"},
     {key:"grass",goal:1,icon:"🌾",title:"Um cantinho para chamar de nosso",subtitle:"Limpe um tufo de grama alta",
       help:"Na barra de ferramentas, abra Ordens → Limpar e clique em um tufo de grama alta. Universal também funciona sobre o tufo. A equipe vai até lá e limpa quando terminar o caminho.",
       complete:"Aí sim! Já temos um pedacinho de chão livre.",
@@ -87,7 +95,7 @@
   ]);
 
   const artNames=Object.freeze({
-    workstation:"Work Station",axe:"Machado da oficina",
+    workstation:"Work Station",axe:"Machado de pedra",exit:"Tronco caído na passagem",
     grass:"Tufo de grama alta",seed:"Grama alta: pode soltar sementes",
     till:"Terra arada",sow:"Semente plantada",water:"Planta regada",
     harvest:"Plantação madura",carry:"Colheita",plan:"Cabana"
@@ -141,6 +149,8 @@
         ctx.fillStyle="#603b20";ctx.fillRect(x+size*.7,y+size*.71,size*.12,size*.12);
         ctx.fillStyle="#edcc78";ctx.fillRect(x+size*.73,y+size*.73,size*.07,size*.07);
       }
+    }else if(key==="exit"){
+      stamp(ctx,"forage",0,80,32,16,x+size*.02,y+size*.3,size*.96,size*.5);
     }else if(key==="till")soil();
     else if(key==="sow"){
       soil();ctx.fillStyle="#563925";ctx.fillRect(x+size*.39,y+size*.4,size*.23,size*.2);
@@ -184,14 +194,16 @@
     return canvas;
   }
   const emptyStats=()=>Object.fromEntries(STEPS.map(step=>[step.key,0]));
-  function create(){return {active:true,step:0,stats:emptyStats(),finished:false,version:2};}
+  function create(){return {active:true,step:0,stats:emptyStats(),finished:false,version:3};}
   function normalize(raw){
     if(!raw||typeof raw!=="object")return {active:false,step:0,stats:emptyStats(),finished:false,version:1};
     const stats=emptyStats();
     for(const key of Object.keys(stats))stats[key]=Math.max(0,Math.min(9999,Number(raw.stats?.[key])||0));
-    const legacy=Number(raw.version||1)<2;
-    const step=Math.max(0,Math.min(STEPS.length,Math.floor(Number(raw.step)||0)+(legacy?2:0)));
-    return {active:raw.active===true,step,stats,finished:raw.finished===true||step>=STEPS.length,version:2};
+    const version=Number(raw.version)||1;
+    const previous=Math.floor(Number(raw.step)||0);
+    // Saves v1 não tinham oficina; saves v2 não tinham a missão da passagem.
+    const step=Math.max(0,Math.min(STEPS.length,version<2?previous+3:version<3&&previous>=2?previous+1:previous));
+    return {active:raw.active===true,step,stats,finished:raw.finished===true||step>=STEPS.length,version:3};
   }
   function current(state){
     const progress=state?.tutorial;
