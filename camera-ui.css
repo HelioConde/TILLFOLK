@@ -61,7 +61,7 @@ body.play-session .camera-ui button:disabled{
  body.play-session #zoom-value{font-size:11px}
 }
 @media(max-width:460px){
- body.play-session .camera-ui{width:145px;top:155px;right:7px}
+ body.play-session .camera-ui{width:145px;top:186px;right:7px}
  body.play-session .camera-title{font-size:8px}
 }
 @media(prefers-reduced-motion:reduce){
