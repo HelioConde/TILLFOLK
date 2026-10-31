@@ -51,10 +51,20 @@
       stats.drawn++;
     }
 
-    // Telhado descido em três tiles ORIGINAIS (3×16px de mundo).
-    // Desenhar antes da fachada preserva a junção com as paredes:
-    // o beiral fica atrás da parede, em vez de cobrir janelas/porta.
-    const roofDrop=3*TILE;
+    // Base: paredes na primeira camada, como em uma construção do Slime-Harvest.
+    for(let row=0;row<WALL_ROWS;row++){
+      for(let col=0;col<WALL_COLS;col++){
+        const [sx,sy]=wallAtlas(col,row);
+        stamp("walls",sx,sy,facadeX+col*cell,facadeY+row*cell);
+        stats.walls++;
+      }
+    }
+
+    // Telhado abaixado mais 1 tile original (+16 px), total 4×16 px.
+    // No Canvas, a ordem das chamadas equivale ao z-index: desenhar o
+    // telhado DEPOIS das paredes faz o beiral cobrir a parte superior da
+    // fachada, sem ficar escondido por trás dela.
+    const roofDrop=4*TILE;
     if(roofVisible){
       for(let row=0;row<ROOF_ROWS;row++){
         for(let col=0;col<ROOF_COLS;col++){
@@ -67,20 +77,12 @@
       stats.chimneys++;
     }
 
-    // Paredes montadas na mesma grade 2x, sobre a parte inferior da cobertura.
-    for(let row=0;row<WALL_ROWS;row++){
-      for(let col=0;col<WALL_COLS;col++){
-        const [sx,sy]=wallAtlas(col,row);
-        stamp("walls",sx,sy,facadeX+col*cell,facadeY+row*cell);
-        stats.walls++;
-      }
-    }
-    // Janelas descidas exatamente uma célula renderizada (32px em 2x).
+    // Aberturas ficam na frente da cobertura. O beiral termina exatamente
+    // no topo da última fileira, sem esconder as janelas nem a porta.
     for(const col of [1,3]){
       stamp("walls",3,2,facadeX+col*cell,facadeY+3*cell);
       stats.windows++;
     }
-    // A porta permanece na entrada, na última fileira da fachada.
     stamp("door",5,0,facadeX+2*cell,facadeY+3*cell);
     stats.doors++;
 
