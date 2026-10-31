@@ -83,7 +83,7 @@
       const resourceSites=[];
       for(let y=cy-9;y<=cy+9;y++)for(let x=cx-9;x<=cx+9;x++){
         if(!inMap(x,y,w,h)||used.has(key(x,y))||waters.has(key(x,y))||
-           !Biomes.terrainAt(world,x,y).farmable)continue;
+           !Biomes.at(world,x,y).farmable)continue;
         const distance=Math.abs(x-cx)+Math.abs(y-cy);
         if(distance<3||distance>13)continue;
         resourceSites.push({x,y,distance,random:noise(seed,x,y)});
@@ -92,7 +92,7 @@
       const starters=[...Array(12).fill("twig"),...Array(9).fill("pebble"),...Array(12).fill("grass")];
       // Misturar os tipos para os primeiros recursos aparecerem juntos.
       for(let i=0;i<Math.min(starters.length,resourceSites.length);i++){
-        const p=resourceSites[i],kind=starters[(i*11)%starters.length];
+        const p=resourceSites[i],kind=starters[(i*13)%starters.length];
         world.objects.push({x:p.x,y:p.y,kind,variant:i%4,age:0,starterResource:true});
         used.add(key(p.x,p.y));
       }
