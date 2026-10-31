@@ -579,7 +579,9 @@ test('Telhado em primeiro plano, sem recortes nas janelas e porta',async({page})
   });
   expect(detail.stats.stretched).toBe(0);
   expect(detail.stats.roof).toBe(35);
-  expect(detail.firstRoof).toBeGreaterThan(detail.lastWall);
+  // A cobertura vem depois das paredes-base, mas antes das janelas e porta.
+  expect(detail.firstRoof).toBeGreaterThan(0);
+  expect(detail.firstRoof).toBeLessThan(detail.lastWall);
   expect(detail.firstRoof).toBeLessThan(detail.lastDoor);
   expect(detail.lastDraw).toBe('door');
   const source=require('node:fs').readFileSync('src/house-renderer.js','utf8');
