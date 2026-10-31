@@ -32,6 +32,11 @@ test("Release visual: menu, recrutamento, mundo, gestão e ordens em quatro tela
     await page.locator("#open-tasks").click();
     await expect(page.locator("#farm-sidebar")).toBeVisible();
     await page.screenshot({path:`screenshots/release-gestao-${view.width}x${view.height}.png`,animations:"disabled"});
+    await page.locator('[data-drawer-target="workers"]').click();
+    await expect(page.locator('[data-drawer-target="workers"]')).toHaveAttribute("aria-pressed","true");
+    await expect(page.locator(".worker")).toHaveCount(2);
+    await page.locator('[data-drawer-target="tasks"]').click();
+    await expect(page.locator('[data-drawer-target="tasks"]')).toHaveAttribute("aria-pressed","true");
     await page.locator("#drawer-close").click();
     await page.locator("#orders-btn").click();
     await expect(page.locator("#orders-panel")).toBeVisible();
