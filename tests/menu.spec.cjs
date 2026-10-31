@@ -699,7 +699,7 @@ test('Recrutamento v2: resumo legível, rodapé fixo e screenshots desktop/mobil
   expect(errors).toEqual([]);
 });
 
-test('Recrutamento: tooltip de especialidade por hover, foco e toque',async({page})=>{
+test('Recrutamento: tooltip de especialidade por hover, foco e toque',async({page,browser})=>{
   const pageErrors=[];page.on('pageerror',e=>pageErrors.push(e.message));
   await page.setViewportSize({width:1185,height:750});
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
@@ -726,18 +726,27 @@ test('Recrutamento: tooltip de especialidade por hover, foco e toque',async({pag
   await expect(tip).toHaveText(expected);
   await page.keyboard.press('Escape');
   await expect(tip).toBeHidden();
-  // Dispositivo com toque: tocar abre e tocar novamente fecha.
-  await page.setViewportSize({width:390,height:844});
-  await page.locator('.starter-content').evaluate(el=>el.scrollTop=0);
-  const target=page.locator('.starter-chip.specialty').first();
-  await target.tap();
-  await expect(tip).toBeVisible();
-  await expect(target).toHaveAttribute('aria-expanded','true');
-  await page.screenshot({path:'screenshots/tooltip-especialidade-mobile-390x844.png',animations:'disabled'});
-  await target.tap();
-  await expect(tip).toBeHidden();
-  await expect(target).toHaveAttribute('aria-expanded','false');
-  await page.locator('#starter-confirm').click();
-  await expect(page.locator('#menu')).toBeHidden();
+  // Dispositivo touch real, para não confundir viewport estreita com emulação de toque.
+  const mobile=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
+  try {
+    const mPage=await mobile.newPage();
+    mPage.on('pageerror',e=>pageErrors.push(e.message));
+    await mPage.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+    await mPage.locator('#new-game').click();
+    await mPage.locator('[data-game-mode="relaxed"]').click();
+    const mTip=mPage.locator('#starter-specialty-tooltip');
+    const target=mPage.locator('.starter-chip.specialty').first();
+    await target.tap();
+    await expect(mTip).toBeVisible();
+    await expect(target).toHaveAttribute('aria-expanded','true');
+    await mPage.screenshot({path:'screenshots/tooltip-especialidade-mobile-390x844.png',animations:'disabled'});
+    await target.tap();
+    await expect(mTip).toBeHidden();
+    await expect(target).toHaveAttribute('aria-expanded','false');
+    await mPage.locator('#starter-confirm').click();
+    await expect(mPage.locator('#menu')).toBeHidden();
+  } finally {
+    await mobile.close();
+  }
   expect(pageErrors).toEqual([]);
 });
