@@ -33,6 +33,7 @@ jobs:
           node --check src/menu.js
           node --check src/tutorial.js
           node --check src/house-renderer.js
+          node --test tests/house-renderer.test.cjs
           node --check src/menu-scene.js
       - name: Montar site estático mínimo
         shell: bash
