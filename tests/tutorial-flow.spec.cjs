@@ -1,3 +1,7 @@
+async function continueIfMenuVisible(page){
+  if(await page.locator("#menu").isVisible())await page.locator("#continue").click();
+  await expect(page.locator("#menu")).toBeHidden();
+}
 const {test,expect}=require("@playwright/test");
 const URL="http://127.0.0.1:4173/";
 
@@ -24,7 +28,7 @@ async function jumpToFinalMission(page){
   localStorage.setItem("tillfolk-v01",JSON.stringify(save));
  });
  await page.reload({waitUntil:"networkidle"});
- await page.locator("#continue").click();
+ await continueIfMenuVisible(page);
  await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 8 / 8");
 }
 async function finishBuildingMission(page){
@@ -93,7 +97,7 @@ test("Nova Fazenda tem missões e Continuar preserva o progresso no celular",asy
  await page.screenshot({path:"screenshots/tutorial-missao-mobile.png",animations:"disabled"});
  await page.reload({waitUntil:"networkidle"});
  await expect(page.locator("#continue")).toBeEnabled();
- await page.locator("#continue").click();
+ await continueIfMenuVisible(page);
  await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 8");
  expect(errors).toEqual([]);
 });
@@ -113,7 +117,7 @@ test("A última missão abre escolhas e respeita Continuar ou Menu",async({page}
  await page.locator("#tutorial-back-menu").click();
  await expect(page.locator("#menu")).toBeVisible();
  await expect(page.locator("#continue")).toBeEnabled();
- await page.locator("#continue").click();
+ await continueIfMenuVisible(page);
  await expect(page.locator("#tutorial-done-dialog")).toBeHidden();
  await expect(page.locator("#mission-card")).toBeHidden();
  expect(errors).toEqual([]);
