@@ -258,6 +258,18 @@
   },{passive:false});
   syncCameraButtons();
   window.addEventListener("resize",fitWorldCanvas);
+  let compactMap=window.innerWidth<=700;
+  window.addEventListener("resize",()=>{
+    const compact=window.innerWidth<=700;
+    if(compact===compactMap)return;
+    compactMap=compact;
+    if(!playing)return;
+    // Ao entrar no modo celular, recolher o mapa para não cobrir o jogo.
+    minimap.hidden=compact;
+    $("#biome-legend").hidden=compact;
+    $("#minimap-toggle").setAttribute("aria-expanded",String(!compact));
+    $("#minimap-toggle").textContent=compact?"+":"−";
+  });
   if("ResizeObserver" in window){
     new ResizeObserver(fitWorldCanvas).observe(document.querySelector(".canvas-wrap"));
   }
