@@ -1,0 +1,66 @@
+/* Missões de aprendizado do TILLFOLK: compactas e legíveis sobre o mapa. */
+body.play-session .prologue-card{
+ position:fixed;z-index:13;left:clamp(10px,1.7vw,26px);top:clamp(161px,22vh,202px);
+ width:min(328px,calc(100vw - 24px));max-height:min(55dvh,440px);
+ overflow-y:auto;padding:12px 13px 11px;border:1px solid #a9c68f;
+ border-radius:11px;background:rgba(19,46,31,.96);color:#f9f4d6;
+ box-shadow:0 8px 22px #0b1c12ae;backdrop-filter:blur(5px);
+ font:500 12px/1.4 system-ui,-apple-system,sans-serif
+}
+.prologue-topline{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+#prologue-step{color:#c2e99d;font-size:10px;letter-spacing:.12em;font-weight:900}
+#prologue-open{border:1px solid #72966d;border-radius:7px;background:#2f513e;color:#fff2d3;padding:6px 9px;min-height:34px;font-weight:700;cursor:pointer}
+#prologue-title{display:block;color:#f7ecc2;font-size:15px;line-height:1.3}
+#prologue-summary{margin:5px 0 9px;color:#e4edcf;font-size:12px}
+.prologue-goals{display:grid;gap:5px}
+.prologue-goal{display:flex;justify-content:space-between;gap:6px;align-items:center;border:1px solid #5a8063;background:#244534;padding:5px 8px;border-radius:6px}
+.prologue-goal b{white-space:nowrap;color:#e1f5b7}
+.prologue-goal.done{border-color:#a7cf82}
+.prologue-goal.done b{color:#d5f0aa}
+.prologue-details{border-top:1px solid #597859;margin:9px 0 0;padding-top:9px;color:#eaf1d8}
+.prologue-details p{margin:0 0 7px;font-size:12px;line-height:1.55}
+.prologue-details small{color:#c2d8b3;line-height:1.5}
+.prologue-craft{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:10px;min-height:42px;padding:9px 11px;border:1px solid #c5e4a4;border-radius:8px;background:#cde5a4;color:#203928;font-weight:900;cursor:pointer}
+.prologue-craft span{color:#35523e}
+.workshop-dialog{width:min(660px,calc(100vw - 24px));max-height:min(92dvh,780px);overflow-y:auto}
+.workshop-dialog h2{margin:4px 0 8px}
+.workshop-stock{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.workshop-stock span{border:1px solid #6b906d;background:#253e30;padding:7px 9px;border-radius:7px;color:#f8ecc8;font-weight:750}
+.workshop-recipes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.workshop-recipe{border:1px solid #678a6c;border-radius:9px;background:#2a4535;padding:11px;display:flex;flex-direction:column;gap:5px}
+.workshop-recipe h3{font:850 15px/1.3 system-ui,sans-serif;color:#f9ebc5;margin:0}
+.workshop-recipe p,.workshop-recipe small{margin:0;color:#d4e6c5;font:500 12px/1.45 system-ui,sans-serif}
+.workshop-recipe button{margin-top:auto;min-height:44px;background:#c7e59f;border:1px solid #d7f0b0;border-radius:7px;color:#1e3b26;font-weight:850;cursor:pointer}
+.workshop-recipe button:disabled{opacity:.68;cursor:not-allowed;background:#475f49;color:#fff0d2}
+#workshop-message{color:#e7e5bc;min-height:18px}
+#workshop-message[data-error="true"]{color:#ffd0bf}
+.prologue-card button:focus-visible,.workshop-dialog button:focus-visible{outline:3px solid #f1d88e;outline-offset:2px}
+@media(max-width:800px){
+ body.play-session .prologue-card{top:clamp(148px,24vh,206px);max-height:36dvh;width:min(300px,calc(100vw - 20px))}
+}
+@media(max-width:520px){
+ body.play-session .prologue-card{top:165px;left:8px;width:min(265px,calc(100vw - 16px));max-height:min(34dvh,275px);padding:8px 10px}
+ #prologue-title{font-size:13px}
+ #prologue-summary{font-size:11px;margin:4px 0}
+ .prologue-goal{padding:4px 6px;font-size:11px}
+ #prologue-open{min-height:32px;font-size:11px}
+ .prologue-craft{min-height:36px;padding:6px 8px}
+ .workshop-recipes{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){.prologue-card,.workshop-dialog{scroll-behavior:auto}}
+
+/* Missões extensas no celular: detalhes em diálogo em vez de cortar o mapa. */
+.prologue-dialog{width:min(500px,calc(100vw - 24px));max-height:90dvh;overflow-y:auto}
+.prologue-dialog h2{margin:5px 0 10px;color:#f7efcb;font-size:clamp(20px,3vw,25px);line-height:1.25}
+#prologue-dialog-description{font:500 14px/1.6 system-ui,sans-serif;color:#e4eed5;margin:0 0 13px}
+.prologue-dialog .prologue-goals{gap:9px;margin:12px 0}
+.prologue-dialog .prologue-goal{min-height:39px;font-size:13px}
+.prologue-dialog-note{font:500 12px/1.5 system-ui,sans-serif;color:#c4d7b5}
+#prologue-dialog-craft{width:100%;min-height:44px;margin:12px 0 2px;border-radius:8px}
+.workshop-dialog{scrollbar-width:thin;scrollbar-color:#9fc58b #294334}
+.workshop-scroll-hint{display:none!important}
+@media(max-width:520px){
+ .prologue-dialog{max-height:84dvh}
+ .workshop-scroll-hint{display:block!important;margin:0 0 9px!important;font-weight:700!important;color:#d7e9ad!important}
+ .workshop-dialog{max-height:85dvh}
+}
