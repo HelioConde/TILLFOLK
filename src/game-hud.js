@@ -6,7 +6,7 @@
   const toolName=$("#hud-tool-name"),toolHint=$("#hud-tool-hint");
   if(!toolName||!toolHint)return;
   const guide={
-    universal:["UNIVERSAL","Clique para a próxima ordem · arraste para selecionar terrenos"],
+    universal:["UNIVERSAL","Clique/arraste: atribuir · botão direito: cancelar"],
     till:["ARAR","Marque o solo para preparar o cultivo"],
     clear:["LIMPAR","Selecione a vegetação e retire obstáculos"],
     fertilize:["FERTILIZAR","Melhore uma área previamente arada"],
@@ -14,7 +14,7 @@
     water:["REGAR","Selecione um canteiro que precise de água"],
     harvest:["COLHER","Marque a colheita quando estiver madura"],
     carry:["TRANSPORTAR","Leve os itens colhidos para o estoque"],
-    remover:["CANCELAR","Remova a ordem marcada do terreno"],
+    remover:["CANCELAR","Clique ou arraste para cancelar ordens pendentes"],
     inspecionar:["INSPECIONAR","Clique no cenário para ver os detalhes"],
     construir:["CONSTRUIR","Escolha piso, paredes ou telhado"]
   };
