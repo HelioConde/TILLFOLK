@@ -48,3 +48,10 @@ Casa do menu e do mapa desenhada com escala 2× exata: cada tile 16×16 ocupa 32
 - Escala inteira 2x, nenhum sprite alongado horizontalmente.
 - O mundo inicial do TILLFOLK continua vazio, sem casa preexistente. Apenas a casa ilustrativa do menu foi redesenhada.
 - Playwright registra screenshot 1600x900 e captura do canvas 960x540.
+
+
+### Ajuste fino das proporções — v1.1.1
+- Casa ilustrativa: fachada reduzida de cinco para quatro fileiras de 16px.
+- Janelas na terceira fileira (índice 2), porta na última fileira (índice 3), alinhadas no mesmo grid.
+- A altura lógica passa de 288 para 256 pixels na escala 2×.
+- Teste Playwright verifica as coordenadas reais de desenho no canvas, além das capturas.
