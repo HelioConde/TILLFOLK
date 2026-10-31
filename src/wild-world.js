@@ -49,11 +49,16 @@
       else if(roll < .53)kind="herbs";
       else if(roll < .56)kind="twig";
       if(moisture<=1&&solidKinds.has(kind))kind=random()<.45?"mushroom":"grass";
-      if(biome==="i"||biome==="s"){
-        if(kind==="thicket"||kind==="tree")kind=random()<.35?"boulder":null;
-        if(kind==="mushroom")kind=biome==="s"?"twig":"grass";
+      // Cada ecossistema só recebe os objetos cuja silhueta combina com a
+      // paisagem. Evita árvores frutíferas e ervas verde-vivas sobre a neve.
+      if(biome==="i"&&kind!=="boulder"){
+        kind=random()<.24?"boulder":null;
+      }else if(biome==="s"&&kind!=="boulder"&&kind!=="twig"){
+        kind=random()<.30?"boulder":random()<.42?"twig":null;
+      }else if(biome==="p"&&["tree","thicket","flowers","grass","herbs"].includes(kind)){
+        kind=random()<.56?"mushroom":null;
       }
-      if(biome==="p"&&kind==="flowers")kind="mushroom";
+
       if(kind){
         world.objects.push({x,y,kind,variant:Math.floor(random()*7),age:0});
         used.add(key(x,y));
