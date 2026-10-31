@@ -363,3 +363,17 @@ body.play-session .construction-actions button.chosen,body.play-session .constru
  body.play-session .tool,body.play-session .topbar,
  body.play-session .orders-panel,body.play-session #toast{transition:none!important;animation:none!important}
 }
+
+/* Vignette luminosa: separa o mundo do HUD sem introduzir outro bitmap. */
+body.play-session .canvas-wrap::after{
+ content:"";display:block!important;position:absolute;inset:0;z-index:2;
+ border:0!important;pointer-events:none!important;
+ background:radial-gradient(ellipse at 50% 46%,transparent 50%,#233b2640 100%),
+  linear-gradient(180deg,#1d361a19 0%,transparent 20%,transparent 76%,#12291729 100%);
+}
+body.play-session :is(.tool,.speed-wrap button,.hud-panels button,.orders-choices button):active{
+ transform:translateY(2px);
+}
+body.play-session .hud-selection{bottom:calc(clamp(13px,2vh,23px) + 109px)}
+@media(max-width:760px){body.play-session .hud-selection{bottom:calc(clamp(13px,2vh,23px) + 91px)}}
+@media(max-width:460px){body.play-session .hud-selection{bottom:140px!important}}
