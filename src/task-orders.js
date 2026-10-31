@@ -63,6 +63,7 @@
     switch(order.type){
       case "clear":{
         if(!dirty)return {state:"done",reason:"Terreno já limpo"};
+        if(object?.kind==="ridge")return {state:"blocked",reason:"Encosta fechada: procure a passagem a leste"};
         const needs=window.TillfolkCrafting?.blocked(resources,"clear",object);
         return needs?{state:"blocked",reason:needs}:{state:"ready",reason:"Pronta"};
       }
