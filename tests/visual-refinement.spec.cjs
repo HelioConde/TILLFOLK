@@ -202,3 +202,34 @@ test('Câmera ONI: limites do zoom e atalhos sem alterar as ferramentas',async({
   await expect(page.locator('#minimap')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('Interface 50%, mapa completo, estoque separado e menu de opções',async({page})=>{
+  await page.setViewportSize({width:1366,height:768});
+  await startFarm(page);
+  await expect(page.locator('.topbar #coins')).toHaveCount(0);
+  await expect(page.locator('.topbar #seeds')).toHaveCount(0);
+  await page.locator('#zoom-out').click();
+  await expect(page.locator('#zoom-value')).toHaveText('75%');
+  await page.locator('#zoom-out').click();
+  await expect(page.locator('#zoom-value')).toHaveText('50%');
+  await page.locator('#open-full-map').click();
+  await expect(page.locator('#full-map-dialog')).toBeVisible();
+  await expect(page.locator('#full-map-canvas')).toBeVisible();
+  await page.screenshot({path:'screenshots/mapa-completo-v2.png'});
+  await page.locator('#full-map-close').click();
+  await page.locator('#open-stock').click();
+  await expect(page.locator('#game-stock-dialog')).toBeVisible();
+  await expect(page.locator('#game-stock-dialog')).toContainText('Comida');
+  await expect(page.locator('#game-stock-dialog')).not.toContainText('Moedas');
+  await page.screenshot({path:'screenshots/estoque-alimentos.png'});
+  await page.locator('#game-stock-dialog .modal-x').click();
+  await page.locator('#menu-btn').click();
+  await expect(page.locator('#game-options-dialog')).toBeVisible();
+  await expect(page.locator('body')).toHaveClass(/play-session/);
+  await page.screenshot({path:'screenshots/opcoes-dentro-jogo.png'});
+  await page.locator('#game-resume').click();
+  await expect(page.locator('#game-options-dialog')).toBeHidden();
+  await page.locator('#menu-btn').click();
+  await page.locator('#game-return-title').click();
+  await expect(page.locator('#menu')).toBeVisible();
+});

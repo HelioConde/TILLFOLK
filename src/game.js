@@ -13,8 +13,8 @@
   let selectionPointer=null,areaSelection=null,areaMode=false,suppressRightContext=false;
   // A câmera tem escala renderizada e escala desejada: a roda não salta entre quadros.
   let cameraZoom=1,targetCameraZoom=1,cameraAnchor=null,lastCameraFrame=0,lastMinimapFrame=-1000;
-  const ZOOM_MIN=1,ZOOM_MAX=6;
-  const zoomSteps=[1,1.25,1.5,1.75,2,2.5,3,4,5,6];
+  const ZOOM_MIN=.5,ZOOM_MAX=6;
+  const zoomSteps=[.5,.75,1,1.25,1.5,1.75,2,2.5,3,4,5,6];
   const movementKeys=new Set(),activeTouches=new Map();
   let pinchGesture=null;
   const minimap=document.querySelector("#minimap"),miniCtx=minimap?.getContext("2d");
@@ -345,9 +345,9 @@
   const baseTime = {clear:120,till:90,fertilize:60,sow:60,water:90,harvest:120,carry:60,collectWater:65,collectManure:45,buildHome:180};
   const startPriorities = {clear:7,till:6,fertilize:5,sow:6,water:8,harvest:9,carry:8,collectWater:7,collectManure:5,buildHome:7};
   const initialCandidates = [
-    {name:"Mila",skills:["water"],neg:["clear"],cost:70,color:"#fff2bd"},
-    {name:"Bento",skills:["till","sow","harvest"],neg:["fertilize"],cost:80,color:"#d3d6fc"},
-    {name:"Lina",skills:["carry","fertilize"],neg:[],cost:90,color:"#ffcfc5"}
+    {name:"Mila",skills:["water"],neg:["clear"],cost:6,color:"#fff2bd"},
+    {name:"Bento",skills:["till","sow","harvest"],neg:["fertilize"],cost:10,color:"#d3d6fc"},
+    {name:"Lina",skills:["carry","fertilize"],neg:[],cost:8,color:"#ffcfc5"}
   ];
   const HOME_WOOD_COST=8;
   const homeTiles=(x,y)=>[[x,y],[x+1,y],[x,y+1],[x+1,y+1]];
@@ -450,7 +450,7 @@
       id:i+1,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,
       appearance:c.appearance ?? i,personalPriority:{},x:W/2-.5+i,y:H/2-.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
     }));
-    state = {day:1,minutes:8*60,coins:220,seeds:0,water:0,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
+    state = {day:1,minutes:8*60,seeds:0,water:0,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
       plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),homes:[],animals:[],inventory:{wood:15,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
@@ -461,6 +461,9 @@
       const s=JSON.parse(localStorage.getItem(SAVE_KEY));
       if(!s||!Array.isArray(s.plots)||!Array.isArray(s.workers))return false;
       state=s;
+      // Migração não destrutiva: os saves continuam utilizáveis, mas não há moeda.
+      delete state.coins;
+      state.food=Math.max(0,Number(state.food)||0);
       state.house=window.TillfolkHouseBuilder.normalize(s.house);
       state.orders=Orders.normalize(s.orders);
       // Saves anteriores nunca geram tarefas implícitas após a atualização.
@@ -707,7 +710,8 @@
           p.dirty=result.remaining;
           if(result.remaining)complete=false; // Continuar a mesma ordem até retirar o toco.
         }else p.dirty=false;
-        state.coins+=2;break;
+        // Limpar o terreno produz recursos naturais, nunca moedas.
+        break;
       }
       case "till":p.tilled=true;break;
       case "fertilize":
@@ -720,7 +724,7 @@
         if(w.carryingWater)w.carryingWater=false;else state.water--;
         p.watered=true;break;
       case "harvest":p.produce=true;p.seeded=false;p.watered=false;p.growth=0;break;
-      case "carry":p.produce=false;p.fertilized=false;state.food+=3;state.coins+=15;state.seeds++;log(w.name+" armazenou a colheita (+3 comida, +1 semente, +15 moedas).");break;
+      case "carry":p.produce=false;p.fertilized=false;state.food+=3;state.seeds++;log(w.name+" armazenou a colheita (+3 comida, +1 semente).");break;
     }
     if(complete&&t.type!=="carry"&&t.type!=="harvest")log(w.name+" terminou: "+labels[t.type].toLowerCase()+".");
     return complete;
@@ -1019,7 +1023,7 @@
     const set=(id,value)=>{$(id).textContent=value;};
     set("#day",String(state.day).padStart(2,"0"));
     const m=Math.floor(state.minutes);set("#clock",String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
-    for(const key of ["coins","seeds","water","food"])set("#"+key,state[key]);
+    for(const key of ["seeds","water","food"])set("#"+key,state[key]);
     set("#worker-count",state.workers.length);set("#task-count",tasks.length);
     const manureOrderButton=$('[data-order-type="collectManure"]');
     if(manureOrderButton)manureOrderButton.hidden=state.animals.length===0;
@@ -1137,6 +1141,7 @@
     const special=person.skills.length===1?"100%":person.skills.length===2?"60%":person.skills.length===3?"30%":"0%";
     return '<div class="tags">'+(person.skills.map(s=>'<span class="tag">✦ '+labels[s]+'</span>').join("")||'<span class="tag">Generalista</span>')+person.neg.map(s=>'<span class="tag negative">✕ '+labels[s]+'</span>').join("")+'</div><p>Bônus em cada habilidade: +'+special+'. '+person.neg.length+' restrições.</p>';
   }
+  const foodHireCost=c=>4+2*Math.max(1,Math.min(3,c.skills?.length||1));
   function renderCandidates(){
     const vacant=housingVacancy();
     $("#housing-status").textContent=vacant>0
@@ -1144,7 +1149,7 @@
       :"🏠 Casas concluídas: "+state.homes.length+". Trabalhadores: "+state.workers.length+
       ". Construa mais "+(state.workers.length+1-state.homes.length)+" casa(s) com a ordem Construir casa para liberar o próximo ajudante.";
     $("#candidates").innerHTML=state.candidates.map((c,i)=>{
-      return '<div class="candidate"><div class="candidate-head"><h3>🌿 '+c.name+'</h3><b>🪙 '+c.cost+'</b></div>'+htmlTags(c)+'<button class="small-primary" data-hire="'+i+'" '+(state.coins<c.cost||vacant<1?"disabled":"")+'>Contratar trabalhador</button></div>';
+      return '<div class="candidate"><div class="candidate-head"><h3>🌿 '+c.name+'</h3><b>🥕 '+foodHireCost(c)+' comida</b></div>'+htmlTags(c)+'<button class="small-primary" data-hire="'+i+'" '+(state.food<foodHireCost(c)||vacant<1?"disabled":"")+'>Contratar trabalhador</button></div>';
     }).join("");
   }
   const names=["Nico","Cora","Tito","Eva","Bia","Theo","Léo","Sol","Ravi","Mel","Ivo","Lua","Dora","Zeca"];
@@ -1152,14 +1157,15 @@
     const types=Object.keys(labels),count=1+Math.floor(Math.random()*3);
     const skills=types.slice().sort(()=>Math.random()-.5).slice(0,count);
     const negative=types.filter(t=>!skills.includes(t)).sort(()=>Math.random()-.5).slice(0,Math.floor(Math.random()*4));
-    return {name:random(names)+" "+String(Math.floor(Math.random()*90)+10),skills,neg:negative,cost:65+count*10,color:random(["#f4dfad","#badbd1","#f1c4c5","#b9cdef"]),appearance:Math.floor(Math.random()*workerPalettes.length)};
+    return {name:random(names)+" "+String(Math.floor(Math.random()*90)+10),skills,neg:negative,cost:4+2*count,color:random(["#f4dfad","#badbd1","#f1c4c5","#b9cdef"]),appearance:Math.floor(Math.random()*workerPalettes.length)};
   }
   function hire(i){
     const c=state.candidates[i];
     if(!c)return;
     if(housingVacancy()<1){notify("Construa uma casa livre para o novo ajudante.");return;}
-    if(state.coins<c.cost){notify("Moedas insuficientes.");return;}
-    state.coins-=c.cost;
+    const price=foodHireCost(c);
+    if(state.food<price){notify("Comida insuficiente para a troca.");return;}
+    state.food-=price;
     state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},x:state.spawn.x,y:state.spawn.y,task:null,progress:0,facing:"down",moving:false,walkFrame:0});
     assignHomes();
     state.candidates[i]=newCandidate();
@@ -1881,7 +1887,60 @@
   $("#drawer-close").addEventListener("click",dismissDrawer);
   backdrop.addEventListener("click",dismissDrawer);
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("drawer-open")){dismissDrawer();}});
+  // As opções preservam a partida e pausam enquanto a janela está aberta.
+  const optionsDialog=$("#game-options-dialog"),stockDialog=$("#game-stock-dialog");
+  const fullMapDialog=$("#full-map-dialog"),fullMapCanvas=$("#full-map-canvas");
+  let speedBeforeOptions=1;
+  function showGameDialog(d){
+    if(!playing||d.open)return;
+    if(optionsDialog.open)optionsDialog.close();
+    d.showModal();
+  }
+  function drawFullMap(){
+    if(!state)return;
+    const mapCtx=fullMapCanvas.getContext("2d");
+    mapCtx.imageSmoothingEnabled=false;
+    const tileW=fullMapCanvas.width/W,tileH=fullMapCanvas.height/H;
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const biome=World.biomeAt(state.world,x,y);
+      mapCtx.fillStyle=window.TillfolkBiomes.COLORS[biome]||"#a4d17c";
+      mapCtx.fillRect(Math.floor(x*tileW),Math.floor(y*tileH),Math.ceil(tileW)+1,Math.ceil(tileH)+1);
+    }
+    mapCtx.fillStyle="#669eae";
+    for(const tile of state.world.water||[])mapCtx.fillRect(tile.x*tileW,tile.y*tileH,tileW+1,tileH+1);
+    mapCtx.fillStyle="#305c34";
+    for(const tree of state.world.objects||[])if(["tree","thicket"].includes(tree.kind))
+      mapCtx.fillRect(tree.x*tileW,tree.y*tileH,Math.max(2,tileW*.75),Math.max(2,tileH*.75));
+    mapCtx.fillStyle="#ffe7a1";
+    for(const worker of state.workers){
+      mapCtx.fillRect(worker.x*tileW-3,worker.y*tileH-3,7,7);
+      mapCtx.strokeStyle="#314e32";mapCtx.strokeRect(worker.x*tileW-3,worker.y*tileH-3,7,7);
+    }
+  }
+  function openFullMap(){showGameDialog(fullMapDialog);drawFullMap();}
   $("#menu-btn").addEventListener("click",()=>{
+    if(!playing||optionsDialog.open)return;
+    save();closeDrawer();
+    speedBeforeOptions=simSpeed;simSpeed=0;updateSpeed();
+    optionsDialog.showModal();
+  });
+  optionsDialog.addEventListener("close",()=>{
+    if(playing){simSpeed=speedBeforeOptions;updateSpeed();}
+  });
+  $("#game-resume").addEventListener("click",()=>optionsDialog.close());
+  $("#open-stock").addEventListener("click",()=>showGameDialog(stockDialog));
+  $("#game-open-stock").addEventListener("click",()=>showGameDialog(stockDialog));
+  $("#open-full-map").addEventListener("click",openFullMap);
+  $("#game-open-map").addEventListener("click",openFullMap);
+  $("#full-map-close").addEventListener("click",()=>fullMapDialog.close());
+  fullMapCanvas.addEventListener("click",event=>{
+    const bounds=fullMapCanvas.getBoundingClientRect();
+    const x=(event.clientX-bounds.left)/bounds.width*W;
+    const y=(event.clientY-bounds.top)/bounds.height*H;
+    fullMapDialog.close();focusCameraAt(x,y);paintMinimap();
+  });
+  $("#game-return-title").addEventListener("click",()=>{
+    optionsDialog.close();
     save();playing=false;closeDrawer();setTool("universal");
     document.body.classList.remove("play-session","focus-game");
     canvas.style.removeProperty("--pan-x");canvas.style.removeProperty("--pan-y");

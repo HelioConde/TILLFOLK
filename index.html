@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="./sprout-ui.css?v=3">
   <link rel="stylesheet" href="./game-refinement.css?v=1">
   <link rel="stylesheet" href="./camera-ui.css?v=1">
+  <link rel="stylesheet" href="./game-interface.css?v=20261031">
   <script defer src="./src/menu.js"></script>
   <script defer src="./src/tutorial.js"></script>
   <script defer src="./src/house-renderer.js"></script>
@@ -39,17 +40,14 @@
       <div class="metrics">
         <div class="metric"><span>☀</span><small>Dia</small><b id="day">01</b></div>
         <div class="metric"><span>◷</span><small>Hora</small><b id="clock">08:00</b></div>
-        <div class="metric"><span>🪙</span><small>Moedas</small><b id="coins">220</b></div>
-        <div class="metric"><span>🌱</span><small>Sementes</small><b id="seeds">18</b></div>
-        <div class="metric"><span>💧</span><small>Água</small><b id="water">30</b></div>
-        <div class="metric"><span>🥕</span><small>Comida</small><b id="food">8</b></div>
+
       </div>
       <div class="management-nav" role="group" aria-label="Gestão da fazenda">
         <button id="nav-priorities" type="button">☷ Prioridades</button>
         <button id="nav-skills" type="button">✦ Habilidades</button>
       </div>
-      <div class="hud-panels" role="group" aria-label="Painéis de gerenciamento"><button id="open-workers" type="button" aria-controls="farm-sidebar" aria-expanded="false">♟ Equipe <span id="hud-workers">2</span></button><button id="open-tasks" type="button" aria-controls="farm-sidebar" aria-expanded="false">☷ Tarefas <span id="hud-tasks">0</span></button></div>
-      <button id="menu-btn" class="icon-btn" aria-label="Voltar ao menu" title="Voltar ao menu">☰</button>
+      <div class="hud-panels" role="group" aria-label="Painéis de gerenciamento"><button id="open-stock" type="button" aria-haspopup="dialog" aria-controls="game-stock-dialog" title="Estoque da fazenda">▦ Estoque</button><button id="open-workers" type="button" aria-controls="farm-sidebar" aria-expanded="false">♟ Equipe <span id="hud-workers">2</span></button><button id="open-tasks" type="button" aria-controls="farm-sidebar" aria-expanded="false">☷ Tarefas <span id="hud-tasks">0</span></button></div>
+      <button id="menu-btn" class="icon-btn" type="button" aria-haspopup="dialog" aria-controls="game-options-dialog" aria-label="Abrir opções do jogo" title="Opções">☰</button>
     </header>
     <main class="game-layout">
       <section class="play-area" aria-label="Fazenda">
@@ -81,7 +79,8 @@
             <button id="zoom-in" type="button" aria-label="Aumentar zoom">+</button>
             <button id="zoom-reset" type="button" title="Restaurar câmera" aria-label="Restaurar zoom e posição inicial">⌖</button>
           </div>
-          <p class="camera-help">Roda: ampliar no cursor · WASD: mover · H: centralizar</p>
+          <button id="open-full-map" class="full-map-trigger" type="button" aria-haspopup="dialog" aria-controls="full-map-dialog">▦ Mapa completo</button>
+          <p class="camera-help">Zoom mínimo: 50% · Roda: zoom · WASD: mover · H: centralizar</p>
         </section>
         <div class="tooltray">
           <div class="tool-list" role="group" aria-label="Ferramentas do mapa">
@@ -151,6 +150,35 @@
     </main>
   </div>
 
+  <dialog id="game-options-dialog" class="modal game-modal" aria-labelledby="game-options-title">
+    <form method="dialog"><button class="modal-x" aria-label="Fechar opções">✕</button></form>
+    <span class="overline">TILLFOLK · PARTIDA ATUAL</span><h2 id="game-options-title">Opções do jogo</h2>
+    <p>Progresso salvo automaticamente no navegador.</p>
+    <div class="game-options-actions">
+      <button type="button" id="game-resume" class="large-primary">▶ Continuar jogando</button>
+      <button type="button" id="game-open-stock" class="large-secondary">🥕 Estoque e recursos</button>
+      <button type="button" id="game-open-map" class="large-secondary">▦ Visualizar mapa completo</button>
+      <button type="button" id="game-return-title" class="large-secondary">↩ Salvar e voltar ao menu inicial</button>
+    </div>
+  </dialog>
+  <dialog id="game-stock-dialog" class="modal game-modal" aria-labelledby="stock-title">
+    <form method="dialog"><button class="modal-x" aria-label="Fechar estoque">✕</button></form>
+    <span class="overline">GERENCIAMENTO DA FAZENDA</span><h2 id="stock-title">Estoque e trocas</h2>
+    <p>Comida é o recurso usado nas trocas e contratações. Não existem moedas.</p>
+    <div class="stock-grid" aria-live="polite">
+      <div><span aria-hidden="true">🥕</span><strong id="food">8</strong><small>Comida · moeda de troca</small></div>
+      <div><span aria-hidden="true">🌱</span><strong id="seeds">0</strong><small>Sementes</small></div>
+      <div><span aria-hidden="true">💧</span><strong id="water">0</strong><small>Água</small></div>
+    </div>
+    <p class="stock-note">Colha e transporte para aumentar o estoque. Novos trabalhadores exigem comida e moradia disponível.</p>
+  </dialog>
+  <dialog id="full-map-dialog" class="modal game-modal map-modal" aria-labelledby="full-map-title">
+    <form method="dialog"><button class="modal-x" aria-label="Fechar mapa completo">✕</button></form>
+    <span class="overline">VISÃO GERAL DO VALE</span><h2 id="full-map-title">Mapa completo</h2>
+    <p>Veja todos os biomas. Clique em um ponto do mapa para deslocar a câmera até lá.</p>
+    <canvas id="full-map-canvas" width="960" height="600" role="img" aria-label="Mapa completo da fazenda e dos biomas; clique para centralizar a câmera"></canvas>
+    <div class="map-footer"><span>🟨 Trabalhadores · 🌳 Árvores · 💧 Água</span><button id="full-map-close" type="button" class="large-primary">Voltar ao jogo</button></div>
+  </dialog>
   <div id="menu" class="title-screen" aria-label="Menu principal do TILLFOLK">
     <canvas id="title-scene" class="title-scene-canvas" width="960" height="540" aria-hidden="true"></canvas>
     <div class="title-shading" aria-hidden="true"></div>
@@ -261,7 +289,7 @@
   <dialog id="hire-dialog" class="modal">
     <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
     <span class="overline">CASA DE RECRUTAMENTO</span><h2>Encontre sua próxima ajuda</h2>
-    <p>Até 3 habilidades positivas e 3 restrições. Contratar exige uma moradia livre depois de abrigar todos os trabalhadores.</p><p id="housing-status" role="status" aria-live="polite"></p>
+    <p>Até 3 habilidades positivas e 3 restrições. A contratação consome <strong>comida</strong> e exige uma moradia livre.</p><p id="housing-status" role="status" aria-live="polite"></p>
     <div id="candidates" class="candidate-list"></div>
   </dialog>
   <dialog id="help-dialog" class="modal help-guide" aria-labelledby="guide-title">
