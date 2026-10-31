@@ -30,7 +30,7 @@ body.play-session .tooltray .tool > b{
   body.play-session .tooltray .tool-list{width:100%!important;justify-content:space-evenly!important;}
   body.play-session .tooltray .tool{flex:1 1 0!important;min-width:0!important;max-width:none!important;}
 }
-/* Alinhamento ótico real: a moldura Sprout Lands permanece fixa.
+/* Alinhamento ótico medido na captura 2026-10-31: manter X inalterado.\n   Corrigir centro visual da tinta para o centro (31px) de cada moldura.\n   A moldura Sprout Lands permanece fixa.
    O caractere Unicode tem ascendentes/descendentes variáveis; mover somente
    o glifo evita que estrela, X e casa pareçam caídos na base do botão. */
 body.play-session .tooltray .tool > span{
@@ -56,11 +56,11 @@ body.play-session .tooltray .tool > span > .tool-glyph{
   transform:translate(var(--tool-icon-x,0px),var(--tool-icon-y,-3px))!important;
   pointer-events:none!important;
 }
-body.play-session .tooltray .tool[data-tool="universal"] .tool-glyph{--tool-icon-x:-2px;--tool-icon-y:-3px}
-body.play-session .tooltray #orders-btn .tool-glyph{--tool-icon-y:-2px}
+body.play-session .tooltray .tool[data-tool="universal"] .tool-glyph{--tool-icon-x:-1px;--tool-icon-y:-3px}
+body.play-session .tooltray #orders-btn .tool-glyph{--tool-icon-x:-2px;--tool-icon-y:-4px}
 body.play-session .tooltray .tool[data-tool="remover"] .tool-glyph{--tool-icon-y:-3px}
-body.play-session .tooltray .tool[data-tool="inspecionar"] .tool-glyph{--tool-icon-x:1px;--tool-icon-y:-3px}
-body.play-session .tooltray .tool[data-tool="construir"] .tool-glyph{--tool-icon-x:-1px;--tool-icon-y:-5px}
+body.play-session .tooltray .tool[data-tool="inspecionar"] .tool-glyph{--tool-icon-x:-3px;--tool-icon-y:-6px}
+body.play-session .tooltray .tool[data-tool="construir"] .tool-glyph{--tool-icon-x:-1px;--tool-icon-y:-6px}
 @media(max-width:760px){
   body.play-session .tooltray .tool > span > .tool-glyph{font-size:19px!important}
 }
