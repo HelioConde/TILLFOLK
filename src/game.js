@@ -2074,9 +2074,12 @@
     state.selectedCrop=button.dataset.chooseCrop;
     renderCropCatalog();refresh();save();
   });
-  $("#open-workshop").addEventListener("click",()=>{
-    if(!playing)return;renderWorkshop();$("#workshop-dialog").showModal();
-  });
+  function openWorkshop(){
+    if(!playing||$("#workshop-dialog").open)return;
+    renderWorkshop();
+    $("#workshop-dialog").showModal();
+  }
+  $("#open-workshop").addEventListener("click",openWorkshop);
   $("#workshop-tools").addEventListener("click",event=>{
     const button=event.target.closest("[data-craft-tool]");
     if(!button||button.disabled)return;
