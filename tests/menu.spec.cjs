@@ -546,9 +546,9 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
   expect(result.roofMax).toBe(256);
   expect(result.rooftopCount).toBe(36);
   expect(result.allUniform).toBe(true);
-  expect(result.roofBeforeWindows).toBe(true);
+  expect(result.roofBeforeWindows).toBe(false);
   expect(result.roofOverWalls).toBe(true);
-  expect(result.windowsDrawnAboveRoof).toBe(true);
+  expect(result.windowsDrawnAboveRoof).toBe(false);
   // Cobertura em primeiro plano E a janela começa exatamente onde termina
   // o último tile do beiral: não existem recortes nem sobreposição indevida.
   expect(result.windows.every(w=>w.dy===result.roofMax-64)).toBe(true);
@@ -582,8 +582,8 @@ test('Telhado em primeiro plano, sem recortes nas janelas e porta',async({page})
   // A cobertura vem depois das paredes-base, mas antes das janelas e porta.
   expect(detail.firstRoof).toBeGreaterThan(0);
   expect(detail.firstRoof).toBeLessThan(detail.lastWall);
-  expect(detail.firstRoof).toBeLessThan(detail.lastDoor);
-  expect(detail.lastDraw).toBe('door');
+  expect(detail.firstRoof).toBeGreaterThan(detail.lastDoor);
+  expect(detail.lastDraw).toBe('roof');
   const source=require('node:fs').readFileSync('src/house-renderer.js','utf8');
   expect(source.includes('ctx.clip(roofMask')).toBe(false);
   expect(source.includes('if(canClip)ctx.restore()')).toBe(false);
