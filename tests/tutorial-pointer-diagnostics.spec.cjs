@@ -32,3 +32,42 @@ test("Diagnóstico da patinha no tutorial, carregamento e primeira missão",asyn
   expect(info.pointerHidden).toBe(false);
   expect(info.imageSize).toBeGreaterThan(0);
 });
+
+test("Tooltip de ferramenta ausente não quebra ao passar sobre terreno vazio",async({page})=>{
+  const errors=[];
+  page.on("pageerror",error=>errors.push(error.message));
+  await page.setViewportSize({width:1366,height:768});
+  await page.goto("http://127.0.0.1:4173/",{waitUntil:"networkidle"});
+  await page.locator("#new-game").click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator("#starter-confirm").click();
+  await page.locator('[data-speed="0"]').click();
+
+  // Toda fazenda nova não possui enxada. A célula escolhida não tem objeto:
+  // antes da correção, o pointermove acessava object.kind com object === null.
+  const empty=await page.evaluate(()=>{
+    const state=JSON.parse(localStorage.getItem("tillfolk-v01"));
+    return state.plots.find(p=>
+      !window.TillfolkWild.at(state.world,p.x,p.y)&&
+      !window.TillfolkWild.waterAt(state.world,p.x,p.y)&&
+      window.TillfolkWild.terrainAt(state.world,p.x,p.y).farmable);
+  });
+  expect(empty).toBeTruthy();
+
+  const hover=async()=>page.locator("#world").evaluate((canvas,cell)=>{
+    const rect=canvas.getBoundingClientRect();
+    canvas.dispatchEvent(new PointerEvent("pointermove",{
+      bubbles:true,pointerType:"mouse",pointerId:57,
+      clientX:rect.left+rect.width*(cell.x+.5)/(canvas.width/32),
+      clientY:rect.top+rect.height*(cell.y+.5)/(canvas.height/32)
+    }));
+  },empty);
+
+  await hover(); // ferramenta Universal: próxima etapa é arar
+  await expect(page.locator("#tile-tooltip")).toContainText(/Terreno.*enxada/i);
+  await page.locator("#orders-btn").click();
+  await page.locator('[data-order-type="till"]').click();
+  await hover(); // Ordem explícita: também não pode gerar TypeError
+  await expect(page.locator("#tile-tooltip")).toContainText(/Terreno.*enxada/i);
+  expect(errors).toEqual([]);
+});
