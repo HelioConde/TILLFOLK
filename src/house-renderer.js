@@ -35,9 +35,10 @@
     if(!ctx||typeof ctx.drawImage!=="function")
       throw new TypeError("Canvas 2D obrigatório");
     const cell=TILE*scale,originX=Math.round(x),originY=Math.round(y);
-    // Subir somente a fachada 1 tile (32px com escala 2x).
-    // A posição e a geometria do telhado permanecem inalteradas.
-    const facadeX=originX+cell,facadeY=originY+(ROOF_ROWS-2)*cell;
+    // A fachada começa exatamente sob o último tile do telhado.
+    // Janelas e porta não podem ficar encobertas pela cobertura em primeiro plano.
+    // Mantemos posição, altura e o ajuste horizontal solicitado para o telhado.
+    const facadeX=originX+cell,facadeY=originY+(ROOF_ROWS-1)*cell;
     const stats={drawn:0,stretched:0,roof:0,walls:0,windows:0,doors:0,chimneys:0};
     ctx.imageSmoothingEnabled=false;
 
