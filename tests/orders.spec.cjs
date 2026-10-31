@@ -172,3 +172,32 @@ test('Ordens sem recurso ficam agrupadas, sem obrigar tarefas automáticas extra
   await expect(page.locator('#tasks [data-task-group="waiting"]')).toContainText('Aguardando arar o solo');
   expect((await snap(page)).orders).toHaveLength(1);
 });
+
+test('Distribuição evita trabalhador parado com ordens compatíveis na fila',async({page})=>{
+  await start(page);
+  await page.evaluate(()=>{
+    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    // Colono 1 faz de tudo. Colono 2 não pode limpar; sua única
+    // ordem possível é arar, mesmo que arar tenha prioridade maior.
+    s.workers[0].neg=[];s.workers[1].neg=['clear'];
+    s.workers.forEach(w=>{w.task=null;w.progress=0;});
+    s.world.objects=s.world.objects.filter(o=>o.x!==12||o.y!==11);
+    s.world.objects.push({x:12,y:11,kind:'grass',variant:0,age:0});
+    s.priorities.till=9;s.priorities.clear=1;
+    s.orders=[
+      {id:'13-11:till',type:'till',x:13,y:11},
+      {id:'12-11:clear',type:'clear',x:12,y:11}
+    ];
+    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('#continue').click();
+  await expect.poll(async()=>{
+    const s=await snap(page);
+    return s.workers.map(w=>w.task);
+  },{timeout:9000}).toEqual(['12-11:clear','13-11:till']);
+  await page.locator('#open-workers').click();
+  await expect(page.locator('.worker-status').first()).toContainText(/Em atividade|Caminhando/);
+  await expect(page.locator('.worker-status').nth(1)).toContainText(/Em atividade|Caminhando/);
+  await page.screenshot({path:'screenshots/dois-colonos-trabalhando-em-paralelo.png',animations:'disabled'});
+});
