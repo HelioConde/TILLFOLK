@@ -1,65 +1,74 @@
 # TILLFOLK 🌱
+**Sobrevivência de colônia, produção, exploração e automação de trabalhadores.** Jogo HTML5 2D pixel art, com identidade visual Sprout Lands e forte inspiração nas mecânicas de **Oxygen Not Included**.
 
-Jogo HTML5 de **fazenda, sobrevivência e automação de trabalhadores** com visual 2D pixel art. A inspiração nas listas de tarefas de *Oxygen Not Included* está no gerenciamento, não no gênero de combate.
+> **Visão oficial (31/10/2026):** o objetivo não é só ter uma fazenda bonita. O jogador deve **manter seus colonos vivos**, produzir comida, trabalhar com recursos limitados, construir abrigo para recrutar moradores e abrir caminhos para regiões com novos materiais. Cada habitante tem talentos, traços e uma função importante na dinâmica da colônia.
 
-## Protótipo v0.3 — fluxo de criação e gerenciamento
+**Documentos centrais:** [GDD completo](./docs/GDD_TILLFOLK.md) · [Roadmap de sobrevivência](./docs/ROADMAP_SOBREVIVENCIA.md) · [Plano visual e QA](./docs/ROADMAP_VISUAL.md).
 
-- Menu inicial com **cenário panorâmico montado diretamente dos sprites de Sprout Lands** (tiles, telhas, paredes, árvores, trabalhadores, plantações, cercas e poço), botões HTML funcionais, tela cheia e cartões com sprites. `src/menu-scene.js` é testado e empacotado no GitHub Actions; os sprites necessários estão selecionados dentro do diretório `public/assets/sprout-lands`, sem depender de pacotes inteiros.
-- Continuar e instruções; salvamento local pelo navegador.
-- **Nova fazenda:** seleção de modos com prévias feitas de sprites originais, escolha do modo Sobrevivência/Fazenda Tranquila, nome da fazenda e seleção de exatamente 2 trabalhadores iniciais gratuitos. A tela agora apresenta personagens ampliados em pixel art, explicação individual de habilidades/traços, eficiência, atividades permitidas e tempos de execução por tarefa. Permite renomear e sortear individualmente ou em conjunto; a partida só começa após confirmação.
-- Cena de fazenda com sprites de grama, plantas, árvores, pedras, poço e trabalhadores de Sprout Lands.
-- Selecione **Cultivar** e clique no solo: o sistema cria uma sequência automática de tarefas.
-- Ciclo: **limpar → arar → fertilizar → semear → regar → crescer → colher → transportar**.
-- Trabalhadores escolhem tarefas autonomamente considerando prioridades e restrições.
-- Contratação com até **3 habilidades positivas** e **3 traços negativos** por pessoa.
-- Especialidades oferecem bônus: 1 habilidade (+100%), 2 (+60%) ou 3 (+30%).
-- Ações são demoradas para valorizar especialização e ajuda de vários trabalhadores.
-- Prioridades globais (1–9) e **matriz individual de prioridade por trabalhador**, respeitando restrições e especialidades, além de velocidade da simulação 1×, 3×, 6× ou pausa.
-- Tela **Habilidades** com tempos e bônus atuais de cada trabalhador; progressão avançada ainda não implementada.
-- Economia inicial simples de sementes, água, comida e moedas.
+## Como o jogo deve funcionar
 
-## Rodar
+1. **Começar vulnerável:** uma pequena equipe chega ao vale selvagem com poucos recursos, sem casas ou plantações prontas.
+2. **Coletar e fabricar:** dar ordens para recolher gravetos, fibras, madeira e pedras; fabricar ferramentas na Work Station.
+3. **Produzir alimento:** arar, plantar, regar, colher, transportar e guardar comida. Sem reposição suficiente, os habitantes passam fome e podem morrer — **mortalidade ainda precisa ser implementada**.
+4. **Organizar a equipe:** escolher prioridades e especialidades, acompanhar riscos e tarefas bloqueadas. Cada pessoa deve contribuir com o trabalho que executa melhor.
+5. **Construir e crescer:** novas cabanas abrem vagas para recrutamento; cada habitante adicional aumenta as necessidades da colônia.
+6. **Explorar:** abrir barreiras, alcançar biomas diferentes, buscar recursos exclusivos e construir cadeias produtivas mais eficientes.
+7. **Sobreviver no longo prazo:** logística, descanso, saúde, tecnologia e riscos ambientais passam a importar à medida que a vila cresce.
 
-Abra o arquivo [index.html](./index.html) em um navegador moderno, ou use um servidor estático:
+**Regra de controle:** o jogador designa as ordens; os trabalhadores escolhem quem faz e como executar conforme prioridades, trajetos, habilidades e restrições. Um clique da ferramenta Universal não dispara sozinho todas as etapas de plantio.
 
-\`\`\`bash
+## Trabalhadores e especializações
+
+- Cada pessoa tem **até 3 habilidades positivas** e **até 3 traços negativos**.
+- Todos podem realizar qualquer tarefa **exceto as proibidas pelos próprios traços negativos**. Ser especialista não desbloqueia trabalhos — melhora sua eficiência.
+- Um trabalhador com uma única especialização é mais eficiente nela do que outro com duas ou três especializações. O protótipo usa multiplicadores de 2,0×, 1,6× e 1,3×.
+- Perfis úteis: coletor, agricultor, construtor, minerador, transportador e fabricante. Futuramente: cozinheiro, cuidador, pesquisador e outras funções **sem classes rígidas**.
+- As tarefas são demoradas de propósito: mais trabalhadores, boas especialidades e planejamento economizam tempo.
+
+## Estado atual do protótipo (31/10/2026)
+
+| Área | Existe no protótipo | Falta / objetivo de design |
+| --- | --- | --- |
+| Mundo | Geração procedural, seis biomas, obstáculos e passagem do vale | Exploração economicamente relevante, perigos e recursos únicos |
+| Trabalho | Ordens explícitas, IA de atribuição, especialidades e traços negativos | Melhor IA sob fome, risco, distância, saúde e urgência |
+| Comida | Plantações, 19 espécies gráficas, estoque e desconto diário por habitante no modo sobrevivência | Refeições pessoais, saciedade, fome, saúde, morte e derrota |
+| Construções | Blueprint, cabanas, Work Station e ferramentas | Depósitos físicos, cozinha, camas, proteção, cadeia produtiva |
+| População | Dois colonos iniciais, candidatos, contratação condicionada à moradia | Necessidades individuais, rotinas, bem-estar e impacto de perdas |
+| Interface | HUD, menus, minimapa, zoom, velocidade/pausa, tutorial | HUD de risco de fome, dias de estoque, alertas antecipados |
+| Salvamento | `localStorage`, autosave e retomada de partida | Exportar/importar backups e múltiplos slots |
+
+**O protótipo ainda NÃO é uma simulação completa de sobrevivência.** Em `src/game.js`, comida zero apenas provoca aviso: nenhuma pessoa morre por isso atualmente. O primeiro grande marco de implementação é tornar a fome e suas consequências reais, sem sacrificar compatibilidade de saves.
+
+## Como executar
+
+O jogo é estático e não exige backend nem banco de dados. Abra a versão hospedada ou use um servidor local:
+
+```bash
 python -m http.server 8080
-\`\`\`
+```
 
-Depois acesse http://localhost:8080. Não há dependências nem banco de dados. O jogo pode ser publicado com **GitHub Pages** usando a pasta raiz da branch \`main\`.
+Depois acesse `http://localhost:8080/`. Para produção, o GitHub Actions publica o site no GitHub Pages.
 
-### Estrutura principal
+**Jogar:** https://helioconde.github.io/TILLFOLK/
 
-- \`index.html\`: cenário visual, HUD, menu e janelas.
-- \`styles.css\`: interface responsiva com tipografia Sprout Lands UI Basic.
-- \`src/game.js\`: simulação, renderização em canvas, automação, recrutamento e salvamento.
-- \`public/assets/sprout-lands/\`: sprites selecionados para a fazenda.
-- \`public/assets/Sprout Lands - UI Pack - Basic pack/\`: fonte e elementos da UI original.
+## Estrutura principal
 
-## Estado de desenvolvimento
+- `index.html`, `styles.css` e arquivos CSS adicionais: menu, HUD, janelas e interface.
+- `src/game.js`: simulação do tempo, trabalhadores, tarefas, movimento, produção, recrutamento e salvamento.
+- `src/task-orders.js`: validação de ordens e pré-requisitos; `src/crafting.js`: equipamentos e Work Station.
+- `src/wild-world.js`, `src/biomes.js`: geração procedural, biomas e obstáculos.
+- `src/crop-catalog.js`: espécies e sprites de cultivo.
+- `src/missions.js`, `src/tutorial.js`: missões e guia.
+- `docs/GDD_TILLFOLK.md`: **única fonte de verdade sobre a visão de longo prazo**.
+- `docs/ROADMAP_SOBREVIVENCIA.md`: prioridade das próximas implementações.
+- `tests/`, `.github/workflows/`: testes, screenshots e publicação.
 
-**Protótipo de mecânicas**, não jogo concluído. A construção, personagens mais elaborados, navegação com obstáculos, sistemas de comida/necessidades detalhados, IA avançada, animações direcionais e balanceamento serão desenvolvidos em etapas. O crescimento acontece ao longo de tempo simulado.
+## Documentação adicional
+
+[Colônia sustentável — protótipo](./docs/COLONIA_SUSTENTAVEL.md) · [Ordens da colônia](./docs/ORDENS_DA_COLONIA.md) · [Cultivos e Work Station](./docs/CULTIVOS_E_WORKSTATION.md) · [Mundo selvagem](./docs/MUNDO_SELVAGEM.md) · [Construção com blueprints](./docs/BLUEPRINTS_CONSTRUCAO.md) · [Design System](./docs/DESIGN_SYSTEM.md)
+
+**Nota:** documentos antigos são registros históricos de implementação e podem refletir parâmetros anteriores. Antes de codificar, consultar o GDD e conferir os valores atuais no código.
 
 ## Créditos e licença
 
-**Assets — Sprout Lands, por Cup Nooble.** Veja [licenças](./licenses/sprout-lands-premium.txt) e [créditos](./docs/ASSET_CREDITS.md). Os materiais premium não podem ser revendidos ou distribuídos como pacote independente de assets. Proibido uso para treinamento de IA conforme licença do autor.
-
-## Ajustes v0.8
-
-- Sprites de trabalhadores com **paletas de cores distintas** por candidato, respeitando os frames originais de Sprout Lands; no sorteio inicial, cada um tem aparência diferente.
-- A construção na cena jogável agora utiliza os tiles de paredes e telhado do pacote, em vez de primitivas vetoriais.
-- Recrutamento com barra de ações sempre disponível e rolagem interna por ficha no desktop.
-- Menu principal protegido contra corte horizontal e adaptado ao viewport.
-
-
-## Interface v1.0
-Polimento de contraste, tokens globais e foco visual no arquivo ui-polish.css.
-O jogo recebe inert enquanto o menu está aberto, preservando a navegação por teclado.
-A configuração de movimento reduzido controla a animação do cenário. Sem banco de dados: salvamento com localStorage.
-Playwright valida telas, comportamento do menu e salvamento através do GitHub Actions.
-
-### Casa de referência Slime-Harvest
-O cenário do menu usa o renderizador de camadas src/house-renderer.js, baseado no
-construtor do projeto Slime-Harvest (scripts/building/house_builder.gd).
-As cinco faixas do telhado e as peças originais de fachada, porta, janela e chaminé
-são desenhadas sem deformação. O mapa inicial da fazenda segue sem construções prontas.
+**Sprites: Sprout Lands, por Cup Nooble.** Consultar [créditos](./docs/ASSET_CREDITS.md) e [licença premium](./licenses/sprout-lands-premium.txt). Não redistribuir o pacote isolado e não utilizar os assets licenciados para treinamento de IA. O objetivo é criar um jogo próprio com mecânicas inspiradas em Oxygen Not Included, sem copiar arte, código ou personagens.
