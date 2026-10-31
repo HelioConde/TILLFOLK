@@ -256,7 +256,15 @@
       state.mode=state.mode||"survival";
       state.farmName=state.farmName||"Minha Fazenda";
       state.priorities={...startPriorities,...s.priorities};
-      state.workers.forEach(w=>{w.task=null;w.progress=0;w.personalPriority=w.personalPriority||{};w.x=Number.isFinite(w.x)?w.x:13.5;w.y=Number.isFinite(w.y)?w.y:9.5;w.route=[];w.routeTask=null;w.facing=w.facing||"down";w.moving=false;w.walkFrame=0;});
+      state.workers.forEach(w=>{
+        // Uma carga interrompida por recarregamento retorna ao depósito.
+        if(w.carryingWater)state.water=(Number(state.water)||0)+1;
+        if(w.carryingManure)state.inventory.manure++;
+        w.carryingWater=false;w.carryingManure=false;w.supplyStage=null;w.supplyTarget=null;
+        w.task=null;w.progress=0;w.personalPriority=w.personalPriority||{};
+        w.x=Number.isFinite(w.x)?w.x:13.5;w.y=Number.isFinite(w.y)?w.y:9.5;
+        w.route=[];w.routeTask=null;w.facing=w.facing||"down";w.moving=false;w.walkFrame=0;
+      });
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
       state.journal=Array.isArray(s.journal)?s.journal:[];
       tasks=[];recalcTasks();simSpeed=1;updateSpeed();return true;
@@ -277,10 +285,16 @@
   }
   // Somente ordens solicitadas pelo jogador entram na fila. Nenhuma etapa é
   // fabricada depois de limpar, arar, semear, regar ou colher.
+  function releaseSupply(w){
+    if(w.carryingWater){state.water++;w.carryingWater=false;}
+    if(w.carryingManure){state.inventory.manure++;w.carryingManure=false;}
+    w.supplyStage=null;w.supplyTarget=null;
+  }
   function recalcTasks(){
     const current=new Set(state.orders.map(o=>o.id));
     for(const w of state.workers){
       if(w.task&&!current.has(w.task)){
+        releaseSupply(w);
         w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
       }
     }
@@ -297,6 +311,7 @@
       state.orders=state.orders.filter(t=>!ids.has(t.id));
       tasks=tasks.filter(t=>!ids.has(t.id));
       for(const w of state.workers)if(ids.has(w.task)){
+        releaseSupply(w);
         w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
       }
     }
@@ -358,9 +373,15 @@
         state.coins+=2;break;
       }
       case "till":p.tilled=true;break;
-      case "fertilize":if(state.inventory.manure<=0)return false;state.inventory.manure--;p.fertilized=true;break;
+      case "fertilize":
+        if(!w.carryingManure&&state.inventory.manure<=0)return false;
+        if(w.carryingManure)w.carryingManure=false;else state.inventory.manure--;
+        p.fertilized=true;break;
       case "sow":if(state.seeds<=0)return false;p.seeded=true;p.growth=0;state.seeds--;break;
-      case "water":if(state.water<=0)return false;p.watered=true;state.water--;break;
+      case "water":
+        if(!w.carryingWater&&state.water<=0)return false;
+        if(w.carryingWater)w.carryingWater=false;else state.water--;
+        p.watered=true;break;
       case "harvest":p.produce=true;p.seeded=false;p.watered=false;p.growth=0;break;
       case "carry":p.produce=false;p.fertilized=false;state.food+=3;state.coins+=15;state.seeds++;log(w.name+" armazenou a colheita (+3 comida, +1 semente, +15 moedas).");break;
     }
@@ -399,13 +420,33 @@
       w.moving=false;
       if(!w.task)continue;
       const t=tasks.find(t=>t.id===w.task);
-      if(!t){w.task=null;w.progress=0;w.route=[];continue;}
-      if(w.routeTask!==w.task){
-        w.route=routeBetween(w.x,w.y,t.x,t.y);
+      if(!t){releaseSupply(w);w.task=null;w.progress=0;w.route=[];continue;}
+      // Uma ordem de irrigação já autoriza buscar água; fertilizar autoriza
+      // buscar esterco. Não cria ordens extras nem tira decisões do jogador.
+      const fetchWater=t.type==="water"&&state.water<=0&&!w.carryingWater;
+      const fetchManure=t.type==="fertilize"&&state.inventory.manure<=0&&!w.carryingManure;
+      const stage=fetchWater?"water":fetchManure?"manure":null;
+      if(stage){
+        if(w.supplyStage!==stage||!w.supplyTarget){
+          const sources=stage==="water"?state.world.water:
+            state.animals.filter(animal=>animal.manure>0).map(a=>({
+              x:Math.floor(a.x),y:Math.floor(a.y)
+            }));
+          const reachable=sources.map(source=>({...source,route:routeBetween(w.x,w.y,source.x,source.y)}))
+            .filter(source=>source.route.length>0).sort((a,b)=>a.route.length-b.route.length);
+          w.supplyTarget=reachable[0]?{x:reachable[0].x,y:reachable[0].y}:null;
+          w.supplyStage=stage;w.routeTask=null;w.route=[];
+        }
+        if(!w.supplyTarget)continue;
+      }else if(w.supplyStage){w.supplyStage=null;w.supplyTarget=null;w.routeTask=null;w.route=[];}
+      const goal=w.supplyTarget||t;
+      const pathKey=w.task+":"+(w.supplyStage||"work")+":"+goal.x+","+goal.y;
+      if(w.routeTask!==pathKey){
+        w.route=routeBetween(w.x,w.y,goal.x,goal.y);
         w.workGoal=w.route[w.route.length-1]||null;
-        w.routeTask=w.task;
+        w.routeTask=pathKey;
       }
-      const target=w.route?.[0]||w.workGoal||{x:t.x+.5,y:t.y+.5};
+      const target=w.route?.[0]||w.workGoal||{x:goal.x+.5,y:goal.y+.5};
       const dx=target.x-w.x,dy=target.y-w.y,d=Math.hypot(dx,dy);
       if(d>.055){
         if(Math.abs(dx)>Math.abs(dy))w.facing=dx>0?"right":"left";
@@ -417,6 +458,19 @@
       }
       w.x=target.x;w.y=target.y;
       if(w.route?.length){w.route.shift();continue;}
+      if(w.supplyStage==="water"){
+        if(!World.waterAt(state.world,goal.x,goal.y))continue;
+        w.carryingWater=true;w.supplyStage=null;w.supplyTarget=null;
+        w.routeTask=null;w.route=[];w.workGoal=null;
+        log(w.name+" encheu o balde na lagoa e está voltando para regar.");continue;
+      }
+      if(w.supplyStage==="manure"){
+        const animal=state.animals.find(a=>Math.floor(a.x)===goal.x&&Math.floor(a.y)===goal.y&&a.manure>0);
+        if(!animal)continue;
+        animal.manure--;w.carryingManure=true;w.supplyStage=null;w.supplyTarget=null;
+        w.routeTask=null;w.route=[];w.workGoal=null;
+        log(w.name+" pegou esterco e está levando até a plantação.");continue;
+      }
       w.progress+=scaled*bonus(w,t.type)/baseTime[t.type];
       if(w.progress>=1){
         const complete=finish(w,t);
