@@ -20,7 +20,7 @@
       if(!order||!TYPES.includes(order.type)||!validCell(order.x,order.y))continue;
       const key=id(order.type,order.x,order.y);
       if(seen.has(key))continue;
-      seen.add(key);result.push({id:key,type:order.type,x:order.x,y:order.y,...(order.type==="sow"&&typeof order.crop==="string"&&window.TillfolkCrops?.get(order.crop)?{crop:order.crop}:{})});
+      seen.add(key);result.push({id:key,type:order.type,x:order.x,y:order.y,...(order.type==="sow"&&typeof order.crop==="string"&&window.TillfolkCrops?.get(order.crop)?{crop:order.crop}:{}),...(Number.isInteger(order.priority)?{priority:Math.max(1,Math.min(9,order.priority))}:{})});
       if(result.length>=1500)break;
     }
     return result;
