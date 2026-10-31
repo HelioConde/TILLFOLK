@@ -1,5 +1,8 @@
 # TILLFOLK — Mundo selvagem procedural (v1.2)
 
+> **Direção atual:** o mundo é fonte de recursos e riscos, não apenas cenário. O TILLFOLK é um jogo de sobrevivência de colônia; avançar para outras regiões deve liberar materiais necessários a novas construções, alimentação e manutenção dos habitantes. [GDD](./GDD_TILLFOLK.md) · [Plano de sobrevivência](./ROADMAP_SOBREVIVENCIA.md).
+
+
 ## Objetivo visual
 
 A nova partida **não começa numa fazenda pronta**. Não há casa, horta desenhada, caminhos nem cercas. Dois trabalhadores chegam a uma pequena clareira e podem transformar o vale em fazenda escolhendo onde cultivar.
@@ -14,7 +17,7 @@ O mundo é montado por `src/wild-world.js` com um seed armazenado no `localStora
 | Bosque | Árvores, arbustos fechados, tocos e troncos | Bloqueiam passagem; limpar remove em etapas e concede madeira |
 | Rocha | Pedras pequenas/grandes | Algumas bloqueiam; limpar concede pedra |
 | Flora | Flores, grama alta, ervas e cogumelos | Coleta por trabalhadores ao marcar cultivo |
-| Água | Lagoa com margem, junco e pequenas ondulações | Obstáculo permanente e fonte de +3 água por dia (máximo 100) |
+| Água | Lagoa com margem, junco e pequenas ondulações | Obstáculo de travessia; trabalhadores buscam água por ordem explícita na lagoa (sem geração passiva diária) |
 | Fauna ambiente | Borboletas perto de flores, sapos junto à lagoa | Visual, não bloqueia navegação |
 | Renovação | Flores, gramíneas e cogumelos (mudas raras a cada vários dias) | Nasce em áreas não cultivadas e não ocupadas |
 
