@@ -119,6 +119,11 @@
     const row=(moving?4:0)+(dirs[facing]??0);
     stamp("worker",(frame%8)*48+11,row*48+12,26,24,x,y,w,h,target);
   }
+  // As miniaturas de Sobrevivência e Fazenda tranquila continuam usando
+  // o mesmo recorte legível, sem interferir na animação do cenário principal.
+  function walking(x,y,index=0,frame=0,target=ctx,w=56,h=56){
+    workerFrame(x,y,index,frame,false,"down",w,h,target);
+  }
   function workingFrame(x,y,action="hoe",facing="right",frame=0,w=60,h=62){
     // worker-actions: duas colunas por ação; grupos de quatro direções.
     const dirs={down:0,up:1,left:2,right:3};
