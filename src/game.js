@@ -1024,6 +1024,13 @@
       },position.x,position.y,{scale:1});
       if(home.residentId==null)write("LIVRE",x+TILE,y-21,"#e5f7ae",9);
     }
+    // Bancadas do atlas premium, colocadas somente após o colono concluir a obra.
+    for(const ws of state.workstations||[]){
+      if(!inView(ws.x,ws.y,2))continue;
+      const x=ws.x*TILE,y=ws.y*TILE;
+      if(valid(sprite.workstation))ctx.drawImage(sprite.workstation,x-4,y-20,40,49);
+      else{ctx.fillStyle="#96724c";ctx.fillRect(x+3,y+7,26,13);}
+    }
     // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
     for(const p of state.plots){
       if(!inView(p.x,p.y,1)||!p.tilled&&!p.seeded&&!p.produce&&!p.dirty&&!p.fertilized)continue;
@@ -1064,7 +1071,11 @@
     const Blueprint=window.TillfolkBlueprints;
     const fieldPlans=new Map();
     for(const order of state.orders){
-      if(order.type==="buildHome"&&inView(order.x,order.y,4))
+      if(order.type==="buildStation"&&inView(order.x,order.y,2)){
+        const x=order.x*TILE,y=order.y*TILE;
+        ctx.fillStyle="#56aee280";ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
+        ctx.strokeStyle="#a0e5ff";ctx.lineWidth=2;ctx.strokeRect(x+2,y+2,TILE-4,TILE-4);
+      }else if(order.type==="buildHome"&&inView(order.x,order.y,4))
         Blueprint.home(ctx,sprite,order.x,order.y,TILE,true);
       else if((order.type==="till"||order.type==="sow")&&inView(order.x,order.y,1)){
         const id=keyOf(order.x,order.y);
@@ -1078,7 +1089,7 @@
         Blueprint.field(ctx,sprite,plan.x,plan.y,TILE,true,plan.grown||soil.tilled);
     }
     // Marcadores discretos: ordens prontas (creme) ou aguardando (marrom).
-    const markers={clear:"L",till:"A",fertilize:"F",sow:"S",water:"R",harvest:"C",carry:"T",collectWater:"💧",collectManure:"E",buildHome:"⌂"};
+    const markers={clear:"L",till:"A",fertilize:"F",sow:"S",water:"R",harvest:"C",carry:"T",collectWater:"💧",collectManure:"E",buildHome:"⌂",buildStation:"W"};
     const byTile=new Map();
     for(const job of tasks){
       const id=keyOf(job.x,job.y),entry=byTile.get(id)||[];
@@ -1305,6 +1316,7 @@
     if($("#homes-count"))$("#homes-count").textContent=state.homes.length+"/"+state.workers.length;
     set("#hud-workers",state.workers.length);set("#hud-tasks",tasks.length);
     $("#order-count").textContent=String(tasks.length);
+    $("#selected-crop-label").textContent=(Crops.get(state.selectedCrop)?.name||"Cenoura")+" · "+(state.cropSeeds[state.selectedCrop]||0)+" sementes";
     const stock=state.inventory||{};
     const inventoryItems=[
       ["wood","🪵","Madeira"],["stone","🪨","Pedra"],
@@ -1479,7 +1491,7 @@
   function nextUniversalOrder(x,y){
     const plot=findPlot(x,y);
     if(!plot||World.waterAt(state.world,x,y)||
-       occupiedByHome(x,y)||window.TillfolkHouseBuilder.occupied(state.house,x,y))return null;
+       occupiedByHome(x,y)||occupiedByStation(x,y)||window.TillfolkHouseBuilder.occupied(state.house,x,y))return null;
     if(World.at(state.world,x,y)||plot.dirty)return "clear";
     const terrain=World.terrainAt?.(state.world,x,y);
     if(terrain&&!terrain.farmable)return null;
@@ -1489,14 +1501,17 @@
     return "till";
   }
   function queueAt(type,x,y){
-    if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||occupiedByHome(x,y)||
+    if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||occupiedByHome(x,y)||occupiedByStation(x,y)||occupiedByStation(x,y)||
        (World.waterAt(state.world,x,y)&&type!=="collectWater"))return {error:"Terreno indisponível"};
+    if(type==="buildStation"&&!stationSiteValid(x,y))return {error:"Oficina exige terreno livre."};
     if(type==="buildHome"&&!homeSiteValid(x,y))return {error:"Casa precisa de área 2×2 livre"};
     if(type==="collectManure"&&!state.animals.some(a=>Math.floor(a.x)===x&&Math.floor(a.y)===y))
       return {error:"Selecione um animal com esterco"};
     const plot=findPlot(x,y);
     const result=Orders.add(state.orders,type,x,y,plot,World.at(state.world,x,y),state);
     if(result.error)return result;
+    if(type==="sow")result.order.crop=state.selectedCrop;
+    if(type==="sow")result.order.crop=state.selectedCrop;
     state.orders.push(result.order);
     if(type==="buildHome")recordTutorial("plan");
     if(plot&&!["buildHome","collectWater","collectManure"].includes(type))plot.selected=true;
@@ -1537,6 +1552,7 @@
        (World.waterAt(state.world,x,y)&&type!=="collectWater")){
       notify("Terreno indisponível para ordens.");return;
     }
+    if(type==="buildStation"&&!stationSiteValid(x,y)){notify("Oficina exige terreno livre.");return;}
     if(type==="buildHome"&&!homeSiteValid(x,y)){notify("Casa precisa de uma área livre 2×2 (sem árvores, água ou plantações).");return;}
     if(type==="collectManure"&&!state.animals.some(a=>Math.floor(a.x)===x&&Math.floor(a.y)===y)){
       notify("Selecione a posição de um animal para recolher esterco.");return;
@@ -1563,7 +1579,7 @@
       y:Math.floor((event.clientY-rect.top)/rect.height*H)};
   }
   function isBuildCellBusy(x,y){
-    if(occupiedByHome(x,y)||World.waterAt(state.world,x,y)||World.at(state.world,x,y))return true;
+    if(occupiedByStation(x,y)||occupiedByHome(x,y)||World.waterAt(state.world,x,y)||World.at(state.world,x,y))return true;
     if(state.workers.some(w=>Math.max(Math.abs(Math.floor(w.x)-x),Math.abs(Math.floor(w.y)-y))<=1))return true;
     return state.plots.some(p=>p.x===x&&p.y===y&&(p.selected||p.tilled||p.seeded||p.produce));
   }
@@ -1572,7 +1588,7 @@
     const p=findPlot(x,y);
     if(!p||!World.terrainAt(state.world,x,y).farmable)return {error:"Este terreno não aceita plantação."};
     if(World.waterAt(state.world,x,y)||World.at(state.world,x,y)||p.dirty||
-       occupiedByHome(x,y)||window.TillfolkHouseBuilder.occupied(state.house,x,y))
+       occupiedByHome(x,y)||occupiedByStation(x,y)||window.TillfolkHouseBuilder.occupied(state.house,x,y))
       return {error:"Limpe obstáculos antes de planejar o canteiro."};
     if(p.seeded||p.produce)return {error:"Este canteiro já está cultivado."};
     if(state.orders.some(o=>o.type==="buildHome"&&homeTiles(o.x,o.y).some(([hx,hy])=>hx===x&&hy===y)))
@@ -1583,6 +1599,7 @@
     if(!Number.isInteger(x)||!Number.isInteger(y)||x<1||y<1||x>=W-1||y>=H-1)
       return {error:"Escolha uma área dentro do vale."};
     if(buildLayer==="field")return canPlanField(x,y);
+    if(buildLayer==="station")return stationSiteValid(x,y)?{house:true}:{error:"Oficina exige chão firme livre."};
     if(buildLayer==="home")return homeSiteValid(x,y)?
       {house:true}:{error:"A cabana exige 2×2 livres e terreno firme."};
     if(!World.terrainAt(state.world,x,y).buildable)
@@ -1607,7 +1624,10 @@
     for(const type of p.tilled?["sow"]:["till","sow"]){
       if(state.orders.some(o=>o.type===type&&o.x===x&&o.y===y))continue;
       const result=Orders.add(state.orders,type,x,y,p,World.at(state.world,x,y),state);
-      if(result.order){state.orders.push(result.order);count++;}
+      if(result.order){
+        if(type==="sow")result.order.crop=state.selectedCrop;
+        state.orders.push(result.order);count++;
+      }
     }
     if(count)recordTutorial("plan");
     return {count,error:count?null:"Canteiro já está planejado."};
@@ -1643,7 +1663,7 @@
       const on=btn.dataset.buildLayer===buildLayer;
       btn.classList.toggle("chosen",on);btn.setAttribute("aria-pressed",String(on));
     });
-    const plans=buildLayer==="home"||buildLayer==="field";
+    const plans=buildLayer==="home"||buildLayer==="field"||buildLayer==="station";
     $("#build-erase").disabled=plans;
     $("#build-erase").title=plans?"Clique direito cancela os blueprints planejados.":"Apagar peças da construção";
     $("#build-erase").setAttribute("aria-pressed",String(eraseBuild));
@@ -1704,6 +1724,15 @@
       $("#build-status").textContent="🌱 Canteiro planejado: arar e semear. A equipe executará as ordens.";
       return;
     }
+    if(buildLayer==="station"){
+      const test=Orders.add(state.orders,"buildStation",x,y,findPlot(x,y),World.at(state.world,x,y),state);
+      if(!test.order){$("#build-status").textContent=test.error;return;}
+      pushBuildHistory();
+      state.orders.push(test.order);
+      recalcTasks();refresh();save();buildHover=null;
+      $("#build-status").textContent="🛠️ Oficina planejada: aguardando 5 madeiras e 2 pedras.";
+      return;
+    }
     if(buildLayer==="home"){
       const test=Orders.add(state.orders,"buildHome",x,y,findPlot(x,y),
         World.at(state.world,x,y),state);
@@ -1736,6 +1765,8 @@
       "Cabana: prévia azul 2×2. Clique para atribuir à equipe; botão direito cancela.":
       buildLayer==="field"?
         "Plantação: prévia azul. Clique ou arraste para criar canteiros (arar + semear).":
+      buildLayer==="station"?
+        "Oficina: planeje uma bancada no chão livre (5 madeiras, 2 pedras). Clique direito cancela.":
         "Camada: "+btn.textContent.trim()+". Clique para construir ou use o botão direito para apagar.";
   }));
   $("#build-erase").addEventListener("click",()=>{
@@ -1765,9 +1796,10 @@
     const {x,y}=buildCellFromEvent(event);
     if(x<0||y<0||x>=W||y>=H)return;
     if(selectedTool==="construir"){
-      if(buildLayer==="field"||buildLayer==="home"){
+      if(buildLayer==="field"||buildLayer==="home"||buildLayer==="station"){
         const ids=state.orders.filter(o=>buildLayer==="field"?
           o.x===x&&o.y===y&&["till","sow"].includes(o.type):
+          buildLayer==="station"?o.type==="buildStation"&&o.x===x&&o.y===y:
           o.type==="buildHome"&&homeTiles(o.x,o.y).some(([hx,hy])=>hx===x&&hy===y))
           .map(o=>o.id);
         if(ids.length){removeOrders(ids);$("#build-status").textContent="Blueprint cancelado.";}
