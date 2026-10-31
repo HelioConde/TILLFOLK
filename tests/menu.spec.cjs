@@ -583,8 +583,8 @@ test('Telhado em primeiro plano, sem recortes nas janelas e porta',async({page})
   expect(detail.firstRoof).toBeGreaterThan(detail.lastDoor);
   expect(detail.lastDraw).toBe('roof');
   const source=require('node:fs').readFileSync('src/house-renderer.js','utf8');
-  expect(source).toMatch(/ctx\\.clip\\(roofMask/);
-  expect(source).toMatch(/if\\(canClip\\)ctx\\.restore\\(\\)/);
+  expect(source.includes('ctx.clip(roofMask')).toBe(true);
+  expect(source.includes('if(canClip)ctx.restore()')).toBe(true);
   expect(detail.clipReleased).toBe(true);
   expect(detail.png).toMatch(/^data:image\/png;base64,/);
   await page.screenshot({path:'screenshots/casa-telhado-primeiro-plano-1366x768.png',animations:'disabled'});
