@@ -54,6 +54,13 @@ test("o regador continua bloqueado até ser fabricado",()=>{
   assert.equal(C.craft(s,"wateringCan").item.key,"wateringCan");
   assert.equal(C.blocked(s,"water"),null);
 });
+test("machado de pedra só pode ser fabricado após a primeira colheita",()=>{
+  const s=state();s.crafting.station={x:10,y:10};
+  s.tutorial={active:true,stats:{}};s.inventory.twigs=12;s.inventory.grass=3;s.inventory.stone=3;
+  assert.match(C.craft(s,"stoneAxe").error,/Colha sua primeira plantação/);
+  s.firstHarvest=true;
+  assert.equal(C.craft(s,"stoneAxe").item.key,"stoneAxe");
+});
 test("migração de saves antigos preserva ferramentas antes ilimitadas",()=>{
   assert.equal(C.normalize(null,true).equipment.pickaxe,true);
   assert.equal(C.normalize(null).equipment.pickaxe,false);
