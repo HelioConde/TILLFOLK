@@ -72,8 +72,20 @@
     }
     return world;
   }
-  function at(world,x,y){return world?.objects?.find(o=>o.x===x&&o.y===y)||null;}
-  function waterAt(world,x,y){return Boolean(world?.water?.some(p=>p.x===x&&p.y===y));}
+  const indices=new WeakMap();
+  function index(world){
+    if(!world)return null;
+    let current=indices.get(world);
+    if(!current||current.length!==world.objects.length||current.waterLength!==world.water.length){
+      current={objects:new Map(world.objects.map(o=>[key(o.x,o.y),o])),
+        waters:new Set(world.water.map(o=>key(o.x,o.y))),
+        length:world.objects.length,waterLength:world.water.length};
+      indices.set(world,current);
+    }
+    return current;
+  }
+  function at(world,x,y){return index(world)?.objects.get(key(x,y))||null;}
+  function waterAt(world,x,y){return Boolean(index(world)?.waters.has(key(x,y)));}
   function blocked(world,x,y,w,h){
     return !inMap(x,y,w,h)||waterAt(world,x,y)||solidKinds.has(at(world,x,y)?.kind);
   }
