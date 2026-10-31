@@ -1084,6 +1084,8 @@
     if(!plot||World.waterAt(state.world,x,y)||
        occupiedByHome(x,y)||window.TillfolkHouseBuilder.occupied(state.house,x,y))return null;
     if(World.at(state.world,x,y)||plot.dirty)return "clear";
+    const terrain=World.terrainAt?.(state.world,x,y);
+    if(terrain&&!terrain.farmable)return null;
     if(plot.produce)return "carry";
     if(plot.seeded)return plot.growth>=1?"harvest":!plot.watered?"water":null;
     if(plot.tilled)return "sow";
