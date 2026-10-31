@@ -1906,7 +1906,7 @@
     const btn=event.target.closest("[data-cancel-order]");
     if(btn){removeOrders([btn.dataset.cancelOrder]);notify("Ordem cancelada.");}
   });
-  document.querySelectorAll("[data-speed]").forEach(b=>b.addEventListener("click",()=>{simSpeed=Number(b.dataset.speed);updateSpeed();refresh();}));
+  document.querySelectorAll("[data-speed]").forEach(b=>b.addEventListener("click",()=>{simSpeed=Number(b.dataset.speed);updateSpeed();refresh();save();}));
   $("#priorities").addEventListener("click",e=>{
     const btn=e.target.closest("[data-priority]");if(!btn||!state)return;
     const type=btn.dataset.priority;
