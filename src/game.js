@@ -488,6 +488,9 @@
         }
         state.spawn=s.spawn||{x:14,y:10};
       }else state.spawn=s.spawn||{x:W/2,y:H/2};
+      // Saves legados podem trazer árvores com frutos: substituir somente a
+      // variante gráfica, mantendo a árvore, sua posição e o recurso de madeira.
+      World.stripFruitTrees(state.world);
       state.inventory=state.inventory||{wood:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0};
       state.inventory.manure=Math.max(0,Number(state.inventory.manure)||0);
       state.homes=Array.isArray(s.homes)?s.homes.filter(h=>Number.isInteger(h.x)&&Number.isInteger(h.y)&&h.x>=2&&h.y>=2):[];
