@@ -511,11 +511,27 @@
       tasks=[];recalcTasks();simSpeed=1;updateSpeed();return true;
     }catch {return false;}
   }
-  function save(){if(!state||!playing)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch(e){console.warn("Não foi possível salvar:",e);}}
+  function hasUsableSave(){
+    try{return Boolean(window.TillfolkSaveBackup?.decode(localStorage.getItem(SAVE_KEY)));}
+    catch{return false;}
+  }
+  function save(){
+    if(!state||!playing)return;
+    try{
+      state.saveVersion=2; // Mesmo formato legado na chave localStorage: não quebra saves antigos.
+      localStorage.setItem(SAVE_KEY,JSON.stringify(state));
+    }catch(e){console.warn("Não foi possível salvar:",e);}
+  }
   function log(text){state.journal.unshift(text);state.journal.length=Math.min(5,state.journal.length);}
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
   function start(continueSaved=false, chosenStarters = [], config = {}){
-    if(!continueSaved||!readSave())reset(chosenStarters,config);
+    if(continueSaved){
+      if(!readSave()){
+        $("#continue").disabled=true;
+        window.alert("Não foi possível carregar esta partida. Importe um backup válido em Configurações ou inicie uma nova fazenda.");
+        return; // Nunca iniciar uma fazenda com zero trabalhadores após save corrompido.
+      }
+    }else reset(chosenStarters,config);
     houseHistory=[];buildHover=null;areaSelection=null;selectionPointer=null;setTool("universal");
     recalcTasks(); // Limpar ordens já concluídas antes da primeira renderização.
     playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false;
@@ -1842,11 +1858,11 @@
     cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;movementKeys.clear();syncCameraButtons();
     if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
     $(".app-shell").inert=true;$("#menu").hidden=false;
-    $("#continue").disabled=!localStorage.getItem(SAVE_KEY);
+    $("#continue").disabled=!hasUsableSave();
     $("#new-game").focus({preventScroll:true});
     requestAnimationFrame(fitWorldCanvas);
   });
-  $("#continue").disabled=!localStorage.getItem(SAVE_KEY);
+  $("#continue").disabled=!hasUsableSave();
   $("#focus-game").setAttribute("aria-pressed","false");
   $("#focus-game").addEventListener("click",async()=>{
     try{
