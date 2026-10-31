@@ -64,3 +64,36 @@ test("Backup: formato legado sem envelope continua importável",async({page})=>{
   });
   await expect(page.locator("#save-backup-status")).toContainText("Partida importada");
 });
+
+test("Partida corrompida não oferece Continuar nem cria colônia vazia",async({page})=>{
+  await page.goto("http://127.0.0.1:4173/",{waitUntil:"networkidle"});
+  await page.evaluate(()=>localStorage.setItem("tillfolk-v01","{invalido"));
+  await page.reload({waitUntil:"networkidle"});
+  await expect(page.locator("#continue")).toBeDisabled();
+  await expect(page.locator("#new-game")).toBeEnabled();
+});
+
+test("Importação legada reconstrói mundo e usa nome padrão",async({page})=>{
+  await page.goto("http://127.0.0.1:4173/",{waitUntil:"networkidle"});
+  await page.locator("#new-game").click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator("#starter-confirm").click();
+  const raw=await page.evaluate(()=>{
+    const s=JSON.parse(localStorage.getItem("tillfolk-v01"));
+    delete s.world;delete s.farmName;delete s.saveVersion;
+    return JSON.stringify(s);
+  });
+  await page.reload({waitUntil:"networkidle"});
+  await page.locator("#title-settings").click();
+  page.once("dialog",dialog=>dialog.accept());
+  await page.locator("#save-import-file").setInputFiles({
+    name:"legado.json",mimeType:"application/json",buffer:Buffer.from(raw)
+  });
+  await expect(page.locator("#save-backup-status")).toContainText("Partida importada");
+  await page.locator("#title-settings-dialog .modal-x").click();
+  await page.locator("#continue").click();
+  await expect(page.locator("#world")).toBeVisible();
+  const state=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
+  expect(state.world.width).toBe(80);
+  expect(state.workers).toHaveLength(2);
+});
