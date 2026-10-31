@@ -12,23 +12,23 @@
   const ITEM_FRAMES=Object.freeze({
     wateringCan:Object.freeze({x:0,y:0,w:16,h:16}),
     axe:Object.freeze({x:16,y:0,w:16,h:16}),
-    stoneAxe:Object.freeze({x:32,y:0,w:16,h:16}),
     hoe:Object.freeze({x:0,y:16,w:16,h:16})
   });
   const itemFrame=key=>ITEM_FRAMES[key]||null;
   const RECIPES=Object.freeze([
     {key:"axe",name:"Machado",icon:"🪓",cost:{twigs:8,grass:3},help:"Derrubar árvores e retirar troncos."},
-    {key:"stoneAxe",name:"Machado de pedra",icon:"🪓",cost:{twigs:8,grass:3,stone:3},help:"Remover o tronco caído que bloqueia a saída leste."},
     {key:"shovel",name:"Pá",icon:"🪏",cost:{twigs:8,grass:2},help:"Arrancar tocos e escavar terreno."},
     {key:"pickaxe",name:"Picareta",icon:"⛏️",cost:{twigs:10,wood:2},help:"Extrair pedras grandes."},
     {key:"hoe",name:"Enxada",icon:"🌱",cost:{twigs:4,grass:2},help:"Arar e preparar canteiros."},
     {key:"wateringCan",name:"Regador",icon:"💧",cost:{twigs:4,grass:2},help:"Irrigar as plantações."}
   ]);
-  const equipped=Object.freeze({axe:false,stoneAxe:false,shovel:false,pickaxe:false,hoe:false,wateringCan:false});
+  const equipped=Object.freeze({axe:false,shovel:false,pickaxe:false,hoe:false,wateringCan:false});
   function normalize(raw,legacy=false){
     // Saves anteriores tinham acesso irrestrito a ferramentas: preservar seu progresso.
     const equipment={...equipped};
-    for(const key of Object.keys(equipment))equipment[key]=legacy||raw?.equipment?.[key]===true;
+    for(const key of Object.keys(equipment))
+      equipment[key]=legacy||raw?.equipment?.[key]===true||
+        (key==="axe"&&raw?.equipment?.stoneAxe===true);
     const station=raw?.station&&Number.isInteger(raw.station.x)&&Number.isInteger(raw.station.y)
       ?{x:raw.station.x,y:raw.station.y}:null;
     return {version:1,station,equipment};
@@ -42,8 +42,13 @@
     worker.inventory.items=worker.inventory.items||{};
     for(const key of Object.keys(equipped)){
       const hadOwn=Object.hasOwn(worker.inventory.tools,key);
-      worker.inventory.tools[key]=hadOwn?Boolean(worker.inventory.tools[key]):Boolean(legacyEquipment?.[key]);
+      worker.inventory.tools[key]=hadOwn?Boolean(worker.inventory.tools[key]):
+        Boolean(legacyEquipment?.[key]);
+      // Saves da versão anterior não perdem o machado já fabricado.
+      if(key==="axe"&&(worker.inventory.tools.stoneAxe||legacyEquipment?.stoneAxe))
+        worker.inventory.tools.axe=true;
     }
+    delete worker.inventory.tools.stoneAxe;
     return worker.inventory;
   }
   function has(state,key,worker=null){
@@ -58,7 +63,7 @@
   function canBuild(state){return !state?.crafting?.station&&missing(state,{twigs:STATION_COST}).length===0;}
   function recipe(key){return RECIPES.find(item=>item.key===key)||null;}
   function locked(state,key){
-    if(["axe","stoneAxe"].includes(key)&&state?.tutorial?.active===true&&
+    if(key==="axe"&&state?.tutorial?.active===true&&
        !state?.firstHarvest&&!(state.tutorial.stats?.harvest>0))
       return "Colha sua primeira plantação antes de fabricar machados.";
     return null;
@@ -81,7 +86,7 @@
     if(type==="water")return "wateringCan";
     if(type==="clear"){
       switch(object?.kind){
-        case "gateLog":return "stoneAxe";
+        case "gateLog":return "axe";
         case "tree":case "log":case "thicket":return "axe";
         case "stump":return "shovel";
         case "boulder":return "pickaxe";
