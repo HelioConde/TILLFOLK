@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="./camera-ui.css?v=1">
   <link rel="stylesheet" href="./game-interface.css?v=20261031">
   <link rel="stylesheet" href="./top-speed.css?v=20261031-mobile-brand-clock">
+  <link rel="stylesheet" href="./tutorial-missions.css?v=20261031-missoes1">
   <link rel="stylesheet" href="./hud-settings.css?v=20261031-alinhamento-preferencias">
   <script defer src="./src/menu.js?v=20261031-sync-preferencias"></script>
   <script defer src="./src/tutorial.js?v=20261031-fim-escolhas"></script>
@@ -32,6 +33,7 @@
   <script defer src="./src/blueprints.js?v=1"></script>
   <script defer src="./src/house-building.js?v=20261031-ghost-sprout"></script>
   <script defer src="./src/task-orders.js"></script>
+  <script defer src="./src/missions.js?v=20261031-missoes1"></script>
   <script defer src="./src/game.js?v=20261031-animacoes"></script>
   <script defer src="./src/game-hud.js?v=20261031-atalho-direito"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
@@ -56,6 +58,13 @@
     <main class="game-layout">
       <section class="play-area" aria-label="Fazenda">
         <div class="scene-head"><div><span id="mode-label" class="overline">SOBREVIVÊNCIA · DIA 1</span><h1 id="farm-title">Seu pequeno pedaço de terra</h1></div><div class="scene-actions"><button id="focus-game" type="button" class="focus-game-btn" aria-pressed="false" title="Alternar a tela cheia do navegador">⛶ Tela cheia</button><div id="status" class="status-pill">● Fazenda em funcionamento</div></div></div>
+        <section id="mission-card" class="mission-card" aria-label="Missão atual do tutorial" hidden>
+          <div class="mission-top"><span id="mission-chapter" class="mission-chapter">MISSÃO 1 / 8</span><span class="mission-badge">✦ APRENDIZ DO VALE</span></div>
+          <h2 id="mission-title">O vale está vivo</h2><p id="mission-goal" class="mission-goal">Sua primeira tarefa</p>
+          <div class="mission-progress-row"><progress id="mission-progress" max="1" value="0"></progress><span id="mission-count">0 / 1</span></div>
+          <div class="mission-actions"><button id="mission-locate" type="button" title="Levar a câmera até o alvo e selecionar a ferramenta certa">⌖ Mostrar no mapa</button><button id="mission-details-toggle" type="button" aria-expanded="false" aria-controls="mission-help">ⓘ Detalhes</button></div>
+          <p id="mission-help" role="tooltip"></p><p class="mission-hint">Passe o mouse para ver como concluir esta missão.</p>
+        </section>
         <div class="canvas-scroll">
           <div class="canvas-wrap">
             <canvas id="world" width="2560" height="1600" aria-label="Mapa interativo da fazenda. Botão esquerdo cria ordens; botão direito cancela ordens pendentes."></canvas>
@@ -213,7 +222,8 @@
         <nav class="title-menu-actions" aria-label="Escolha uma opção">
           <button type="button" id="new-game" class="title-menu-button primary"><span>🌱</span><strong>Nova Fazenda</strong><em>›</em></button>
           <button type="button" id="continue" class="title-menu-button"><span>↻</span><strong>Continuar</strong></button>
-          <button type="button" id="help-btn" class="title-menu-button"><span>▤</span><strong>Tutorial</strong></button>
+          <button type="button" id="help-btn" class="title-menu-button"><span>▤</span><strong>Como jogar</strong></button>
+          <button type="button" id="tutorial-start" class="title-menu-button"><span>✦</span><strong>Tutorial · missões</strong></button>
           <button type="button" id="title-settings" class="title-menu-button"><span>⚙</span><strong>Configurações</strong></button>
           <button type="button" id="title-credits" class="title-menu-button"><span>✦</span><strong>Créditos</strong></button>
           <button type="button" id="title-exit" class="title-menu-button"><span>⇥</span><strong>Sair</strong></button>
@@ -314,7 +324,7 @@
     <div id="candidates" class="candidate-list"></div>
   </dialog>
   <dialog id="help-dialog" class="modal help-guide" aria-labelledby="guide-title">
-    <header class="guide-header"><div><span class="overline">PRIMEIROS PASSOS · GUIA ILUSTRADO</span><h2 id="guide-title">Tutorial do TILLFOLK</h2><p>Aprenda a comandar sua fazenda, etapa por etapa.</p></div>
+    <header class="guide-header"><div><span class="overline">PRIMEIROS PASSOS · GUIA ILUSTRADO</span><h2 id="guide-title">Como jogar TILLFOLK</h2><p>Consulte as mecânicas do jogo. Para aprender jogando, escolha Tutorial · missões no menu.</p></div>
     <form method="dialog"><button class="modal-x" aria-label="Fechar tutorial">✕</button></form></header>
     <div class="guide-stage">      <section class="guide-step" data-guide-step="0" >
         <canvas width="384" height="160" class="guide-art" data-guide-art="world" role="img" aria-label="Cena em pixel art: Nova fazenda"></canvas>
@@ -342,8 +352,16 @@
       </section></div>
     <footer class="guide-footer">
       <div class="guide-dots" aria-label="Etapas do tutorial"><button type="button" data-guide-dot="0" aria-label="Etapa 1: Nova fazenda" aria-current="step">1</button><button type="button" data-guide-dot="1" aria-label="Etapa 2: Sua equipe" >2</button><button type="button" data-guide-dot="2" aria-label="Etapa 3: Primeira ordem" >3</button><button type="button" data-guide-dot="3" aria-label="Etapa 4: Cultivar" >4</button><button type="button" data-guide-dot="4" aria-label="Etapa 5: Colheita" >5</button><button type="button" data-guide-dot="5" aria-label="Etapa 6: Automatizar" >6</button></div>
-      <div class="guide-actions"><button type="button" id="help-prev" class="large-secondary" disabled>← Anterior</button><span id="guide-counter" role="status" aria-live="polite">1 de 6</span><button type="button" id="help-next" class="large-primary">Próximo →</button><button type="button" id="help-close" class="large-secondary" hidden>↩ Voltar ao menu inicial</button><button type="button" id="guide-play" class="large-primary" hidden>▶ Continuar jogando</button></div>
+      <div class="guide-actions"><button type="button" id="help-prev" class="large-secondary" disabled>← Anterior</button><span id="guide-counter" role="status" aria-live="polite">1 de 6</span><button type="button" id="help-next" class="large-primary">Próximo →</button><button type="button" id="help-close" class="large-secondary" hidden>✓ Fechar guia</button></div>
     </footer>
+  </dialog>
+  <dialog id="tutorial-done-dialog" class="game-modal" aria-labelledby="tutorial-done-title">
+    <div class="tutorial-trophy" aria-hidden="true">🌾 ✦ 🏡</div>
+    <span class="overline">O VALE AGORA É SEU</span>
+    <h2 id="tutorial-done-title">Missões concluídas!</h2>
+    <p>Você aprendeu a recolher recursos, encontrar sementes, cultivar, regar, colher, armazenar alimentos e planejar construções.</p>
+    <p><strong>A fazenda continua exatamente como você a deixou.</strong> Qual será seu próximo capítulo?</p>
+    <div class="tutorial-end-actions"><button id="tutorial-continue-game" type="button" class="large-primary">▶ Continuar jogando</button><button id="tutorial-back-menu" type="button" class="large-secondary">↩ Voltar ao menu inicial</button></div>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>
