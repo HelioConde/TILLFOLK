@@ -175,3 +175,37 @@ body.play-session .construction-actions button:focus-visible{outline:3px solid #
 @media(prefers-reduced-motion:reduce){
  body.play-session .world-tag,body.play-session .tooltray{transition:none!important}
 }
+
+/* Fila de ordens: estados legíveis e progresso real sem sobrecarregar o painel. */
+body.play-session .sidebar .order-task{
+  display:flex!important;justify-content:space-between;align-items:center;gap:8px;
+  padding:9px 8px!important;border-radius:2px!important;
+  border:2px solid #768662!important;background:#2d4635!important;
+}
+body.play-session .order-task-main{min-width:0;flex:1;display:grid;gap:5px}
+body.play-session .order-task-title{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+body.play-session .order-task-title strong{font-size:12px!important;color:#f4e7c4}
+body.play-session .order-symbol{
+  display:grid;place-items:center;width:24px;height:24px;flex:none;
+  font-size:13px;color:#423324;background-image:var(--sprout-inventory-slot);
+  background-size:100% 100%;image-rendering:pixelated;
+}
+body.play-session .order-state{
+  font:900 9px/1.1 system-ui,sans-serif;letter-spacing:.25px;
+  padding:3px 5px;border:1px solid #85986b;color:#d9e5bc;background:#233b2b;
+}
+body.play-session [data-order-state="working"] .order-state{
+  color:#ffe7b2;border-color:#d2aa6d;background:#4b3d2d;
+}
+body.play-session [data-order-state="waiting"] .order-state{
+  color:#e6d4bf;border-color:#8e7764;background:#4c3d33;
+}
+body.play-session .order-task-main small{display:block;color:#c1cfab!important;font-size:10px!important;line-height:1.3}
+body.play-session .order-progress{
+  width:100%;height:7px;border:1px solid #b5a37a;background:#182c20;
+  overflow:hidden;
+}
+body.play-session .order-progress i{display:block;height:100%;background:#edd18d}
+body.play-session .order-task-controls{display:flex;align-items:center;gap:4px;flex:none}
+body.play-session .order-task-controls b{font-size:10px;color:#f8e7b5}
+body.play-session .order-task-controls button{min-width:27px;min-height:27px}
