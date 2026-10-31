@@ -210,7 +210,7 @@ function sample(name){
   map=Array.from({length:H},()=>Array(W).fill(false));
   if(name==="island"){
     for(let y=2;y<11;y++)for(let x=3;x<17;x++)map[y][x]=true;
-    for(let y=2;y<5;y++)for(let x=3;x<7;y===4&&x===6?x++:x++)map[y][x]=false;
+    for(let y=2;y<5;y++)for(let x=3;x<7;x++)map[y][x]=false;
     // Braço estreito cria uma extremidade e dois cantos externos.
     for(let x=16;x<20;x++)map[7][x]=true;
   }else if(name==="corners"){
