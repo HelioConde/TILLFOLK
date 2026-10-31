@@ -74,6 +74,27 @@ test("machado antigo é migrado para machado comum sem perder ferramentas do sav
   assert.equal(worker.inventory.tools.axe,true);
   assert.equal(Object.hasOwn(worker.inventory.tools,"stoneAxe"),false);
 });
+test("ferramentas são individuais e a fila de fabricação sobrevive ao save",()=>{
+  const s=state();s.crafting.station={x:10,y:10};
+  const first={id:1,inventory:{tools:{},items:{}}};
+  const second={id:2,inventory:{tools:{},items:{}}};
+  C.normalizeWorker(first);C.normalizeWorker(second);
+  s.workers=[first,second];s.inventory.twigs=16;s.inventory.grass=4;
+  assert.match(C.blocked(s,"till"),/enxada/);
+  const craft=C.craft(s,"hoe",first);
+  assert.equal(craft.item.key,"hoe");
+  assert.equal(C.has(s,"hoe",first),true);
+  assert.equal(C.has(s,"hoe",second),false);
+  assert.equal(C.blocked(s,"till",null,first),null);
+  assert.match(C.blocked(s,"till",null,second),/enxada/);
+  const queued={type:"craftTool",recipe:"hoe",x:10,y:10};
+  assert.equal(O.status(queued,plot,null,s).state,"ready");
+  const orderId=O.id("craftTool",10,10,"hoe");
+  const restored=O.normalize([{...queued,id:orderId}]);
+  assert.equal(restored.length,1);
+  assert.equal(restored[0].recipe,"hoe");
+  assert.equal(restored[0].id,orderId);
+});
 test("migração de saves antigos preserva ferramentas antes ilimitadas",()=>{
   assert.equal(C.normalize(null,true).equipment.pickaxe,true);
   assert.equal(C.normalize(null).equipment.pickaxe,false);
