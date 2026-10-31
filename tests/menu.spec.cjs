@@ -467,7 +467,16 @@ test('Obstáculo da floresta: designar limpeza sem atravessar árvores',async({p
       .sort((a,b)=>Math.hypot(a.x-14,a.y-9)-Math.hypot(b.x-14,b.y-9))[0]||null;
   });
   expect(location).not.toBeNull();
-  await page.mouse.click(location.cx,location.cy);
+  await page.locator("#orders-btn").click();
+  await page.locator('[data-order-type="clear"]').click();
+  // Clique diretamente na célula do Canvas: o HUD flutuante pode interceptar
+  // coordenadas de tela, mas não deve alterar a designação da ordem.
+  await page.locator('#world').evaluate((canvas,{x,y})=>{
+    const rect=canvas.getBoundingClientRect();
+    canvas.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,
+      clientX:rect.left+(x+.5)*rect.width/28,
+      clientY:rect.top+(y+.5)*rect.height/18}));
+  },location);
   const selected=await page.evaluate(({x,y})=>{
     const state=JSON.parse(localStorage.getItem('tillfolk-v01'));
     return state.plots.find(p=>p.x===x&&p.y===y)?.selected;
