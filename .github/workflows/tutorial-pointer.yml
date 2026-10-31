@@ -1,0 +1,42 @@
+name: TILLFOLK — diagnóstico da mãozinha do tutorial
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/tutorial-pointer.js'
+      - 'src/game.js'
+      - 'index.html'
+      - 'tutorial-pointer.css'
+      - 'tests/tutorial-paw.spec.cjs'
+      - 'tests/tutorial-pointer-diagnostics.spec.cjs'
+      - '.github/workflows/tutorial-pointer.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pointer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar navegador
+        run: |
+          npm install --no-save @playwright/test@1.55.0
+          npx playwright install chromium
+      - name: Servir a versão atual do jogo
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-tutorial-http.log 2>&1 &
+          sleep 2
+      - name: Validar patinha no tutorial
+        run: npx playwright test tests/tutorial-pointer-diagnostics.spec.cjs tests/tutorial-paw.spec.cjs --browser chromium --workers=1 --reporter=line
+      - name: Salvar screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-tutorial-paw-diagnostics
+          path: screenshots/
+          if-no-files-found: warn
+          retention-days: 7
