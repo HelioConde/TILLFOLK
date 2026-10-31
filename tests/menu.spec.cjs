@@ -494,7 +494,7 @@ test('Casa Slime-Harvest: 5 faixas originais, escala 2x, captura real',async({pa
   expect(result.center).toEqual([[1,0],[1,1],[1,2],[1,3],[1,4]]);
   expect(result.left.map(t=>t[0])).toEqual([0,0,0,0,0]);
   expect(result.right.map(t=>t[0])).toEqual([2,2,2,2,2]);
-  expect(result.dimensions).toEqual({width:224,height:256,cell:32});
+  expect(result.dimensions).toEqual({width:224,height:288,cell:32});
   const fs=require('node:fs');
   fs.mkdirSync('screenshots',{recursive:true});
   const data=await page.locator('#title-scene').evaluate(c=>c.toDataURL('image/png').split(',')[1]);
@@ -530,9 +530,9 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
       noWindowsBehindRoof:calls.filter(c=>c.asset==='roof').every(c=>c.dy+c.dh<=224)};
   });
   expect(result.stats.stretched).toBe(0);
-  expect(result.stats.walls).toBe(20);
+  expect(result.stats.walls).toBe(25);
   expect(result.windows.map(w=>[w.dx,w.dy])).toEqual([[64,224],[128,224]]);
-  expect(result.doors.map(d=>[d.dx,d.dy])).toEqual([[96,224]]);
+  expect(result.doors.map(d=>[d.dx,d.dy,d.dw,d.dh])).toEqual([[96,224,32,64]]);
   expect(result.roofMin).toBe(64);
   expect(result.roofMax).toBe(224);
   expect(result.rooftopCount).toBe(36);
