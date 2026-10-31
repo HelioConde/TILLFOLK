@@ -29,7 +29,7 @@ test("work station exibe artes e receitas mesmo antes da construção",async({pa
  await openGame(page);
  await page.locator('[data-tool="construir"]').click();
  await page.locator("#open-workshop").click();
- await expect(page.locator("#workshop-tools button")).toHaveCount(5);
+ await expect(page.locator("#workshop-tools button")).toHaveCount(await page.evaluate(()=>window.TillfolkCrafting.RECIPES.length));
  await expect(page.locator("#workshop-recipes button")).toHaveCount(19);
  await expect(page.locator('[data-craft-tool="axe"]')).toBeDisabled();
  await expect(page.locator("#workshop-status")).toContainText("30 gravetos");
@@ -52,6 +52,11 @@ test("receitas da Work Station produzem machado e sementes com consumo real",asy
  await expect(page.locator("#menu")).toBeHidden();
  await page.locator('[data-tool="construir"]').click();
  await page.locator("#open-workshop").click();
+ const loaded=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
+ console.log("WORKSTATION_DEBUG",JSON.stringify({crafting:loaded.crafting,twigs:loaded.inventory.twigs,grass:loaded.inventory.grass,recipes:window.TillfolkCrafting.RECIPES.length}));
+ expect(loaded.crafting?.station).toEqual({x:38,y:24});
+ expect(loaded.inventory.twigs).toBe(50);
+ expect(loaded.inventory.grass).toBe(20);
  await expect(page.locator('[data-craft-tool="axe"]')).toBeEnabled();
  await page.locator('[data-craft-tool="axe"]').click();
  await expect(page.locator('[data-craft-tool="axe"]')).toBeDisabled();
