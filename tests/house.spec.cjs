@@ -10,13 +10,20 @@ async function startGame(page){
   await page.locator('[data-game-mode="relaxed"]').click();
   await page.locator('#starter-confirm').click();
   await expect(page.locator('#world')).toBeVisible();
+  // Teste da construção avançada: conceder madeira; a NOVA partida nasce com zero.
+  await page.evaluate(()=>{
+    const save=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    save.inventory.wood=15;localStorage.setItem('tillfolk-v01',JSON.stringify(save));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await continueIfMenuVisible(page);
 }
 async function clickTile(page,x,y,button='left'){
   await page.locator('#world').evaluate((canvas,{x,y,button})=>{
     const r=canvas.getBoundingClientRect();
     canvas.dispatchEvent(new MouseEvent(button==='right'?'contextmenu':'click',{
       bubbles:true,cancelable:true,button:button==='right'?2:0,
-      clientX:r.left+(x+.5)*r.width/28,clientY:r.top+(y+.5)*r.height/18
+      clientX:r.left+(x+.5)*r.width/(canvas.width/32),clientY:r.top+(y+.5)*r.height/(canvas.height/32)
     }));
   },{x,y,button});
 }
