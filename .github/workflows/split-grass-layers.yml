@@ -1,0 +1,67 @@
+name: TILLFOLK — separar Grass Tile Layers
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/split_grass_layers.py'
+      - '.github/workflows/split-grass-layers.yml'
+      - 'public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles/Grass_Tile_Layers.png'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tillfolk-split-grass-tiles
+  cancel-in-progress: false
+
+jobs:
+  split:
+    name: Gerar 77 recortes e atlas numerado
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar Pillow
+        run: python -m pip install --disable-pip-version-check Pillow
+      - name: Separar e conferir os PNGs
+        run: |
+          python tools/split_grass_layers.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          base=Path('public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles')
+          j=json.loads((base/'Grass_Tile_Layers_mapeamento.json').read_text(encoding='utf-8'))
+          assert (j['colunas'],j['linhas'],j['total']) == (11,7,77),j
+          assert len(list((base/'Grass_Tile_Layers_recortes').glob('C*_L*.png'))) == 77
+          print("OK: 77 tiles individuais, mapa, JSON e ZIP")
+          PY
+      - name: Salvar recortes no GitHub
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$base/Grass_Tile_Layers_recortes/" "$base/Grass_Tile_Layers_recortes.zip" "$base/Grass_Tile_Layers_MAPA.png" "$base/Grass_Tile_Layers_mapeamento.json" "$base/Grass_Tile_Layers_LEIA-ME.md"
+          if git diff --cached --quiet; then
+            echo "Nenhum recorte novo a publicar."
+            exit 0
+          fi
+          git commit -m "assets: separar Grass_Tile_Layers em 77 PNGs com mapa numerado"
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then
+              echo "Recortes publicados em main."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Não foi possível publicar os recortes"
+          exit 1
