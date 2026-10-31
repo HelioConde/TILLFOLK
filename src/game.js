@@ -536,6 +536,16 @@
   function save(){if(!state||!playing)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch(e){console.warn("Não foi possível salvar:",e);}}
   function log(text){state.journal.unshift(text);state.journal.length=Math.min(5,state.journal.length);}
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
+  function announceMission(previous){
+    if(state.prologue.stage<=previous)return;
+    if(state.prologue.done)notify("🏅 Prólogo concluído! A fazenda agora é sua.");
+    else notify("✓ Missão concluída! Próximo objetivo: "+Prologue.CHAPTERS[state.prologue.stage].title+".");
+  }
+  function recordPrologue(action,amount=1){
+    const previous=state.prologue.stage;
+    Prologue.event(state,action,amount);
+    announceMission(previous);
+  }
   function renderPrologue(){
     if(!state)return;
     const info=Prologue.snapshot(state),mission=info.mission;
@@ -578,7 +588,9 @@
   $("#workshop-recipes").addEventListener("click",event=>{
     const button=event.target.closest("[data-craft-tool]");
     if(!button||!state)return;
+    const previous=state.prologue.stage;
     const result=Prologue.craft(state,button.dataset.craftTool);
+    if(result.ok)announceMission(previous);
     $("#workshop-message").textContent=result.message;
     $("#workshop-message").dataset.error=String(!result.ok);
     if(result.ok){
@@ -714,7 +726,7 @@
     const p=findPlot(t.x,t.y);
     if(t.type==="collectWater"){
       if(!World.waterAt(state.world,t.x,t.y))return false;
-      state.water+=4;Prologue.event(state,"collectWater");log(w.name+" buscou 4 baldes de água na lagoa.");return true;
+      state.water+=4;recordPrologue("collectWater");log(w.name+" buscou 4 baldes de água na lagoa.");return true;
     }
     if(t.type==="collectManure"){
       const animal=state.animals.find(a=>Math.floor(a.x)===t.x&&Math.floor(a.y)===t.y&&a.manure>0);
@@ -725,7 +737,7 @@
     if(t.type==="buildHome"){
       if(state.inventory.wood<HOME_WOOD_COST||!homeSiteValid(t.x,t.y))return false;
       state.inventory.wood-=HOME_WOOD_COST;
-      Prologue.event(state,"buildHome");
+      recordPrologue("buildHome");
       state.homes.push({x:t.x,y:t.y,residentId:null,legacy:false});
       for(const [hx,hy] of homeTiles(t.x,t.y)){
         state.plots=state.plots.filter(plot=>plot.x!==hx||plot.y!==hy);
@@ -745,12 +757,12 @@
           const amount={tree:3,stump:2,log:2,boulder:3}[kind]||1;
           const resource=types[kind]||"grass";
           state.inventory[resource]=(state.inventory[resource]||0)+amount;
-          if(kind==="twig")Prologue.event(state,"twig",amount);
-          if(kind==="pebble")Prologue.event(state,"pebble",amount);
-          if(kind==="grass")Prologue.event(state,"grass",amount);
-          if(resource==="wood")Prologue.event(state,"wood",amount);
+          if(kind==="twig")recordPrologue("twig",amount);
+          if(kind==="pebble")recordPrologue("pebble",amount);
+          if(kind==="grass")recordPrologue("grass",amount);
+          if(resource==="wood")recordPrologue("wood",amount);
           // Grama alta tem chance de soltar uma semente. Não existe semente infinita.
-          if(kind==="grass"&&Math.random()<.25){state.seeds++;Prologue.event(state,"seed");log(w.name+" encontrou uma semente ao cortar grama!");}
+          if(kind==="grass"&&Math.random()<.25){state.seeds++;recordPrologue("seed");log(w.name+" encontrou uma semente ao cortar grama!");}
           if(result.resource)log(w.name+" coletou "+result.resource+".");
           p.dirty=result.remaining;
           if(result.remaining)complete=false; // Continuar a mesma ordem até retirar o toco.
@@ -771,7 +783,7 @@
       case "carry":p.produce=false;p.fertilized=false;state.food+=3;state.coins+=15;state.seeds++;log(w.name+" armazenou a colheita (+3 comida, +1 semente, +15 moedas).");break;
     }
     if(complete&&["till","sow","water","harvest","carry"].includes(t.type))
-      Prologue.event(state,t.type);
+      recordPrologue(t.type);
     if(complete&&t.type!=="carry"&&t.type!=="harvest")log(w.name+" terminou: "+labels[t.type].toLowerCase()+".");
     return complete;
   }
