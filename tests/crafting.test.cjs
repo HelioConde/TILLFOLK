@@ -14,6 +14,7 @@ const state=()=>({
 const plot={x:10,y:10,dirty:false,tilled:false,seeded:false,watered:false,produce:false,growth:0};
 test("a primeira bancada requer muitos gravetos e não nasce pronta",()=>{
   const s=state();assert.equal(s.crafting.station,null);
+  assert.equal(Object.keys(s.crafting.equipment).length,C.RECIPES.length);
   assert.ok(Object.values(s.crafting.equipment).every(value=>value===false));
   assert.equal(C.STATION_COST,30);
   assert.equal(C.canBuild(s),false);
