@@ -888,7 +888,10 @@
     if(!event.target.closest(".starter-chip.specialty"))hideSpecialtyTooltip(true);
   });
   document.addEventListener("keydown",event=>{
-    if(event.key==="Escape"&&activeSpecialty){hideSpecialtyTooltip(true);}
+    if(event.key==="Escape"&&activeSpecialty){
+      event.preventDefault(); // Primeiro fecha a dica, não a janela de recrutamento.
+      hideSpecialtyTooltip(true);
+    }
   });
   $(".starter-content").addEventListener("scroll",()=>hideSpecialtyTooltip(true),{passive:true});
   $("#starter-dialog").addEventListener("close",()=>hideSpecialtyTooltip(true));
