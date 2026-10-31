@@ -878,6 +878,7 @@
         if(complete)state.orders=state.orders.filter(order=>order.id!==t.id);
         w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
         recalcTasks();
+        if(complete)save(); // A missão registra o trabalho concluído imediatamente.
       }
     }
   }
@@ -1634,7 +1635,12 @@
   }
   function createStarterTeam(){
     const first=randomStarter();
-    starters=[first,randomStarter([first.name],[first.appearance])];
+    let other=randomStarter([first.name],[first.appearance]);
+    // A fase sem ferramentas precisa de alguém apto a coletar recursos.
+    // Garantir a condição também antes do jogador trocar os candidatos.
+    for(let attempt=0;attempt<20&&first.neg.includes("clear")&&other.neg.includes("clear");attempt++)
+      other=randomStarter([first.name],[first.appearance]);
+    starters=[first,other];
     renderStarters();
     $("#starter-dialog").showModal();
   }
