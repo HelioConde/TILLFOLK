@@ -1,3 +1,7 @@
+async function continueIfMenuVisible(page){
+  if(await page.locator('#menu').isVisible())await page.locator('#continue').click();
+  await expect(page.locator('#menu')).toBeHidden();
+}
 const {test,expect}=require('@playwright/test');
 const BASE='http://127.0.0.1:4173/';
 async function start(page,width=1366,height=768){
@@ -78,7 +82,7 @@ test('Canteiro cria arar e semear; ghost persistente e cancelamento direito limp
  expect(planned.map(o=>o.type)).toEqual(['till','sow']);
  await page.screenshot({path:'screenshots/blueprint-canteiro-pendente-1366x768.png',animations:'disabled'});
  await page.reload({waitUntil:'networkidle'});
- await page.locator('#continue').click();
+ await continueIfMenuVisible(page);
  s=await save(page);expect(s.orders.filter(o=>o.x===cell.x&&o.y===cell.y)).toHaveLength(2);
  await page.locator('[data-tool="construir"]').click();
  await page.locator('[data-build-layer="field"]').click();
@@ -106,7 +110,7 @@ test('Cabana 2x2: prévia azul, fila dos trabalhadores, salvar e desfazer',async
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(false);
  await mouseTile(page,cell.x,cell.y);
  await page.reload({waitUntil:'networkidle'});
- await page.locator('#continue').click();
+ await continueIfMenuVisible(page);
  s=await save(page);
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(true);
  expect(errors).toEqual([]);
