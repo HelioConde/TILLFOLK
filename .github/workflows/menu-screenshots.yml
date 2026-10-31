@@ -13,6 +13,7 @@ on:
       - 'ui-polish.css'
       - 'src/menu.js'
       - 'src/menu-scene.js'
+      - 'src/house-renderer.js'
       - 'src/game.js'
       - 'src/house-building.js'
       - 'tests/orders.spec.cjs'

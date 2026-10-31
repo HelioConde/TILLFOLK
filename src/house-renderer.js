@@ -51,7 +51,8 @@
       stats.drawn++;
     }
 
-    // Base: paredes na primeira camada, como em uma construção do Slime-Harvest.
+    // 1. Fachada e aberturas atrás do telhado.
+    // A posição de portas, janelas e paredes é preservada.
     for(let row=0;row<WALL_ROWS;row++){
       for(let col=0;col<WALL_COLS;col++){
         const [sx,sy]=wallAtlas(col,row);
@@ -59,13 +60,31 @@
         stats.walls++;
       }
     }
+    for(const col of [1,3]){
+      stamp("walls",3,2,facadeX+col*cell,facadeY+3*cell);
+      stats.windows++;
+    }
+    stamp("door",5,0,facadeX+2*cell,facadeY+3*cell);
+    stats.doors++;
 
-    // Telhado abaixado mais 1 tile original (+16 px), total 6×16 px.
-    // No Canvas, a ordem das chamadas equivale ao z-index: desenhar o
-    // telhado DEPOIS das paredes faz o beiral cobrir a parte superior da
-    // fachada, sem ficar escondido por trás dela.
+    // 2. Cobertura EM PRIMEIRO PLANO: ordem de pintura do Canvas é
+    // equivalente a z-index. O telhado precisa ser a última camada.
+    // Preserva a altura já aprovada: roofDrop=6*16.
     const roofDrop=6*TILE;
     if(roofVisible){
+      // Recortes das aberturas impedem que o beiral frontal esconda
+      // janelas e porta. Não desloca nem redimensiona os sprites.
+      const canClip=typeof Path2D!=="undefined" &&
+        typeof ctx.save==="function" && typeof ctx.clip==="function";
+      if(canClip){
+        ctx.save();
+        const roofMask=new Path2D();
+        roofMask.rect(originX,originY+roofDrop,ROOF_COLS*cell,ROOF_ROWS*cell);
+        for(const col of [1,2,3]){
+          roofMask.rect(facadeX+col*cell,facadeY+3*cell,cell,cell);
+        }
+        ctx.clip(roofMask,"evenodd");
+      }
       for(let row=0;row<ROOF_ROWS;row++){
         for(let col=0;col<ROOF_COLS;col++){
           const [sx,sy]=roofAtlas(col,row);
@@ -75,16 +94,8 @@
       }
       stamp("roof",5,0,originX+3*cell,originY+roofDrop+2*cell);
       stats.chimneys++;
+      if(canClip)ctx.restore();
     }
-
-    // Aberturas ficam na frente da cobertura. O beiral termina exatamente
-    // no topo da última fileira, sem esconder as janelas nem a porta.
-    for(const col of [1,3]){
-      stamp("walls",3,2,facadeX+col*cell,facadeY+3*cell);
-      stats.windows++;
-    }
-    stamp("door",5,0,facadeX+2*cell,facadeY+3*cell);
-    stats.doors++;
 
     return {...stats,...dimensions(scale),x:originX,y:originY,scale};
   }

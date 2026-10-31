@@ -546,11 +546,40 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
   expect(result.roofMax).toBe(256);
   expect(result.rooftopCount).toBe(36);
   expect(result.allUniform).toBe(true);
-  expect(result.roofBeforeWindows).toBe(true);
+  expect(result.roofBeforeWindows).toBe(false);
   expect(result.roofOverWalls).toBe(true);
-  expect(result.windowsDrawnAboveRoof).toBe(true);
+  expect(result.windowsDrawnAboveRoof).toBe(false);
 });
 
+
+
+test('Telhado em primeiro plano com máscara para portas e janelas',async({page})=>{
+  await page.setViewportSize({width:1366,height:768});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  const detail=await page.evaluate(async()=>{
+    const assets={};
+    for(const name of ['roof','walls','door']){
+      const image=new Image();
+      image.src='./public/assets/sprout-lands/structures/wood-'+name+'.png';
+      await image.decode();assets[name]=image;
+    }
+    const output=document.createElement('canvas');output.width=260;output.height=320;
+    const ctx=output.getContext('2d');
+    const order=[],original=ctx.drawImage.bind(ctx);
+    ctx.drawImage=(...args)=>{order.push(args[0]===assets.roof?'roof':args[0]===assets.walls?'walls':'door');original(...args);};
+    const stats=window.TillfolkHouse.draw(ctx,assets,8,8,{scale:2});
+    return {stats,firstRoof:order.indexOf('roof'),lastWall:order.lastIndexOf('walls'),
+      lastDoor:order.lastIndexOf('door'),lastDraw:order.at(-1),
+      png:output.toDataURL('image/png').slice(0,30)};
+  });
+  expect(detail.stats.stretched).toBe(0);
+  expect(detail.stats.roof).toBe(35);
+  expect(detail.firstRoof).toBeGreaterThan(detail.lastWall);
+  expect(detail.firstRoof).toBeGreaterThan(detail.lastDoor);
+  expect(detail.lastDraw).toBe('roof');
+  expect(detail.png).toMatch(/^data:image\/png;base64,/);
+  await page.screenshot({path:'screenshots/casa-telhado-primeiro-plano-1366x768.png',animations:'disabled'});
+});
 
 test('Atlas selvagem: recortes completos e pranchas visuais de todas as variações',async({page})=>{
   const errors=[];
