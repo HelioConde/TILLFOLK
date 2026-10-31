@@ -959,11 +959,12 @@
     // Cabanas 2x2 são estruturas independentes, concluídas pelos trabalhadores.
     for(const home of state.homes.filter(h=>!h.legacy&&inView(h.x,h.y,4))){
       const x=home.x*TILE,y=home.y*TILE;
-      part(sprite.walls,16,16,16,16,x+4,y+22,56,41);
-      part(sprite.roof,16,0,16,16,x-5,y-14,74,50);
-      part(sprite.roof,32,16,16,16,x+27,y-9,38,36);
-      part(sprite.door,0,0,16,32,x+21,y+28,22,34);
-      if(home.residentId==null)write("LIVRE",x+32,y-19,"#e5f7ae",9);
+      // A casa habitada usa o mesmo construtor de sprites do menu inicial.
+      const position=window.TillfolkHouse.positionForFootprint(x,y,2*TILE,2*TILE,1);
+      window.TillfolkHouse.draw(ctx,{
+        roof:sprite.roof,walls:sprite.walls,door:sprite.door
+      },position.x,position.y,{scale:1});
+      if(home.residentId==null)write("LIVRE",x+TILE,y-21,"#e5f7ae",9);
     }
     // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
     for(const p of state.plots){
@@ -972,14 +973,33 @@
       // Solo natural não recebe quadrado verde: a ordem aparece só como
       // contorno temporário. O cultivo real permanece visível após a tarefa.
       if(p.tilled||p.seeded||p.produce){
-        ctx.fillStyle="#b38f6c";ctx.fillRect(x+1,y+1,TILE-2,TILE-2);
+        // Não cobrir a textura original com um bloco liso.
+        part(sprite.dirt,0,80,16,16,x,y,TILE,TILE);
       }
-      if(p.tilled)part(sprite.dirt,0,80,16,16,x,y);
+      if(p.watered&&(p.tilled||p.seeded)){
+        // Cor de terra encharcada no canteiro inteiro, mais reflexos discretos.
+        ctx.fillStyle="rgba(40,66,80,.42)";
+        ctx.fillRect(x+1,y+1,TILE-2,TILE-2);
+        ctx.fillStyle="#3c5b62";
+        ctx.fillRect(x+5,y+8,8,2);ctx.fillRect(x+18,y+22,9,2);
+        ctx.fillStyle="#80b9b6";
+        ctx.fillRect(x+7,y+8,4,1);ctx.fillRect(x+22,y+22,4,1);
+      }
       if(p.fertilized){ctx.fillStyle="#6c7652";ctx.fillRect(x+4,y+8,3,3);ctx.fillRect(x+25,y+22,2,2);}
-      if(p.seeded)part(sprite.crops,Math.min(4,Math.floor(p.growth*5))*16,0,16,16,x,y,32,32);
-      if(p.produce)part(sprite.crops,48,16,16,16,x,y,32,32);
+      if(p.seeded){
+        if(p.growth<.10){
+          // Mostrar a semente no centro logo após a ordem de plantio.
+          ctx.fillStyle="#563925";ctx.fillRect(x+12,y+12,9,7);
+          ctx.fillStyle="#d8bd78";ctx.fillRect(x+15,y+13,4,4);
+          ctx.fillStyle="#f5dd99";ctx.fillRect(x+16,y+13,2,2);
+        }else{
+          const stage=Math.max(1,Math.min(4,Math.ceil(p.growth*4)));
+          // A raiz fica no centro da terra em vez de na borda inferior.
+          part(sprite.crops,stage*16,0,16,16,x+1,y-13,30,30);
+        }
+      }
+      if(p.produce)part(sprite.crops,48,16,16,16,x+1,y-13,30,30);
       if(p.dirty&&!World.at(state.world,p.x,p.y))part(sprite.rocks,0,16,16,16,x,y,32,32);
-      if(p.watered&&p.seeded){ctx.fillStyle="#6cc8e5";ctx.fillRect(x+2,y+26,4,3);}
     }
     // Blueprint azul após o solo atual: a forma planejada nunca fica encoberta
     // pela terra arada e some automaticamente quando a tarefa termina.
