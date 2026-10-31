@@ -53,6 +53,7 @@ test('O jogador decide cada etapa: arar não cria fertilizar, semear ou regar',a
   expect((await snap(page)).orders.map(o=>o.type)).toEqual(['sow']);
   await page.locator('#open-tasks').click();
   await expect(page.locator('#tasks')).toContainText('Semear');
+  await page.locator('#tasks [data-task-group="waiting"] summary').click();
   await page.locator('[data-cancel-order="13-11:sow"]').click();
   expect((await snap(page)).orders).toEqual([]);
   expect(errors).toEqual([]);
@@ -114,4 +115,60 @@ test('Mobile: paleta de sete ordens e cancelamento de uma tarefa',async({page})=
   await page.locator('[data-tool="remover"]').click();
   await tile(page,13,11);
   expect((await snap(page)).orders).toEqual([]);
+});
+
+test('Muitas ordens bloqueadas são agrupadas e um trabalhador ocioso explica a causa',async({page})=>{
+  await page.setViewportSize({width:1366,height:768});
+  await start(page);
+  await page.evaluate(()=>{
+    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    // Ambas as pessoas continuam respeitando o traço negativo de Limpar.
+    s.workers.forEach(w=>{w.neg=[...new Set([...w.neg,'clear'])];w.task=null;});
+    const possible=s.world.objects.filter(o=>o.kind==='grass'||o.kind==='tree').slice(0,15);
+    s.orders=possible.map(o=>({id:o.x+'-'+o.y+':clear',type:'clear',x:o.x,y:o.y}));
+    for(const p of s.plots.filter(p=>p.x>8&&p.y>6).slice(0,12)){
+      s.orders.push({id:p.x+'-'+p.y+':sow',type:'sow',x:p.x,y:p.y});
+    }
+    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('#continue').click();
+  await page.locator('#open-tasks').click();
+  const waiting=page.locator('#tasks [data-task-group="waiting"]');
+  await expect(waiting).toBeVisible();
+  await expect(waiting).not.toHaveAttribute('open','');
+  await expect(waiting.locator('summary')).toContainText('aguardando');
+  await waiting.locator('summary').click();
+  await expect(waiting).toHaveAttribute('open','');
+  await expect(waiting).toContainText('Nenhum colono pode executar');
+  await page.waitForTimeout(900);
+  await expect(waiting).toHaveAttribute('open','');
+  await page.screenshot({path:'screenshots/fila-bloqueada-e-ociosos.png',animations:'disabled'});
+  await page.locator('#open-workers').click();
+  await expect(page.locator('.worker-job').first()).toContainText('Restrições impedem');
+  await expect(page.locator('.worker-status').first()).toContainText('Aguardando');
+  // Remover a proibição de um trabalhador recupera a execução na próxima rodada.
+  await page.evaluate(()=>{
+    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    s.workers[0].neg=s.workers[0].neg.filter(type=>type!=='clear');
+    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('#continue').click();
+  await expect.poll(async()=>{
+    const s=await snap(page);
+    return s.workers.some(w=>w.task&&w.task.endsWith(':clear'));
+  },{timeout:9000}).toBe(true);
+});
+
+test('Ordens sem recurso ficam agrupadas, sem obrigar tarefas automáticas extras',async({page})=>{
+  await start(page);
+  await choose(page,'sow');
+  await tile(page,13,11);
+  await page.locator('#open-tasks').click();
+  await expect(page.locator('#tasks .task-list-summary')).toContainText('aguardando');
+  await expect(page.locator('#tasks [data-task-group="waiting"]')).toBeVisible();
+  await page.locator('#tasks [data-task-group="waiting"] summary').click();
+  await expect(page.locator('#tasks [data-task-group="waiting"]')).toContainText('Aguardando arar o solo');
+  expect((await snap(page)).orders).toHaveLength(1);
 });
