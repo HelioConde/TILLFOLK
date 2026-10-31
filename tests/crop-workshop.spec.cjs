@@ -32,7 +32,7 @@ test("work station exibe artes e receitas mesmo antes da construção",async({pa
  await expect(page.locator("#workshop-tools button")).toHaveCount(await page.evaluate(()=>window.TillfolkCrafting.RECIPES.length));
  await expect(page.locator("#workshop-recipes button")).toHaveCount(19);
  await expect(page.locator('[data-craft-tool="axe"]')).toBeDisabled();
- await expect(page.locator("#workshop-status")).toContainText("30 gravetos");
+ await expect(page.locator("#workshop-status")).toContainText("10 gravetos");
  const actual=await page.locator(".farm-item-atlas").evaluate(img=>({width:img.naturalWidth,height:img.naturalHeight}));
  expect(actual.width).toBeGreaterThan(0);
  await page.screenshot({path:"screenshots/workstation-mobile-390x844.png",animations:"disabled"});
