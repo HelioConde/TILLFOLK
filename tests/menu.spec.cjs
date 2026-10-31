@@ -542,8 +542,8 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
   expect(result.stats.walls).toBe(20);
   expect(result.windows.map(w=>[w.dx,w.dy])).toEqual([[64,224],[128,224]]);
   expect(result.doors.map(d=>[d.dx,d.dy,d.dw,d.dh])).toEqual([[96,224,32,32]]);
-  expect(result.roofMin).toBe(64);
-  expect(result.roofMax).toBe(224);
+  expect(result.roofMin).toBe(96);
+  expect(result.roofMax).toBe(256);
   expect(result.rooftopCount).toBe(36);
   expect(result.allUniform).toBe(true);
   expect(result.roofBeforeWindows).toBe(true);
@@ -761,4 +761,45 @@ test('Recrutamento: tooltip de especialidade por hover, foco e toque',async({pag
     await mobile.close();
   }
   expect(pageErrors).toEqual([]);
+});
+
+
+test('Tela inicial: créditos, som, tutorial visual e cartões no rodapé',async({page})=>{
+ await page.setViewportSize({width:1366,height:768});
+ await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ const positions=await page.evaluate(()=>{
+   const cards=document.querySelector('#menu .title-cards').getBoundingClientRect();
+   const navigation=document.querySelector('#menu .title-navigation').getBoundingClientRect();
+   const footer=document.querySelector('#menu .title-version').getBoundingClientRect();
+   return {cardTop:cards.top,navBottom:navigation.bottom,cardBottom:cards.bottom,footerTop:footer.top};
+ });
+ expect(positions.cardTop).toBeGreaterThan(positions.navBottom-1);
+ expect(positions.cardBottom).toBeLessThanOrEqual(positions.footerTop+2);
+ await page.screenshot({path:'screenshots/menu-rodape-v2-1366x768.png',animations:'disabled'});
+ await page.locator('#title-credits').click();
+ await expect(page.locator('#title-credits-dialog')).toContainText('Hélio Conde');
+ await expect(page.locator('#title-credits-dialog')).toContainText('Cup Nooble');
+ await page.screenshot({path:'screenshots/creditos-v2.png'});
+ await page.locator('#title-credits-dialog .modal-x').click();
+ await page.locator('#title-settings').click();
+ await page.locator('#title-sound').uncheck();
+ await page.locator('#title-volume').fill('25');
+ await expect(page.locator('#title-sound-test')).toBeDisabled();
+ await page.screenshot({path:'screenshots/configuracoes-som-v2.png'});
+ await page.locator('#title-settings-dialog .modal-x').click();
+ await page.reload({waitUntil:'networkidle'});
+ await page.locator('#title-settings').click();
+ await expect(page.locator('#title-sound')).not.toBeChecked();
+ await expect(page.locator('#title-volume')).toHaveValue('25');
+ await page.locator('#title-settings-dialog .modal-x').click();
+ await page.locator('#help-btn').click();
+ await expect(page.locator('.guide-step:not([hidden])')).toHaveCount(1);
+ await expect(page.locator('.guide-art')).toHaveCount(6);
+ await page.screenshot({path:'screenshots/tutorial-passo-1.png'});
+ for(let i=1;i<6;i++)await page.locator('#help-next').click();
+ await expect(page.locator('#guide-counter')).toHaveText('6 de 6');
+ await expect(page.locator('#help-close')).toBeVisible();
+ await page.screenshot({path:'screenshots/tutorial-passo-6.png'});
+ await page.locator('#help-close').click();
+ await expect(page.locator('#help-dialog')).toBeHidden();
 });
