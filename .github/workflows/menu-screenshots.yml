@@ -6,6 +6,10 @@ on:
     branches: [main]
   # Sem filtros: todo commit de main precisa passar antes de liberar GitHub Pages.
   workflow_dispatch:
+# Cancelar execuções antigas quando vários commits chegam em sequência.
+concurrency:
+  group: tillfolk-visual-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -32,6 +36,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tillfolk-screenshots-completas
-          path: screenshots/
+          path: |
+            screenshots/
+            test-results/
           if-no-files-found: warn
           retention-days: 14
