@@ -886,6 +886,16 @@
         ctx.strokeRect(px+2,py+2,TILE-4,TILE-4);
       }
     }
+    // Prévia da seleção em área: cada célula fica destacada sem mudar o save.
+    if(areaSelection){
+      const a=areaSelection.from,b=areaSelection.to;
+      const x0=Math.max(0,Math.min(a.x,b.x)),x1=Math.min(W-1,Math.max(a.x,b.x));
+      const y0=Math.max(0,Math.min(a.y,b.y)),y1=Math.min(H-1,Math.max(a.y,b.y));
+      ctx.fillStyle="#e6f7ad3d";
+      ctx.fillRect(x0*TILE,y0*TILE,(x1-x0+1)*TILE,(y1-y0+1)*TILE);
+      ctx.lineWidth=2;ctx.strokeStyle="#f9ed9b";
+      ctx.strokeRect(x0*TILE+1,y0*TILE+1,(x1-x0+1)*TILE-2,(y1-y0+1)*TILE-2);
+    }
     // Feedback breve e descartável ao concluir ou atribuir uma ordem.
     const now=performance.now();
     for(let i=feedbackParticles.length-1;i>=0;i--){
@@ -1263,7 +1273,22 @@
     if(k==="r"){state.house.roofHidden=!state.house.roofHidden;updateBuildPanel();save();}
     if((event.ctrlKey||event.metaKey)&&k==="z"){event.preventDefault();$("#build-undo").click();}
   });
-  // Segure Shift e arraste no desktop; no celular, arraste com o dedo para explorar.
+  // Clique individual ou arraste para selecionar um retângulo de tarefas.
+  // Shift+arrastar ou botão central sempre move a câmera.
+  // No celular, ativar Área faz o dedo selecionar; desativar volta ao pan.
+  function canSelectArea(){
+    return selectedTool==="universal"||selectedTool==="remover"||Orders.TYPES.includes(selectedTool);
+  }
+  function pointerTile(event){
+    const p=buildCellFromEvent(event);
+    return {x:Math.max(0,Math.min(W-1,p.x)),y:Math.max(0,Math.min(H-1,p.y))};
+  }
+  $("#drag-mode").addEventListener("click",()=>{
+    areaMode=!areaMode;areaSelection=null;selectionPointer=null;
+    $("#drag-mode").setAttribute("aria-pressed",String(areaMode));
+    $("#drag-mode").classList.toggle("chosen",areaMode);
+    $("#drag-mode").textContent=areaMode?"▣ Área: ligada":"▧ Área: desligada";
+  });
   // O cálculo da célula utiliza o retângulo real do canvas expandido/cortado.
   function pinchCoordinates(){
     const list=[...activeTouches.values()];
@@ -1276,20 +1301,35 @@
     if(event.pointerType==="touch"){
       activeTouches.set(event.pointerId,{x:event.clientX,y:event.clientY});
       if(activeTouches.size===2){
+        selectionPointer=null;areaSelection=null;
         const p=pinchCoordinates();
         pinchGesture={distance:p.distance,zoom:targetCameraZoom,
           anchor:captureCameraAnchor(p.x,p.y)};
         panPointer=null;suppressMapClick=true;
       }else if(activeTouches.size===1){
         suppressMapClick=false;
-        panPointer={id:event.pointerId,x:event.clientX,y:event.clientY,
-          lastX:event.clientX,lastY:event.clientY,moved:false};
+        if(areaMode&&canSelectArea()){
+          selectionPointer={id:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
+          const cell=pointerTile(event);
+          areaSelection={from:cell,to:cell};
+          panPointer=null;
+        }else{
+          panPointer={id:event.pointerId,x:event.clientX,y:event.clientY,
+            lastX:event.clientX,lastY:event.clientY,moved:false};
+        }
       }
       canvas.setPointerCapture(event.pointerId);
       hoveredTile=null;
       return;
     }
     suppressMapClick=false;
+    if(event.button===0&&!event.shiftKey&&canSelectArea()){
+      const cell=pointerTile(event);
+      selectionPointer={id:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
+      areaSelection={from:cell,to:cell};hoveredTile=null;
+      canvas.setPointerCapture(event.pointerId);
+      return;
+    }
     if(!event.shiftKey&&event.button!==1)return;
     hoveredTile=null;
     panPointer={id:event.pointerId,x:event.clientX,y:event.clientY,
@@ -1297,6 +1337,13 @@
     canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener("pointermove",event=>{
+    if(selectionPointer&&selectionPointer.id===event.pointerId){
+      const tile=pointerTile(event);
+      areaSelection.to=tile;
+      if(Math.hypot(event.clientX-selectionPointer.x,event.clientY-selectionPointer.y)>6)
+        selectionPointer.moved=true;
+      return;
+    }
     if(playing&&!panPointer&&event.pointerType!=="touch")hoveredTile=buildCellFromEvent(event);
     if(playing&&selectedTool==="construir"&&!panPointer)buildHover=buildCellFromEvent(event);
     if(event.pointerType==="touch"&&activeTouches.has(event.pointerId)){
@@ -1318,6 +1365,20 @@
     panPointer.lastX=event.clientX;panPointer.lastY=event.clientY;
   });
   function finishMapPan(event){
+    if(selectionPointer&&selectionPointer.id===event.pointerId){
+      const selection=areaSelection,moved=selectionPointer.moved;
+      const cancel=event.type==="pointercancel"||pinchGesture!=null;
+      // Um único toque continua produzindo o clique convencional.
+      if(moved&&!cancel&&selection){
+        selection.to=pointerTile(event);
+        applyToArea(selection.from,selection.to);
+        suppressMapClick=true;
+      }
+      selectionPointer=null;areaSelection=null;
+      if(event.pointerType==="touch")activeTouches.delete(event.pointerId);
+      if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
+      return;
+    }
     if(event.pointerType==="touch"){
       activeTouches.delete(event.pointerId);
       if(pinchGesture){
@@ -1346,6 +1407,12 @@
       const matches=state.orders.filter(o=>o.x===x&&o.y===y).map(o=>o.id);
       if(!matches.length){notify("Nenhuma ordem nesse terreno.");return;}
       removeOrders(matches);notify(matches.length+" ordem(ns) cancelada(s).");return;
+    }
+    if(selectedTool==="universal"){
+      const type=nextUniversalOrder(x,y);
+      if(type)placeOrder(type,x,y);
+      else notify("Não há uma nova etapa disponível neste terreno.");
+      return;
     }
     if(Orders.TYPES.includes(selectedTool))placeOrder(selectedTool,x,y);
   });
