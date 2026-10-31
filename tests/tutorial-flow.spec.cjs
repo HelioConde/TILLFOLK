@@ -21,6 +21,14 @@ async function startFarm(page,button="tutorial-start"){
  await expect(page.locator("#mission-card")).toBeVisible();
 }
 async function jumpToFinalMission(page){
+ // pagehide salva a sessão ativa; aplicar o fixture ANTES do script do jogo no reload.
+ await page.addInitScript(()=>{
+   const fixture=sessionStorage.getItem("__tutorialFinalFixture");
+   if(fixture){
+     localStorage.setItem("tillfolk-v01",fixture);
+     sessionStorage.removeItem("__tutorialFinalFixture");
+   }
+ });
  await page.evaluate(()=>{
   const save=JSON.parse(localStorage.getItem("tillfolk-v01"));
   const steps=window.TillfolkMissions.STEPS;
@@ -35,7 +43,7 @@ async function jumpToFinalMission(page){
    w.x=gate.x-1.5;w.y=gate.y+.5;w.neg=[];w.route=[];w.task=null;
   }
   save.orders=[];
-  localStorage.setItem("tillfolk-v01",JSON.stringify(save));
+  sessionStorage.setItem("__tutorialFinalFixture",JSON.stringify(save));
  });
  await page.reload({waitUntil:"networkidle"});
  await continueIfMenuVisible(page);
