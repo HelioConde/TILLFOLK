@@ -17,8 +17,8 @@ async function tile(page,x,y){
     const r=canvas.getBoundingClientRect();
     canvas.dispatchEvent(new MouseEvent('click',{
       bubbles:true,cancelable:true,
-      clientX:r.left+(p.x+.5)*r.width/28,
-      clientY:r.top+(p.y+.5)*r.height/18
+      clientX:r.left+(p.x+.5)*r.width/(canvas.width/32),
+      clientY:r.top+(p.y+.5)*r.height/(canvas.height/32)
     }));
   },{x,y});
 }
