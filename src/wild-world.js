@@ -6,7 +6,7 @@
   const Biomes=window.TillfolkBiomes;
   if(!Biomes)throw new Error("Carregue src/biomes.js antes do terreno selvagem.");
   const solidKinds=new Set(["tree","boulder","log","thicket","stump"]);
-  const gatherKinds=new Set(["tree","boulder","log","thicket","stump","mushroom","flowers","herbs","grass","twig"]);
+  const gatherKinds=new Set(["tree","boulder","log","thicket","stump","mushroom","flowers","herbs","grass","twig","pebble"]);
   const key=(x,y)=>x+","+y;
   // Atlas original: variações 2,3,4,5 exibem frutos na copa.
   // Nesta fase só usar árvores verdes para madeira (0,1 e 6).
@@ -94,6 +94,28 @@
         used.add(key(x,y));needed--;
       }
     }
+    // Recursos da primeira oficina. Colocados em terreno livre perto da
+    // clareira, sem animais, sem objetos novos e sem imagens externas.
+    // Cada partida nova deve ter caminho até gravetos, pedrinhas e grama.
+    if(w>=60&&h>=40){
+      const cx=Math.floor(w/2),cy=Math.floor(h/2);
+      const resourceSites=[];
+      for(let y=cy-9;y<=cy+9;y++)for(let x=cx-9;x<=cx+9;x++){
+        if(!inMap(x,y,w,h)||used.has(key(x,y))||waters.has(key(x,y))||
+           !Biomes.at(world,x,y).farmable)continue;
+        const distance=Math.abs(x-cx)+Math.abs(y-cy);
+        if(distance<3||distance>13)continue;
+        resourceSites.push({x,y,distance,random:noise(seed,x,y)});
+      }
+      resourceSites.sort((a,b)=>a.distance-b.distance||a.random-b.random);
+      const starters=[...Array(12).fill("twig"),...Array(9).fill("pebble"),...Array(12).fill("grass")];
+      // Misturar os tipos para os primeiros recursos aparecerem juntos.
+      for(let i=0;i<Math.min(starters.length,resourceSites.length);i++){
+        const p=resourceSites[i],kind=starters[(i*13)%starters.length];
+        world.objects.push({x:p.x,y:p.y,kind,variant:i%4,age:0,starterResource:true});
+        used.add(key(p.x,p.y));
+      }
+    }
     return world;
   }
   const indices=new WeakMap();
@@ -124,6 +146,8 @@
     }
     if(obj.kind==="stump")resource="2 madeiras";
     else if(obj.kind==="boulder")resource="3 pedras";
+    else if(obj.kind==="pebble")resource="1 pedra solta";
+    else if(obj.kind==="twig")resource="1 graveto";
     else if(obj.kind==="log")resource="2 madeiras";
     else if(obj.kind==="mushroom")resource="cogumelos";
     else if(obj.kind==="flowers")resource="flores";
@@ -247,6 +271,10 @@
       const height=kind==="grass"?22:24;
       part(sprites.rocks,sx,sy,sw,sh,x+Math.round((size-width)/2),
         y+size-height,width,height);
+      return;
+    }
+    if(kind==="pebble"){
+      part(sprites.rocks,0,16,16,16,x+9,y+19,14,13);
       return;
     }
     if(kind==="twig"){
