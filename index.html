@@ -22,7 +22,8 @@
   <link rel="stylesheet" href="./camera-ui.css?v=1">
   <link rel="stylesheet" href="./game-interface.css?v=20261031">
   <link rel="stylesheet" href="./top-speed.css?v=20261031-mobile-brand-clock">
-  <script defer src="./src/menu.js"></script>
+  <link rel="stylesheet" href="./hud-settings.css?v=20261031-alinhamento-preferencias">
+  <script defer src="./src/menu.js?v=20261031-sync-preferencias"></script>
   <script defer src="./src/tutorial.js?v=20261031-fim-escolhas"></script>
   <script defer src="./src/house-renderer.js"></script>
   <script defer src="./src/menu-scene.js?v=20261031-arvores-verdes"></script>
@@ -31,7 +32,7 @@
   <script defer src="./src/blueprints.js?v=1"></script>
   <script defer src="./src/house-building.js?v=20261031-ghost-sprout"></script>
   <script defer src="./src/task-orders.js"></script>
-  <script defer src="./src/game.js?v=20261031-tutorial-retorno"></script>
+  <script defer src="./src/game.js?v=20261031-animacoes"></script>
   <script defer src="./src/game-hud.js?v=20261031-atalho-direito"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
 </head>
@@ -158,13 +159,28 @@
   <dialog id="game-options-dialog" class="modal game-modal" aria-labelledby="game-options-title">
     <form method="dialog"><button class="modal-x" aria-label="Fechar opções">✕</button></form>
     <span class="overline">TILLFOLK · PARTIDA ATUAL</span><h2 id="game-options-title">Opções do jogo</h2>
-    <p>Progresso salvo automaticamente no navegador.</p>
-    <div class="game-options-actions">
-      <button type="button" id="game-resume" class="large-primary">▶ Continuar jogando</button>
-      <button type="button" id="game-open-stock" class="large-secondary">🥕 Estoque e recursos</button>
-      <button type="button" id="game-open-map" class="large-secondary">▦ Visualizar mapa completo</button>
-      <button type="button" id="game-return-title" class="large-secondary">↩ Salvar e voltar ao menu inicial</button>
+    <div id="game-options-main">
+      <p>Progresso salvo automaticamente no navegador.</p>
+      <div class="game-options-actions">
+        <button type="button" id="game-resume" class="large-primary">▶ Continuar jogando</button>
+        <button type="button" id="game-open-settings" class="large-secondary" aria-controls="game-settings-panel" aria-expanded="false">⚙ Configurações · Áudio e animações</button>
+        <button type="button" id="game-open-stock" class="large-secondary">🥕 Estoque e recursos</button>
+        <button type="button" id="game-open-map" class="large-secondary">▦ Visualizar mapa completo</button>
+        <button type="button" id="game-return-title" class="large-secondary">↩ Salvar e voltar ao menu inicial</button>
+      </div>
     </div>
+    <section id="game-settings-panel" class="game-settings-panel" aria-labelledby="game-settings-title" hidden>
+      <h3 id="game-settings-title">⚙ Configurações</h3>
+      <p>Preferências aplicadas imediatamente e salvas neste navegador, inclusive no menu inicial.</p>
+      <label class="title-setting"><span><strong>Animações</strong><small>Movimento do cenário e efeitos visuais, sem interromper tarefas</small></span><input id="game-motion" type="checkbox" checked></label>
+      <label class="title-setting"><span><strong>Efeitos sonoros</strong><small>Sons de botões e navegação</small></span><input id="game-sound" type="checkbox" checked></label>
+      <label class="title-setting"><span><strong>Volume</strong><small id="game-volume-label">40%</small></span><input id="game-volume" type="range" min="0" max="100" step="5" value="40" aria-label="Volume dos efeitos sonoros durante o jogo"></label>
+      <div class="game-settings-actions">
+        <button type="button" id="game-sound-test" class="large-secondary">♫ Testar som</button>
+        <button type="button" id="game-fullscreen-setting" class="large-secondary">⛶ Alternar tela cheia</button>
+      </div>
+      <button type="button" id="game-settings-back" class="large-primary">← Voltar às opções do jogo</button>
+    </section>
   </dialog>
   <dialog id="game-stock-dialog" class="modal game-modal" aria-labelledby="stock-title">
     <form method="dialog"><button class="modal-x" aria-label="Fechar estoque">✕</button></form>
