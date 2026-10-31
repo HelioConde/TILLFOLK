@@ -2046,19 +2046,37 @@
     $("#crop-catalog-status").textContent="Selecionado: "+Crops.get(state.selectedCrop).name+
       ". A próxima ordem Semear usará esta cultura quando houver sementes.";
   }
+  const workshopAtlas=new Image();
+  workshopAtlas.src=Crafting.ITEMS_SPRITE;
+  workshopAtlas.addEventListener("load",()=>{if(state&&$("#workshop-dialog").open)paintWorkshopTools();});
+  function paintWorkshopTools(){
+    if(!workshopAtlas.complete||!workshopAtlas.naturalWidth)return;
+    document.querySelectorAll(".workstation-tool-sprite").forEach(canvas=>{
+      const index=Number(canvas.dataset.toolIndex);
+      const columns=Math.max(1,Math.floor(workshopAtlas.naturalWidth/16));
+      const sx=(index%columns)*16,sy=Math.floor(index/columns)*16;
+      if(sx+16>workshopAtlas.naturalWidth||sy+16>workshopAtlas.naturalHeight)return;
+      const g=canvas.getContext("2d");g.imageSmoothingEnabled=false;
+      g.clearRect(0,0,canvas.width,canvas.height);
+      g.drawImage(workshopAtlas,sx,sy,16,16,4,4,40,40);
+    });
+  }
   function renderWorkshop(){
     const ready=Boolean(state.crafting?.station);
     $("#workshop-status").textContent=ready?
       "Work Station pronta! Faça ferramentas e transforme colheitas em sementes.":
       "A Work Station ainda não está pronta. Colete 30 gravetos e use Construir → Work Station.";
-    $("#workshop-tools").innerHTML=Crafting.RECIPES.map(recipe=>{
+    $("#workshop-tools").innerHTML=Crafting.RECIPES.map((recipe,index)=>{
       const made=Crafting.has(state,recipe.key);
       const lacking=Crafting.missing(state,recipe.cost).length>0;
       return '<button type="button" data-craft-tool="'+recipe.key+'" '+
         ((!ready||made||lacking)?'disabled':'')+'>'+
-        '<strong>'+recipe.icon+' '+recipe.name+'</strong> '+
-        '<small>'+(made?'✓ Fabricado':Crafting.formatCost(recipe.cost))+'</small></button>';
+        '<canvas class="workstation-tool-sprite" data-tool-index="'+index+'" width="48" height="48" aria-hidden="true"></canvas>'+
+        '<span class="workstation-tool-text"><strong>'+recipe.icon+' '+recipe.name+'</strong>'+
+        '<small>'+recipe.help+'</small>'+
+        '<small>'+(made?'✓ Fabricado':Crafting.formatCost(recipe.cost))+'</small></span></button>';
     }).join("");
+    paintWorkshopTools();
     const grid=$("#workshop-recipes");
     grid.innerHTML=Crops.ALL.map(crop=>cropTile(crop,
       (state.cropProduce[crop.id]||0)+" colhidos · fabricar 3 sementes",
@@ -2088,7 +2106,7 @@
     if(result.item.key==="axe")recordTutorial("axe");
     log("Fabricamos "+result.item.name+" na Work Station.");
     notify("✓ "+result.item.name+" pronta para toda a equipe!");
-    renderWorkshop();refresh();save();
+    recalcTasks();renderWorkshop();refresh();save();
   });
   $("#workshop-recipes").addEventListener("click",event=>{
     const button=event.target.closest("[data-craft-crop]");
