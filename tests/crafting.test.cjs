@@ -42,8 +42,8 @@ test("fabricar consome recursos, persiste ferramenta e libera a ordem",()=>{
   assert.equal(s.inventory.grass,0);
   assert.equal(C.has(s,"axe"),true);
   assert.equal(C.blocked(s,"clear",{kind:"tree"}),null);
-  assert.equal(C.requiredTool("clear",{kind:"gateLog"}),"axe");
-  assert.equal(C.blocked(s,"clear",{kind:"gateLog"}),null);
+  assert.equal(C.requiredTool("clear",{kind:"ridge"}),null);
+  assert.equal(C.blocked(s,"clear",{kind:"ridge"}),null);
   assert.equal(O.status({type:"clear",x:10,y:10},plot,{kind:"tree"},s).state,"ready");
   assert.match(C.craft(s,"axe").error,/já foi fabricado/);
   assert.equal(C.normalize(s.crafting).equipment.axe,true);

@@ -32,10 +32,10 @@ O jogador comanda as **prioridades e ordens** de um grupo que chega a um mundo s
 
 | Fase | Experiência desejada | Pressão principal |
 | --- | --- | --- |
-| 0. Chegada | Dois colonos, clareira cercada, coleta manual de recursos, tutorial contextual | Poucos materiais e comida inicial limitada |
+| 0. Chegada | Dois colonos, clareira em mundo aberto, coleta manual de recursos, tutorial contextual | Poucos materiais e comida inicial limitada |
 | 1. Subsistência | Work Station, ferramentas, sementes, água e primeira colheita | Produção regular antes de acabar o alimento |
 | 2. Primeira vila | Cabanas, armazenamento e terceiro/quarto colono | Mais braços também significam mais bocas |
-| 3. Expansão | Desbloquear a passagem, explorar biomas e alcançar minerais/recursos raros | Distâncias, segurança, disponibilidade e transporte |
+| 3. Expansão | Explorar biomas e alcançar minerais/recursos raros; bloqueios de progressão ficam para uma etapa futura | Distâncias, segurança, disponibilidade e transporte |
 | 4. Especialização | Múltiplas oficinas, agricultura diversificada, construção e cadeias produtivas | Gargalos, consumo, manutenção e divisão de trabalho |
 | 5. Colônia avançada | Rede estável de alimentação, repouso, saúde, água e proteção ambiental | Eventos, escassez e crescimento sustentável |
 
@@ -53,13 +53,23 @@ Nenhuma duração ou população-alvo é fixa até o balanceamento.
 - Ferramentas são fabricadas numa estação, carregadas/atribuídas por trabalhador; bloqueios devem explicar **quem** precisa de **qual** ferramenta.
 - **A definir:** aprendizado de habilidade, traços avançados, conflitos, humor, profissões visuais e pesos da IA.
 
-## 5. Sobrevivência e mortalidade [PRIORIDADE MÁXIMA — PARCIAL HOJE]
+## 5. Sobrevivência e mortalidade [S0–S3 IMPLEMENTADOS; S4 PENDENTE]
 
-### Estado atual comprovado no motor (31/10/2026)
+### Estado atual comprovado no motor
 
-- Modo `survival` desconta **uma unidade de comida por trabalhador ao virar o dia** e avisa quando `state.food === 0`.
-- **Não existe ainda sistema completo de fome por pessoa, dano de inanição, morte, funeral, retirada do trabalhador nem condição de derrota.**
-- No modo `relaxed`, a pressão diária de comida é desativada no protótipo.
+- Cada colono tem saciedade e saúde; a saciedade cai 70 pontos por dia. O HUD avisa em 50% e classifica como faminto abaixo de 30%.
+- Um colono faminto procura refeição por iniciativa própria. Cada refeição consome atomicamente 1 unidade de `state.food` e restaura até 70 pontos; o estoque nunca fica negativo. Comer não cria ordens agrícolas. O consumo é salvo imediatamente para impedir que recarregar restaure a comida já consumida.
+- Sem comida, a perda de saciedade continua; depois de 1 dia contínuo em inanição, a saúde cai 10 pontos por dia. Fome/saúde baixa reduz a eficiência de trabalho. Os avisos precedem dano e risco fatal.
+- A morte remove o colono da população, libera sua tarefa para reatribuição, solta moradia e transfere itens/equipamentos carregados com segurança. O histórico registra a perda.
+- Se não houver sobreviventes, o Game Over é persistido; o jogador pode retornar ao menu ou iniciar nova colônia.
+- O HUD exibe população viva, estoque, consumo diário estimado, dias restantes e saciedade/saúde por pessoa. O modo `relaxed` mantém as necessidades de sobrevivência desativadas.
+- A taxa estimada é 1 unidade de comida por colono/dia; os 8 itens iniciais para 2 colonos representam cerca de 4 dias. Isso não comprova sustentabilidade: produção agrícola e balanceamento permanecem em S4.
+
+### Verificação da entrega
+
+- Testes Node: 15 cenários de fome, morte/liberação e HUD; migração de save coberta no Playwright.
+- Playwright: 5 cenários de save, refeição persistente, pausa/velocidades, Game Over/reinício e HUD/cartões em 1366×768, 1600×900 e 390×844.
+- O teste local não substitui a validação de publicação no GitHub Pages.
 
 ### Design-alvo
 
@@ -71,7 +81,7 @@ Nenhuma duração ou população-alvo é fixa até o balanceamento.
 6. **Qualidade de vida (etapas seguintes)**: sede/água potável, cansaço/sono, higiene, doenças, conforto, humor e temperatura/ambiente, cada uma adicionada com HUD, regras e testes. Não criar dez medidores sem gameplay funcional.
 7. **Pausar e acelerar** não devem criar mortalidade falsa por bugs de temporização, saves ou troca de aba.
 
-**A definir antes de codificar valores finais:** quantidade de comida por refeição, escala de saciedade/saúde, tempo tolerável sem comer, efeitos de doenças, regras de respawn/recrutamento e diferenças entre modos.
+**Ainda a definir:** sustentabilidade e rendimento de cada cultivo, reposição de sementes, efeitos de doenças, regras de recrutamento após mortes e diferenças futuras entre modos.
 
 ## 6. Alimentação, agricultura e cadeia produtiva [PARCIAL HOJE]
 
@@ -86,7 +96,7 @@ Nenhuma duração ou população-alvo é fixa até o balanceamento.
 - Objetos são posicionados por **blueprints**; até a equipe transportar material e completar o trabalho, continuam planejamento, com indicação azul de validade e motivos em vermelho quando bloqueado.
 - Casas concluídas liberam vaga para recrutamento; moradores novos não surgem sem espaço suficiente.
 - Construções planejadas: Work Station, cabana, canteiro, depósito, cozinha, enfermaria, camas, poço/filtragem, infraestrutura de transporte e defesa ambiental. **Cozinha, enfermaria etc. são propostas, não recursos disponíveis.**
-- A expansão começa ao abrir a passagem física no vale e prossegue por biomas com recursos distintos. **O incentivo da exploração é necessidade de insumos**, não apenas decoração.
+- O mapa inicial é aberto; a antiga muralha e o tronco que bloqueava a saída foram removidos. **Passagens e bloqueios de progressão ficam para uma etapa futura**, quando houver novas regiões e recursos que justifiquem essa barreira.
 - Futuro: tecnologia por recursos/experimentos, melhoria de cabanas, logística e edifícios que transformam/consomem materiais.
 
 ## 8. Logística e automação [PARCIAL HOJE]
@@ -99,8 +109,8 @@ Nenhuma duração ou população-alvo é fixa até o balanceamento.
 
 ## 9. Mundo, risco e descoberta [PARCIAL HOJE]
 
-- Geração procedural com sementes de mapa, seis biomas existentes e passagem inicial bloqueada.
-- Tarefas de exploração liberam caminhos e recursos; áreas distantes têm custos logísticos/ambientais.
+- Geração procedural com sementes de mapa e seis biomas existentes; o mundo inicial é aberto.
+- Futuras tarefas de exploração poderão liberar caminhos e recursos; áreas distantes têm custos logísticos/ambientais.
 - Em fases seguintes, incluir regiões com minérios, solos melhores/piores, plantas raras, fontes de água, eventos sazonais e perigos progressivos.
 - Adaptar **temperatura, contaminação e qualidade de água/ar** ao mundo superior 2D do TILLFOLK *quando houver sistemas de sobrevivência básicos completos*. Não presumir uma simulação de gases igual ao código de ONI sem decisão e orçamento técnico.
 - Conflitos/combatentes **não são o foco principal**; riscos vêm primariamente de ambiente, fome, recursos e decisões de planejamento.
@@ -119,12 +129,12 @@ Nenhuma duração ou população-alvo é fixa até o balanceamento.
 | --- | --- | --- |
 | Mundo 2D, biomas e passagem | Protótipo jogável | Recompensa de exploração, regiões e riscos por bioma |
 | Trabalho, prioridades e habilidades | Funcional básico | Necessidades na tomada de decisões, IA logística avançada |
-| Comida | Estoque global e consumo diário | Fome individual, refeições, morte, derrota, previsão |
+| Comida | Saciedade individual, refeições, inanição, morte, derrota e previsão | Agricultura sustentável, diferenças entre cultivos e equilíbrio de calorias/tempo |
 | Plantação | Plantio, rega, crescimento, colheita, 19 tipos gráficos | Diferenças reais entre cultivos, equilíbrio de calorias/tempo |
 | Casas e recrutamento | Construção e vagas básicas | Acomodação habitável, sono, conforto, expansão com consequências |
 | Ferramentas/Work Station | Receitas e trabalho de fabricação | Encadeamento industrial, materiais por fase |
 | Inventário | Inventário global e ferramentas de colonos | Depósito físico, reservas, transporte efetivo, capacidade |
-| Sobrevivência ambiental | Biomas e restrições básicas | Saúde, fadiga, clima, segurança, água potável |
+| Sobrevivência ambiental | Dano de saúde por inanição e penalidade de trabalho | Fadiga, clima, segurança e água potável |
 | Persistência | `localStorage` e migrações | Exportar/importar saves, slots e recuperação |
 | Arte/UI | Sprout Lands e HUD jogável | Mais animações, legibilidade de tarefas, feedback visual |
 
@@ -136,7 +146,7 @@ Estes rótulos descrevem o design e o código inspecionado, não certificam a au
 - Nova partida de 2 colonos → coleta → primeira plantação → alimento armazenado → refeições consumidas sem zerar saciedade.
 - Sem novas fontes de comida, sobrevém fome real, deterioração gradual, morte e tela de derrota caso ninguém sobreviva.
 - Com comida suficiente e abrigo, colônia consegue recrutar mais um trabalhador; isso aumenta o consumo, exigindo ampliar a produção.
-- Ao acessar um recurso exclusivo de outra área, o jogador deve abrir a passagem e deslocar trabalhador/carga de verdade.
+- Ao acessar um recurso exclusivo de outra área, o jogador deverá explorar e deslocar trabalhador/carga de verdade; bloqueios de passagem ainda não fazem parte do início atual.
 - Um especialista conclui sua tarefa mais rápido que um generalista; traço negativo realmente bloqueia a atividade.
 - Pause/velocidade, sair e entrar, atualizar, salvar e retomar não duplicam comida, colonos ou tarefas.
 - QA com cenários felizes, fome, mortalidade, contratação, expansão, autosave e interface mobile.

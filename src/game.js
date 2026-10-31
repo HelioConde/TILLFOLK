@@ -1,11 +1,12 @@
 "use strict";
 (() => {
   const TILE = 32, W = 80, H = 50, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
-  const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting;
+  const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival;
   if(!Crops)throw new Error("Carregue src/crop-catalog.js antes do motor TILLFOLK.");
   if(!Crafting)throw new Error("Carregue src/crafting.js antes do motor TILLFOLK.");
   if(!Missions)throw new Error("Carregue src/missions.js antes do motor TILLFOLK.");
   if(!Orders)throw new Error("Carregue src/task-orders.js antes do motor TILLFOLK.");
+  if(!Survival)throw new Error("Carregue src/survival.js antes do motor TILLFOLK.");
   Orders.setBounds(W,H);
   window.TillfolkHouseBuilder.setBounds(W,H);
   if(!World)throw new Error("Carregue src/wild-world.js antes do motor TILLFOLK.");
@@ -213,16 +214,6 @@
       miniCtx.fillRect(Math.floor(obj.x*pixelWidth),Math.floor(obj.y*pixelHeight),
         Math.ceil(pixelWidth),Math.ceil(pixelHeight));
     }
-    // O anel e a passagem também aparecem no minimapa.
-    miniCtx.fillStyle="#344e36";
-    for(const obj of state.world.objects)if(obj.kind==="ridge")
-      miniCtx.fillRect(Math.floor(obj.x*pixelWidth),Math.floor(obj.y*pixelHeight),
-        Math.ceil(pixelWidth),Math.ceil(pixelHeight));
-    const gateway=state.world.boundary?.gate;
-    if(gateway){
-      miniCtx.fillStyle=state.world.boundary.open?"#c6e6a0":"#ecb16c";
-      miniCtx.fillRect(Math.floor(gateway.x*pixelWidth)-2,Math.floor(gateway.y*pixelHeight)-2,6,6);
-    }
     // Marcadores de ordens: amarelo = pronta, marrom = dependência pendente.
     for(const job of tasks){
       miniCtx.fillStyle=job.status==="ready"?"#ffe5a1":"#aa7057";
@@ -334,11 +325,10 @@
     cow:A+"animals/cow.png", well:A+"structures/water-well.png", fences:A+"structures/fences.png",
     roof:A+"structures/wood-roof.png",walls:A+"structures/wood-walls.png",door:A+"structures/wood-door.png",furniture:A+"structures/furniture.png",chest:A+"structures/chest.png",paths:A+"structures/paths.png",fenceGates:A+"structures/fence-gates.png",
     rocks:A+"environment/forageables.png",
-    workstation:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/work station.png",
-    valleyCliff:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles/Grass_Hill_Tiles_v2.png"
+    workstation:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/work station.png"
   };
   const sprite = {};
-  // Atlas premium de terrenos, colinas e declives: imagens locais do projeto.
+  // Atlas premium de terrenos: imagens locais do projeto.
   const TerrainCatalog=window.TillfolkTerrainCatalog;
   for(const key of Object.keys(TerrainCatalog?.ATLAS||{}))
     spriteUrls["terrain_"+key]=TerrainCatalog.url(key);
@@ -429,6 +419,7 @@
     {name:"Manu",skills:["carry","fertilize"],neg:[],cost:8,color:"#ffcfc5"}
   ];
   const HOME_WOOD_COST=8;
+  const TUTORIAL_TILL_STATION_GAP=4;
   const homeTiles=(x,y)=>[[x,y],[x+1,y],[x,y+1],[x+1,y+1]];
   function occupiedByHome(x,y){
     return Boolean(state?.homes?.some(h=>!h.legacy&&x>=h.x&&x<=h.x+1&&y>=h.y&&y<=h.y+1));
@@ -445,6 +436,10 @@
       !window.TillfolkHouseBuilder.occupied(state.house,x,y)&&
       !occupiedByHome(x,y)&&!occupiedByStation(x,y)&&
       !state.orders.some(order=>order.x===x&&order.y===y&&order.type!=="buildStation"));
+  }
+  function tutorialTillSitePreferred(x,y){
+    const station=state?.crafting?.station||state?.workstations?.[0];
+    return !station||Math.hypot(x-station.x,y-station.y)>=TUTORIAL_TILL_STATION_GAP;
   }
   function homeSiteValid(x,y){
     if(x<2||y<2||x>=W-3||y>=H-3)return false;
@@ -545,15 +540,20 @@
     for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
       if(!World.waterAt(world,x,y))plots.push(makePlot(x,y,false));
     }
-    const team = chosenStarters.slice(0,2).map((c,i)=>({
+    const initialColonists=chosenStarters.slice(0,2).map(c=>({
+      name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance
+    }));
+    const team = initialColonists.map((c,i)=>({
       id:i+1,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,
-      appearance:c.appearance ?? i,personalPriority:{},inventory:{tools:{},items:{}},x:W/2-.5+i,y:H/2-.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
+      appearance:c.appearance ?? i,personalPriority:{},inventory:{tools:{},items:{}},x:W/2-.5+i,y:H/2-.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0,
+      satiety:100,health:100,hungerState:"fed",starvationMinutes:0,lastMealDay:1
     }));
     state = {day:1,minutes:8*60,seeds:0,water:0,food:8,firstHarvest:false,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",tutorial:Missions.create(),
       plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),
       cropSeeds:Crops.normalizeStock({}),cropProduce:Crops.normalizeStock({}),selectedCrop:"potato",workstations:[],crafting:Crafting.normalize(null),
       homes:[],animals:[],inventory:{wood:0,twigs:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},buildPriority:5,
+      survivalVersion:1,startingColonists:initialColonists,deaths:[],gameOver:false,
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     tasks=[]; simSpeed=1; updateSpeed();
   }
@@ -574,6 +574,19 @@
       const s=JSON.parse(localStorage.getItem(SAVE_KEY));
       if(!s||!Array.isArray(s.plots)||!Array.isArray(s.workers))return false;
       state=s;
+      state.survivalVersion=1;
+      state.gameOver=Boolean(s.gameOver);
+      state.deaths=Array.isArray(s.deaths)?s.deaths.filter(death=>
+        death&&typeof death.name==="string"&&Number.isInteger(death.day)):[];
+      const savedStarters=Array.isArray(s.startingColonists)&&s.startingColonists.length?
+        s.startingColonists:s.workers;
+      state.startingColonists=savedStarters.slice(0,2).map((worker,index)=>({
+        name:typeof worker.name==="string"?worker.name:"Colono "+(index+1),
+        skills:Array.isArray(worker.skills)?worker.skills.slice(0,3):[],
+        neg:Array.isArray(worker.neg)?worker.neg.slice(0,3):[],
+        color:typeof worker.color==="string"?worker.color:"#b6de81",
+        appearance:Number.isInteger(worker.appearance)?worker.appearance:index
+      }));
       state.tutorial=Missions.normalize(s.tutorial); // Saves antigos continuam jogáveis, sem iniciar missões retroativas.
       // Migração das sementes genéricas preserva todos os recursos de fazendas antigas.
       state.cropSeeds=Crops.normalizeStock(s.cropSeeds||{carrot:Number(s.seeds)||0});
@@ -591,10 +604,11 @@
       state.workers.forEach(w=>{
         homageSavedName(w);
         Crafting.normalizeWorker(w,!w.inventory?s.crafting?.equipment:null);
+        Survival.normalizeWorker(w,state.day);
       });
       // Migração não destrutiva: os saves continuam utilizáveis, mas não há moeda.
       delete state.coins;
-      state.food=Math.max(0,Number(state.food)||0);
+      state.food=Survival.normalizeFood(state.food);
       state.firstHarvest=Boolean(s.firstHarvest||s.tutorial?.stats?.harvest>0);
       state.house=window.TillfolkHouseBuilder.normalize(s.house);
       state.orders=Orders.normalize(s.orders);
@@ -623,6 +637,12 @@
         }
         state.spawn=s.spawn||{x:14,y:10};
       }else state.spawn=s.spawn||{x:W/2,y:H/2};
+      const oldBoundary=state.world.boundary;
+      World.removeValleyEnclosure(state.world);
+      if(oldBoundary){
+        state.orders=state.orders.filter(order=>order.type!=="clear"||
+          !World.ringTile(oldBoundary,order.x,order.y));
+      }
       // Saves legados podem trazer árvores com frutos: substituir somente a
       // variante gráfica, mantendo a árvore, sua posição e o recurso de madeira.
       World.stripFruitTrees(state.world);
@@ -659,6 +679,19 @@
         w.x=Number.isFinite(w.x)?w.x:state.spawn.x;w.y=Number.isFinite(w.y)?w.y:state.spawn.y;
         w.route=[];w.routeTask=null;w.facing=w.facing||"down";w.moving=false;w.walkFrame=0;
       });
+      const protectedWaterTiles=[
+        ...state.workers.map(w=>({x:Math.floor(w.x),y:Math.floor(w.y)})),
+        ...state.plots.filter(p=>p.selected||p.tilled||p.seeded||p.produce)
+          .map(p=>({x:p.x,y:p.y})),
+        ...state.workstations,
+        ...state.homes.flatMap(home=>homeTiles(home.x,home.y).map(([x,y])=>({x,y}))),
+        ...state.animals.map(animal=>({x:Math.floor(animal.x),y:Math.floor(animal.y)})),
+        ...["floor","walls","roof"].flatMap(layer=>state.house[layer].map(id=>{
+          const [x,y]=id.split("-").map(Number);return {x,y};
+        }))
+      ];
+      World.connectWater(state.world,protectedWaterTiles);
+      state.orders=state.orders.filter(order=>!World.waterAt(state.world,order.x,order.y));
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
       state.candidates.forEach(homageSavedName);
       state.journal=Array.isArray(s.journal)?s.journal:[];
@@ -673,7 +706,7 @@
     }
   }
   function save(){
-    if(!state||!playing)return;
+    if(!state||(!playing&&!state.gameOver))return;
     try{
       // Se um modal pausou temporariamente a simulação, guardar a velocidade
       // de antes da janela para a retomada não abrir pausada por engano.
@@ -705,12 +738,14 @@
     }else if(previous)notify("✓ "+previous.complete);
   }
   function start(continueSaved=false, chosenStarters = [], config = {}){
+    let restoredGameOver=false;
     if(continueSaved){
       // Nunca sobrescrever um save danificado com uma fazenda nova silenciosamente.
       if(!readSave()){
         notify("Não foi possível carregar esta fazenda. Seu salvamento não foi apagado.");
         return false;
       }
+      restoredGameOver=state.gameOver||state.workers.length===0;
     }else reset(chosenStarters,config);
     houseHistory=[];buildHover=null;areaSelection=null;selectionPointer=null;resetSpeechScene();setTool("universal");
     recalcTasks(); // Limpar ordens já concluídas antes da primeira renderização.
@@ -718,7 +753,9 @@
     setSessionMode("play");
     document.body.classList.add("play-session","focus-game");
     worldPanX=0;worldPanY=0;cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;
-    movementKeys.clear();activeTouches.clear();pinchGesture=null;hoveredTile=null;feedbackParticles.length=0;pickupEffects.length=0;pickupHistory.length=0;closeDrawer();refresh();save();
+    movementKeys.clear();activeTouches.clear();pinchGesture=null;hoveredTile=null;feedbackParticles.length=0;pickupEffects.length=0;pickupHistory.length=0;closeDrawer();refresh();
+    if(restoredGameOver){gameOver();return true;}
+    save();
     minimap.hidden=window.innerWidth<=700;
     $("#biome-legend").hidden=minimap.hidden;
     $("#minimap-toggle").setAttribute("aria-expanded",String(!minimap.hidden));
@@ -737,6 +774,43 @@
     if(w.carryingWater){state.water++;w.carryingWater=false;}
     if(w.carryingManure){state.inventory.manure++;w.carryingManure=false;}
     w.supplyStage=null;w.supplyTarget=null;
+  }
+
+  // S2: Game Over - todos os colonos morreram
+  function gameOver(){
+    state.gameOver=true;
+    state.gameOverDay=state.day;
+    save();
+    playing=false;
+    simSpeed=0;updateSpeed();
+    const existing=document.querySelector("[data-gameover-dialog]");
+    if(existing)return;
+    const dialog = document.createElement('dialog');
+    dialog.className = 'modal';
+    dialog.dataset.gameoverDialog="true";
+    dialog.innerHTML = `
+      <h2>☠ A Colônia Falhou</h2>
+      <p>Todos os colonos pereceram por inanição.</p>
+      <p>A colônia durou <strong>${state.day} dias</strong>.</p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
+        <button class="large-primary" id="gameover-restart" type="button">Começar nova colônia</button>
+        <button class="large-secondary" id="gameover-menu" type="button">Menu Principal</button>
+      </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    dialog.querySelector('#gameover-restart').onclick = () => {
+      dialog.close(); dialog.remove();
+      const first=state.startingColonists?.[0]||randomStarter();
+      const second=state.startingColonists?.[1]||randomStarter([first.name],[first.appearance]);
+      start(false,[first,second],{mode:state.mode,farmName:state.farmName});
+    };
+    dialog.querySelector('#gameover-menu').onclick = () => {
+      dialog.close(); dialog.remove();
+      $("#game-return-title").click();
+      refresh();
+    };
   }
   // Uma marcação indica exclusivamente uma ordem PENDENTE, não uma memória
   // permanente da seleção. Limpa inclusive saves antigos que tinham selected=true.
@@ -776,7 +850,10 @@
     }
     syncOrderSelections();
   }
-  function bonus(w,type){return w.skills.includes(type)?(w.skills.length===1?2:w.skills.length===2?1.6:1.3):1;}
+  function bonus(w,type){
+    const specialty=w.skills.includes(type)?(w.skills.length===1?2:w.skills.length===2?1.6:1.3):1;
+    return specialty*Survival.workMultiplier(w);
+  }
   // Mesma regra para escolher trabalho e para explicar a ociosidade.
   // Traços negativos são proibições, não uma penalidade de velocidade.
   function workerTaskBlocker(w,t){
@@ -908,12 +985,11 @@
         const obj=World.at(state.world,p.x,p.y);
         if(obj){
           if(Crafting.blocked(state,"clear",obj,w))return false;
-          const kind=obj.kind, result=World.clear(state.world,p.x,p.y,{axe:Crafting.has(state,"axe",w)});
+          const kind=obj.kind, result=World.clear(state.world,p.x,p.y);
           if(result.blocked)return false;
-          const types={tree:"wood",stump:"wood",log:"wood",gateLog:"wood",boulder:"stone",pebble:"stone",
+          const types={tree:"wood",stump:"wood",log:"wood",boulder:"stone",pebble:"stone",
             mushroom:"mushroom",flowers:"flower",herbs:"herbs",grass:"grass",thicket:"wood",twig:"twigs"};
-          const amount={tree:3,stump:2,log:2,gateLog:4,boulder:3,twig:1}[kind]||1;
-          if(kind==="gateLog"){recordTutorial("exit");log("A passagem do vale foi aberta! Novas regiões acessíveis.");}
+          const amount={tree:3,stump:2,log:2,boulder:3,twig:1}[kind]||1;
           const resource=types[kind]||"grass";
           state.inventory[resource]=(state.inventory[resource]||0)+amount;
           showPickup(t.x,t.y,resource,amount);
@@ -986,10 +1062,15 @@
       const births=World.regrow(state.world,state.day,W,H,[...state.plots,...houseCells]);
       if(births>0)log("A natureza renovou "+births+" pequenos elementos do vale.");
       if(state.mode==="survival"){
-        state.food=Math.max(0,state.food-state.workers.length);
-        log("Um novo dia começou. A equipe consumiu alimentos.");
-        if(state.food===0)log("Atenção: sem comida para a equipe!");
-      }else log("Um novo dia começou na fazenda tranquila.");
+        log("Um novo dia começou. Dia "+state.day+".");
+        // Avisos de estoque baixo
+        const hungryCount = state.workers.filter(w=>w.hungerState==="hungry" || w.hungerState==="starving").length;
+        if(state.food===0){
+          log("⚠ ALERTA: Sem comida no estoque! "+hungryCount+" colono(s) precisam comer.");
+        }else if(state.food < state.workers.length * 2){
+          log("⚠ Estoque baixo: "+state.food+" comida para "+state.workers.length+" colonos ("+hungryCount+" com fome).");
+        }
+      }else log("Um novo dia começou na fazenda tranquila. Dia "+state.day+".");
     }
     for(const animal of state.animals){
       animal.timer=(animal.timer||0)+scaled;
@@ -1002,10 +1083,30 @@
       const fertility=World.terrainAt(state.world,p.x,p.y).fertility;
       p.growth=Math.min(1,p.growth+scaled/180*fertility);
     }
+    const survivalEvents=Survival.advance(state,scaled*1.25);
+    for(const event of survivalEvents){
+      if(event.type==="warning")log("⚠ "+event.worker.name+" precisa de comida em breve. Saciedade: "+Math.round(event.worker.satiety)+"%");
+      else if(event.type==="hungry")log("⚠ "+event.worker.name+" está com fome. Saciedade: "+Math.round(event.worker.satiety)+"%");
+      else if(event.type==="starving")log("💀 "+event.worker.name+" está em inanição! Precisa comer urgentemente.");
+      else if(event.type==="fed")log(event.worker.name+" se alimentou e está satisfeito.");
+      else if(event.type==="weak")log("⚠ "+event.worker.name+" está fraco por falta de comida. Saúde: "+Math.round(event.worker.health)+"%");
+      else if(event.type==="critical")log("⚠ "+event.worker.name+" corre risco fatal por inanição. Saúde: "+Math.round(event.worker.health)+"%");
+    }
     recalcTasks();
     assignIdleWorkers();
     for(const w of state.workers){
       w.moving=false;
+      if(Survival.tryEat(state,w)){
+        showPickup(w.x,w.y,"food",1);
+        log(w.name+" comeu uma refeição. Saciedade: "+Math.round(w.satiety)+"%");
+        if(w.task){
+          releaseSupply(w);
+          w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
+          recalcTasks();
+        }
+        save();
+        continue;
+      }
       if(!w.task)continue;
       const t=tasks.find(t=>t.id===w.task);
       if(!t){releaseSupply(w);w.task=null;w.progress=0;w.route=[];continue;}
@@ -1072,6 +1173,24 @@
         if(complete)state.orders=state.orders.filter(order=>order.id!==t.id);
         w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
         recalcTasks();
+      }
+    }
+
+    if(state.mode==="survival"){
+      const deadWorkers=Survival.removeDeadWorkers(state);
+      for(const dead of deadWorkers){
+        state.deaths.push({name:dead.name,day:state.day,cause:"inanição"});
+        state.deaths=state.deaths.slice(-100);
+        log("☠ "+dead.name+" faleceu por inanição. A colônia perde um membro.");
+      }
+      if(deadWorkers.length){
+        recalcTasks();
+        assignIdleWorkers();
+        save();
+      }
+      if(state.workers.length===0&&deadWorkers.length){
+        log("☠ Todos os colonos pereceram. A colônia falhou.");
+        gameOver();
       }
     }
   }
@@ -1229,7 +1348,7 @@
     for(const item of layers){
       const {x,y,type}=item;
       if(type==="nature"){
-        World.drawObject(ctx,item.object,sprite,TILE,part,World.biomeAt(state.world,item.object.x,item.object.y));
+        World.drawObject(ctx,item.object,sprite,TILE,part);
       }else if(type==="animal"){
         const a=item.animal,x=a.x*TILE,y=a.y*TILE;
         part(sprite.cow,0,0,32,32,x-20,y-32,40,38);
@@ -1391,7 +1510,7 @@
         mushroom:"mushroom",grass:"grass",herbs:"herbs",flower:"flowers"};
       const kind=naturalKinds[p.key];
       if(kind){
-        World.drawObject(ctx,{x:p.x,y:p.y,kind,variant:0},sprite,TILE,part,World.biomeAt(state.world,p.x,p.y));
+        World.drawObject(ctx,{x:p.x,y:p.y,kind,variant:0},sprite,TILE,part);
         rendered=true;
       }else if(p.key==="station"&&valid(sprite.workstation)){
         ctx.drawImage(sprite.workstation,p.x*TILE-4,p.y*TILE-20,40,49);rendered=true;
@@ -1518,6 +1637,23 @@
     set("#farm-title",state.farmName||"Minha Fazenda");
     set("#mode-label",(state.mode==="relaxed"?"FAZENDA TRANQUILA":"SOBREVIVÊNCIA")+" · DIA "+state.day);
     $("#status").textContent=simSpeed===0?"Ⅱ Simulação pausada":"● Fazenda em funcionamento";
+
+    // S3: o prognóstico usa o consumo individual esperado, não um custo diário fictício.
+    if(state.mode==="survival"){
+      const stats=Survival.getStats(state);
+      ["survival-population","survival-food","survival-days","survival-consumption","survival-alert"]
+        .forEach(id=>$("#"+id).hidden=false);
+      set("#survival-population-count",stats.population);
+      set("#survival-food-count",stats.food);
+      set("#survival-consumption-count",stats.consumptionPerDay.toFixed(1));
+      set("#survival-days-count",stats.daysRemaining===null?"—":stats.daysRemaining.toFixed(1));
+      const alertEl=$("#survival-alert");
+      alertEl.className="metric survival-metric alert "+stats.alert;
+      set("#survival-alert-text",stats.alertText);
+    }else{
+      ["survival-population","survival-food","survival-days","survival-consumption","survival-alert"]
+        .forEach(id=>$("#"+id).hidden=true);
+    }
     $("#workers").innerHTML=state.workers.map(w=>{
       const t=tasks.find(t=>t.id===w.task);
       const title=w.supplyStage==="water"?"Buscando água na lagoa":
@@ -1528,7 +1664,17 @@
       const positive=w.skills.length?w.skills.map(s=>'<span class="tag">✦ '+labels[s]+'</span>').join(""):'<span class="tag">Generalista</span>';
       const neg=w.neg.map(s=>'<span class="tag negative">✕ '+labels[s]+'</span>').join("");
       const factor=w.skills.length===1?"+100%":w.skills.length===2?"+60%":w.skills.length===3?"+30%":"sem bônus";
-      return '<div class="worker" data-worker-state="'+(w.moving?"moving":t?"working":"idle")+'"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div class="worker-identity"><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+escapeHtml(title)+'</div><span class="worker-status">'+(w.moving?"➤ Caminhando":t?"● Em atividade":tasks.length?"⏳ Aguardando ordens compatíveis":"● Disponível")+'</span></div></div><div class="tags">'+positive+neg+'</div><div class="worker-bar" role="progressbar" aria-label="Progresso de '+escapeHtml(w.name)+'" aria-valuenow="'+Math.round(w.progress*100)+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+(w.progress*100)+'%"></i></div><div class="worker-role">Especialização: '+factor+'</div></div>';
+      // S1+S2: Indicadores de saciedade e saúde
+      const satiety = Number.isFinite(w.satiety) ? Math.round(w.satiety) : 100;
+      const hungerState = Survival.hungerState(satiety);
+      const hungerIcon = hungerState==="starving"?"💀":hungerState==="hungry"?"⚠":"🍽️";
+      const hungerColor = hungerState==="starving"?"#f4b0a7":hungerState==="hungry"?"#f4d18b":"#b6de81";
+      const satietyBar = '<div class="worker-bar hunger-bar" role="progressbar" aria-label="Saciedade de '+escapeHtml(w.name)+': '+satiety+'%" aria-valuenow="'+satiety+'" aria-valuemin="0" aria-valuemax="100" style="background:'+hungerColor+'"><i style="width:'+satiety+'%"></i></div>';
+      const health = Number.isFinite(w.health) ? Math.round(w.health) : 100;
+      const healthColor = health <= 20 ? "#f4b0a7" : health <= 50 ? "#f4d18b" : "#b6de81";
+      const healthBar = '<div class="worker-bar health-bar" role="progressbar" aria-label="Saúde de '+escapeHtml(w.name)+': '+health+'%" aria-valuenow="'+health+'" aria-valuemin="0" aria-valuemax="100" style="background:'+healthColor+'"><i style="width:'+health+'%"></i></div>';
+      const healthLabel = '<div class="worker-health" style="color:'+healthColor+'" title="Saúde: '+health+'%">❤ '+health+'%</div>';
+      return '<div class="worker" data-worker-state="'+(w.moving?"moving":t?"working":"idle")+'"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div class="worker-identity"><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+escapeHtml(title)+'</div><span class="worker-status">'+(w.moving?"➤ Caminhando":t?"● Em atividade":tasks.length?"⏳ Aguardando ordens compatíveis":"● Disponível")+'</span></div></div><div class="tags">'+positive+neg+'</div><div class="worker-hunger" style="color:'+hungerColor+'" title="Saciedade: '+satiety+'%">'+hungerIcon+' '+satiety+'%</div>'+satietyBar+healthLabel+healthBar+'<div class="worker-role">Especialização: '+factor+'</div></div>';
     }).join("");
     // Ordens ativas/prontas ficam em destaque; dependências aguardando são
     // recolhidas para não ocupar toda a tela com tarefas impossíveis agora.
@@ -1641,7 +1787,7 @@
     const price=foodHireCost(c);
     if(state.food<price){notify("Comida insuficiente para a troca.");return;}
     state.food-=price;
-    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},inventory:{tools:{},items:{}},x:state.spawn.x,y:state.spawn.y,task:null,progress:0,facing:"down",moving:false,walkFrame:0});
+    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},inventory:{tools:{},items:{}},x:state.spawn.x,y:state.spawn.y,task:null,progress:0,facing:"down",moving:false,walkFrame:0,satiety:100,health:100,hungerState:"fed",starvationMinutes:0,lastMealDay:state.day});
     assignHomes();
     state.candidates[i]=newCandidate();
     log(c.name+" entrou para a equipe.");
@@ -1682,7 +1828,6 @@
     const plot=findPlot(x,y);
     if(!plot||World.waterAt(state.world,x,y)||
        occupiedByHome(x,y)||occupiedByStation(x,y)||window.TillfolkHouseBuilder.occupied(state.house,x,y))return null;
-    if(World.at(state.world,x,y)?.kind==="ridge")return null;
     if(World.at(state.world,x,y)||plot.dirty)return "clear";
     if(plot.tilled&&!(state.cropSeeds[state.selectedCrop]>0)){
       const available=Object.keys(state.cropSeeds).find(id=>state.cropSeeds[id]>0&&Crops.get(id));
@@ -1698,7 +1843,6 @@
   function queueAt(type,x,y){
     const toolProblem=Crafting.blocked(state,type,World.at(state.world,x,y));
     if(toolProblem){markBlocked(x,y,toolProblem);return {error:toolProblem};}
-    if(World.at(state.world,x,y)?.kind==="ridge")return {error:"Encosta fechada: procure o tronco na saída leste."};
     if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||occupiedByHome(x,y)||occupiedByStation(x,y)||occupiedByStation(x,y)||
        (World.waterAt(state.world,x,y)&&type!=="collectWater"))return {error:"Terreno indisponível"};
     if(type==="buildStation"&&!stationSiteValid(x,y))return {error:"Oficina exige terreno livre."};
@@ -1754,9 +1898,6 @@
   function placeOrder(type,x,y){
     const toolProblem=Crafting.blocked(state,type,World.at(state.world,x,y));
     if(toolProblem){markBlocked(x,y,toolProblem);return;}
-    if(World.at(state.world,x,y)?.kind==="ridge"){
-      notify("Encosta intransponível: procure o tronco caído a leste.");return;
-    }
     if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||occupiedByHome(x,y)||
        (World.waterAt(state.world,x,y)&&type!=="collectWater")){
       notify("Terreno indisponível para ordens.");return;
@@ -2097,8 +2238,7 @@
         type&&type!=="inspecionar"?Crafting.blocked(state,type,object):null;
       const tip=$("#tile-tooltip");
       if(needed){
-        const typeNames={boulder:"Pedra grande",tree:"Árvore",stump:"Toco",log:"Tronco",
-          gateLog:"Tronco da passagem",thicket:"Arbusto",ridge:"Parede de rocha"};
+        const typeNames={boulder:"Pedra grande",tree:"Árvore",stump:"Toco",log:"Tronco",thicket:"Arbusto"};
         tip.textContent="⛔ "+(typeNames[object.kind]||"Recurso bloqueado")+" · "+needed+".";
         tip.classList.add("locked");tip.hidden=false;
       }else if(tip.classList.contains("locked")){
@@ -2634,13 +2774,13 @@
     const objects=state.world.objects||[];
     let candidates=[];
     if(step.target==="grass")candidates=objects.filter(item=>item.kind==="grass");
-    else if(step.target==="exit")candidates=objects.filter(item=>item.kind==="gateLog");
     else if(step.target==="workstation")candidates=state.inventory.twigs<Crafting.STATION_COST?
       objects.filter(item=>item.kind==="twig"):
       state.plots.filter(p=>stationSiteValid(p.x,p.y));
     else if(step.target==="till")candidates=state.plots.filter(p=>
       !p.tilled&&!p.seeded&&!p.dirty&&!World.at(state.world,p.x,p.y)&&
-      World.terrainAt(state.world,p.x,p.y).farmable&&!occupiedByHome(p.x,p.y));
+      World.terrainAt(state.world,p.x,p.y).farmable&&!occupiedByHome(p.x,p.y)&&
+      tutorialTillSitePreferred(p.x,p.y));
     else if(step.target==="sow")candidates=state.plots.filter(p=>p.tilled&&!p.seeded&&!p.produce);
     else if(step.target==="water")candidates=state.plots.filter(p=>p.seeded&&!p.watered);
     else if(step.target==="harvest"){
@@ -2661,7 +2801,6 @@
       showMapFeedback(target.x,target.y,"#ecf8a8");
       notify(step.target==="workstation"&&state.inventory.twigs<Crafting.STATION_COST?"Graveto encontrado! Marque Limpar para recolhê-lo.":
         step.target==="grass"?"Tufo de grama encontrado! Marque a ordem de Limpar.":
-        step.target==="exit"?"Esse tronco exige um machado comum. Selecione Limpar e marque o tronco.":
         "Local sugerido destacado. Clique no terreno para dar a ordem.");
     }else{
       notify(step.target==="harvest"?"A cultura ainda está crescendo. Use 3× ou 6× para esperar.":"Não encontrei alvo pronto. Explore o mapa ou use Ordens.");
@@ -2816,7 +2955,8 @@
     if(now>=pawNextUpdate){
       pawNextUpdate=now+130;
       window.TillfolkTutorialPointer?.guide({playing,state,
-        quest:state?Missions.current(state):null,selectedTool,buildLayer,canvas,stationSiteValid});
+        quest:state?Missions.current(state):null,selectedTool,buildLayer,canvas,cameraZoom,
+        stationSiteValid,tutorialTillSitePreferred});
     }
     if(playing&&now-lastMinimapFrame>350){paintMinimap();lastMinimapFrame=now;}
     requestAnimationFrame(loop);

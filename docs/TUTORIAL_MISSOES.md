@@ -51,6 +51,8 @@ Essas **seis missões adicionais são propostas**, não estão implementadas. Su
 
 - Passe o mouse ou toque em **Detalhes** para aprender por que uma missão está esperando e qual ferramenta falta.
 - **Mostrar no mapa** destaca objetivos reais e pode selecionar a ferramenta adequada, sem concluir ações automaticamente.
+- A patinha usa a direção real do sprite original e mira o ícone visível do controle; no mapa e na interface, a ponta deve terminar sobre o alvo, acompanhando o zoom apenas quando estiver sobre o mapa.
+- Para gravetos, o tutorial prefere o alvo livre mais próximo do ponto de início, sem trocar de recurso quando a câmera é deslocada. Para construir a Work Station, sugere o espaço válido mais próximo do centro da colônia; o jogador continua livre para escolher outro lugar.
 - As falas dos trabalhadores devem ser naturais, variadas e situacionais; balões desaparecem depois de um intervalo e não ficam sobre o menu.
 - Ao concluir a sequência inicial, apresentar **Continuar jogando** ou **Voltar ao menu inicial**. A colônia e o save permanecem intactos.
 - Não usar missões para fornecer comida infinita, eliminar consequências de sobrevivência ou teletransportar materiais.

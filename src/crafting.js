@@ -88,7 +88,6 @@
     if(type==="water")return "wateringCan";
     if(type==="clear"){
       switch(object?.kind){
-        case "gateLog":return "axe";
         case "tree":case "log":case "thicket":return "axe";
         case "stump":return "shovel";
         case "boulder":return "pickaxe";
@@ -98,7 +97,6 @@
     return null;
   }
   function blocked(state,type,object,worker=null){
-    if(type==="clear"&&object?.kind==="ridge")return "Encosta fechada: procure a passagem com o tronco caído.";
     const tool=requiredTool(type,object);
     const name=recipe(tool)?.name||"Ferramenta";
     return tool&&!has(state,tool,worker)?"Precisa de "+name.toLowerCase()+" no inventário do colono":null;

@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "test:survival": "node tests/hunger.test.cjs && node tests/survival-death.test.cjs && node tests/survival-hud.test.cjs",
+    "test:e2e:survival": "playwright test tests/survival.spec.cjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "playwright": "^1.64.1"
+  }
+}

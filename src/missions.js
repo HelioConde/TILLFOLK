@@ -85,27 +85,19 @@
         waiting:["A colheita tá esperando ali no canteiro. Vamos levar pro estoque?","Eu levo se você quiser. É só marcar o que ficou pra trás."],
         working:["Deixa que eu carrego! Só não me faz tropeçar com tudo isso.","Essa comida vai render um jantar daqueles. Tô até com fome!"]
       },tool:"carry",target:"carry"},
-    {key:"axe",goal:1,icon:"🪓",title:"Prepare a saída do vale",
+    {key:"axe",goal:1,icon:"🪓",title:"Prepare ferramentas para explorar",
       subtitle:"Fabrique um machado na Work Station",
-      help:"Abra a Work Station depois de colher sua primeira plantação. Separe 8 gravetos e 3 fibras de grama, escolha Machado e espere o colono terminar a fabricação. Equipe quem for limpar o tronco da saída leste.",
-      complete:"Finalmente um machado! Agora podemos cortar madeira de verdade.",
+      help:"Abra a Work Station depois de colher sua primeira plantação. Separe 8 gravetos e 3 fibras de grama, escolha Machado e espere o colono terminar a fabricação. O machado permite derrubar árvores e coletar mais madeira.",
+      complete:"Finalmente um machado! Agora podemos derrubar árvores e coletar madeira.",
       dialogue:{
-        intro:["Nossa primeira colheita já está guardada! Que tal preparar um machado pra abrir caminho?","Já temos comida! Agora a gente pode fabricar um machado e explorar além do vale."],
+        intro:["Nossa primeira colheita já está guardada! Que tal preparar um machado para explorar?","Já temos comida! Agora a gente pode fabricar um machado para coletar madeira."],
         waiting:["A receita do machado tá na bancada. Confere os gravetos e as fibras.","Se estiver faltando material, ainda tem mato pra limpar por aí."],
         working:["Pronto, vou separar os materiais. Cuidado com a lâmina!","Com o machado feito, nosso trabalho vai render muito mais."]
-      },tool:"construir",target:"axe"},
-    {key:"exit",goal:1,icon:"🪵",title:"Abra a passagem",subtitle:"Corte o tronco caído na saída leste",
-      help:"Use Mostrar no mapa para encontrar o corredor a leste. Com um machado comum no inventário de um trabalhador, escolha Limpar e marque o tronco caído. Aguarde a equipe abrir a passagem.",
-      complete:"Passagem aberta! Você concluiu o tutorial e pode explorar o vale!",
-      dialogue:{
-        intro:["Olha aquele tronco atravessado. Com o machado novo, já dá pra abrir caminho!","A montanha fecha o vale inteiro, mas tem uma passagem a leste. Vamos lá?"],
-        waiting:["O tronco está bloqueando a saída. Marca ele pra gente cortar!","Vai ser bom conhecer o que existe do outro lado. Vamos abrir caminho?"],
-        working:["Cuidado com as lascas! Mais um pouquinho e a passagem abre.","Já estou trabalhando nesse tronco. Dá até pra enxergar o outro lado!"]
-      },tool:"clear",target:"exit"}
+      },tool:"construir",target:"axe"}
   ]);
 
   const artNames=Object.freeze({
-    workstation:"Work Station",hoe:"Enxada",wateringCan:"Regador",shovel:"Pá",pickaxe:"Picareta",axe:"Machado",exit:"Tronco caído na passagem",
+    workstation:"Work Station",hoe:"Enxada",wateringCan:"Regador",shovel:"Pá",pickaxe:"Picareta",axe:"Machado",
     grass:"Tufo de grama alta",seed:"Grama alta: pode soltar sementes",
     till:"Terra arada",sow:"Semente plantada",water:"Planta regada",
     harvest:"Plantação madura",carry:"Colheita",plan:"Cabana"
@@ -168,8 +160,6 @@
         ctx.fillStyle="#603b20";ctx.fillRect(x+size*.7,y+size*.71,size*.12,size*.12);
         ctx.fillStyle="#edcc78";ctx.fillRect(x+size*.73,y+size*.73,size*.07,size*.07);
       }
-    }else if(key==="exit"){
-      stamp(ctx,"forage",0,80,32,16,x+size*.02,y+size*.3,size*.96,size*.5);
     }else if(key==="till")soil();
     else if(key==="sow"){
       soil();ctx.fillStyle="#563925";ctx.fillRect(x+size*.39,y+size*.4,size*.23,size*.2);
@@ -213,7 +203,7 @@
     return canvas;
   }
   const emptyStats=()=>Object.fromEntries(STEPS.map(step=>[step.key,0]));
-  function create(){return {active:true,step:0,stats:emptyStats(),finished:false,version:4};}
+  function create(){return {active:true,step:0,stats:emptyStats(),finished:false,version:5};}
   function normalize(raw){
     if(!raw||typeof raw!=="object")return {active:false,step:0,stats:emptyStats(),finished:false,version:1};
     const stats=emptyStats();
@@ -235,7 +225,7 @@
       if(stats.water)stats.wateringCan=1;
       while(step<STEPS.length&&stats[STEPS[step].key]>=STEPS[step].goal)step++;
     }
-    return {active:raw.active===true,step,stats,finished:raw.finished===true||step>=STEPS.length,version:4};
+    return {active:raw.active===true,step,stats,finished:raw.finished===true||step>=STEPS.length,version:5};
   }
   function current(state){
     const progress=state?.tutorial;

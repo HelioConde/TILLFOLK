@@ -5,8 +5,8 @@
 (() => {
   const Biomes=window.TillfolkBiomes;
   if(!Biomes)throw new Error("Carregue src/biomes.js antes do terreno selvagem.");
-  const solidKinds=new Set(["tree","boulder","log","thicket","stump","ridge","gateLog"]);
-  const gatherKinds=new Set(["tree","boulder","log","thicket","stump","mushroom","flowers","herbs","grass","twig","pebble","gateLog"]);
+  const solidKinds=new Set(["tree","boulder","log","thicket","stump"]);
+  const gatherKinds=new Set(["tree","boulder","log","thicket","stump","mushroom","flowers","herbs","grass","twig","pebble"]);
   const key=(x,y)=>x+","+y;
   // Atlas original: variações 2,3,4,5 exibem frutos na copa.
   // Nesta fase só usar árvores verdes para madeira (0,1 e 6).
@@ -30,9 +30,9 @@
   const randSeed=seed=>{let a=(seed>>>0)||139931;return ()=>{a+=0x6D2B79F5;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;}};
   const noise=(seed,x,y)=>{let v=Math.imul(x+721,374761393)^Math.imul(y+1013,668265263)^(seed|0);v=Math.imul(v^(v>>>13),1274126177);return ((v^(v>>>16))>>>0)/4294967296;};
   const nearStart=(x,y,w,h)=>Math.hypot((x-(w>=60?w/2:13.6))/1.15,
-    (y-(h>=40?h/2:9.5))/1.05)<(w>=60&&h>=40?8.1:4.8);
+    (y-(h>=40?h/2:9.5))/1.05)<(w>=60&&h>=40?5.2:4.8);
   const inMap=(x,y,w,h)=>x>=1&&y>=1&&x<w-1&&y<h-1;
-  // Área inicial 25x23 no interior do anel; saída única ao leste.
+  // Limites preservados apenas para migrar saves do vale antigo.
   function valleyBounds(w,h){
     const cx=Math.floor(w/2),cy=Math.floor(h/2);
     return {left:cx-13,right:cx+13,top:cy-12,bottom:cy+12,
@@ -42,57 +42,145 @@
     return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom&&
       (x===r.left||x===r.right||y===r.top||y===r.bottom);
   }
-  function installValley(world,random){
-    if(world.width<60||world.height<40)return;
-    const region=valleyBounds(world.width,world.height);
-    world.boundary=region;
-    const corridor=p=>p.y===region.gate.y&&p.x>=region.gate.x-4&&p.x<=region.gate.x+9;
-    world.objects=world.objects.filter(p=>!ringTile(region,p.x,p.y)&&!corridor(p));
-    world.water=world.water.filter(p=>!ringTile(region,p.x,p.y)&&!corridor(p));
-    for(let y=region.top;y<=region.bottom;y++)for(let x=region.left;x<=region.right;x++){
-      if(!ringTile(region,x,y))continue;
-      world.objects.push({x,y,kind:x===region.gate.x&&y===region.gate.y?"gateLog":"ridge",
-        variant:(x+y)%4,age:0});
+  function removeValleyEnclosure(world){
+    if(!world||!Array.isArray(world.objects))return false;
+    const region=world.boundary;
+    if(region&&Number.isInteger(world.width)&&Number.isInteger(world.height)&&
+      typeof world.biomeMap==="string"&&world.biomeMap.length===world.width*world.height){
+      const natural=Biomes.generate(world.seed,world.width,world.height);
+      const cells=world.biomeMap.split("");
+      for(let y=region.top+1;y<region.bottom;y++)for(let x=region.left+1;x<region.right;x++)
+        cells[y*world.width+x]=natural[y*world.width+x];
+      world.biomeMap=cells.join("");
     }
-    const occupied=new Set([...world.objects,...world.water].map(p=>key(p.x,p.y)));
-    const inside=p=>p.x>region.left+1&&p.x<region.right-1&&p.y>region.top+1&&p.y<region.bottom-1;
-    // Garante gravetos e fibras acessíveis para fabricar as ferramentas, sem softlock.
-    function stock(kind,min){
-      let count=world.objects.filter(p=>p.kind===kind&&inside(p)).length;
-      let attempts=0;
-      while(count<min&&attempts++<6500){
-        const x=region.left+2+Math.floor(random()*(region.right-region.left-3));
-        const y=region.top+2+Math.floor(random()*(region.bottom-region.top-3));
-        if(occupied.has(key(x,y))||corridor({x,y})||Math.hypot(x-world.width/2,y-world.height/2)<3.8)continue;
-        world.objects.push({x,y,kind,variant:Math.floor(random()*4),age:0});
-        occupied.add(key(x,y));count++;
-      }
-    }
-    stock("twig",52);stock("grass",28);stock("pebble",10);
+    const previousLength=world.objects.length;
+    world.objects=world.objects.filter(object=>object.kind!=="ridge"&&object.kind!=="gateLog");
+    delete world.boundary;
+    return previousLength!==world.objects.length||Boolean(region);
   }
-
-  function create(seed,w,h,exclude=[],options={}){
+  function connectWater(world,protectedTiles=[]){
+    if(!world||!Array.isArray(world.water)||world.water.length<2)return 0;
+    if(!Array.isArray(world.objects)||!Number.isInteger(world.width)||!Number.isInteger(world.height))
+      throw new TypeError("O mundo precisa ter objetos e dimensões válidas para conectar a água.");
+    const water=new Set(world.water.map(tile=>key(tile.x,tile.y)));
+    const occupied=new Set(world.objects.map(object=>key(object.x,object.y)));
+    const protectedSet=new Set(protectedTiles.filter(tile=>
+      Number.isFinite(tile?.x)&&Number.isFinite(tile?.y))
+      .map(tile=>key(Math.floor(tile.x),Math.floor(tile.y))));
+    const narrowGaps=[];
+    for(let y=1;y<world.height-1;y++)for(let x=1;x<world.width-1;x++){
+      const id=key(x,y);
+      if(water.has(id)||occupied.has(id)||protectedSet.has(id))continue;
+      const horizontal=water.has(key(x-1,y))&&water.has(key(x+1,y));
+      const vertical=water.has(key(x,y-1))&&water.has(key(x,y+1));
+      if(horizontal||vertical)narrowGaps.push({x,y,id});
+    }
+    for(const tile of narrowGaps){
+      world.water.push({x:tile.x,y:tile.y});
+      water.add(tile.id);
+    }
+    let added=narrowGaps.length;
+    const remaining=new Set(water),components=[];
+    const directions=[[1,0],[-1,0],[0,1],[0,-1]];
+    while(remaining.size){
+      const first=remaining.values().next().value,component=[first];
+      remaining.delete(first);
+      for(let i=0;i<component.length;i++){
+        const [x,y]=component[i].split(",").map(Number);
+        for(const [dx,dy] of directions){
+          const next=key(x+dx,y+dy);
+          if(remaining.delete(next))component.push(next);
+        }
+      }
+      components.push(component);
+    }
+    if(components.length<2)return added;
+    components.sort((a,b)=>b.length-a.length);
+    const connected=new Set(components[0]);
+    for(const component of components.slice(1)){
+      const queue=component.slice(),visited=new Set(component),previous=new Map();
+      let head=0,joinFrom=null;
+      while(head<queue.length&&!joinFrom){
+        const current=queue[head++],[x,y]=current.split(",").map(Number);
+        for(const [dx,dy] of directions){
+          const nx=x+dx,ny=y+dy,next=key(nx,ny);
+          if(!inMap(nx,ny,world.width,world.height))continue;
+          if(connected.has(next)){previous.set(next,current);joinFrom=current;break;}
+          if(visited.has(next)||occupied.has(next))continue;
+          visited.add(next);previous.set(next,current);queue.push(next);
+        }
+      }
+      for(let current=joinFrom;current&&!connected.has(current);current=previous.get(current)){
+        const [x,y]=current.split(",").map(Number);
+        if(!water.has(current)){
+          world.water.push({x,y});water.add(current);added++;
+        }
+        connected.add(current);
+      }
+      for(const tile of component)connected.add(tile);
+    }
+    return added;
+  }
+  function create(seed,w,h,exclude=[]){
     const random=randSeed(seed), reserved=new Set(exclude.map(p=>key(p.x,p.y)));
     const world={version:2,seed,width:w,height:h,objects:[],water:[],lastRegrownDay:1};
     world.biomeMap=Biomes.generate(seed,w,h);
-    // Abrir uma clareira fértil de verdade no centro do território cercado.
-    if(w>=60&&h>=40&&options.gated!==false){
-      const b=valleyBounds(w,h),cells=world.biomeMap.split("");
-      for(let y=b.top+1;y<b.bottom;y++)for(let x=b.left+1;x<b.right;x++)
-        cells[y*w+x]="g";
-      world.biomeMap=cells.join("");
-    }
-    const used=new Set(reserved),waters=new Set();
-    // Lagoa natural pequena, em um canto variável, sem cortar a clareira.
+    const used=new Set(reserved);
+    // Lagoa natural orgânica com margens naturais, em um canto variável, sem cortar a clareira.
     const right=random()>.4;
     const px=w>=60?Math.round(w/2)+(right?10:-10):right?w-5:5;
     const py=h>=40?Math.round(h/2)+(random()>.5?7:-7):random()>.5?4:h-5;
-    for(let y=py-2;y<=py+2;y++)for(let x=px-2;x<=px+2;x++){
-      const d=((x-px)/2.2)**2+((y-py)/1.7)**2;
-      if(d < .85+noise(seed,x,y)*.24&&inMap(x,y,w,h)&&!nearStart(x,y,w,h)&&!reserved.has(key(x,y))){
-        world.water.push({x,y});waters.add(key(x,y));used.add(key(x,y));
+
+    // Create organic pond with irregular shape using noise
+    const pondRadius = 3 + random()*2; // 3-5 tiles radius
+    for(let y=py-Math.ceil(pondRadius);y<=py+Math.ceil(pondRadius);y++){
+      for(let x=px-Math.ceil(pondRadius);x<=px+Math.ceil(pondRadius);x++){
+        if(!inMap(x,y,w,h)||nearStart(x,y,w,h)||reserved.has(key(x,y))) continue;
+
+        const dx = x - px;
+        const dy = y - py;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const angle = Math.atan2(dy, dx);
+
+        // Create organic shape using multiple noise octaves
+        const baseRadius = pondRadius;
+        const noise1 = noise(seed*3, x*0.5, y*0.5) * 0.8;
+        const noise2 = noise(seed*7, x*1.2, y*1.2) * 0.4;
+        const noise3 = noise(seed*11, x*2.0, y*2.0) * 0.2;
+        const organicRadius = baseRadius * (1 + noise1 + noise2 + noise3);
+
+        if(dist < organicRadius && inMap(x,y,w,h) && !nearStart(x,y,w,h) && !reserved.has(key(x,y))){
+          world.water.push({x,y});used.add(key(x,y));
+        }
       }
     }
+
+    // Keep every stream tile 4-connected to the pond and outside the start clearing.
+    if(w>=60&&h>=40){
+      const centerX=w/2,centerY=h/2;
+      let x=px,y=py;
+      const maxSteps=Math.abs(x-centerX)+Math.abs(y-centerY);
+      for(let step=0;step<maxSteps;step++){
+        const dx=centerX-x,dy=centerY-y;
+        if(!dx&&!dy)break;
+        const horizontal=dx&&(!dy||Math.abs(dx/1.15)>Math.abs(dy/1.05)||
+          (Math.abs(dx/1.15)===Math.abs(dy/1.05)&&random()<.5));
+        const moves=(horizontal?[[Math.sign(dx),0],[0,Math.sign(dy)]]:
+          [[0,Math.sign(dy)],[Math.sign(dx),0]]).filter(([mx,my])=>mx||my);
+        const next=moves.map(([mx,my])=>({x:x+mx,y:y+my})).find(tile=>
+          inMap(tile.x,tile.y,w,h)&&!nearStart(tile.x,tile.y,w,h)&&
+          !reserved.has(key(tile.x,tile.y)));
+        if(!next)break;
+        x=next.x;y=next.y;
+        for(const [wx,wy] of [[x,y],[x-1,y],[x+1,y],[x,y-1],[x,y+1]]){
+          const id=key(wx,wy);
+          if(!inMap(wx,wy,w,h)||nearStart(wx,wy,w,h)||reserved.has(id)||used.has(id))continue;
+          world.water.push({x:wx,y:wy});used.add(id);
+        }
+      }
+    }
+    connectWater(world);
+    world.water.forEach(tile=>used.add(key(tile.x,tile.y)));
     const clusters=Array.from({length:6},()=>({x:2+random()*(w-4),y:2+random()*(h-4),r:2+random()*2.3}));
     for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
       if(used.has(key(x,y))||nearStart(x,y,w,h))continue;
@@ -140,7 +228,6 @@
         used.add(key(x,y));needed--;
       }
     }
-    if(options.gated!==false)installValley(world,random);
     return world;
   }
   const indices=new WeakMap();
@@ -160,18 +247,16 @@
   function blocked(world,x,y,w,h){
     return !inMap(x,y,w,h)||waterAt(world,x,y)||solidKinds.has(at(world,x,y)?.kind);
   }
-  function clear(world,x,y,options={}){
+  function clear(world,x,y){
     const obj=at(world,x,y);
     if(!obj)return {resource:null,remaining:false};
     if(!gatherKinds.has(obj.kind))return {resource:null,remaining:false};
-    if(obj.kind==="gateLog"&&!options.axe)return {resource:null,remaining:true,blocked:true};
     let resource="fibras";
     if(obj.kind==="tree"){
       obj.kind="stump";obj.variant=0;resource="3 madeiras";
       return {resource,remaining:true};
     }
-    if(obj.kind==="gateLog"){resource="4 madeiras";if(world.boundary)world.boundary.open=true;}
-    else if(obj.kind==="pebble")resource="1 pedra";
+    if(obj.kind==="pebble")resource="1 pedra";
     else if(obj.kind==="twig")resource="1 graveto";
     else if(obj.kind==="stump")resource="2 madeiras";
     else if(obj.kind==="boulder")resource="3 pedras";
@@ -192,8 +277,7 @@
     for(let i=0;i<Math.min(7,day-world.lastRegrownDay)*2;i++){
       const x=1+Math.floor(rng()*(w-2)),y=1+Math.floor(rng()*(h-2));
       const id=key(x,y);
-      if(occupied.has(id)||waters.has(id)||cultivated.has(id)||nearStart(x,y,w,h)||
-         (world.boundary&&world.boundary.gate.x===x&&world.boundary.gate.y===y))continue;
+      if(occupied.has(id)||waters.has(id)||cultivated.has(id)||nearStart(x,y,w,h))continue;
       const biome=Biomes.kind(world,x,y);
       // Neve e areia não geram grama tropical espontaneamente.
       if(biome==="i"||biome==="s")continue;
@@ -261,25 +345,9 @@
       }
     }
   }
-  function drawObject(ctx,obj,sprites,size,part,biomeCode="g"){
+  function drawObject(ctx,obj,sprites,size,part){
     const x=obj.x*size,y=obj.y*size,v=obj.variant||0,kind=obj.kind;
     const frame=spriteFrame(kind,v);
-    if(kind==="ridge"){
-      // Parede natural usando os tiles premium de colinas.
-      ctx.fillStyle="#354c31";ctx.fillRect(x,y+size*.26,size,size*.74);
-      ctx.fillStyle="#7a9f63";ctx.fillRect(x+2,y+1,size-4,6);
-      const hillKey=window.TillfolkTerrainCatalog?.HILL_ATLAS?.[biomeCode]||"grassHill";
-      const hill=sprites["terrain_"+hillKey];
-      const art=window.TillfolkTerrainCatalog?.isLoaded(hill)?hill:sprites.valleyCliff;
-      part(art,0,0,16,16,x,y,size,size);
-      ctx.fillStyle="#223d2b55";ctx.fillRect(x+2,y+size-6,size-4,6);
-      return;
-    }
-    if(kind==="gateLog"){
-      ctx.fillStyle="#35402b";ctx.fillRect(x-8,y+size-11,size+16,8);
-      part(sprites.trees,0,80,32,16,x-16,y+4,size*2,size-7);
-      return;
-    }
     if(kind==="tree"&&frame){
       const [sx,sy,sw,sh]=frame;
       const large=sw===48,slim=sw===16;
@@ -346,11 +414,13 @@
     }
   }
   function expand(legacy,width,height,oldWidth=28,oldHeight=18){
-    if(legacy?.version>=2&&legacy.width===width&&legacy.height===height&&legacy.biomeMap?.length===width*height)
+    if(legacy?.version>=2&&legacy.width===width&&legacy.height===height&&legacy.biomeMap?.length===width*height){
+      removeValleyEnclosure(legacy);
       return legacy;
+    }
     const seed=Number.isInteger(legacy?.seed)?legacy.seed:139931;
     // Migração não insere muralhas sobre construções de saves antigos.
-    const enlarged=create(seed,width,height,[],{gated:false});
+    const enlarged=create(seed,width,height);
     const withinOld=(p)=>p.x<oldWidth&&p.y<oldHeight;
     // A colônia antiga permanece nas mesmas coordenadas: nenhuma árvore ou lago
     // preexistente desaparece. Apenas a região além das bordas é gerada novamente.
@@ -364,9 +434,10 @@
     enlarged.biomeMap=cells.join("");
     enlarged.lastRegrownDay=legacy?.lastRegrownDay||1;
     stripFruitTrees(enlarged);
+    removeValleyEnclosure(enlarged);
     return enlarged;
   }
-  window.TillfolkWild=Object.freeze({create,expand,valleyBounds,ringTile,at,waterAt,blocked,clear,regrow,
+  window.TillfolkWild=Object.freeze({create,expand,valleyBounds,ringTile,removeValleyEnclosure,connectWater,at,waterAt,blocked,clear,regrow,
     drawGround,drawObject,drawAmbient,spriteFrame,atlasFrames,
     stripFruitTrees,nonFruitTreeVariants,
     terrainAt:Biomes.at,biomeAt:Biomes.kind});

@@ -30,6 +30,7 @@ O mundo é montado por `src/wild-world.js` com um seed armazenado no `localStora
 - O caminho é calculado para um terreno caminhável ao lado de um obstáculo, para evitar atravessar árvores e pedras.
 - A água não pode ser cultivada e impede caminhada.
 - A geração evita árvores imediatamente na margem da lagoa.
+- Faixas secas de um tile entre margens opostas viram água na geração e na migração de saves; trabalhadores, cultivos ativos e construções são preservados.
 - O inventário aparece no painel de gestão.
 - A vegetação regenera lentamente ao virar o dia em terrenos que não estejam cultivados; jamais nasce por cima de campos ativos.
 - Progresso salvo somente no navegador, **sem banco de dados ou servidor**.

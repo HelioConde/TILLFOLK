@@ -50,7 +50,7 @@ test("atlas locais da pasta têm dimensões corretas, inclusive declives",()=>{
     else assert.ok(w>0&&h>0,entry.file);
     assert.equal(C.url(key).startsWith("./public/assets/"),true);
   }
-  assert.deepEqual(kindCount,{terrain:14,slope:3,decoration:1});
+  assert.deepEqual(kindCount,{terrain:9,slope:3,decoration:1});
 });
 test("seis biomas usam atlas próprios e não altera geração dos terrenos",()=>{
   const width=18,height=8,biomeMap=("gggfffsssiiwwwppp").repeat(height);
@@ -85,11 +85,11 @@ test("carrega mapa legado com texturas anteriores quando os atlas não carregam"
   assert.ok(out.under.some(x=>x.key==="legacy"));
   assert.equal(out.painted.length,0);
 });
-test("colinas usam variante de bioma, declives ficam fora do recorte 11x7",()=>{
+test("ridge legado não desenha muralhas, declives ficam fora do recorte 11x7",()=>{
   const s=fakeSprites(),used=[];
   const ctx={fillStyle:null,fillRect(){}};
   Wild.drawObject(ctx,{kind:"ridge",x:2,y:3},s,32,(img)=>used.push(img.key),"i");
-  assert.deepEqual(used,["stoneHill"]);
+  assert.deepEqual(used,[]);
   assert.equal(C.ATLAS.grassSlope.kind,"slope");
   assert.equal(C.ATLAS.bush.kind,"decoration");
 });

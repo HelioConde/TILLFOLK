@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#192c27">
   <meta name="description" content="TILLFOLK: administre uma fazenda, contrate trabalhadores e automatize o cultivo.">
+  <link rel="icon" href="data:,">
   <title>TILLFOLK — Sua fazenda, sua equipe</title>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./design-system.css">
+  <link rel="stylesheet" href="./survival.css">
   <link rel="stylesheet" href="./menu.css">
   <link rel="stylesheet" href="./menu-layout.css">
   <link rel="stylesheet" href="./ui-polish.css">
@@ -22,7 +25,7 @@
   <link rel="stylesheet" href="./camera-ui.css?v=1">
   <link rel="stylesheet" href="./game-interface.css?v=20261031">
   <link rel="stylesheet" href="./top-speed.css?v=20261031-mobile-brand-clock">
-  <link rel="stylesheet" href="./tutorial-pointer.css?v=20261031-paw1">
+  <link rel="stylesheet" href="./tutorial-pointer.css?v=20261031-pointer-aim-v6">
   <link rel="stylesheet" href="./tutorial-missions.css?v=20261031-menu-missao-fix">
   <link rel="stylesheet" href="./hud-settings.css?v=20261031-icones-ajuste-v4">
   <link rel="stylesheet" href="./crop-workshop.css?v=20261031-fazenda-automacao-v7">
@@ -33,15 +36,16 @@
   <script defer src="./src/terrain-autotile.js?v=20261031-terrain-integrado-v1"></script>
   <script defer src="./src/terrain-catalog.js?v=20261031-terrain-integrado-v1"></script>
   <script defer src="./src/biomes.js?v=20261031-terrain-integrado-v1"></script>
-  <script defer src="./src/wild-world.js?v=20261031-fazenda-automacao-v7"></script>
+  <script defer src="./src/wild-world.js?v=20261031-water-connected-v2"></script>
   <script defer src="./src/blueprints.js?v=20261031-fazenda-automacao-v7"></script>
   <script defer src="./src/house-building.js?v=20261031-fazenda-casa"></script>
   <script defer src="./src/crop-catalog.js?v=20261031-fazenda-automacao-v7"></script>
   <script defer src="./src/crafting.js?v=20261031-hoe-sprite-corrected"></script>
   <script defer src="./src/task-orders.js?v=20261031-fazenda-automacao-v7"></script>
   <script defer src="./src/missions.js?v=20261031-fazenda-automacao-v7"></script>
-  <script defer src="./src/tutorial-pointer.js?v=20261031-guia-completo-v2"></script>
-  <script defer src="./src/game.js?v=20261031-terrain-integrado-v1"></script>
+  <script defer src="./src/tutorial-pointer.js?v=20261031-guia-completo-v11"></script>
+  <script defer src="./src/survival.js?v=20261031-sobrevivencia-s1"></script>
+  <script defer src="./src/game.js?v=20261031-tutorial-workstation-gap-v1"></script>
   <script defer src="./src/game-hud.js?v=20261031-painel-autofecha-v1"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
 </head>
@@ -52,6 +56,11 @@
       <div class="metrics">
         <div class="metric"><span>☀</span><small>Dia</small><b id="day">01</b></div>
         <div class="metric"><span>◷</span><small>Hora</small><b id="clock">08:00</b></div>
+        <div class="metric survival-metric" id="survival-population" hidden><span>♟</span><small>Vivos</small><b id="survival-population-count">0</b></div>
+        <div class="metric survival-metric" id="survival-food" hidden><span>🥕</span><small>Comida</small><b id="survival-food-count">0</b></div>
+        <div class="metric survival-metric" id="survival-days" hidden><span>📅</span><small>Dias Rest.</small><b id="survival-days-count">--</b></div>
+        <div class="metric survival-metric" id="survival-consumption" hidden><span>🔥</span><small>Cons./Dia</small><b id="survival-consumption-count">0</b></div>
+        <div class="metric survival-metric alert" id="survival-alert" hidden><span>⚠</span><small>Alerta</small><b id="survival-alert-text"></b></div>
 
       </div>
       <div class="speed-wrap" role="group" aria-label="Velocidade da simulação"><span>VELOCIDADE</span><button type="button" data-speed="0" aria-label="Pausar simulação" title="Pausar">Ⅱ</button><button type="button" data-speed="1" class="chosen" aria-label="Velocidade normal, 1 vez">1×</button><button type="button" data-speed="3" aria-label="Velocidade rápida, 3 vezes">3×</button><button type="button" data-speed="6" aria-label="Velocidade muito rápida, 6 vezes">6×</button></div>
