@@ -47,3 +47,29 @@ test("todas as 11 missões reaparecem corretamente após salvar, recarregar e co
   }
   expect(errors).toEqual([]);
 });
+
+test("a mãozinha corrige a ferramenta errada em cada etapa agrícola",async({page})=>{
+  await page.goto(ROOT,{waitUntil:"networkidle"});
+  await page.locator("#new-game").click();
+  await page.locator('[data-game-mode="relaxed"]').click();
+  await page.locator("#starter-confirm").click();
+  const results=await page.evaluate(()=>{
+    const state=JSON.parse(localStorage.getItem("tillfolk-v01"));
+    const canvas=document.querySelector("#world");
+    const paw=document.querySelector("#tillfolk-tutorial-paw");
+    return ["till","sow","water","harvest","carry"].map(key=>{
+      const quest=window.TillfolkMissions.STEPS.find(step=>step.key===key);
+      window.TillfolkTutorialPointer.guide({
+        playing:true,state,quest,selectedTool:"clear",
+        buildLayer:"station",canvas,cameraZoom:1
+      });
+      return {key,label:paw.querySelector(".tillfolk-paw-caption").textContent,
+        hidden:paw.hidden,target:paw.classList.contains("over-target")};
+    });
+  });
+  for(const result of results){
+    expect(result.hidden,result.key).toBe(false);
+    expect(result.label,result.key).toBe("Selecione Universal");
+    expect(result.target,result.key).toBe(true);
+  }
+});
