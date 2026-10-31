@@ -2181,9 +2181,26 @@
   function paintWorkshopTools(){
     document.querySelectorAll(".workstation-tool-sprite").forEach(canvas=>{
       const recipe=Crafting.RECIPES[Number(canvas.dataset.toolIndex)];
-      if(!recipe)return;
-      const key=recipe.key==="stoneAxe"?"axe":recipe.key;
-      Missions.drawTarget(canvas.getContext("2d"),key,0,0,48);
+      const ctx=canvas.getContext("2d");
+      if(!recipe||!ctx)return;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      // Não desenhar falsos objetos: usar recorte exato do pacote premium.
+      const frame=Crafting.itemFrame(recipe.key);
+      const loaded=workshopAtlas.complete&&workshopAtlas.naturalWidth>0;
+      ctx.imageSmoothingEnabled=false;
+      if(frame&&loaded&&frame.x+frame.w<=workshopAtlas.naturalWidth&&
+         frame.y+frame.h<=workshopAtlas.naturalHeight){
+        ctx.drawImage(workshopAtlas,frame.x,frame.y,frame.w,frame.h,3,3,42,42);
+        canvas.setAttribute("aria-label","Sprite original: "+recipe.name);
+      }else if(!frame){
+        // Somente receitas ainda sem sprite identificado recebem ícone provisório.
+        ctx.font="29px system-ui, sans-serif";
+        ctx.textAlign="center";ctx.textBaseline="middle";
+        ctx.fillText(recipe.icon,24,25);
+        canvas.setAttribute("aria-label","Ícone provisório: "+recipe.name);
+      }else{
+        canvas.setAttribute("aria-label","Carregando sprite de "+recipe.name);
+      }
     });
   }
   function renderWorkshop(){
@@ -2197,7 +2214,7 @@
       const locked=Crafting.locked(state,recipe.key);
       return '<button type="button" data-craft-tool="'+recipe.key+'" '+
         ((!ready||made||lacking||locked)?'disabled':'')+'>'+
-        '<canvas class="workstation-tool-sprite" data-tool-index="'+index+'" width="48" height="48" aria-hidden="true"></canvas>'+
+        '<canvas class="workstation-tool-sprite" data-tool-index="'+index+'" width="48" height="48" role="img" aria-label="Ilustração de '+recipe.name+'"></canvas>'+
         '<span class="workstation-tool-text"><strong>'+recipe.icon+' '+recipe.name+'</strong>'+
         '<small>'+recipe.help+'</small>'+
         '<small>'+(made?'✓ Fabricado':locked?'🔒 Colha primeiro sua horta':Crafting.formatCost(recipe.cost))+'</small></span></button>';
