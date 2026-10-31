@@ -6,6 +6,7 @@
   const toolName=$("#hud-tool-name"),toolHint=$("#hud-tool-hint");
   if(!toolName||!toolHint)return;
   const guide={
+    universal:["UNIVERSAL","Clique para a próxima ordem · arraste para selecionar terrenos"],
     till:["ARAR","Marque o solo para preparar o cultivo"],
     clear:["LIMPAR","Selecione a vegetação e retire obstáculos"],
     fertilize:["FERTILIZAR","Melhore uma área previamente arada"],
@@ -21,26 +22,26 @@
     if(!document.body.classList.contains("play-session"))return;
     const active=$(".tool.active[data-tool]");
     const order=$("#orders-btn");
-    let action=active?.dataset.tool||"till";
-    if(order?.classList.contains("active")&&action==="till"){
+    let action=active?.dataset.tool||"universal";
+    if(order?.classList.contains("active")&&action==="universal"){
       action=[$("#order-selected")?.textContent||""].join("").trim().toLowerCase();
-      action=({arar:"till",limpar:"clear",fertilizar:"fertilize",semear:"sow",regar:"water",colher:"harvest",transportar:"carry"})[action]||"till";
+      action=({arar:"till",limpar:"clear",fertilizar:"fertilize",semear:"sow",regar:"water",colher:"harvest",transportar:"carry"})[action]||"universal";
     }
     const selected=$("#orders-panel:not([hidden]) [data-order-type][aria-pressed='true']");
     if(selected)action=selected.dataset.orderType||action;
-    const [name,help]=guide[action]||guide.till;
+    const [name,help]=guide[action]||guide.universal;
     const paused=$("[data-speed='0'].chosen");
     toolName.textContent=paused?"PAUSADO":name;
     toolHint.textContent=paused?"Retome a simulação para executar ordens":help;
     document.querySelectorAll(".tool[data-tool]").forEach(button=>{
       button.setAttribute("aria-keyshortcuts",({
-        till:"1",remover:"3",inspecionar:"4",construir:"5"
+        universal:"1",remover:"3",inspecionar:"4",construir:"5"
       })[button.dataset.tool]||"");
     });
     order?.setAttribute("aria-keyshortcuts","2");
   }
   document.addEventListener("click",event=>{
-    if(event.target.closest(".tool,.speed-wrap,#orders-btn,[data-order-type],#build-exit,#orders-panel,#drawer-close"))queueMicrotask(sync);
+    if(event.target.closest(".tool,.speed-wrap,#drag-mode,#orders-btn,[data-order-type],#build-exit,#orders-panel,#drawer-close"))queueMicrotask(sync);
   });
   document.addEventListener("keydown",event=>{
     if(!document.body.classList.contains("play-session")||event.repeat||event.altKey||event.ctrlKey||event.metaKey)return;
@@ -48,7 +49,7 @@
     if(event.target.closest("input,textarea,select,button,[contenteditable]"))return;
     const key=event.key.toLowerCase();
     if(!$("#construction-panel").hidden && ["1","2","3"].includes(key))return; // camadas existentes
-    const actions={"1":".tool[data-tool='till']","2":"#orders-btn",
+    const actions={"1":".tool[data-tool='universal']","2":"#orders-btn",
       "3":".tool[data-tool='remover']","4":".tool[data-tool='inspecionar']",
       "5":".tool[data-tool='construir']",
       e:"#open-workers",t:"#open-tasks"};
