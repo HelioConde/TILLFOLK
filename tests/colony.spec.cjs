@@ -138,3 +138,52 @@ test('Casas de madeira são ordens e contratação exige três casas para dois c
   expect(state.homes).toHaveLength(3);
   expect(new Set(state.homes.map(h=>h.residentId)).size).toBe(3);
 });
+
+test('Irrigação viaja à lagoa automaticamente e retorna ao canteiro',async({page})=>{
+  test.setTimeout(60000);
+  await start(page);
+  await page.evaluate(()=>{
+    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    const p=s.plots.find(p=>p.x===13&&p.y===11);
+    p.tilled=true;p.seeded=true;p.watered=false;
+    s.workers[0].neg=[];
+    s.water=0;
+    s.orders=[{id:'13-11:water',type:'water',x:13,y:11}];
+    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('#continue').click();
+  await page.locator('[data-speed="6"]').click();
+  await expect.poll(async()=>{
+    const s=await snap(page);return s.journal.some(x=>x.includes('encheu o balde na lagoa'));
+  },{timeout:24000,intervals:[250,500]}).toBe(true);
+  await expect.poll(async()=>{
+    const s=await snap(page);return s.plots.find(p=>p.x===13&&p.y===11).watered;
+  },{timeout:36000,intervals:[300,600]}).toBe(true);
+  const result=await snap(page);
+  expect(result.water).toBe(0);
+  expect(result.orders).toEqual([]);
+  await page.screenshot({path:'screenshots/colonia-rega-apos-coleta.png',animations:'disabled'});
+});
+test('Fertilização busca esterco da vaca e entrega na plantação',async({page})=>{
+  test.setTimeout(55000);
+  await start(page);
+  await page.evaluate(()=>{
+    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+    const p=s.plots.find(p=>p.x===13&&p.y===11);
+    p.tilled=true;p.fertilized=false;
+    s.workers[0].neg=[];
+    s.inventory.manure=0;
+    s.animals[0].manure=1;
+    s.orders=[{id:'13-11:fertilize',type:'fertilize',x:13,y:11}];
+    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
+  });
+  await page.reload({waitUntil:'networkidle'});
+  await page.locator('#continue').click();
+  await page.locator('[data-speed="6"]').click();
+  await expect.poll(async()=> (await snap(page)).plots.find(p=>p.x===13&&p.y===11).fertilized,
+    {timeout:35000,intervals:[300,600]}).toBe(true);
+  const result=await snap(page);
+  expect(result.animals[0].manure).toBe(0);
+  expect(result.orders).toEqual([]);
+});
