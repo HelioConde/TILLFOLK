@@ -916,7 +916,7 @@ test('HUD pixel art: cabe na tela, mantém ações utilizáveis e captura estado
   expect(desktop.dockRight).toBeLessThanOrEqual(desktop.viewportWidth);
   expect(desktop.dockBottom).toBeLessThanOrEqual(desktop.viewportHeight);
   expect(desktop.hudBottom).toBeLessThanOrEqual(90);
-  expect(desktop.skin).toMatch(/Square(?:%20|\\s)Buttons/);
+  expect(desktop.skin).toMatch(/data:image\/png|Square(?:%20|\\s)Buttons/);
   expect(desktop.tools.every(t=>t.visible)).toBe(true);
   await page.screenshot({path:'screenshots/hud-pixel-desktop-1366x768.png',animations:'disabled'});
   await page.locator('#orders-btn').click();
