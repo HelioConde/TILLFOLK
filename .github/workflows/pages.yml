@@ -30,6 +30,7 @@ jobs:
           node --check src/game.js
           node --check src/survival.js
           node --check src/tutorial-pointer.js
+          node --check src/live-update.js
           node --test tests/hunger.test.cjs tests/survival-death.test.cjs tests/survival-hud.test.cjs
           node --check src/crop-catalog.js
           node --check src/crafting.js
@@ -75,6 +76,24 @@ jobs:
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
           cp "public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles/Grass_Tile_Layers_MAPEAR.html" _site/mapear_grama.html
           cp terrain-editor.html _site/terrain-editor.html
+          # A assinatura da versão é o commit publicado, não a data do navegador.
+          # URLs CSS/JS recebem o SHA: não se misturam scripts antigos e novos no cache.
+          node <<'NODE'
+          const fs=require('node:fs');
+          const version=process.env.GITHUB_SHA;
+          if(!/^[0-9a-f]{40}$/.test(version))throw new Error('SHA de release inválido');
+          fs.writeFileSync('_site/version.json',JSON.stringify({version})+'\\n');
+          let html=fs.readFileSync('_site/index.html','utf8');
+          const buildTag='<meta name="tillfolk-build" content="dev">';
+          if(!html.includes(buildTag))throw new Error('Tag da versão não encontrada');
+          html=html.replace(buildTag,'<meta name="tillfolk-build" content="'+version+'">');
+          html=html.replace(/((?:href|src)="\\.\\/[^"]+\\.(?:css|js))(?:\\?[^"]*)?"/g,
+            (_,prefix)=>prefix+'?v='+version+'"');
+          fs.writeFileSync('_site/index.html',html);
+          if(!html.includes('./src/live-update.js?v='+version))
+            throw new Error('Atualizador ausente do HTML versionado');
+          console.log('GitHub Pages preparado para release '+version);
+          NODE
           # Conferir TODAS as dependências .css e .js referenciadas no HTML publicado.
           # O teste roda no artefato real, não apenas na árvore fonte do repositório.
           node <<'NODE'
@@ -98,6 +117,9 @@ jobs:
             throw new Error('survival.js deve carregar antes de game.js');
           console.log('Recursos HTML validados no artefato: ' + checked + ' arquivos CSS/JS');
           NODE
+          test -s _site/version.json
+          test -f _site/src/live-update.js
+          test -f _site/live-update.css
           test -f _site/public/assets/sprout-lands/characters/worker-basic.png
           test -f _site/public/assets/sprout-lands/characters/worker-variants.png
           test -f _site/public/assets/sprout-lands/characters/worker-actions.png
