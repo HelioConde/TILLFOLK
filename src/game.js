@@ -458,6 +458,12 @@
     return path;
   }
   let tutorialSpeedBeforeFinish=1;
+  // Falas efêmeras: o ritmo do diálogo não altera saves nem tarefas.
+  const speechScene={step:-1,sequence:0,text:"",workerId:null,until:0,next:0};
+  function resetSpeechScene(){
+    speechScene.step=-1;speechScene.sequence=0;speechScene.text="";
+    speechScene.workerId=null;speechScene.until=0;speechScene.next=0;
+  }
   let state = null, tasks = [], selectedTool = "universal", buildLayer = "floor", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
@@ -565,18 +571,18 @@
     const previous=Missions.current(state);
     const result=Missions.record(state,key,quantity);
     if(!result.advanced)return;
-    if(previous)log("✦ Missão concluída: "+previous.title+".");
+    if(previous)log("✦ "+previous.complete);
     Missions.render(state);
     save();
     if(result.finished){
       tutorialSpeedBeforeFinish=simSpeed;
       simSpeed=0;updateSpeed();refresh();closeDrawer();
       $("#tutorial-done-dialog").showModal();
-    }else if(previous)notify("✓ Missão concluída: "+previous.title+"!");
+    }else if(previous)notify("✓ "+previous.complete);
   }
   function start(continueSaved=false, chosenStarters = [], config = {}){
     if(!continueSaved||!readSave())reset(chosenStarters,config);
-    houseHistory=[];buildHover=null;areaSelection=null;selectionPointer=null;setTool("universal");
+    houseHistory=[];buildHover=null;areaSelection=null;selectionPointer=null;resetSpeechScene();setTool("universal");
     recalcTasks(); // Limpar ordens já concluídas antes da primeira renderização.
     playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false;
     document.body.classList.add("play-session","focus-game");
@@ -1050,7 +1056,7 @@
       }
     }
     World.drawAmbient(ctx,state.world,animationsEnabled()?performance.now():0,TILE);
-    drawTutorialSpeech();
+    drawTutorialSpeech(visibleBounds);
     // Prévia ANTES de construir: azul transparente para posição válida,
     // vermelho transparente se a regra de terreno/ocupação impedir a obra.
     if(playing&&selectedTool==="construir"&&buildHover&&!panPointer&&!areaSelection){
@@ -1096,37 +1102,76 @@
       ctx.globalAlpha=1;
     }
   }
-  // Balões de fala no próprio canvas, ligados aos trabalhadores e sem novos assets.
-  function drawTutorialSpeech(){
+  // Colônias têm conversas breves e intervaladas, não tutoriais repetidos sem parar.
+  // O balão aparece próximo de um trabalhador visível e não cobre sua placa de nome.
+  function drawTutorialSpeech(visibleBounds){
     if(!playing||document.querySelector("dialog[open]"))return;
     const quest=Missions.current(state),workers=state.workers;
     if(!quest||!workers?.length)return;
-    const worker=workers[Math.floor(performance.now()/8500)%Math.min(2,workers.length)];
-    if(!Number.isFinite(worker.x)||!Number.isFinite(worker.y))return;
-    const message=Missions.speech(state,worker);
-    if(!message)return;
+    const now=performance.now();
+    const step=state.tutorial.step;
+    if(speechScene.step!==step){
+      speechScene.step=step;speechScene.sequence=0;speechScene.text="";
+      speechScene.workerId=null;speechScene.until=0;speechScene.next=now+800;
+    }
+    if(now>=speechScene.next){
+      const visible=workers.filter(w=>Number.isFinite(w.x)&&Number.isFinite(w.y)&&
+        w.x>=visibleBounds.x0+1&&w.x<=visibleBounds.x1-1&&
+        w.y>=visibleBounds.y0+3&&w.y<=visibleBounds.y1-1);
+      if(!visible.length){
+        speechScene.text="";speechScene.until=0;speechScene.next=now+4000;
+        return;
+      }
+      // Checar se o jogador já marcou o serviço. Nunca criar tarefas pelo diálogo.
+      const desired=step<=1?"clear":({till:"till",sow:"sow",water:"water",
+        harvest:"harvest",carry:"carry",plan:"buildHome"})[quest.key];
+      const relevantOrders=state.orders.filter(order=>order.type===desired);
+      const assigned=visible.filter(w=>relevantOrders.some(order=>order.id===w.task));
+      const hasWork=relevantOrders.length>0||
+        (quest.key==="plan"&&state.orders.some(order=>["till","sow","buildHome"].includes(order.type)));
+      const mode=speechScene.sequence===0?"intro":hasWork?"working":"waiting";
+      // Alternar falantes de maneira estável. Se um estiver trabalhando, pode responder.
+      const speaker=assigned.length&&mode==="working"?
+        assigned[speechScene.sequence%assigned.length]:
+        visible[speechScene.sequence%Math.min(visible.length,2)];
+      speechScene.workerId=speaker.id;
+      speechScene.text=Missions.speech(state,speaker,mode,Math.floor(speechScene.sequence/2));
+      speechScene.sequence++;
+      speechScene.until=now+6500;
+      speechScene.next=now+16500;
+    }
+    if(now>=speechScene.until||!speechScene.text)return;
+    const worker=workers.find(w=>w.id===speechScene.workerId);
+    if(!worker||!Number.isFinite(worker.x)||!Number.isFinite(worker.y))return;
+    // Não desenhar balões cortados quando o trabalhador está fora da câmera.
+    if(worker.x<visibleBounds.x0||worker.x>visibleBounds.x1||
+      worker.y<visibleBounds.y0+2||worker.y>visibleBounds.y1)return;
     ctx.save();
-    ctx.font="bold 11px system-ui,sans-serif";
-    const lines=[],words=message.split(/\s+/);
-    let line="";
+    ctx.font="bold 10px system-ui,sans-serif";
+    const width=205,inner=width-22,words=speechScene.text.split(/\s+/);
+    const lines=[];let line="";
     for(const word of words){
-      const candidate=line?line+" "+word:word;
-      if(ctx.measureText(candidate).width>185&&line){lines.push(line);line=word;}
-      else line=candidate;
+      const proposal=line?line+" "+word:word;
+      if(line&&ctx.measureText(proposal).width>inner){
+        lines.push(line);line=word;
+      }else line=proposal;
     }
     if(line)lines.push(line);
-    const display=lines.slice(0,4),width=216,height=15+display.length*16;
+    const display=lines.slice(0,5),height=16+display.length*15;
     const px=Math.round(worker.x*TILE),py=Math.round(worker.y*TILE);
     const left=Math.max(5,Math.min(W*TILE-width-5,px-width/2));
-    const top=Math.max(6,py-78-height);
-    ctx.fillStyle="#fff3d7";ctx.strokeStyle="#395744";ctx.lineWidth=3;
-    ctx.beginPath();ctx.roundRect(left,top,width,height,7);ctx.fill();ctx.stroke();
-    const tailX=Math.max(left+13,Math.min(left+width-13,px));
+    // Placas de nome ocupam aproximadamente py-67: preservar espaço entre elas e o balão.
+    const top=Math.max(5,py-111-height);
+    const alpha=Math.min(1,(speechScene.until-now)/400);
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle="#fff1d4";ctx.strokeStyle="#395945";ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.roundRect(left,top,width,height,8);ctx.fill();ctx.stroke();
+    const tailX=Math.max(left+15,Math.min(left+width-15,px));
     ctx.beginPath();ctx.moveTo(tailX-7,top+height-1);
-    ctx.lineTo(tailX,top+height+9);ctx.lineTo(tailX+7,top+height-1);
+    ctx.lineTo(tailX,top+height+8);ctx.lineTo(tailX+7,top+height-1);
     ctx.closePath();ctx.fill();ctx.stroke();
     ctx.fillStyle="#273b2c";ctx.textAlign="left";
-    display.forEach((text,index)=>ctx.fillText(text,left+12,top+21+index*16));
+    display.forEach((message,index)=>ctx.fillText(message,left+11,top+20+index*15));
     ctx.restore();
   }
   function refresh(){
