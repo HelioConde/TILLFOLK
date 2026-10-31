@@ -2194,12 +2194,13 @@
     $("#workshop-tools").innerHTML=Crafting.RECIPES.map((recipe,index)=>{
       const made=Crafting.has(state,recipe.key);
       const lacking=Crafting.missing(state,recipe.cost).length>0;
+      const locked=Crafting.locked(state,recipe.key);
       return '<button type="button" data-craft-tool="'+recipe.key+'" '+
-        ((!ready||made||lacking)?'disabled':'')+'>'+
+        ((!ready||made||lacking||locked)?'disabled':'')+'>'+
         '<canvas class="workstation-tool-sprite" data-tool-index="'+index+'" width="48" height="48" aria-hidden="true"></canvas>'+
         '<span class="workstation-tool-text"><strong>'+recipe.icon+' '+recipe.name+'</strong>'+
         '<small>'+recipe.help+'</small>'+
-        '<small>'+(made?'✓ Fabricado':Crafting.formatCost(recipe.cost))+'</small></span></button>';
+        '<small>'+(made?'✓ Fabricado':locked?'🔒 Colha primeiro sua horta':Crafting.formatCost(recipe.cost))+'</small></span></button>';
     }).join("");
     paintWorkshopTools();
     const grid=$("#workshop-recipes");
