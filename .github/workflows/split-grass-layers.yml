@@ -49,7 +49,8 @@ jobs:
           base='public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles'
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- "$base/Grass_Tile_Layers_recortes/" "$base/Grass_Tile_Layers_recortes.zip" "$base/Grass_Tile_Layers_MAPA.png" "$base/Grass_Tile_Layers_mapeamento.json" "$base/Grass_Tile_Layers_LEIA-ME.md"
+          git add -- "$base/Grass_Tile_Layers_recortes/" "$base/Grass_Tile_Layers_MAPA.png" "$base/Grass_Tile_Layers_mapeamento.json" "$base/Grass_Tile_Layers_LEIA-ME.md"
+          git add -f -- "$base/Grass_Tile_Layers_recortes.zip"
           if git diff --cached --quiet; then
             echo "Nenhum recorte novo a publicar."
             exit 0
