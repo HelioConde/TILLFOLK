@@ -22,6 +22,7 @@ jobs:
         run: |
           node --check src/wild-world.js
           node --check src/game.js
+          node --check src/game-hud.js
           node --check src/task-orders.js
           node --check src/house-building.js
           node --check src/menu.js
@@ -33,8 +34,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
-          cp index.html styles.css menu.css menu-layout.css menu-refinement.css game-polish.css fullscreen-game.css house-building.css task-orders.css team-ux.css ui-polish.css _site/
-          cp src/game.js src/wild-world.js src/house-building.js src/task-orders.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
+          cp index.html styles.css menu.css menu-layout.css menu-refinement.css game-hud.css game-polish.css fullscreen-game.css house-building.css task-orders.css team-ux.css ui-polish.css _site/
+          cp src/game.js src/wild-world.js src/house-building.js src/task-orders.js src/game-hud.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
@@ -49,6 +50,10 @@ jobs:
           test -f _site/src/menu.js
           test -f _site/src/tutorial.js
           test -f _site/menu-refinement.css
+          test -f _site/game-hud.css
+          test -f _site/src/game-hud.js
+          grep -q 'game-hud.css' _site/index.html
+          grep -q 'game-hud.js' _site/index.html
           test -f _site/team-ux.css
           test -f _site/src/house-renderer.js
           test -f _site/src/house-building.js
