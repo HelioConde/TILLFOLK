@@ -466,7 +466,9 @@
       }
       if(w.supplyStage==="manure"){
         const animal=state.animals.find(a=>Math.floor(a.x)===goal.x&&Math.floor(a.y)===goal.y&&a.manure>0);
-        if(!animal)continue;
+        if(!animal){
+          w.supplyTarget=null;w.routeTask=null;w.route=[];continue;
+        }
         animal.manure--;w.carryingManure=true;w.supplyStage=null;w.supplyTarget=null;
         w.routeTask=null;w.route=[];w.workGoal=null;
         log(w.name+" pegou esterco e está levando até a plantação.");continue;
@@ -561,6 +563,8 @@
         if(a.manure>0)write("💩 "+a.manure,x+5,y-33,"#f3dcb0",10);
       }else{
         const w=item.worker,px=w.x*TILE,py=w.y*TILE;
+        if(w.carryingWater)write("💧",px+18,py-32,"#b6f3fe",13);
+        if(w.carryingManure)write("💩",px+18,py-32,"#eac7a4",13);
         ctx.fillStyle="#223c3180";ctx.beginPath();ctx.ellipse(px,py-2,11,4,0,0,Math.PI*2);ctx.fill();
         const active=tasks.find(t=>t.id===w.task);
         const working=Boolean(active&&!w.moving&&w.progress>0);
@@ -628,7 +632,11 @@
     $("#status").textContent=simSpeed===0?"Ⅱ Simulação pausada":"● Fazenda em funcionamento";
     $("#workers").innerHTML=state.workers.map(w=>{
       const t=tasks.find(t=>t.id===w.task);
-      const title=t?labels[t.type]+" em ("+(t.x+1)+", "+(t.y+1)+")":"Aguardando tarefa";
+      const title=w.supplyStage==="water"?"Buscando água na lagoa":
+        w.carryingWater?"Levando água ao canteiro":
+        w.supplyStage==="manure"?"Buscando esterco na vaca":
+        w.carryingManure?"Levando esterco ao canteiro":
+        t?labels[t.type]+" em ("+(t.x+1)+", "+(t.y+1)+")":"Aguardando tarefa";
       const positive=w.skills.length?w.skills.map(s=>'<span class="tag">✦ '+labels[s]+'</span>').join(""):'<span class="tag">Generalista</span>';
       const neg=w.neg.map(s=>'<span class="tag negative">✕ '+labels[s]+'</span>').join("");
       const factor=w.skills.length===1?"+100%":w.skills.length===2?"+60%":w.skills.length===3?"+30%":"sem bônus";
