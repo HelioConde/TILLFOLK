@@ -176,6 +176,16 @@
       miniCtx.fillRect(Math.floor(obj.x*pixelWidth),Math.floor(obj.y*pixelHeight),
         Math.ceil(pixelWidth),Math.ceil(pixelHeight));
     }
+    // O anel e a passagem também aparecem no minimapa.
+    miniCtx.fillStyle="#344e36";
+    for(const obj of state.world.objects)if(obj.kind==="ridge")
+      miniCtx.fillRect(Math.floor(obj.x*pixelWidth),Math.floor(obj.y*pixelHeight),
+        Math.ceil(pixelWidth),Math.ceil(pixelHeight));
+    const gateway=state.world.boundary?.gate;
+    if(gateway){
+      miniCtx.fillStyle=state.world.boundary.open?"#c6e6a0":"#ecb16c";
+      miniCtx.fillRect(Math.floor(gateway.x*pixelWidth)-2,Math.floor(gateway.y*pixelHeight)-2,6,6);
+    }
     // Marcadores de ordens: amarelo = pronta, marrom = dependência pendente.
     for(const job of tasks){
       miniCtx.fillStyle=job.status==="ready"?"#ffe5a1":"#aa7057";
@@ -2424,6 +2434,7 @@
     let candidates=[];
     if(step.target==="grass")candidates=objects.filter(item=>item.kind==="grass");
     else if(step.target==="exit")candidates=objects.filter(item=>item.kind==="gateLog");
+    else if(step.target==="workstation")candidates=state.plots.filter(p=>stationSiteValid(p.x,p.y));
     else if(step.target==="till")candidates=state.plots.filter(p=>
       !p.tilled&&!p.seeded&&!p.dirty&&!World.at(state.world,p.x,p.y)&&
       World.terrainAt(state.world,p.x,p.y).farmable&&!occupiedByHome(p.x,p.y));
@@ -2436,14 +2447,17 @@
     else if(step.target==="carry")candidates=state.plots.filter(p=>p.produce);
     else if(step.target==="plan")candidates=state.plots.filter(p=>homeSiteValid(p.x,p.y));
     const target=nearest(candidates);
+    if(step.target==="axe"){openWorkshop();return;}
     if(step.tool==="construir"){
       setTool("construir");
-      $('[data-build-layer="home"]').click();
+      $(step.target==="workstation"?'[data-build-layer="station"]':'[data-build-layer="home"]').click();
     }else setTool(step.tool);
     if(target){
       focusCameraAt(target.x+.5,target.y+.5);
       showMapFeedback(target.x,target.y,"#ecf8a8");
-      notify(step.target==="grass"?"Tufo de grama encontrado! Marque a ordem de Limpar.":"Local sugerido destacado. Clique no terreno para dar a ordem.");
+      notify(step.target==="grass"?"Tufo de grama encontrado! Marque a ordem de Limpar.":
+        step.target==="exit"?"Esse tronco só pode ser cortado com o machado de pedra. Marque Limpar.":
+        "Local sugerido destacado. Clique no terreno para dar a ordem.");
     }else{
       notify(step.target==="harvest"?"A cultura ainda está crescendo. Use 3× ou 6× para esperar.":"Não encontrei alvo pronto. Explore o mapa ou use Ordens.");
     }
