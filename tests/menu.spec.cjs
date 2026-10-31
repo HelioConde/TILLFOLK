@@ -494,10 +494,44 @@ test('Casa Slime-Harvest: 5 faixas originais, escala 2x, captura real',async({pa
   expect(result.center).toEqual([[1,0],[1,1],[1,2],[1,3],[1,4]]);
   expect(result.left.map(t=>t[0])).toEqual([0,0,0,0,0]);
   expect(result.right.map(t=>t[0])).toEqual([2,2,2,2,2]);
-  expect(result.dimensions).toEqual({width:224,height:288,cell:32});
+  expect(result.dimensions).toEqual({width:224,height:256,cell:32});
   const fs=require('node:fs');
   fs.mkdirSync('screenshots',{recursive:true});
   const data=await page.locator('#title-scene').evaluate(c=>c.toDataURL('image/png').split(',')[1]);
   fs.writeFileSync('screenshots/slime-harvest-casa-canvas-960x540.png',Buffer.from(data,'base64'));
   await page.screenshot({path:'screenshots/slime-harvest-casa-menu-1600x900.png',animations:'disabled'});
+});
+
+
+test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', async ({page})=>{
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  const result=await page.evaluate(async()=>{
+    const roof=new Image(),walls=new Image(),door=new Image();
+    roof.src='./public/assets/sprout-lands/structures/wood-roof.png';
+    walls.src='./public/assets/sprout-lands/structures/wood-walls.png';
+    door.src='./public/assets/sprout-lands/structures/wood-door.png';
+    await Promise.all([roof.decode(),walls.decode(),door.decode()]);
+    const calls=[];
+    const ctx={
+      imageSmoothingEnabled:true,
+      drawImage(img,sx,sy,sw,sh,dx,dy,dw,dh){
+        calls.push({asset:img===roof?'roof':img===walls?'walls':'door',sx,sy,sw,sh,dx,dy,dw,dh});
+      }
+    };
+    const stats=window.TillfolkHouse.draw(ctx,{roof,walls,door},0,0,{scale:2});
+    const windows=calls.filter(c=>c.asset==='walls'&&c.sx===48&&c.sy===32);
+    const doors=calls.filter(c=>c.asset==='door');
+    const rooftop=calls.filter(c=>c.asset==='roof');
+    return {stats,windows,doors,rooftopCount:rooftop.length,
+      roofMin:Math.min(...rooftop.map(c=>c.dy)),roofMax:Math.max(...rooftop.map(c=>c.dy+c.dh)),
+      facadeMin:128,allUniform:calls.every(c=>c.dw*c.sh===c.dh*c.sw)};
+  });
+  expect(result.stats.stretched).toBe(0);
+  expect(result.stats.walls).toBe(20);
+  expect(result.windows.map(w=>[w.dx,w.dy])).toEqual([[64,192],[128,192]]);
+  expect(result.doors.map(d=>[d.dx,d.dy])).toEqual([[96,224]]);
+  expect(result.roofMin).toBe(0);
+  expect(result.roofMax).toBe(160);
+  expect(result.rooftopCount).toBe(36);
+  expect(result.allUniform).toBe(true);
 });
