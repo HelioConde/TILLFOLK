@@ -57,9 +57,9 @@ body.play-session .tooltray .tool > span > .tool-glyph{
   pointer-events:none!important;
 }
 body.play-session .tooltray .tool[data-tool="universal"] .tool-glyph{--tool-icon-x:-1px;--tool-icon-y:-3px}
-body.play-session .tooltray #orders-btn .tool-glyph{--tool-icon-x:-2px;--tool-icon-y:-4px}
-body.play-session .tooltray .tool[data-tool="remover"] .tool-glyph{--tool-icon-y:-3px}
-body.play-session .tooltray .tool[data-tool="inspecionar"] .tool-glyph{--tool-icon-x:-3px;--tool-icon-y:-6px}
+body.play-session .tooltray #orders-btn .tool-glyph{--tool-icon-x:-4px;--tool-icon-y:-4px}
+body.play-session .tooltray .tool[data-tool="remover"] .tool-glyph{--tool-icon-x:-2px;--tool-icon-y:-3px}
+body.play-session .tooltray .tool[data-tool="inspecionar"] .tool-glyph{--tool-icon-x:-5px;--tool-icon-y:-8px}
 body.play-session .tooltray .tool[data-tool="construir"] .tool-glyph{--tool-icon-x:-1px;--tool-icon-y:-6px}
 @media(max-width:760px){
   body.play-session .tooltray .tool > span > .tool-glyph{font-size:19px!important}
