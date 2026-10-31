@@ -34,13 +34,14 @@ async function jumpToFinalMission(page){
   const steps=window.TillfolkMissions.STEPS;
   save.tutorial={active:true,step:steps.length-1,finished:false,version:4,
    stats:Object.fromEntries(steps.map((step,i)=>[step.key,i===steps.length-1?0:1]))};
-  save.crafting.equipment.stoneAxe=true;
+  save.crafting.equipment.axe=true;
   const gate=save.world.boundary.gate;
   save.world.boundary.open=false;
   if(!save.world.objects.some(o=>o.kind==="gateLog"))
    save.world.objects.push({x:gate.x,y:gate.y,kind:"gateLog",variant:0,age:0});
   for(const w of save.workers){
    w.x=gate.x-1.5;w.y=gate.y+.5;w.neg=[];w.route=[];w.task=null;
+   w.inventory=w.inventory||{tools:{},items:{}};w.inventory.tools.axe=true;
   }
   save.orders=[];
   sessionStorage.setItem("__tutorialFinalFixture",JSON.stringify(save));
