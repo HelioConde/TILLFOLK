@@ -2263,15 +2263,19 @@
       "Work Station pronta! Faça ferramentas e transforme colheitas em sementes.":
       "A Work Station ainda não está pronta. Colete 10 gravetos e use Construir → Work Station.";
     $("#workshop-tools").innerHTML=Crafting.RECIPES.map((recipe,index)=>{
-      const made=Crafting.has(state,recipe.key);
+      const holders=state.workers.filter(w=>Crafting.has(state,recipe.key,w)).length;
+      const made=holders===state.workers.length&&state.workers.length>0;
+      const pending=state.orders.some(o=>o.type==="craftTool"&&o.recipe===recipe.key);
       const lacking=Crafting.missing(state,recipe.cost).length>0;
       const locked=Crafting.locked(state,recipe.key);
+      const label=made?"✓ Todos equipados":pending?"⏳ Fabricando":locked?
+        "🔒 Colha primeiro sua horta":Crafting.formatCost(recipe.cost);
       return '<button type="button" data-craft-tool="'+recipe.key+'" '+
-        ((!ready||made||lacking||locked)?'disabled':'')+'>'+
+        ((!ready||made||pending||lacking||locked)?'disabled':'')+'>'+
         '<canvas class="workstation-tool-sprite" data-tool-index="'+index+'" width="48" height="48" role="img" aria-label="Ilustração de '+recipe.name+'"></canvas>'+
         '<span class="workstation-tool-text"><strong>'+recipe.icon+' '+recipe.name+'</strong>'+
-        '<small>'+recipe.help+'</small>'+
-        '<small>'+(made?'✓ Fabricado':locked?'🔒 Colha primeiro sua horta':Crafting.formatCost(recipe.cost))+'</small>'+
+        '<small>'+recipe.help+'</small><small>'+label+'</small>'+
+        '<small>Equipados: '+holders+' / '+state.workers.length+'</small>'+
         (Crafting.itemFrame(recipe.key)?'':'<small class="workstation-art-note">Ícone provisório · sem sprite identificado</small>')+
         '</span></button>';
     }).join("");
@@ -2300,11 +2304,15 @@
   $("#workshop-tools").addEventListener("click",event=>{
     const button=event.target.closest("[data-craft-tool]");
     if(!button||button.disabled)return;
-    const result=Crafting.craft(state,button.dataset.craftTool);
-    if(result.error){notify(result.error);return;}
-    if(result.item.key==="stoneAxe")recordTutorial("axe");
-    log("Fabricamos "+result.item.name+" na Work Station.");
-    notify("✓ "+result.item.name+" pronta para toda a equipe!");
+    const key=button.dataset.craftTool,item=Crafting.recipe(key),station=state.crafting.station;
+    if(!station||!item||Crafting.locked(state,key)||Crafting.missing(state,item.cost).length){
+      notify("Receita indisponível.");return;
+    }
+    const id=Orders.id("craftTool",station.x,station.y,key);
+    if(state.orders.some(o=>o.id===id)){notify("Esta ferramenta já está na fila.");return;}
+    state.orders.push({id,type:"craftTool",recipe:key,x:station.x,y:station.y,priority:8});
+    log("Fabricação de "+item.name+" encomendada. Um colono irá à Work Station.");
+    notify("🛠️ "+item.name+" na fila: um trabalhador irá até a bancada.");
     recalcTasks();renderWorkshop();refresh();save();
   });
   $("#workshop-recipes").addEventListener("click",event=>{
