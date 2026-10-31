@@ -1,0 +1,42 @@
+name: TILLFOLK — retomada automática da partida
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/game.js'
+      - 'index.html'
+      - 'tests/session-resume.spec.cjs'
+      - '.github/workflows/session-resume.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restore-session:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar navegador de testes
+        run: |
+          npm install --no-save @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Abrir site local estático
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-http.log 2>&1 &
+          sleep 2
+      - name: Testar retomada, recarga e retorno voluntário ao menu
+        run: npx playwright test tests/session-resume.spec.cjs --browser chromium --reporter=line
+      - name: Guardar capturas para inspeção
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-retomada-screenshots
+          path: screenshots/
+          if-no-files-found: warn
+          retention-days: 14
