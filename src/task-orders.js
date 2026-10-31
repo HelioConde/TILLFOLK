@@ -28,7 +28,9 @@
         ?{state:"ready",reason:"Buscar água na margem da lagoa"}
         :{state:"blocked",reason:"Escolha um ponto da lagoa"};
     if(order.type==="collectManure"){
-      const animal=resources?.animals?.find(a=>Math.floor(a.x)===order.x&&Math.floor(a.y)===order.y);
+      if(!resources?.animals?.length)
+        return {state:"blocked",reason:"Não há animais na fase inicial"};
+      const animal=resources.animals.find(a=>Math.floor(a.x)===order.x&&Math.floor(a.y)===order.y);
       return animal?.manure>0?{state:"ready",reason:"Esterco disponível"}
         :{state:"blocked",reason:"Aguardando esterco do animal"};
     }
@@ -55,7 +57,8 @@
         const animalReady=resources?.animals?.some(a=>a.manure>0);
         return stock>0?{state:"ready",reason:"Esterco no depósito"}:
           animalReady?{state:"ready",reason:"Buscar esterco no animal"}:
-          {state:"blocked",reason:"Aguardando o animal produzir esterco"};
+          {state:"blocked",reason:resources?.animals?.length?
+            "Aguardando o animal produzir esterco":"Sem animais nem esterco na fase inicial"};
       case "sow":
         if(plot.seeded)return {state:"done",reason:"Já semeado"};
         if(plot.produce)return {state:"blocked",reason:"Retire a colheita anterior"};
