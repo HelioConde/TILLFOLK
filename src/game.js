@@ -337,14 +337,52 @@
     }
   }
   function bonus(w,type){return w.skills.includes(type)?(w.skills.length===1?2:w.skills.length===2?1.6:1.3):1;}
+  // Mesma regra para escolher trabalho e para explicar a ociosidade.
+  // Traços negativos são proibições, não uma penalidade de velocidade.
+  function workerTaskBlocker(w,t){
+    if(t.status!=="ready")return t.reason||"Aguardando pré-requisitos";
+    if(w.neg.includes(t.type))return "Traço negativo: não pode "+labels[t.type].toLowerCase();
+    if(t.type==="water"&&state.water<=0&&w.neg.includes("collectWater"))
+      return "Traço negativo: não pode buscar água";
+    if(t.type==="fertilize"&&state.inventory.manure<=0&&w.neg.includes("collectManure"))
+      return "Traço negativo: não pode recolher esterco";
+    if(t.type==="buildHome"){
+      const alreadyAssigned=state.workers.filter(other=>other.id!==w.id&&other.task&&
+        tasks.some(job=>job.id===other.task&&job.type==="buildHome")).length;
+      if(state.inventory.wood<HOME_WOOD_COST*(alreadyAssigned+1))
+        return "Madeira reservada para outras construções";
+    }
+    if(!routeBetween(w.x,w.y,t.x,t.y).length)
+      return "Sem caminho acessível até o trabalho";
+    return null;
+  }
+  function idleReason(w){
+    if(simSpeed===0)return "Simulação pausada";
+    if(!tasks.length)return "Sem ordens: designe um trabalho no mapa";
+    const open=tasks.filter(t=>t.status==="ready");
+    if(!open.length){
+      const missing=tasks.find(t=>t.reason&&/(semente|esterco|material|madeira|água)/i.test(t.reason));
+      return "Aguardando pré-requisitos"+(missing?": "+missing.reason:"");
+    }
+    const free=open.filter(t=>!t.assigned);
+    if(!free.length)return "Todas as ordens prontas já estão atribuídas";
+    const restrictions=free.filter(t=>w.neg.includes(t.type)||
+      (t.type==="water"&&state.water<=0&&w.neg.includes("collectWater"))||
+      (t.type==="fertilize"&&state.inventory.manure<=0&&w.neg.includes("collectManure")));
+    if(restrictions.length===free.length)
+      return "Restrições impedem as tarefas disponíveis: "+[...new Set(restrictions.map(t=>labels[t.type]))].join(", ");
+    const accessible=free.filter(t=>!workerTaskBlocker(w,t));
+    if(!accessible.length){
+      const problems=free.map(t=>workerTaskBlocker(w,t)).filter(Boolean);
+      return problems.includes("Sem caminho acessível até o trabalho")?
+        "Não há caminho acessível para as ordens livres":
+        problems[0]||"Aguardando tarefa compatível";
+    }
+    return "Procurando a próxima ordem";
+  }
   function assign(w){
     if(w.task)return;
-    const available=tasks.filter(t=>t.status==="ready"&&!t.assigned&&!w.neg.includes(t.type)&&
-      !(t.type==="water"&&state.water<=0&&w.neg.includes("collectWater"))&&
-      !(t.type==="fertilize"&&state.inventory.manure<=0&&w.neg.includes("collectManure"))&&
-      (t.type!=="buildHome"||state.inventory.wood>=HOME_WOOD_COST*
-        (1+state.workers.filter(other=>other.task&&tasks.some(job=>job.id===other.task&&job.type==="buildHome")).length))&&
-      routeBetween(w.x,w.y,t.x,t.y).length>0);
+    const available=tasks.filter(t=>t.status==="ready"&&!t.assigned&&!workerTaskBlocker(w,t));
     const priorityScore=t=>{
       const global=state.priorities[t.type]||5;
       const individual=w.personalPriority?.[t.type]??5;
@@ -699,7 +737,7 @@
         w.carryingWater?"Levando água ao canteiro":
         w.supplyStage==="manure"?"Buscando esterco na vaca":
         w.carryingManure?"Levando esterco ao canteiro":
-        t?labels[t.type]+" em ("+(t.x+1)+", "+(t.y+1)+")":"Aguardando tarefa";
+        t?labels[t.type]+" em ("+(t.x+1)+", "+(t.y+1)+")":idleReason(w);
       const positive=w.skills.length?w.skills.map(s=>'<span class="tag">✦ '+labels[s]+'</span>').join(""):'<span class="tag">Generalista</span>';
       const neg=w.neg.map(s=>'<span class="tag negative">✕ '+labels[s]+'</span>').join("");
       const factor=w.skills.length===1?"+100%":w.skills.length===2?"+60%":w.skills.length===3?"+30%":"sem bônus";
