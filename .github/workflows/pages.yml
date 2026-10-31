@@ -24,6 +24,7 @@ jobs:
           node --check src/wild-world.js
           node --check src/game.js
           node --check src/crop-catalog.js
+          node --check src/crafting.js
           node --test tests/crops.test.cjs
           node --check src/missions.js
           node --test tests/tutorial-missions.test.cjs
@@ -43,13 +44,15 @@ jobs:
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
           cp index.html crop-workshop.css tutorial-missions.css styles.css menu.css menu-layout.css menu-refinement.css game-hud.css sprout-ui.css game-refinement.css camera-ui.css top-speed.css game-interface.css game-polish.css fullscreen-game.css house-building.css hud-settings.css task-orders.css team-ux.css ui-polish.css _site/
-          cp src/crop-catalog.js src/missions.js src/biomes.js src/game.js src/wild-world.js src/blueprints.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
+          cp src/crafting.js src/crop-catalog.js src/missions.js src/biomes.js src/game.js src/wild-world.js src/blueprints.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
           mkdir -p _site/public/assets/assets
           cp -a public/assets/assets/crops _site/public/assets/assets/
           mkdir -p "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects"
           cp "public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/work station.png" "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/"
+          mkdir -p "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items"
+          cp "public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items/tools and meterials.png" "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items/"
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
           test -f _site/public/assets/sprout-lands/characters/worker-basic.png
           test -f _site/public/assets/sprout-lands/characters/worker-variants.png
@@ -63,6 +66,7 @@ jobs:
           test -f _site/src/menu.js
           test -f _site/src/missions.js
           test -f _site/src/crop-catalog.js
+          test -f _site/src/crafting.js
           test -f _site/crop-workshop.css
           test -f _site/public/assets/assets/crops/carrot/growth_basic/carrot_16x16_7frames.png
           test -f "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/work station.png"
