@@ -172,6 +172,7 @@
     }
     if(obj.kind==="gateLog"){resource="4 madeiras";if(world.boundary)world.boundary.open=true;}
     else if(obj.kind==="pebble")resource="1 pedra";
+    else if(obj.kind==="twig")resource="1 graveto";
     else if(obj.kind==="stump")resource="2 madeiras";
     else if(obj.kind==="boulder")resource="3 pedras";
     else if(obj.kind==="log")resource="2 madeiras";
