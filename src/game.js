@@ -319,7 +319,12 @@
   function bonus(w,type){return w.skills.includes(type)?(w.skills.length===1?2:w.skills.length===2?1.6:1.3):1;}
   function assign(w){
     if(w.task)return;
-    const available=tasks.filter(t=>t.status==="ready"&&!t.assigned&&!w.neg.includes(t.type)&&routeBetween(w.x,w.y,t.x,t.y).length>0);
+    const available=tasks.filter(t=>t.status==="ready"&&!t.assigned&&!w.neg.includes(t.type)&&
+      !(t.type==="water"&&state.water<=0&&w.neg.includes("collectWater"))&&
+      !(t.type==="fertilize"&&state.inventory.manure<=0&&w.neg.includes("collectManure"))&&
+      (t.type!=="buildHome"||state.inventory.wood>=HOME_WOOD_COST*
+        (1+state.workers.filter(other=>other.task&&tasks.some(job=>job.id===other.task&&job.type==="buildHome")).length))&&
+      routeBetween(w.x,w.y,t.x,t.y).length>0);
     const priorityScore=t=>{
       const global=state.priorities[t.type]||5;
       const individual=w.personalPriority?.[t.type]??5;
@@ -426,6 +431,9 @@
       const fetchWater=t.type==="water"&&state.water<=0&&!w.carryingWater;
       const fetchManure=t.type==="fertilize"&&state.inventory.manure<=0&&!w.carryingManure;
       const stage=fetchWater?"water":fetchManure?"manure":null;
+      if(stage&&w.neg.includes(stage==="water"?"collectWater":"collectManure")){
+        releaseSupply(w);w.task=null;w.progress=0;w.route=[];w.routeTask=null;continue;
+      }
       if(stage){
         if(w.supplyStage!==stage||!w.supplyTarget){
           const sources=stage==="water"?state.world.water:
