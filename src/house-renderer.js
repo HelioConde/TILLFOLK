@@ -4,7 +4,7 @@
    _add_front_windows e _add_roof_chimney.
    Sem criar prédios automaticamente na área jogável. */
 (() => {
-  const TILE=16,ROOF_COLS=7,ROOF_ROWS=5,WALL_COLS=5,WALL_ROWS=5;
+  const TILE=16,ROOF_COLS=7,ROOF_ROWS=5,WALL_COLS=5,WALL_ROWS=4;
 
   function roofAtlas(col,row,width=ROOF_COLS,height=ROOF_ROWS){
     if(!Number.isInteger(col)||!Number.isInteger(row)||
@@ -77,14 +77,13 @@
       stats.chimneys++;
     }
 
-    // Aberturas ficam acima do telhado. O beiral termina junto à faixa
-    // das janelas, com uma fileira extra de parede visível na base.
+    // Aberturas ficam na frente da cobertura. O beiral termina exatamente
+    // no topo da última fileira, sem esconder as janelas nem a porta.
     for(const col of [1,3]){
       stamp("walls",3,2,facadeX+col*cell,facadeY+3*cell);
       stats.windows++;
     }
-    // Porta completa de 16×32 px: ocupa as duas últimas fileiras de parede.
-    stamp("door",5,0,facadeX+2*cell,facadeY+3*cell,1,2);
+    stamp("door",5,0,facadeX+2*cell,facadeY+3*cell);
     stats.doors++;
 
     return {...stats,...dimensions(scale),x:originX,y:originY,scale};
