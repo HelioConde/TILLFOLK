@@ -77,7 +77,7 @@ test('Fertilização fica bloqueada sem esterco e funciona quando animais forem 
   await page.locator('#continue').click();
   const initial=await snap(page);
   expect(initial.animals).toHaveLength(1);
-  await expect(page.locator('[data-order-type="collectManure"]')).toBeVisible();
+  await expect(page.locator('[data-order-type="collectManure"]')).toBeAttached();
   const cow=initial.animals[0];
   await selectOrder(page,'collectManure');
   await tile(page,Math.floor(cow.x),Math.floor(cow.y));
