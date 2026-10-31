@@ -82,12 +82,12 @@ jobs:
           const fs=require('node:fs');
           const version=process.env.GITHUB_SHA;
           if(!/^[0-9a-f]{40}$/.test(version))throw new Error('SHA de release inválido');
-          fs.writeFileSync('_site/version.json',JSON.stringify({version})+'\\n');
+          fs.writeFileSync('_site/version.json',JSON.stringify({version})+'\n');
           let html=fs.readFileSync('_site/index.html','utf8');
           const buildTag='<meta name="tillfolk-build" content="dev">';
           if(!html.includes(buildTag))throw new Error('Tag da versão não encontrada');
           html=html.replace(buildTag,'<meta name="tillfolk-build" content="'+version+'">');
-          html=html.replace(/((?:href|src)="\\.\\/[^"]+\\.(?:css|js))(?:\\?[^"]*)?"/g,
+          html=html.replace(/((?:href|src)="\.\/[^"]+\.(?:css|js))(?:\?[^"]*)?"/g,
             (_,prefix)=>prefix+'?v='+version+'"');
           fs.writeFileSync('_site/index.html',html);
           if(!html.includes('./src/live-update.js?v='+version))
