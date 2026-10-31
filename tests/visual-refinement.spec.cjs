@@ -70,6 +70,8 @@ test('Câmera do vale: zoom, minimapa e navegação por teclado',async({page})=>
   const before=await page.locator('#world').boundingBox();
   await page.locator('#zoom-in').click();
   await expect(page.locator('#zoom-value')).toHaveText('125%');
+  await expect.poll(async()=> (await page.locator('#world').boundingBox()).width,{timeout:3500})
+    .toBeGreaterThan(before.width*1.2);
   const after=await page.locator('#world').boundingBox();
   expect(after.width).toBeGreaterThan(before.width*1.2);
   await page.locator('#minimap').click({position:{x:36,y:35}});
@@ -97,6 +99,8 @@ test('Câmera do vale: minimapa recolhido no celular, sem bloquear controles',as
   await expect(page.locator('#zoom-value')).toHaveText('100%');
   const initial=await page.locator('#world').boundingBox();
   await page.locator('#zoom-in').click();
+  await expect.poll(async()=> (await page.locator('#world').boundingBox()).width,{timeout:3500})
+    .toBeGreaterThan(initial.width*1.2);
   const zoomed=await page.locator('#world').boundingBox();
   expect(zoomed.width).toBeGreaterThan(initial.width*1.2);
   await page.locator('#minimap-toggle').click();
@@ -114,5 +118,87 @@ test('Câmera do vale: minimapa recolhido no celular, sem bloquear controles',as
   await page.screenshot({path:'screenshots/camera-minimapa-mobile.png',animations:'disabled'});
   await page.locator('#zoom-reset').click();
   await expect(page.locator('#zoom-value')).toHaveText('100%');
+  expect(errors).toEqual([]);
+});
+
+
+test('Zoom estilo ONI: roda aproxima suavemente ao redor do cursor',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.setViewportSize({width:1366,height:768});
+  await startFarm(page);
+  const point={x:660,y:385};
+  const initial=await page.locator('#world').boundingBox();
+  const local=box=>({
+    x:(point.x-box.x)/box.width,
+    y:(point.y-box.y)/box.height
+  });
+  const before=local(initial);
+  await page.mouse.move(point.x,point.y);
+  await page.mouse.wheel(0,-120);
+  await expect.poll(async()=>Number((await page.locator('#zoom-value').textContent()).replace('%','')),
+    {timeout:3000}).toBeGreaterThan(115);
+  await page.waitForTimeout(550);
+  const after=await page.locator('#world').boundingBox(),anchored=local(after);
+  expect(after.width).toBeGreaterThan(initial.width*1.12);
+  expect(Math.abs(before.x-anchored.x)).toBeLessThan(.025);
+  expect(Math.abs(before.y-anchored.y)).toBeLessThan(.025);
+  await page.screenshot({path:'screenshots/oni-camera-zoom-no-cursor-1366x768.png',animations:'disabled'});
+  await page.mouse.wheel(0,900);
+  await expect.poll(async()=>await page.locator('#zoom-value').textContent(),{timeout:4000})
+    .toBe('100%');
+  expect(errors).toEqual([]);
+});
+
+test('Câmera ONI: WASD contínuo, H para centralizar e arrasto com mouse central',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.setViewportSize({width:1366,height:768});
+  await startFarm(page);
+  await page.locator('#zoom-in').click();
+  await page.locator('#zoom-in').click();
+  await page.waitForTimeout(420);
+  const before=await page.locator('#world').boundingBox();
+  await page.keyboard.down('d');
+  await page.waitForTimeout(170);
+  await page.keyboard.up('d');
+  const moved=await page.locator('#world').boundingBox();
+  expect(moved.x).toBeLessThan(before.x-20);
+  await page.keyboard.press('h');
+  const homed=await page.locator('#world').boundingBox();
+  expect(Math.abs(homed.x-before.x)).toBeLessThan(15);
+  await page.mouse.move(620,365);
+  await page.mouse.down({button:'middle'});
+  await page.mouse.move(530,325,{steps:8});
+  await page.mouse.up({button:'middle'});
+  const dragged=await page.locator('#world').boundingBox();
+  expect(Math.abs(dragged.x-homed.x)+Math.abs(dragged.y-homed.y)).toBeGreaterThan(15);
+  await page.screenshot({path:'screenshots/oni-camera-wasd-arrasto-1366x768.png',animations:'disabled'});
+  expect(errors).toEqual([]);
+});
+
+test('Câmera ONI: limites do zoom e atalhos sem alterar as ferramentas',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.setViewportSize({width:1600,height:900});
+  await startFarm(page);
+  await page.mouse.move(700,430);
+  await page.mouse.wheel(0,-900);
+  await page.mouse.wheel(0,-900);
+  await page.mouse.wheel(0,-900);
+  await page.mouse.wheel(0,-900);
+  await page.mouse.wheel(0,-900);
+  await page.mouse.wheel(0,-900);
+  await page.mouse.wheel(0,-900);
+  await page.mouse.wheel(0,-900);
+  await page.mouse.wheel(0,-900);
+  await expect.poll(async()=>Number((await page.locator('#zoom-value').textContent()).replace('%','')))
+    .toBeGreaterThan(250);
+  const high=Number((await page.locator('#zoom-value').textContent()).replace('%',''));
+  expect(high).toBeLessThanOrEqual(400);
+  await page.keyboard.press('0');
+  await expect(page.locator('#zoom-value')).toHaveText('100%');
+  await expect(page.locator('.tool.active[data-tool="till"]')).toBeVisible();
+  await page.keyboard.press('m');
+  await expect(page.locator('#minimap')).toBeHidden();
+  await page.keyboard.press('m');
+  await expect(page.locator('#minimap')).toBeVisible();
   expect(errors).toEqual([]);
 });
