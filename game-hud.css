@@ -377,3 +377,7 @@ body.play-session :is(.tool,.speed-wrap button,.hud-panels button,.orders-choice
 body.play-session .hud-selection{bottom:calc(clamp(13px,2vh,23px) + 109px)}
 @media(max-width:760px){body.play-session .hud-selection{bottom:calc(clamp(13px,2vh,23px) + 91px)}}
 @media(max-width:460px){body.play-session .hud-selection{bottom:140px!important}}
+
+/* Notificações temporárias nunca cobrem as fichas e prioridades do jogador. */
+body.play-session.drawer-open #toast{display:none!important}
+body.play-session .orders-panel:not([hidden]) ~ #toast{display:none!important}
