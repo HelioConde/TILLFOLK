@@ -8,6 +8,36 @@ const screenSizes=[
  {width:1125,height:790},{width:1024,height:768},
  {width:800,height:900},{width:390,height:844},{width:1366,height:600}
 ];
+test('Marca TILLFOLK alinhada ao centro da coluna do menu no desktop e celular',async({page})=>{
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  for(const viewport of [{width:390,height:844},{width:800,height:900},{width:1366,height:768},{width:1600,height:900}]){
+    await page.setViewportSize(viewport);
+    await expect(page.locator('#game-title')).toBeVisible();
+    const geometry=await page.evaluate(()=>{
+      const nav=document.querySelector('#menu .title-navigation');
+      const logo=document.querySelector('#game-title');
+      const sprout=document.querySelector('#menu .title-sprout');
+      const divider=document.querySelector('#menu .title-divider');
+      const r=el=>el.getBoundingClientRect();
+      const range=document.createRange();range.selectNodeContents(logo);
+      const text=range.getBoundingClientRect();
+      const navRect=r(nav),titleRect=r(logo),sproutRect=r(sprout),dividerRect=r(divider);
+      const center=rect=>rect.left+rect.width/2;
+      return {viewport:innerWidth,nav:center(navRect),title:center(titleRect),
+        text:center(text),sprout:center(sproutRect),divider:center(dividerRect),
+        titleWidth:text.width,availableWidth:navRect.width,
+        textAlign:getComputedStyle(logo).textAlign};
+    });
+    expect(geometry.textAlign).toBe('center');
+    expect(Math.abs(geometry.title-geometry.nav)).toBeLessThanOrEqual(2);
+    expect(Math.abs(geometry.text-geometry.nav)).toBeLessThanOrEqual(3);
+    expect(Math.abs(geometry.sprout-geometry.nav)).toBeLessThanOrEqual(2);
+    expect(Math.abs(geometry.divider-geometry.nav)).toBeLessThanOrEqual(2);
+    expect(geometry.titleWidth).toBeLessThanOrEqual(geometry.availableWidth+2);
+    await page.screenshot({path:'screenshots/menu-logo-centralizado-'+viewport.width+'x'+viewport.height+'.png',animations:'disabled'});
+  }
+});
+
 test('TILLFOLK: menu visível em todas as resoluções',async({page})=>{
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
   for(const view of screenSizes){
