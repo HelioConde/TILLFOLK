@@ -41,11 +41,12 @@
         :{state:"blocked",reason:"Aguardando esterco do animal"};
     }
     if(order.type==="buildStation"){
-      if(resources?.workstations?.some(station=>station.x===order.x&&station.y===order.y))
-        return {state:"done",reason:"Oficina já montada"};
-      return (resources?.inventory?.wood||0)>=5&&(resources?.inventory?.stone||0)>=2
-        ?{state:"ready",reason:"Materiais disponíveis"}
-        :{state:"blocked",reason:"Aguardando 5 madeiras e 2 pedras"};
+      if(resources?.crafting?.station||resources?.workstations?.length)
+        return {state:"done",reason:"Work Station já montada"};
+      const amount=window.TillfolkCrafting?.STATION_COST||30;
+      return (resources?.inventory?.twigs||0)>=amount
+        ?{state:"ready",reason:"Gravetos reunidos"}
+        :{state:"blocked",reason:"Aguardando "+amount+" gravetos para a Work Station"};
     }
     if(order.type==="buildHome"){
       const already=resources?.homes?.some(h=>h.x===order.x&&h.y===order.y);
@@ -60,10 +61,16 @@
     const seeds=Number(resources?.seeds)||0,water=Number(resources?.water)||0;
     const dirty=!!(object||plot.dirty);
     switch(order.type){
-      case "clear": return dirty?{state:"ready",reason:"Pronta"}:{state:"done",reason:"Terreno já limpo"};
+      case "clear":{
+        if(!dirty)return {state:"done",reason:"Terreno já limpo"};
+        const needs=window.TillfolkCrafting?.blocked(resources,"clear",object);
+        return needs?{state:"blocked",reason:needs}:{state:"ready",reason:"Pronta"};
+      }
       case "till":
         if(plot.tilled)return {state:"done",reason:"Solo já arado"};
-        return dirty?{state:"blocked",reason:"Aguardando ordem de limpeza"}:{state:"ready",reason:"Pronta"};
+        if(dirty)return {state:"blocked",reason:"Aguardando ordem de limpeza"};
+        const hoe=window.TillfolkCrafting?.blocked(resources,"till");
+        return hoe?{state:"blocked",reason:hoe}:{state:"ready",reason:"Pronta"};
       case "fertilize":
         if(plot.fertilized)return {state:"done",reason:"Solo já fertilizado"};
         if(plot.seeded)return {state:"done",reason:"Planta já semeada"};
@@ -88,6 +95,8 @@
       case "water":
         if(plot.watered&&plot.seeded)return {state:"done",reason:"Já irrigado"};
         if(!plot.seeded)return {state:"blocked",reason:"Aguardando semeadura"};
+        const can=window.TillfolkCrafting?.blocked(resources,"water");
+        if(can)return {state:"blocked",reason:can};
         return water>0?{state:"ready",reason:"Água disponível"}:
           resources?.world?.water?.length?{state:"ready",reason:"Buscar água na lagoa"}:
           {state:"blocked",reason:"Sem fonte de água"};
