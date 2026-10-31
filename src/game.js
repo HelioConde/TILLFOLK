@@ -553,6 +553,17 @@
     if(w.carryingManure){state.inventory.manure++;w.carryingManure=false;}
     w.supplyStage=null;w.supplyTarget=null;
   }
+  // Uma marcação indica exclusivamente uma ordem PENDENTE, não uma memória
+  // permanente da seleção. Limpa inclusive saves antigos que tinham selected=true.
+  let lastSelectionPlots=null,lastSelectionSignature=null;
+  function syncOrderSelections(){
+    const signature=state.orders.filter(o=>!["collectWater","collectManure","buildHome"].includes(o.type))
+      .map(o=>o.x+","+o.y).sort().join("|");
+    if(lastSelectionPlots===state.plots&&lastSelectionSignature===signature)return;
+    const selected=new Set(signature?signature.split("|"):[]);
+    for(const p of state.plots)p.selected=selected.has(p.x+","+p.y);
+    lastSelectionPlots=state.plots;lastSelectionSignature=signature;
+  }
   function recalcTasks(){
     const current=new Set(state.orders.map(o=>o.id));
     for(const w of state.workers){
@@ -578,6 +589,7 @@
         w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
       }
     }
+    syncOrderSelections();
   }
   function bonus(w,type){return w.skills.includes(type)?(w.skills.length===1?2:w.skills.length===2?1.6:1.3):1;}
   // Mesma regra para escolher trabalho e para explicar a ociosidade.
@@ -856,17 +868,19 @@
       if(home.residentId==null)write("LIVRE",x+32,y-19,"#e5f7ae",9);
     }
     // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
-    const orderTiles=new Set(state.orders.map(o=>keyOf(o.x,o.y)));
     for(const p of state.plots){
-      if(!inView(p.x,p.y,1)||!p.selected&&!p.tilled&&!p.seeded&&!p.produce)continue;
+      if(!inView(p.x,p.y,1)||!p.tilled&&!p.seeded&&!p.produce&&!p.dirty&&!p.fertilized)continue;
       const x=p.x*TILE,y=p.y*TILE;
-      ctx.fillStyle=p.tilled?"#b38f6c":"#99c46b";ctx.fillRect(x+1,y+1,TILE-2,TILE-2);
+      // Solo natural não recebe quadrado verde: a ordem aparece só como
+      // contorno temporário. O cultivo real permanece visível após a tarefa.
+      if(p.tilled||p.seeded||p.produce){
+        ctx.fillStyle="#b38f6c";ctx.fillRect(x+1,y+1,TILE-2,TILE-2);
+      }
       if(p.tilled)part(sprite.dirt,0,80,16,16,x,y);
       if(p.fertilized){ctx.fillStyle="#6c7652";ctx.fillRect(x+4,y+8,3,3);ctx.fillRect(x+25,y+22,2,2);}
       if(p.seeded)part(sprite.crops,Math.min(4,Math.floor(p.growth*5))*16,0,16,16,x,y,32,32);
       if(p.produce)part(sprite.crops,48,16,16,16,x,y,32,32);
       if(p.dirty&&!World.at(state.world,p.x,p.y))part(sprite.rocks,0,16,16,16,x,y,32,32);
-      if(orderTiles.has(keyOf(p.x,p.y))){ctx.strokeStyle="#ecdf96";ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.strokeRect(x+3,y+3,26,26);ctx.setLineDash([]);}
       if(p.watered&&p.seeded){ctx.fillStyle="#6cc8e5";ctx.fillRect(x+2,y+26,4,3);}
     }
     // Marcadores discretos: ordens prontas (creme) ou aguardando (marrom).
@@ -879,6 +893,10 @@
     for(const [tile,jobs] of byTile){
       const [x,y]=tile.split("-").map(Number);
       if(!inView(x,y,1))continue;
+      // Contorno leve apenas enquanto existe ordem ativa nessa célula.
+      ctx.strokeStyle="#f4e9a3";ctx.lineWidth=1;ctx.setLineDash([4,3]);
+      ctx.strokeRect(x*TILE+3,y*TILE+3,TILE-6,TILE-6);
+      ctx.setLineDash([]);
       const next=jobs.find(j=>j.status==="ready")||jobs[0];
       ctx.fillStyle=next.status==="ready"?"#ecdc9b":"#ad8d68";
       ctx.fillRect(x*TILE+2,y*TILE+2,19,13);
@@ -1167,8 +1185,10 @@
     const cancelled=new Set(ids);
     state.orders=state.orders.filter(o=>!cancelled.has(o.id));
     for(const worker of state.workers)if(cancelled.has(worker.task)){
+      releaseSupply(worker);
       worker.task=null;worker.progress=0;worker.route=[];worker.routeTask=null;worker.workGoal=null;
     }
+    hoveredTile=null;
     recalcTasks();refresh();save();
   }
   // A ferramenta universal atribui APENAS a próxima etapa ao clicar.
