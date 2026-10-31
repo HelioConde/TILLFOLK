@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const TILE = 32, W = 80, H = 50, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01";
+  const TILE = 32, W = 80, H = 50, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions;
   if(!Missions)throw new Error("Carregue src/missions.js antes do motor TILLFOLK.");
   if(!Orders)throw new Error("Carregue src/task-orders.js antes do motor TILLFOLK.");
@@ -487,6 +487,17 @@
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     tasks=[]; simSpeed=1; updateSpeed();
   }
+  // "play" significa que a fazenda estava aberta na última visita.
+  // "menu" preserva a decisão explícita de voltar à tela inicial.
+  function setSessionMode(mode){
+    try{localStorage.setItem(SESSION_KEY,mode);}catch(error){console.warn("Preferência da sessão indisponível:",error);}
+  }
+  function shouldAutoResume(){
+    try{
+      // Saves antigos (sem SESSION_KEY) também devem reabrir a fazenda.
+      return Boolean(localStorage.getItem(SAVE_KEY))&&localStorage.getItem(SESSION_KEY)!=="menu";
+    }catch{return false;}
+  }
   function readSave(){
     try {
       const s=JSON.parse(localStorage.getItem(SAVE_KEY));
@@ -561,10 +572,28 @@
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
       state.candidates.forEach(homageSavedName);
       state.journal=Array.isArray(s.journal)?s.journal:[];
-      tasks=[];recalcTasks();simSpeed=1;updateSpeed();return true;
-    }catch {return false;}
+      tasks=[];recalcTasks();
+      // Retomar a velocidade anterior, inclusive pausa, sem mexer no tempo do dia.
+      simSpeed=[0,1,3,6].includes(s.sessionSpeed)?s.sessionSpeed:1;
+      updateSpeed();return true;
+    }catch(error){
+      console.warn("Não foi possível restaurar a partida salva:",error);
+      return false;
+    }
   }
-  function save(){if(!state||!playing)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch(e){console.warn("Não foi possível salvar:",e);}}
+  function save(){
+    if(!state||!playing)return;
+    try{
+      state.sessionSpeed=simSpeed;
+      localStorage.setItem(SAVE_KEY,JSON.stringify(state));
+    }catch(error){console.warn("Não foi possível salvar:",error);}
+  }
+  // Salvamento imediato antes de atualizar, fechar ou trocar de aba.
+  // O ciclo normal de 8 segundos continua ativo enquanto a página está aberta.
+  window.addEventListener("pagehide",save);
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="hidden")save();
+  });
   function log(text){state.journal.unshift(text);state.journal.length=Math.min(5,state.journal.length);}
   function notify(text){const t=$("#toast");t.textContent=text;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),3000);}
   function recordTutorial(key,quantity=1){
@@ -581,10 +610,17 @@
     }else if(previous)notify("✓ "+previous.complete);
   }
   function start(continueSaved=false, chosenStarters = [], config = {}){
-    if(!continueSaved||!readSave())reset(chosenStarters,config);
+    if(continueSaved){
+      // Nunca sobrescrever um save danificado com uma fazenda nova silenciosamente.
+      if(!readSave()){
+        notify("Não foi possível carregar esta fazenda. Seu salvamento não foi apagado.");
+        return false;
+      }
+    }else reset(chosenStarters,config);
     houseHistory=[];buildHover=null;areaSelection=null;selectionPointer=null;resetSpeechScene();setTool("universal");
     recalcTasks(); // Limpar ordens já concluídas antes da primeira renderização.
     playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false;
+    setSessionMode("play");
     document.body.classList.add("play-session","focus-game");
     worldPanX=0;worldPanY=0;cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;
     movementKeys.clear();activeTouches.clear();pinchGesture=null;hoveredTile=null;feedbackParticles.length=0;closeDrawer();refresh();save();
@@ -598,6 +634,7 @@
       focusCameraAt(state.spawn?.x??W/2,state.spawn?.y??H/2);
     });
     // O HUD contextual já explica a ação; não obstruir o mapa com aviso ao iniciar.
+    return true;
   }
   // Somente ordens solicitadas pelo jogador entram na fila. Nenhuma etapa é
   // fabricada depois de limpar, arar, semear, regar ou colher.
@@ -2264,7 +2301,7 @@
   });
   $("#game-return-title").addEventListener("click",()=>{
     optionsDialog.close();
-    save();playing=false;closeDrawer();setTool("universal");
+    save();setSessionMode("menu");playing=false;closeDrawer();setTool("universal");
     document.body.classList.remove("play-session","focus-game");
     canvas.style.removeProperty("--pan-x");canvas.style.removeProperty("--pan-y");
     cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;movementKeys.clear();syncCameraButtons();
@@ -2291,6 +2328,9 @@
   });
   $(".app-shell").inert=!$("#menu").hidden;
   reset();renderPriorityControls();recalcTasks();refresh();
+  // Abrir automaticamente a fazenda quando a última sessão estava jogando.
+  // Retornar ao menu por escolha do jogador NÃO dispara retomada na próxima visita.
+  if(shouldAutoResume()&&start(true))renderPriorityControls();
   function loop(now){
     const dt=last?Math.min((now-last)/1000,.07):0;last=now;
     if(playing){
