@@ -16,3 +16,10 @@ body:not(.play-session) #crop-catalog-dialog,body:not(.play-session) #workshop-d
 @media(max-width:500px){.farm-catalog-dialog .farm-crop-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
 .farm-crop-grid button{padding:7px 6px;gap:5px;font-size:11px}
 .farm-crop-grid button canvas{width:30px;height:30px}}
+
+.farm-tools-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0 20px}
+.farm-tools-list button{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:10px 12px;border:2px solid #8fb578;border-radius:6px;background:#2b503b;color:#fff4d5;font-size:13px;cursor:pointer}
+.farm-tools-list button strong{font-weight:800}.farm-tools-list button small{font-size:11px;color:#d4edb9}
+.farm-tools-list button:disabled{opacity:.58;cursor:not-allowed}
+.farm-tools-list button:focus-visible,.farm-tools-list button:hover:not(:disabled){outline:2px solid #dff6a1;outline-offset:2px}
+.farm-item-atlas{display:block;max-width:min(100%,420px);max-height:105px;image-rendering:pixelated;object-fit:contain;object-position:left center;border:1px solid #7e9e73;background:#21362b;margin:5px 0 12px}
