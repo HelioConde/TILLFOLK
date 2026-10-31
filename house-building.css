@@ -36,3 +36,29 @@ body.play-session .tooltray:has([data-tool="construir"].active){border-color:#eb
  body.play-session .tooltray .tool{min-width:0}
 }
 @media(prefers-reduced-motion:reduce){.construction-panel *{transition:none!important;animation:none!important}}
+
+/* Blueprint / Construir: catálogo de habitações e agricultura (Sprout Lands) */
+body.play-session .construction-actions [data-build-layer="home"],
+body.play-session .construction-actions [data-build-layer="field"]{
+  border:2px solid #91c4ca!important;
+  box-shadow:inset 0 0 0 1px #2b4f5c,0 2px 0 #182d30!important;
+  background:linear-gradient(160deg,#365c61,#25434b)!important;
+  color:#e9f8ff!important;white-space:normal;
+}
+body.play-session .construction-actions [data-build-layer="home"].chosen,
+body.play-session .construction-actions [data-build-layer="field"].chosen,
+body.play-session .construction-actions [data-build-layer="home"][aria-pressed="true"],
+body.play-session .construction-actions [data-build-layer="field"][aria-pressed="true"]{
+  background:linear-gradient(160deg,#9fdfef,#63b7d8)!important;
+  color:#19344b!important;border-color:#d2f5ff!important;
+  outline:2px solid #eefaff;outline-offset:1px;
+}
+body.play-session .construction-panel #build-erase:disabled{
+  opacity:.38;cursor:not-allowed;filter:grayscale(1)
+}
+body.play-session #build-status{max-width:100%;line-height:1.5}
+@media(max-width:680px){
+ body.play-session .construction-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+ body.play-session .construction-actions [data-build-layer="home"],
+ body.play-session .construction-actions [data-build-layer="field"]{font-size:10px!important;min-height:44px}
+}
