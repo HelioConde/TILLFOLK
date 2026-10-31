@@ -887,7 +887,8 @@
     window.TillfolkHouseBuilder.draw(ctx,sprite,part,state.house,{
       building:selectedTool==="construir",layer:buildLayer,workers:state.workers,
       previewX:buildHover?.x,previewY:buildHover?.y,
-      previewValid:buildHover?Boolean(getBuildEdit(buildHover.x,buildHover.y,eraseBuild).house):false
+      previewValid:buildHover?Boolean(getBuildEdit(buildHover.x,buildHover.y,eraseBuild).house):false,
+      previewErase:eraseBuild
     });
     // Cabanas 2x2 são estruturas independentes, concluídas pelos trabalhadores.
     for(const home of state.homes.filter(h=>!h.legacy&&inView(h.x,h.y,4))){
@@ -897,6 +898,20 @@
       part(sprite.roof,32,16,16,16,x+27,y-9,38,36);
       part(sprite.door,0,0,16,32,x+21,y+28,22,34);
       if(home.residentId==null)write("LIVRE",x+32,y-19,"#e5f7ae",9);
+    }
+    // Blueprints permanecem visíveis enquanto os trabalhadores não concluem
+    // a cabana ou o preparo/plantio da terra. São derivados da fila de ordens:
+    // cancelar ou concluir a ordem remove automaticamente o fantasma.
+    const Blueprint=window.TillfolkBlueprints;
+    for(const order of state.orders){
+      if(order.type==="buildHome"&&inView(order.x,order.y,4))
+        Blueprint.home(ctx,sprite,order.x,order.y,TILE,true);
+      else if((order.type==="till"||order.type==="sow")&&inView(order.x,order.y,1)){
+        const soil=findPlot(order.x,order.y);
+        if(soil&&!soil.seeded&&!soil.produce)
+          Blueprint.field(ctx,sprite,order.x,order.y,TILE,true,
+            order.type==="sow"||soil.tilled);
+      }
     }
     // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
     for(const p of state.plots){
@@ -1008,6 +1023,16 @@
       }
     }
     World.drawAmbient(ctx,state.world,performance.now(),TILE);
+    // Prévia ANTES de construir: azul transparente para posição válida,
+    // vermelho transparente se a regra de terreno/ocupação impedir a obra.
+    if(playing&&selectedTool==="construir"&&buildHover&&!panPointer&&!areaSelection){
+      const {x,y}=buildHover;
+      if(x>=0&&y>=0&&x<W&&y<H){
+        const valid=Boolean(getBuildEdit(x,y,eraseBuild).house);
+        if(buildLayer==="home")Blueprint.home(ctx,sprite,x,y,TILE,valid);
+        else if(buildLayer==="field")Blueprint.field(ctx,sprite,x,y,TILE,valid,true);
+      }
+    }
     // Ordem sob o cursor: destaque de tile, não adiciona tarefas automaticamente.
     if(playing&&hoveredTile&&selectedTool!=="construir"&&!panPointer){
       const {x,y}=hoveredTile,validTile=x>=0&&x<W&&y>=0&&y<H;
@@ -1025,9 +1050,10 @@
       const a=areaSelection.from,b=areaSelection.to;
       const x0=Math.max(0,Math.min(a.x,b.x)),x1=Math.min(W-1,Math.max(a.x,b.x));
       const y0=Math.max(0,Math.min(a.y,b.y)),y1=Math.min(H-1,Math.max(a.y,b.y));
-      ctx.fillStyle=selectionPointer?.cancel?"#ee95804d":"#e6f7ad3d";
+      const blueArea=selectedTool==="construir"&&buildLayer==="field";
+      ctx.fillStyle=selectionPointer?.cancel?"#ee95804d":blueArea?"#48b7ff48":"#e6f7ad3d";
       ctx.fillRect(x0*TILE,y0*TILE,(x1-x0+1)*TILE,(y1-y0+1)*TILE);
-      ctx.lineWidth=2;ctx.strokeStyle=selectionPointer?.cancel?"#ffb19c":"#f9ed9b";
+      ctx.lineWidth=2;ctx.strokeStyle=selectionPointer?.cancel?"#ffb19c":blueArea?"#a5e5ff":"#f9ed9b";
       ctx.strokeRect(x0*TILE+1,y0*TILE+1,(x1-x0+1)*TILE-2,(y1-y0+1)*TILE-2);
     }
     // Feedback breve e descartável ao concluir ou atribuir uma ordem.
