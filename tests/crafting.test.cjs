@@ -42,7 +42,8 @@ test("fabricar consome recursos, persiste ferramenta e libera a ordem",()=>{
   assert.equal(s.inventory.grass,0);
   assert.equal(C.has(s,"axe"),true);
   assert.equal(C.blocked(s,"clear",{kind:"tree"}),null);
-  assert.match(C.blocked(s,"clear",{kind:"gateLog"}),/machado de pedra/);
+  assert.equal(C.requiredTool("clear",{kind:"gateLog"}),"axe");
+  assert.equal(C.blocked(s,"clear",{kind:"gateLog"}),null);
   assert.equal(O.status({type:"clear",x:10,y:10},plot,{kind:"tree"},s).state,"ready");
   assert.match(C.craft(s,"axe").error,/já foi fabricado/);
   assert.equal(C.normalize(s.crafting).equipment.axe,true);
@@ -54,12 +55,24 @@ test("o regador continua bloqueado até ser fabricado",()=>{
   assert.equal(C.craft(s,"wateringCan").item.key,"wateringCan");
   assert.equal(C.blocked(s,"water"),null);
 });
-test("machado de pedra só pode ser fabricado após a primeira colheita",()=>{
+test("o machado comum só libera a fabricação após a primeira colheita no tutorial",()=>{
   const s=state();s.crafting.station={x:10,y:10};
-  s.tutorial={active:true,stats:{}};s.inventory.twigs=12;s.inventory.grass=3;s.inventory.stone=3;
-  assert.match(C.craft(s,"stoneAxe").error,/Colha sua primeira plantação/);
+  s.tutorial={active:true,stats:{}};s.inventory.twigs=12;s.inventory.grass=3;
+  assert.match(C.craft(s,"axe").error,/Colha sua primeira plantação/);
   s.firstHarvest=true;
-  assert.equal(C.craft(s,"stoneAxe").item.key,"stoneAxe");
+  assert.equal(C.craft(s,"axe").item.key,"axe");
+});
+test("machado antigo é migrado para machado comum sem perder ferramentas do save",()=>{
+  assert.equal(C.recipe("stoneAxe"),null);
+  assert.equal(C.itemFrame("stoneAxe"),null);
+  assert.equal(C.RECIPES.some(item=>item.key==="stoneAxe"),false);
+  const legacy=C.normalize({station:{x:10,y:10},equipment:{stoneAxe:true}});
+  assert.equal(legacy.equipment.axe,true);
+  assert.equal(Object.hasOwn(legacy.equipment,"stoneAxe"),false);
+  const worker={inventory:{tools:{stoneAxe:true},items:{}}};
+  C.normalizeWorker(worker);
+  assert.equal(worker.inventory.tools.axe,true);
+  assert.equal(Object.hasOwn(worker.inventory.tools,"stoneAxe"),false);
 });
 test("migração de saves antigos preserva ferramentas antes ilimitadas",()=>{
   assert.equal(C.normalize(null,true).equipment.pickaxe,true);
