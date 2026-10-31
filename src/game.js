@@ -600,6 +600,7 @@
       // A última cabana é o encerramento. Não apaga ou recria o estado da fazenda.
       state.mode="survival";
       $("#prologue-card").hidden=true;
+      if($("#prologue-dialog").open)$("#prologue-dialog").close();
       notify("🏅 Tutorial concluído! Continue jogando na mesma fazenda.");
       sayTutorial("Conseguimos! O tutorial acabou. Agora vamos cuidar da nossa fazenda!",16);
     }else{
@@ -1188,6 +1189,7 @@
       ctx.strokeRect(cx-5-elapsed*10,cy-5-elapsed*10,10+elapsed*20,10+elapsed*20);
       ctx.globalAlpha=1;
     }
+    updateTutorialSpeech();
   }
   function refresh(){
     if(!state)return;
