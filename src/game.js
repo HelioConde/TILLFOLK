@@ -553,10 +553,15 @@
     $("#prologue-title").textContent=mission?mission.icon+" "+mission.title:"🏅 Você aprendeu a sobreviver!";
     $("#prologue-summary").textContent=mission?mission.short:"A campanha terminou. Agora explore o vale e expanda sua colônia livremente.";
     $("#prologue-description").textContent=mission?mission.detail:"Você domina a coleta, a fabricação, o plantio, a água, a colheita e a construção. Nenhuma nova missão será gerada.";
-    $("#prologue-goals").innerHTML=info.done?
+    const goalsHtml=info.done?
       '<div class="prologue-goal done">✓ Todas as 10 missões concluídas</div>':
       info.progress.map(goal=>'<div class="prologue-goal '+(goal.value===goal.max?'done':'')+'"><span>'+
       (goal.value===goal.max?'✓ ':'○ ')+goal.label+'</span><b>'+goal.value+'/'+goal.max+'</b></div>').join("");
+    $("#prologue-goals").innerHTML=goalsHtml;
+    $("#prologue-dialog-goals").innerHTML=goalsHtml;
+    $("#prologue-dialog-step").textContent=$("#prologue-step").textContent;
+    $("#prologue-dialog-title").textContent=$("#prologue-title").textContent;
+    $("#prologue-dialog-description").textContent=$("#prologue-description").textContent;
     $("#prologue-card").title=mission?mission.detail:"O tutorial está concluído. Você pode continuar jogando livremente.";
     $("#prologue-tool-count").textContent=Object.values(state.tools).filter(Boolean).length+"/"+Object.keys(Prologue.RECIPES).length;
   }
@@ -575,10 +580,25 @@
     }).join("");
   }
   $("#prologue-open").addEventListener("click",()=>{
+    if(window.matchMedia("(max-width:520px)").matches){
+      $("#prologue-dialog").showModal();
+      $("#prologue-open").setAttribute("aria-controls","prologue-dialog");
+      $("#prologue-open").setAttribute("aria-expanded","true");
+      return;
+    }
     const el=$("#prologue-details"),expanded=el.hidden;
     el.hidden=!expanded;
+    $("#prologue-open").setAttribute("aria-controls","prologue-details");
     $("#prologue-open").setAttribute("aria-expanded",String(expanded));
     $("#prologue-open").textContent=expanded?"▴ Recolher":"▣ Detalhes";
+  });
+  $("#prologue-dialog").addEventListener("close",()=>{
+    $("#prologue-open").setAttribute("aria-expanded","false");
+    $("#prologue-open").textContent="▣ Detalhes";
+  });
+  $("#prologue-dialog-craft").addEventListener("click",()=>{
+    $("#prologue-dialog").close();
+    $("#workshop-open").click();
   });
   $("#workshop-open").addEventListener("click",()=>{
     if(!playing)return;
