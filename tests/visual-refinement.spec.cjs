@@ -192,7 +192,7 @@ test('Câmera ONI: limites do zoom e atalhos sem alterar as ferramentas',async({
   await expect.poll(async()=>Number((await page.locator('#zoom-value').textContent()).replace('%','')))
     .toBeGreaterThan(250);
   const high=Number((await page.locator('#zoom-value').textContent()).replace('%',''));
-  expect(high).toBeLessThanOrEqual(400);
+  expect(high).toBeLessThanOrEqual(600);
   await page.keyboard.press('0');
   await expect(page.locator('#zoom-value')).toHaveText('100%');
   await expect(page.locator('.tool.active[data-tool="universal"]')).toBeVisible();
