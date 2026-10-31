@@ -29,7 +29,7 @@ body.play-session #world{
  position:absolute!important;left:50%!important;top:50%!important;display:block!important;
  flex:none!important;min-width:0!important;min-height:0!important;
  width:auto;height:auto;max-width:none!important;max-height:none!important;
- aspect-ratio:896 / 576;object-fit:fill;
+ aspect-ratio:80 / 50;object-fit:fill;
  transform:translate(calc(-50% + var(--pan-x,0px)),calc(-50% + var(--pan-y,0px)));
  border:0!important;box-shadow:none!important;image-rendering:pixelated;
  touch-action:none;user-select:none;
