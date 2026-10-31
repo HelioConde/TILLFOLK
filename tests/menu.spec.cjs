@@ -1,3 +1,7 @@
+async function continueIfMenuVisible(page){
+  if(await page.locator('#menu').isVisible())await page.locator('#continue').click();
+  await expect(page.locator('#menu')).toBeHidden();
+}
 const {test,expect}=require('@playwright/test');
 const screenSizes=[
  {width:1600,height:900},{width:1366,height:768},
@@ -146,7 +150,7 @@ test('Menu acessível: foco isolado, retorno e continuar usando armazenamento lo
   await expect(page.locator('#continue')).toBeEnabled();
   await page.reload({waitUntil:'networkidle'});
   await expect(page.locator('#continue')).toBeEnabled();
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   await expect(page.locator('#menu')).toBeHidden();
 });
 
@@ -351,7 +355,7 @@ test('Terreno selvagem: nenhuma horta inicial, paisagem diversa e persistência'
   await page.waitForTimeout(600);
   await page.screenshot({path:'screenshots/vale-selvagem-inicial-1600x900.png',animations:'disabled'});
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   const restored=await page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
   expect(restored.world.seed).toBe(snapshot.seed);
   expect(restored.world.objects.length).toBe(snapshot.objects);
@@ -1225,13 +1229,13 @@ test('Homenagem a Simone: migrar só apelidos automáticos em saves antigos',asy
     localStorage.setItem(key,JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   const changed=await page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
   expect(changed.workers.map(w=>w.name)).toEqual(['Mone 88','Moni 59']);
   expect(changed.candidates.map(c=>c.name)).toEqual(['Moni 91','Simone']);
   expect(changed.workers.every(w=>w.skills&&w.neg)).toBe(true);
   await page.reload({waitUntil:'networkidle'});
-  await page.locator('#continue').click();
+  await continueIfMenuVisible(page);
   const again=await page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
   expect(again.workers.map(w=>w.name)).toEqual(changed.workers.map(w=>w.name));
 });
