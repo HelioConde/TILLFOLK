@@ -2047,10 +2047,18 @@
       ". A próxima ordem Semear usará esta cultura quando houver sementes.";
   }
   function renderWorkshop(){
-    const ready=(state.workstations?.length||0)>0;
+    const ready=Boolean(state.crafting?.station);
     $("#workshop-status").textContent=ready?
-      "Oficina em funcionamento! Produção reservada para receitas: 2 alimentos → 3 sementes.":
-      "Nenhuma oficina pronta. Use Construir → Oficina e espere a equipe montar a bancada (5 madeiras + 2 pedras).";
+      "Work Station pronta! Faça ferramentas e transforme colheitas em sementes.":
+      "A Work Station ainda não está pronta. Colete 30 gravetos e use Construir → Work Station.";
+    $("#workshop-tools").innerHTML=Crafting.RECIPES.map(recipe=>{
+      const made=Crafting.has(state,recipe.key);
+      const lacking=Crafting.missing(state,recipe.cost).length>0;
+      return '<button type="button" data-craft-tool="'+recipe.key+'" '+
+        ((!ready||made||lacking)?'disabled':'')+'>'+
+        '<strong>'+recipe.icon+' '+recipe.name+'</strong> '+
+        '<small>'+(made?'✓ Fabricado':Crafting.formatCost(recipe.cost))+'</small></button>';
+    }).join("");
     const grid=$("#workshop-recipes");
     grid.innerHTML=Crops.ALL.map(crop=>cropTile(crop,
       (state.cropProduce[crop.id]||0)+" colhidos · fabricar 3 sementes",
@@ -2068,6 +2076,16 @@
   });
   $("#open-workshop").addEventListener("click",()=>{
     if(!playing)return;renderWorkshop();$("#workshop-dialog").showModal();
+  });
+  $("#workshop-tools").addEventListener("click",event=>{
+    const button=event.target.closest("[data-craft-tool]");
+    if(!button||button.disabled)return;
+    const result=Crafting.craft(state,button.dataset.craftTool);
+    if(result.error){notify(result.error);return;}
+    if(result.item.key==="axe")recordTutorial("axe");
+    log("Fabricamos "+result.item.name+" na Work Station.");
+    notify("✓ "+result.item.name+" pronta para toda a equipe!");
+    renderWorkshop();refresh();save();
   });
   $("#workshop-recipes").addEventListener("click",event=>{
     const button=event.target.closest("[data-craft-crop]");
