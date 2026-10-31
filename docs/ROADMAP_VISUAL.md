@@ -1,5 +1,8 @@
 # TILLFOLK — plano de evolução visual e técnica (30/10/2026)
 
+> **Nota (31/10/2026):** este é um **roadmap de arte, UX e qualidade**, não o plano principal de gameplay. O TILLFOLK é um jogo de **sobrevivência de colônia**, com fome, morte, moradias, recrutamento, divisão de trabalho e expansão territorial como princípios. Priorizar [GDD_TILLFOLK.md](./GDD_TILLFOLK.md) e [ROADMAP_SOBREVIVENCIA.md](./ROADMAP_SOBREVIVENCIA.md). Ajustes visuais não substituem a entrega das mecânicas de sobrevivência.
+
+
 Objetivo: fazer a fazenda parecer um jogo 2D completo, usando os sprites licenciados já presentes no repositório e respeitando a jogabilidade definida (trabalhadores automáticos, características e tarefas demoradas).
 
 ## Método de execução contínua
