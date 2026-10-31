@@ -4,7 +4,7 @@
    _add_front_windows e _add_roof_chimney.
    Sem criar prédios automaticamente na área jogável. */
 (() => {
-  const TILE=16,ROOF_COLS=7,ROOF_ROWS=5,WALL_COLS=5,WALL_ROWS=5;
+  const TILE=16,ROOF_COLS=7,ROOF_ROWS=5,WALL_COLS=5,WALL_ROWS=4;
 
   function roofAtlas(col,row,width=ROOF_COLS,height=ROOF_ROWS){
     if(!Number.isInteger(col)||!Number.isInteger(row)||
@@ -59,13 +59,13 @@
         stats.walls++;
       }
     }
-    // Janela original do atlas: célula (3,2), como no HouseBuilder.
+    // Janelas alinhadas na segunda fileira: acima do rodapé, sob o beiral.
     for(const col of [1,3]){
-      stamp("walls",3,2,facadeX+col*cell,facadeY+3*cell);
+      stamp("walls",3,2,facadeX+col*cell,facadeY+2*cell);
       stats.windows++;
     }
     // AutomaticDoor do Slime-Harvest utiliza o frame 5, em (80,0).
-    stamp("door",5,0,facadeX+2*cell,facadeY+4*cell);
+    stamp("door",5,0,facadeX+2*cell,facadeY+3*cell);
     stats.doors++;
 
     if(roofVisible){
