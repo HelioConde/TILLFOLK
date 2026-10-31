@@ -543,7 +543,7 @@
       id:i+1,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,
       appearance:c.appearance ?? i,personalPriority:{},x:W/2-.5+i,y:H/2-.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
     }));
-    state = {day:1,minutes:8*60,seeds:0,water:0,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",tutorial:Missions.create(),
+    state = {day:1,minutes:8*60,seeds:0,water:0,food:8,firstHarvest:false,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",tutorial:Missions.create(),
       plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),
       cropSeeds:Crops.normalizeStock({}),cropProduce:Crops.normalizeStock({}),selectedCrop:"carrot",workstations:[],crafting:Crafting.normalize(null),
       homes:[],animals:[],inventory:{wood:0,twigs:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
@@ -586,6 +586,7 @@
       // Migração não destrutiva: os saves continuam utilizáveis, mas não há moeda.
       delete state.coins;
       state.food=Math.max(0,Number(state.food)||0);
+      state.firstHarvest=Boolean(s.firstHarvest||s.tutorial?.stats?.harvest>0);
       state.house=window.TillfolkHouseBuilder.normalize(s.house);
       state.orders=Orders.normalize(s.orders);
       // Saves anteriores nunca geram tarefas implícitas após a atualização.
@@ -926,7 +927,7 @@
         if(!w.carryingWater&&state.water<=0)return false;
         if(w.carryingWater)w.carryingWater=false;else state.water--;
         p.watered=true;recordTutorial("water");break;
-      case "harvest":showPickup(t.x,t.y,"crop");p.produce=true;p.seeded=false;p.watered=false;p.growth=0;recordTutorial("harvest");break;
+      case "harvest":showPickup(t.x,t.y,"crop");state.firstHarvest=true;p.produce=true;p.seeded=false;p.watered=false;p.growth=0;recordTutorial("harvest");break;
       case "carry":{
         const variety=Crops.get(p.crop)?p.crop:"carrot";
         const amount=Crops.get(variety).food;
