@@ -148,21 +148,21 @@
       if(image?.complete&&image.naturalWidth)
         ctx.drawImage(image,0,0,image.naturalWidth,image.naturalHeight,x+size*.1,y+size*.1,size*.8,size*.8);
       else soil();
-    }else if(key==="hoe"||key==="axe"||key==="shovel"||key==="pickaxe"||key==="wateringCan"){
-      // Miniatura pixelada desenhada com silhueta correta para cada ferramenta:
-      // evita exibir o regador do primeiro quadro do atlas na missão do machado.
-      ctx.save();ctx.translate(x+size*.5,y+size*.48);ctx.scale(size/48,size/48);
-      ctx.rotate(key==="wateringCan"?0:-.65);
-      ctx.fillStyle="#5a3d29";ctx.fillRect(-2,-15,5,35);
-      ctx.fillStyle="#d8b984";ctx.fillRect(-1,-14,2,32);
-      ctx.fillStyle="#344d49";
-      if(key==="hoe"){ctx.fillRect(-18,-18,20,5);ctx.fillRect(-18,-14,6,5);}
-      else if(key==="axe"){ctx.fillRect(-14,-17,22,15);ctx.fillStyle="#97b6a5";ctx.fillRect(-15,-15,10,11);}
-      else if(key==="shovel"){ctx.fillRect(-8,14,15,12);ctx.fillStyle="#95b0a2";ctx.fillRect(-7,17,13,7);}
-      else if(key==="pickaxe"){ctx.fillRect(-21,-20,40,6);ctx.fillStyle="#95b0a2";ctx.fillRect(-20,-18,8,7);}
-      else {ctx.rotate(0);ctx.fillRect(-18,-11,28,20);ctx.fillStyle="#9bb9ae";ctx.fillRect(-15,-9,23,16);
-        ctx.fillStyle="#344d49";ctx.fillRect(10,-17,5,14);ctx.fillRect(14,-18,9,5);}
-      ctx.restore();
+    }else if(["hoe","axe","shovel","pickaxe","wateringCan"].includes(key)){
+      const originalKey=key==="axe"?"stoneAxe":key;
+      const frame=window.TillfolkCrafting?.itemFrame(originalKey);
+      if(frame){
+        // A missão e a Work Station usam os MESMOS pixels da spritesheet premium.
+        // O objetivo Machado de pedra aponta para seu quadro próprio, não para regador.
+        stamp(ctx,"items",frame.x,frame.y,frame.w,frame.h,
+          x+size*.12,y+size*.12,size*.76,size*.76);
+      }else{
+        // Sem frame identificado no pack, manter apenas um ícone provisório.
+        const icon={shovel:"🪏",pickaxe:"⛏️"}[key]||"❔";
+        ctx.font=Math.round(size*.59)+"px system-ui,sans-serif";
+        ctx.textAlign="center";ctx.textBaseline="middle";
+        ctx.fillText(icon,x+size*.5,y+size*.52);
+      }
     }else if(key==="grass"||key==="seed"){
       // O mesmo frame que o cenário usa em wild-world.js para grass.
       stamp(ctx,"forage",0,32,16,16,x+size*.1,y+size*.08,size*.8,size*.8);
