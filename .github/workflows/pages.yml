@@ -35,7 +35,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
-          cp index.html styles.css menu.css menu-layout.css menu-refinement.css game-hud.css sprout-ui.css game-polish.css fullscreen-game.css house-building.css task-orders.css team-ux.css ui-polish.css _site/
+          cp index.html styles.css menu.css menu-layout.css menu-refinement.css game-hud.css sprout-ui.css game-refinement.css game-polish.css fullscreen-game.css house-building.css task-orders.css team-ux.css ui-polish.css _site/
           cp src/game.js src/wild-world.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
@@ -53,6 +53,8 @@ jobs:
           test -f _site/menu-refinement.css
           test -f _site/game-hud.css
           test -f _site/sprout-ui.css
+          test -f _site/game-refinement.css
+          grep -q 'game-refinement.css' _site/index.html
           test -f _site/src/sprout-ui-skin.js
           grep -q 'sprout-ui.css' _site/index.html
           test -f _site/src/game-hud.js
