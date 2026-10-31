@@ -20,6 +20,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verificar JavaScript
         run: |
+          node --check src/biomes.js
           node --check src/wild-world.js
           node --check src/game.js
           node --check src/game-hud.js
@@ -36,7 +37,7 @@ jobs:
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
           cp index.html styles.css menu.css menu-layout.css menu-refinement.css game-hud.css sprout-ui.css game-refinement.css camera-ui.css game-polish.css fullscreen-game.css house-building.css task-orders.css team-ux.css ui-polish.css _site/
-          cp src/game.js src/wild-world.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
+          cp src/biomes.js src/game.js src/wild-world.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
@@ -47,6 +48,7 @@ jobs:
           test -f _site/public/assets/sprout-lands/terrain/grass.png
           test -f _site/public/assets/sprout-lands/farming/crops.png
           test -f _site/public/assets/tillfolk/menu-landscape.svg
+          test -f _site/src/biomes.js
           test -f _site/src/wild-world.js
           test -f _site/src/menu.js
           test -f _site/src/tutorial.js
