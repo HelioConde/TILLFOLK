@@ -85,7 +85,7 @@
     }
     // Bosque e depósito de pedras mantêm recursos suficientes, sem virar uma parede.
     const counts=world.objects.reduce((r,o)=>(r[o.kind]=(r[o.kind]||0)+1,r),{});
-    for(const [kind,min] of [["tree",16],["boulder",11],["mushroom",12],["flowers",24],["grass",24]]){
+    for(const [kind,min] of [["tree",16],["boulder",11],["mushroom",12],["flowers",24],["grass",30],["twig",75]]){
       let needed=Math.max(0,min-(counts[kind]||0)),attempts=0;
       while(needed>0&&attempts++<600){
         const x=1+Math.floor(random()*(w-2)),y=1+Math.floor(random()*(h-2));
