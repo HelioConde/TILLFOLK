@@ -27,7 +27,7 @@
   }
   /* Uma etapa pode ser enfileirada antes de seus pré-requisitos: fica aguardando.
      "Aguardando" não inicia trabalhos adicionais por conta própria. */
-  function status(order,plot,object,resources){
+  function baseStatus(order,plot,object,resources){
     // Ordens de coleta da lagoa não precisam de terreno cultivável.
     if(order.type==="collectWater")
       return resources?.world?.water?.some(w=>w.x===order.x&&w.y===order.y)
@@ -88,6 +88,14 @@
         return plot.produce?{state:"ready",reason:"Pronta"}:{state:"blocked",reason:"Aguardando colheita"};
       default: return {state:"blocked",reason:"Ordem desconhecida"};
     }
+  }
+  function status(order,plot,object,resources){
+    const result=baseStatus(order,plot,object,resources);
+    // Ferramentas bloqueiam só ordens prontas; preserva estado "concluída"
+    // e as mensagens de falta de sementes, madeira e outros pré-requisitos.
+    if(result.state!=="ready")return result;
+    const blocker=window.TillfolkPrologue?.toolBlocker(resources,order.type,object);
+    return blocker?{state:"blocked",reason:blocker}:result;
   }
   function add(orders,type,x,y,plot,object,resources){
     if(!TYPES.includes(type)||!validCell(x,y)||(!plot&&!["collectWater","collectManure"].includes(type)))return {error:"Escolha um terreno válido."};
