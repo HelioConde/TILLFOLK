@@ -100,3 +100,62 @@ body:not(.play-session) #crop-catalog-dialog,body:not(.play-session) #workshop-d
 .worker-inventory-items>span{background:#405842;border:1px solid #769373;
   color:#f0eacb;border-radius:5px;padding:6px 9px;font:700 11px system-ui}
 .worker-inventory-tools p,.worker-inventory-items p{grid-column:1/-1;font-size:12px;line-height:1.5}
+
+/* Controle flutuante da prioridade: fora da lista de obras, no canto direito. */
+.construction-priority[hidden]{display:none!important}
+body.play-session #construction-priority:not([hidden]){
+  position:fixed!important;left:auto!important;top:auto!important;
+  right:max(12px,env(safe-area-inset-right))!important;
+  bottom:max(12px,env(safe-area-inset-bottom))!important;
+  z-index:18;display:grid!important;
+  grid-template-columns:36px 30px 36px;
+  grid-template-areas:"title title title" "minus number plus" "hint hint hint";
+  justify-content:center;justify-items:center;align-items:center;
+  gap:5px 9px;width:184px;max-width:calc(100vw - 18px);
+  padding:9px 8px 8px;border:3px solid #b89a6b!important;border-radius:5px;
+  background:linear-gradient(180deg,#344b36f8,#243c2df9)!important;
+  color:#f2e5c0;box-shadow:inset 0 0 0 1px #61784f,0 4px 0 #322b1d,0 9px 22px #091e14ac;
+  font:800 11px/1.2 system-ui,sans-serif;
+}
+body.play-session #construction-priority > span{
+  grid-area:title;text-align:center;font-size:11px;font-weight:900;white-space:nowrap;
+}
+body.play-session #construction-priority > button{
+  display:grid;place-items:center;
+  width:36px;height:34px;min-width:36px;min-height:34px;padding:0!important;
+  border:2px solid #c7b187;border-radius:3px;
+  background:#435f43;color:#fff1ce;font:bold 18px/1 system-ui,sans-serif;cursor:pointer;
+}
+body.play-session #construction-priority > button:first-of-type{grid-area:minus}
+body.play-session #construction-priority > button:last-of-type{grid-area:plus}
+body.play-session #construction-priority > button:hover{background:#8ba974!important;color:#203526!important}
+body.play-session #construction-priority > button:focus-visible{outline:3px solid #ffefbd;outline-offset:2px}
+body.play-session #construction-priority > strong{
+  grid-area:number;text-align:center;font:900 21px/1 system-ui,sans-serif;
+  color:#ffdf8b;font-variant-numeric:tabular-nums;
+}
+body.play-session #construction-priority > small{
+  grid-area:hint;color:#c9dab8;font:700 9px/1.2 system-ui,sans-serif;
+  text-align:center;white-space:nowrap;
+}
+/* Em telas estreitas, acima da barra principal e abaixo do menu de obras. */
+@media(max-width:960px){
+  body.play-session #construction-priority:not([hidden]){
+    right:max(8px,env(safe-area-inset-right))!important;
+    bottom:calc(96px + env(safe-area-inset-bottom,0px))!important;
+  }
+  body.play-session .construction-panel:not([hidden]){
+    bottom:calc(204px + env(safe-area-inset-bottom,0px))!important;
+    max-height:min(33dvh,260px)!important;
+  }
+}
+@media(max-width:460px){
+  body.play-session #construction-priority:not([hidden]){
+    width:171px;column-gap:7px;row-gap:3px;padding:7px 6px;
+    bottom:calc(90px + env(safe-area-inset-bottom,0px))!important;
+  }
+  body.play-session .construction-panel:not([hidden]){
+    bottom:calc(187px + env(safe-area-inset-bottom,0px))!important;
+    max-height:32dvh!important;
+  }
+}
