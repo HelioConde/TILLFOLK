@@ -64,3 +64,49 @@ body.play-session .prologue-card{
  .workshop-scroll-hint{display:block!important;margin:0 0 9px!important;font-weight:700!important;color:#d7e9ad!important}
  .workshop-dialog{max-height:85dvh}
 }
+
+/* Escolha de 3 modos: tutorial destacado, sobrevivência e tranquila. */
+#mode-dialog{width:min(1050px,calc(100vw - 24px));max-width:1050px}
+#mode-dialog .mode-choices{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#mode-dialog .mode-choice{min-width:0;min-height:255px;padding:14px;gap:8px}
+#mode-dialog .mode-choice strong{font-size:clamp(16px,1.8vw,20px)}
+#mode-dialog .mode-art{max-width:100%;height:auto;image-rendering:pixelated}
+#mode-dialog .tutorial-choice{border-color:#bedb8d;background:#3f5e3e;box-shadow:inset 0 -6px #2c432d}
+#mode-dialog .tutorial-choice em{color:#f5eda7}
+/* Balão vinculado à posição do colono no canvas; nunca bloqueia cliques. */
+body.play-session .tutorial-speech{
+ display:flex;flex-direction:column;gap:4px;position:fixed;z-index:15;
+ width:min(230px,calc(100vw - 22px));padding:9px 12px;
+ color:#263f30;background:#f9f0d1;border:2px solid #567d56;
+ border-radius:11px;box-shadow:0 5px 0 #183321aa,0 8px 22px #071c11a0;
+ pointer-events:none;font:650 12px/1.35 system-ui,sans-serif;
+}
+body.play-session .tutorial-speech::after{
+ content:"";position:absolute;bottom:-9px;left:calc(50% - 7px);
+ width:13px;height:13px;background:#f9f0d1;
+ border-right:2px solid #567d56;border-bottom:2px solid #567d56;
+ transform:rotate(45deg);
+}
+#tutorial-speaker{font:900 12px/1.2 system-ui,sans-serif;color:#326344}
+#tutorial-speech-text{color:#24392a}
+body.play-session #tutorial-speech[hidden],body.play-session #prologue-card[hidden]{display:none!important}
+.workshop-tool{border-color:#a7cf81!important}
+@media(max-width:750px){
+ #mode-dialog .mode-choices{grid-template-columns:1fr;gap:10px}
+ #mode-dialog .mode-choice{min-height:0;display:grid;grid-template-columns:90px 1fr;grid-template-rows:auto auto auto;align-items:center;column-gap:12px;padding:12px}
+ #mode-dialog .mode-art{grid-column:1;grid-row:1/4;width:90px}
+ #mode-dialog .mode-choice strong,#mode-dialog .mode-choice small,#mode-dialog .mode-choice em{grid-column:2}
+ #mode-dialog .mode-choice strong{font-size:17px}
+ #mode-dialog .mode-choice small{line-height:1.35;font-size:12px}
+ #mode-dialog .mode-choice em{margin:0;font-size:9px}
+ #mode-dialog{padding:14px;max-height:90dvh}
+}
+@media(max-width:460px){
+ body.play-session .tutorial-speech{width:min(186px,calc(100vw - 22px));font-size:11px;padding:8px 10px}
+ #mode-dialog .mode-choice{grid-template-columns:70px 1fr}
+ #mode-dialog .mode-art{width:70px}
+}
+@media(prefers-reduced-motion:reduce){
+ #mode-dialog .mode-choice{transition:none}
+ #mode-dialog .mode-choice:hover{transform:none}
+}
