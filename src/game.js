@@ -1,16 +1,18 @@
 "use strict";
 (() => {
-  const TILE = 32, W = 28, H = 18, SAVE_KEY = "tillfolk-v01";
+  const TILE = 32, W = 80, H = 50, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01";
   const World=window.TillfolkWild,Orders=window.TillfolkOrders;
   if(!Orders)throw new Error("Carregue src/task-orders.js antes do motor TILLFOLK.");
+  Orders.setBounds(W,H);
   if(!World)throw new Error("Carregue src/wild-world.js antes do motor TILLFOLK.");
   const canvas = document.querySelector("#world"), ctx = canvas.getContext("2d");
+  canvas.width=W*TILE;canvas.height=H*TILE;
   const $ = (s) => document.querySelector(s);
   let worldPanX=0,worldPanY=0,panPointer=null,suppressMapClick=false;
   // A câmera tem escala renderizada e escala desejada: a roda não salta entre quadros.
   let cameraZoom=1,targetCameraZoom=1,cameraAnchor=null,lastCameraFrame=0,lastMinimapFrame=-1000;
-  const ZOOM_MIN=1,ZOOM_MAX=4;
-  const zoomSteps=[1,1.25,1.5,1.75,2,2.5,3,3.5,4];
+  const ZOOM_MIN=1,ZOOM_MAX=6;
+  const zoomSteps=[1,1.25,1.5,1.75,2,2.5,3,4,5,6];
   const movementKeys=new Set(),activeTouches=new Map();
   let pinchGesture=null;
   const minimap=document.querySelector("#minimap"),miniCtx=minimap?.getContext("2d");
@@ -55,7 +57,9 @@
     if(document.body.classList.contains("play-session")){
       const view=$(".canvas-scroll").getBoundingClientRect();
       if(view.width<1||view.height<1)return;
-      const scale=Math.max(view.width/canvas.width,view.height/canvas.height)*cameraZoom;
+      // O zoom 100% conserva a escala visual da antiga área 28x18.
+      // O mundo é maior, mas os personagens não viram pontos minúsculos.
+      const scale=Math.max(view.width/(BASE_W*TILE),view.height/(BASE_H*TILE))*cameraZoom;
       canvas.style.width=Math.ceil(canvas.width*scale)+2+"px";
       canvas.style.height=Math.ceil(canvas.height*scale)+2+"px";
       clampWorldPan();
@@ -141,7 +145,7 @@
   }
   function resetCamera(){
     cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;worldPanX=0;worldPanY=0;
-    fitWorldCanvas();clampWorldPan();syncCameraButtons();
+    fitWorldCanvas();focusCameraAt(state?.spawn?.x??W/2,state?.spawn?.y??H/2);syncCameraButtons();
   }
   function paintMinimap(){
     if(!playing||!state||!minimap||!miniCtx||minimap.hidden)return;
@@ -209,7 +213,7 @@
     }
     if(key==="shift"){movementKeys.add("shift");return;}
     if(event.repeat)return;
-    if(key==="h"){event.preventDefault();focusCameraAt(W/2,H/2);return;}
+    if(key==="h"){event.preventDefault();focusCameraAt(state?.spawn?.x??W/2,state?.spawn?.y??H/2);return;}
     if(key==="m"){$("#minimap-toggle").click();return;}
     if(key==="+"||key==="="){event.preventDefault();$("#zoom-in").click();}
     if(key==="-"){event.preventDefault();$("#zoom-out").click();}
@@ -404,10 +408,10 @@
     }
     const team = chosenStarters.slice(0,2).map((c,i)=>({
       id:i+1,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,
-      appearance:c.appearance ?? i,personalPriority:{},x:13.5+i,y:9.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
+      appearance:c.appearance ?? i,personalPriority:{},x:W/2-.5+i,y:H/2-.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0
     }));
     state = {day:1,minutes:8*60,coins:220,seeds:0,water:0,food:8,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",
-      plots,orders:[],world,house:window.TillfolkHouseBuilder.initial(),homes:[],animals:[],inventory:{wood:15,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
+      plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),homes:[],animals:[],inventory:{wood:15,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     tasks=[]; simSpeed=1; updateSpeed();
@@ -423,11 +427,27 @@
       if(!Array.isArray(s.orders))state.plots.forEach(p=>{p.selected=false;});
       // Salvamentos antigos continuam válidos: a geração não apaga cultivos já feitos.
       if(!state.world){
-        state.world=World.create((Date.now()>>>0),W,H,[
+        state.world=World.create((Date.now()>>>0),BASE_W,BASE_H,[
           ...state.plots.filter(p=>p.selected||p.tilled||p.seeded),
           ...state.workers.map(w=>({x:Math.floor(w.x),y:Math.floor(w.y)}))
         ]);
       }
+      const legacySize=state.world.width!==W||state.world.height!==H||
+        state.world.version<2;
+      if(legacySize){
+        // Migração aditiva: mantém a fazenda 28x18 intacta, expande só o exterior.
+        const previousWidth=state.world.width||BASE_W,
+          previousHeight=state.world.height||BASE_H;
+        state.world=World.expand(state.world,W,H,previousWidth,previousHeight);
+        const registered=new Set(state.plots.map(p=>p.x+","+p.y));
+        for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+          const id=x+","+y;
+          if(!registered.has(id)&&!World.waterAt(state.world,x,y)){
+            state.plots.push(makePlot(x,y));
+          }
+        }
+        state.spawn=s.spawn||{x:14,y:10};
+      }else state.spawn=s.spawn||{x:W/2,y:H/2};
       state.inventory=state.inventory||{wood:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0};
       state.inventory.manure=Math.max(0,Number(state.inventory.manure)||0);
       state.homes=Array.isArray(s.homes)?s.homes.filter(h=>Number.isInteger(h.x)&&Number.isInteger(h.y)&&h.x>=2&&h.y>=2):[];
@@ -456,7 +476,7 @@
         if(w.carryingManure)state.inventory.manure++;
         w.carryingWater=false;w.carryingManure=false;w.supplyStage=null;w.supplyTarget=null;
         w.task=null;w.progress=0;w.personalPriority=w.personalPriority||{};
-        w.x=Number.isFinite(w.x)?w.x:13.5;w.y=Number.isFinite(w.y)?w.y:9.5;
+        w.x=Number.isFinite(w.x)?w.x:state.spawn.x;w.y=Number.isFinite(w.y)?w.y:state.spawn.y;
         w.route=[];w.routeTask=null;w.facing=w.facing||"down";w.moving=false;w.walkFrame=0;
       });
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
@@ -479,7 +499,10 @@
     $("#minimap-toggle").setAttribute("aria-expanded",String(!minimap.hidden));
     $("#minimap-toggle").textContent=minimap.hidden?"+":"−";
     syncCameraButtons();
-    requestAnimationFrame(fitWorldCanvas);
+    requestAnimationFrame(()=>{
+      fitWorldCanvas();
+      focusCameraAt(state.spawn?.x??W/2,state.spawn?.y??H/2);
+    });
     // O HUD contextual já explica a ação; não obstruir o mapa com aviso ao iniciar.
   }
   // Somente ordens solicitadas pelo jogador entram na fila. Nenhuma etapa é
@@ -1043,7 +1066,7 @@
     if(housingVacancy()<1){notify("Construa uma casa livre para o novo ajudante.");return;}
     if(state.coins<c.cost){notify("Moedas insuficientes.");return;}
     state.coins-=c.cost;
-    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},x:13.5,y:9.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0});
+    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},x:state.spawn.x,y:state.spawn.y,task:null,progress:0,facing:"down",moving:false,walkFrame:0});
     assignHomes();
     state.candidates[i]=newCandidate();
     log(c.name+" entrou para a equipe.");
