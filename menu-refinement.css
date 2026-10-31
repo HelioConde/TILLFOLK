@@ -117,3 +117,33 @@
     padding:8px 10px;
   }
 }
+
+
+/* Configurações: backup local seguro, sem bloquear ações do diálogo. */
+#title-settings-dialog .save-backup-actions{
+  margin-top:15px;padding:14px;border-radius:10px;
+  background:var(--surface-2,#2b4437);border:1px solid var(--border,#405c49);
+}
+#title-settings-dialog .save-backup-actions h3{
+  margin:0 0 5px;color:var(--cream,#f8efd8);font-size:16px;
+}
+#title-settings-dialog .save-backup-actions p{
+  margin:4px 0 10px;color:var(--muted,#c7d6bd);
+  font:500 13px/1.45 system-ui,sans-serif;
+}
+#title-settings-dialog .save-backup-buttons{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+}
+#title-settings-dialog .save-backup-buttons button{
+  min-height:44px;min-width:0;white-space:normal;
+  margin:0;font:700 13px/1.25 system-ui,sans-serif;
+}
+#title-settings-dialog #save-backup-status{
+  min-height:18px;margin:8px 0 0;color:var(--green,#b6de81);
+}
+#title-settings-dialog #save-backup-status[data-state="error"]{
+  color:var(--red,#f4b0a7);
+}
+@media(max-width:490px){
+  #title-settings-dialog .save-backup-buttons{grid-template-columns:1fr}
+}
