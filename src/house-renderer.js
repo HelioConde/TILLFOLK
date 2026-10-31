@@ -26,7 +26,7 @@
 
   function dimensions(scale=2){
     const cell=TILE*scale;
-    return {width:ROOF_COLS*cell,height:(ROOF_ROWS+WALL_ROWS-1)*cell,cell};
+    return {width:ROOF_COLS*cell,height:(ROOF_ROWS+WALL_ROWS)*cell,cell};
   }
 
   function draw(ctx,assets,x,y,{scale=2,roofVisible=true}={}){
@@ -35,7 +35,9 @@
     if(!ctx||typeof ctx.drawImage!=="function")
       throw new TypeError("Canvas 2D obrigatório");
     const cell=TILE*scale,originX=Math.round(x),originY=Math.round(y);
-    const facadeX=originX+cell,facadeY=originY+(ROOF_ROWS-1)*cell;
+    // O beiral frontal precisa ficar ACIMA das janelas, nunca atravessá-las.
+    // A fachada começa uma célula mais baixa, sem alterar o telhado aprovado.
+    const facadeX=originX+cell,facadeY=originY+ROOF_ROWS*cell;
     const stats={drawn:0,stretched:0,roof:0,walls:0,windows:0,doors:0,chimneys:0};
     ctx.imageSmoothingEnabled=false;
 
@@ -51,8 +53,8 @@
       stats.drawn++;
     }
 
-    // 1. Fachada e aberturas atrás do telhado.
-    // A posição de portas, janelas e paredes é preservada.
+    // 1. Fachada atrás do telhado. Preserva os tiles e o alinhamento horizontal
+    // de portas/janelas; o encaixe vertical evita que fiquem à frente do beiral.
     for(let row=0;row<WALL_ROWS;row++){
       for(let col=0;col<WALL_COLS;col++){
         const [sx,sy]=wallAtlas(col,row);
@@ -94,7 +96,7 @@
       }
       stamp("roof",5,0,originX+3*cell,originY+roofDrop+2*cell);
       stats.chimneys++;
-      if(canClip)ctx.restore();
+      // Nenhuma máscara: a cobertura tem precedência visual real.
     }
 
     return {...stats,...dimensions(scale),x:originX,y:originY,scale};

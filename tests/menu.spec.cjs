@@ -503,7 +503,7 @@ test('Casa Slime-Harvest: 5 faixas originais, escala 2x, captura real',async({pa
   expect(result.center).toEqual([[1,0],[1,1],[1,2],[1,3],[1,4]]);
   expect(result.left.map(t=>t[0])).toEqual([0,0,0,0,0]);
   expect(result.right.map(t=>t[0])).toEqual([2,2,2,2,2]);
-  expect(result.dimensions).toEqual({width:224,height:256,cell:32});
+  expect(result.dimensions).toEqual({width:224,height:288,cell:32});
   const fs=require('node:fs');
   fs.mkdirSync('screenshots',{recursive:true});
   const data=await page.locator('#title-scene').evaluate(c=>c.toDataURL('image/png').split(',')[1]);
@@ -540,8 +540,8 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
   });
   expect(result.stats.stretched).toBe(0);
   expect(result.stats.walls).toBe(20);
-  expect(result.windows.map(w=>[w.dx,w.dy])).toEqual([[64,224],[128,224]]);
-  expect(result.doors.map(d=>[d.dx,d.dy,d.dw,d.dh])).toEqual([[96,224,32,32]]);
+  expect(result.windows.map(w=>[w.dx,w.dy])).toEqual([[64,256],[128,256]]);
+  expect(result.doors.map(d=>[d.dx,d.dy,d.dw,d.dh])).toEqual([[96,256,32,32]]);
   expect(result.roofMin).toBe(96);
   expect(result.roofMax).toBe(256);
   expect(result.rooftopCount).toBe(36);
@@ -549,11 +549,14 @@ test('Casa: janelas e porta alinhadas ao corpo reduzido e telhado sobreposto', a
   expect(result.roofBeforeWindows).toBe(false);
   expect(result.roofOverWalls).toBe(true);
   expect(result.windowsDrawnAboveRoof).toBe(false);
+  // Cobertura em primeiro plano E a janela começa exatamente onde termina
+  // o último tile do beiral: não existem recortes nem sobreposição indevida.
+  expect(result.windows.every(w=>w.dy===result.roofMax)).toBe(true);
 });
 
 
 
-test('Telhado em primeiro plano com máscara para portas e janelas',async({page})=>{
+test('Telhado em primeiro plano, sem recortes nas janelas e porta',async({page})=>{
   await page.setViewportSize({width:1366,height:768});
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
   const detail=await page.evaluate(async()=>{
@@ -577,6 +580,9 @@ test('Telhado em primeiro plano com máscara para portas e janelas',async({page}
   expect(detail.firstRoof).toBeGreaterThan(detail.lastWall);
   expect(detail.firstRoof).toBeGreaterThan(detail.lastDoor);
   expect(detail.lastDraw).toBe('roof');
+  const source=require('node:fs').readFileSync('src/house-renderer.js','utf8');
+  expect(source).not.toMatch(/ctx\.clip\(/);
+  expect(source).not.toMatch(/roofMask/);
   expect(detail.png).toMatch(/^data:image\/png;base64,/);
   await page.screenshot({path:'screenshots/casa-telhado-primeiro-plano-1366x768.png',animations:'disabled'});
 });

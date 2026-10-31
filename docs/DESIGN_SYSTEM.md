@@ -62,3 +62,9 @@ Casa do menu e do mapa desenhada com escala 2× exata: cada tile 16×16 ocupa 32
 - O telhado desce três tiles originais de 16px (+48 px na cena), mantendo o total de cinco faixas.
 - O telhado agora é desenhado antes da fachada; a sobreposição não encobre janelas e porta.
 - Testes Playwright conferem coordenadas exatas, proporção e ordem de camadas; salvar screenshot do menu após cada alteração.
+
+### Correção definitiva de camadas da casa (fachada × telhado)
+- O telhado do menu fica em primeiro plano, com `roofDrop=6*TILE`, sem furos ou máscaras especiais para portas e janelas.
+- A fachada começa após o encontro do beiral (um tile renderizado abaixo do início anterior). As janelas e a porta ficam **abaixo** da cobertura, nunca atravessando seus sprites.
+- Ordem do Canvas: paredes → janelas/porta → telhado, com beiral integral.
+- Testes Playwright exigem `window.y === roof.bottom`, verificam a ordem real dos desenhos e rejeitam recortes de `ctx.clip` no renderizador.
