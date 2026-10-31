@@ -2,9 +2,9 @@
 /* Um colono pode escolher uma ordem existente, mas nunca criar novas ordens.
    A lista pertence ao jogador e é salva em state.orders. Sem backend. */
 (() => {
-  const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry","collectWater","collectManure","buildHome","buildStation"]);
-  const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina"});
-  const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️"});
+  const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry","collectWater","collectManure","buildHome","buildStation","craftTool"]);
+  const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina",craftTool:"Fabricar ferramenta"});
+  const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️",craftTool:"⚒️"});
   let worldWidth=28,worldHeight=18;
   function setBounds(width,height){
     if(Number.isInteger(width)&&Number.isInteger(height)&&width>=28&&height>=18){
@@ -12,15 +12,17 @@
     }
   }
   const validCell=(x,y)=>Number.isInteger(x)&&Number.isInteger(y)&&x>=1&&x<worldWidth-1&&y>=1&&y<worldHeight-1;
-  const id=(type,x,y)=>x+"-"+y+":"+type;
+  const id=(type,x,y,recipe="")=>x+"-"+y+":"+type+(type==="craftTool"?":"+recipe:"");
   function normalize(raw) {
     if(!Array.isArray(raw))return [];
     const result=[],seen=new Set();
     for(const order of raw){
       if(!order||!TYPES.includes(order.type)||!validCell(order.x,order.y))continue;
-      const key=id(order.type,order.x,order.y);
+      if(order.type==="craftTool"&&!window.TillfolkCrafting?.recipe(order.recipe))continue;
+      const key=id(order.type,order.x,order.y,order.recipe);
       if(seen.has(key))continue;
-      seen.add(key);result.push({id:key,type:order.type,x:order.x,y:order.y,...(order.type==="sow"&&typeof order.crop==="string"&&window.TillfolkCrops?.get(order.crop)?{crop:order.crop}:{}),...(Number.isInteger(order.priority)?{priority:Math.max(1,Math.min(9,order.priority))}:{})});
+      seen.add(key);result.push({id:key,type:order.type,x:order.x,y:order.y,
+        ...(order.type==="craftTool"?{recipe:order.recipe}:{}),...(order.type==="sow"&&typeof order.crop==="string"&&window.TillfolkCrops?.get(order.crop)?{crop:order.crop}:{}),...(Number.isInteger(order.priority)?{priority:Math.max(1,Math.min(9,order.priority))}:{})});
       if(result.length>=1500)break;
     }
     return result;
@@ -39,6 +41,18 @@
       const animal=resources.animals.find(a=>Math.floor(a.x)===order.x&&Math.floor(a.y)===order.y);
       return animal?.manure>0?{state:"ready",reason:"Esterco disponível"}
         :{state:"blocked",reason:"Aguardando esterco do animal"};
+    }
+    if(order.type==="craftTool"){
+      const recipe=window.TillfolkCrafting?.recipe(order.recipe);
+      if(!recipe)return {state:"blocked",reason:"Receita desconhecida"};
+      if(!resources?.crafting?.station)return {state:"blocked",reason:"Construa a Work Station"};
+      if(window.TillfolkCrafting.locked(resources,recipe.key))
+        return {state:"blocked",reason:window.TillfolkCrafting.locked(resources,recipe.key)};
+      if(resources?.workers?.length&&resources.workers.every(w=>w.inventory?.tools?.[recipe.key]))
+        return {state:"done",reason:"Todos os colonos já possuem "+recipe.name};
+      const materials=window.TillfolkCrafting.missing(resources,recipe.cost);
+      return materials.length?{state:"blocked",reason:"Materiais insuficientes para "+recipe.name}:
+        {state:"ready",reason:"Ir até a Work Station e fabricar "+recipe.name};
     }
     if(order.type==="buildStation"){
       if(resources?.crafting?.station||resources?.workstations?.length)
