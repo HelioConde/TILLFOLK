@@ -14,7 +14,7 @@ const state=()=>({
 const plot={x:10,y:10,dirty:false,tilled:false,seeded:false,watered:false,produce:false,growth:0};
 test("a primeira bancada requer muitos gravetos e não nasce pronta",()=>{
   const s=state();assert.equal(s.crafting.station,null);
-  assert.deepEqual(Object.values(s.crafting.equipment),[false,false,false,false,false]);
+  assert.ok(Object.values(s.crafting.equipment).every(value=>value===false));
   assert.equal(C.STATION_COST,30);
   assert.equal(C.canBuild(s),false);
   assert.equal(O.status({type:"buildStation",x:10,y:10},plot,null,s).state,"blocked");
@@ -41,6 +41,7 @@ test("fabricar consome recursos, persiste ferramenta e libera a ordem",()=>{
   assert.equal(s.inventory.grass,0);
   assert.equal(C.has(s,"axe"),true);
   assert.equal(C.blocked(s,"clear",{kind:"tree"}),null);
+  assert.match(C.blocked(s,"clear",{kind:"gateLog"}),/machado de pedra/);
   assert.equal(O.status({type:"clear",x:10,y:10},plot,{kind:"tree"},s).state,"ready");
   assert.match(C.craft(s,"axe").error,/já foi fabricado/);
   assert.equal(C.normalize(s.crafting).equipment.axe,true);
