@@ -381,3 +381,19 @@ body.play-session .hud-selection{bottom:calc(clamp(13px,2vh,23px) + 109px)}
 /* Notificações temporárias nunca cobrem as fichas e prioridades do jogador. */
 body.play-session.drawer-open #toast{display:none!important}
 body.play-session .orders-panel:not([hidden]) ~ #toast{display:none!important}
+
+/* Alternar seleção por área no celular sem adicionar um sexto ícone à barra. */
+body.play-session .hud-selection #drag-mode{
+  pointer-events:auto;cursor:pointer;white-space:nowrap;
+  font:800 10px system-ui,sans-serif;padding:4px 7px;
+  border:1px solid #bbaa7a;border-radius:4px;background:#284e3b;color:#f9e8b9;
+}
+body.play-session .hud-selection #drag-mode[aria-pressed="true"]{
+  background:#e3e9aa;color:#273d2e;border-color:#eff7d1;
+}
+body.play-session #world{touch-action:none}
+@media(max-width:460px){
+  body.play-session .hud-selection{gap:5px!important;padding:3px 6px!important}
+  body.play-session .hud-selection #drag-mode{font-size:9px;padding:4px 5px}
+  body.play-session .hud-selection strong{font-size:10px}
+}
