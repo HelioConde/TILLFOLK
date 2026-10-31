@@ -199,6 +199,7 @@
   $("#zoom-reset").addEventListener("click",resetCamera);
   $("#minimap-toggle").addEventListener("click",()=>{
     minimap.hidden=!minimap.hidden;
+    $("#biome-legend").hidden=minimap.hidden;
     $("#minimap-toggle").setAttribute("aria-expanded",String(!minimap.hidden));
     $("#minimap-toggle").textContent=minimap.hidden?"+":"−";
     if(!minimap.hidden)paintMinimap();
@@ -207,6 +208,13 @@
     const rect=minimap.getBoundingClientRect();
     focusCameraAt((event.clientX-rect.left)/rect.width*W,
       (event.clientY-rect.top)/rect.height*H);
+  });
+  $("#biome-legend").addEventListener("click",event=>{
+    const chosen=event.target.closest("[data-visit-biome]");
+    if(!chosen||!state?.world)return;
+    const position=state.world.biomeMap?.indexOf(chosen.dataset.visitBiome)??-1;
+    if(position<0)return;
+    focusCameraAt(position%W+.5,Math.floor(position/W)+.5);
   });
   minimap.addEventListener("keydown",event=>{
     const move={ArrowUp:[0,-1.5],ArrowDown:[0,1.5],ArrowLeft:[-1.5,0],ArrowRight:[1.5,0]}[event.key];
@@ -515,6 +523,7 @@
     worldPanX=0;worldPanY=0;cameraZoom=1;targetCameraZoom=1;cameraAnchor=null;
     movementKeys.clear();activeTouches.clear();pinchGesture=null;hoveredTile=null;feedbackParticles.length=0;closeDrawer();refresh();save();
     minimap.hidden=window.innerWidth<=700;
+    $("#biome-legend").hidden=minimap.hidden;
     $("#minimap-toggle").setAttribute("aria-expanded",String(!minimap.hidden));
     $("#minimap-toggle").textContent=minimap.hidden?"+":"−";
     syncCameraButtons();
