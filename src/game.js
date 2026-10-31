@@ -550,7 +550,7 @@
     }
     const assigned=new Map(state.workers.filter(w=>w.task).map(w=>[w.task,w.id]));
     tasks=state.orders.map(order=>{
-      const p=state.plots.find(p=>p.x===order.x&&p.y===order.y);
+      const p=findPlot(order.x,order.y);
       const result=Orders.status(order,p,World.at(state.world,order.x,order.y),state);
       return {...order,status:result.state,reason:result.reason,assigned:assigned.get(order.id)||null};
     });
@@ -640,7 +640,7 @@
     for(const entry of ranked)assign(entry.worker);
   }
   function finish(w,t){
-    const p=state.plots.find(p=>p.x===t.x&&p.y===t.y);
+    const p=findPlot(t.x,t.y);
     if(t.type==="collectWater"){
       if(!World.waterAt(state.world,t.x,t.y))return false;
       state.water+=4;log(w.name+" buscou 4 baldes de água na lagoa.");return true;
@@ -811,7 +811,6 @@
   }
   function draw(){
     if(!state)return;
-    ctx.clearRect(0,0,canvas.width,canvas.height);
     // Nada pré-construído: a paisagem vem do seed salvo com a partida.
     const screen=$(".canvas-scroll").getBoundingClientRect(),surface=canvas.getBoundingClientRect();
     const visibleBounds={
@@ -822,6 +821,11 @@
     };
     const inView=(x,y,margin=0)=>x>=visibleBounds.x0-margin&&x<=visibleBounds.x1+margin&&
       y>=visibleBounds.y0-margin&&y<=visibleBounds.y1+margin;
+    // Limpar apenas a área visível; o minimapa é renderizado a partir dos dados
+    // do mundo, então não depende do canvas completo em todos os quadros.
+    ctx.clearRect(visibleBounds.x0*TILE,visibleBounds.y0*TILE,
+      (visibleBounds.x1-visibleBounds.x0+1)*TILE,
+      (visibleBounds.y1-visibleBounds.y0+1)*TILE);
     World.drawGround(ctx,sprite,state.world,W,H,TILE,part,visibleBounds);
     // Construções vivem no save e compartilham o mesmo atlas da referencia Godot.
     window.TillfolkHouseBuilder.draw(ctx,sprite,part,state.house,{
@@ -1128,7 +1132,16 @@
     log(c.name+" entrou para a equipe.");
     renderCandidates();refresh();save();notify(c.name+" contratado(a)!");$("#hire-dialog").close();
   }
-  function findPlot(x,y){return state.plots.find(p=>p.x===x&&p.y===y);}
+  let plotCache={array:null,count:0,index:new Map()};
+  function findPlot(x,y){
+    if(!state?.plots)return null;
+    const plots=state.plots;
+    if(plotCache.array!==plots||plotCache.count!==plots.length){
+      plotCache={array:plots,count:plots.length,
+        index:new Map(plots.map(p=>[p.x+","+p.y,p]))};
+    }
+    return plotCache.index.get(x+","+y)||null;
+  }
   function inspect(p){
     const planned=state.orders.filter(o=>o.x===p.x&&o.y===p.y);
     $("#tile-tooltip").hidden=false;
