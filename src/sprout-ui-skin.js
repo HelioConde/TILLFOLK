@@ -27,4 +27,21 @@
   };
   sheet.onerror=()=>console.warn("TILLFOLK: usando as caixas individuais do pacote Sprout UI.");
   sheet.src=path;
+  const inventory=new Image();
+  inventory.decoding="async";
+  inventory.onload=()=>{
+    if(inventory.naturalWidth!==144||inventory.naturalHeight!==144)return;
+    const tile=(x,y)=>{
+      const c=document.createElement("canvas");c.width=40;c.height=40;
+      const ctx=c.getContext("2d");ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(inventory,x,y,40,40,0,0,40,40);
+      return 'url("'+c.toDataURL("image/png")+'")';
+    };
+    const st=document.documentElement.style;
+    st.setProperty("--sprout-inventory-slot",tile(6,6));
+    st.setProperty("--sprout-inventory-active",tile(54,6));
+    st.setProperty("--sprout-inventory-disabled",tile(102,6));
+    document.documentElement.classList.add("sprout-inventory-ready");
+  };
+  inventory.src="./public/assets/Sprout Lands - UI Pack - Basic pack/emojis-free/emoji style ui/Inventory_Blocks_Spritesheet.png";
 })();
