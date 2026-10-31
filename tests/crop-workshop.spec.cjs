@@ -58,7 +58,6 @@ test("receitas da Work Station produzem machado e sementes com consumo real",asy
  await page.locator('[data-tool="construir"]').click();
  await page.locator("#open-workshop").click();
  const loaded=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
- console.log("WORKSTATION_DEBUG",JSON.stringify({crafting:loaded.crafting,twigs:loaded.inventory.twigs,grass:loaded.inventory.grass,recipes:window.TillfolkCrafting.RECIPES.length}));
  expect(loaded.crafting?.station).toEqual({x:38,y:24});
  expect(loaded.inventory.twigs).toBe(50);
  expect(loaded.inventory.grass).toBe(20);
