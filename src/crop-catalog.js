@@ -2,6 +2,16 @@
 // Catálogo local de 19 cultivos. Todo visual vem dos sprites já versionados no projeto.
 (() => {
   const base="./public/assets/assets/crops/";
+  // Imagens de sementes do próprio pacote premium (Objects/Items).
+  const farmItemsPath="./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items/Farming Plants items.png";
+  let farmItems=null;
+  function farmItemImage(){
+    if(!farmItems&&typeof Image==="function"){
+      farmItems=new Image();farmItems.decoding="async";farmItems.src=farmItemsPath;
+    }
+    return farmItems;
+  }
+
   const specs=[
     ["bamboo","Bambu",16,32,7,2,3,1],["beetroot","Beterraba",16,16,7,1,3,3],
     ["berry","Frutinhas",16,16,7,1,3,1],["broccoli","Brócolis",16,32,7,1,4,2],
@@ -91,5 +101,5 @@
     const available=REGIONS[region]||REGIONS.g;
     return available[Math.min(available.length-1,Math.floor(random()*available.length))];
   }
-  window.TillfolkCrops=Object.freeze({ALL,REGIONS,get:id=>byId.get(id),imageFor,normalizeStock,draw,drawIcons,pickWild});
+  window.TillfolkCrops=Object.freeze({ALL,REGIONS,farmItemImage,get:id=>byId.get(id),imageFor,normalizeStock,draw,drawIcons,pickWild});
 })();
