@@ -33,7 +33,7 @@ test('Mapa 80x50 determinístico com seis biomas, claro inicial e zoom 600%',asy
  await page.screenshot({path:'screenshots/biomas-map-1600x900.png',animations:'disabled'});
  await page.locator('#minimap').click({position:{x:155,y:32}});
  await page.screenshot({path:'screenshots/biomas-gelo-minimapa-1600x900.png',animations:'disabled'});
- for(let i=0;i<10;i++)await page.locator('#zoom-in').click();
+ for(let i=0;i<9;i++)await page.locator('#zoom-in').click();
  await expect(page.locator('#zoom-value')).toHaveText('600%');
  await page.waitForTimeout(400);
  await page.screenshot({path:'screenshots/biomas-zoom-600-1600x900.png',animations:'disabled'});
