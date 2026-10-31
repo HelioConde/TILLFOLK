@@ -25,6 +25,7 @@ jobs:
           node --check src/game.js
           node --check src/crop-catalog.js
           node --check src/crafting.js
+          node --test tests/crafting.test.cjs
           node --test tests/crops.test.cjs
           node --check src/missions.js
           node --test tests/tutorial-missions.test.cjs
