@@ -1357,15 +1357,51 @@
       ctx.strokeRect(cx-5-elapsed*10,cy-5-elapsed*10,10+elapsed*20,10+elapsed*20);
       ctx.globalAlpha=1;
     }
-    // O item salta no cenário, sobe e desaparece; o canto mantém o histórico por alguns segundos.
+    // Drop estilo farming: cai e quica TRÊS vezes, com altura decrescente.
+    // Desenha o mesmo sprite usado pelo objeto no mapa, não uma folha genérica.
     for(let i=pickupEffects.length-1;i>=0;i--){
-      const p=pickupEffects[i],t=(now-p.start)/1450;
-      if(t>=1){pickupEffects.splice(i,1);continue;}
-      const x=(p.x+.5)*TILE,y=p.y*TILE-12-28*Math.sin(Math.PI*Math.min(1,t))-(t*16);
-      ctx.save();ctx.globalAlpha=Math.min(1,(1-t)*1.6);
-      ctx.fillStyle="#1a392acb";ctx.beginPath();ctx.roundRect(x-26,y-28,52,21,6);ctx.fill();
-      write(p.icon+" +"+p.quantity,x,y-13,"#fbefad",11);
+      const p=pickupEffects[i],elapsed=(now-p.start)/2000;
+      if(elapsed>=1){pickupEffects.splice(i,1);continue;}
+      const bounceEdges=[0,.33,.61,.82];
+      const bounceHeights=[30,17,8];
+      let height=0;
+      for(let k=0;k<3;k++){
+        if(elapsed>=bounceEdges[k]&&elapsed<bounceEdges[k+1]){
+          const phase=(elapsed-bounceEdges[k])/(bounceEdges[k+1]-bounceEdges[k]);
+          height=bounceHeights[k]*Math.sin(Math.PI*phase);
+          break;
+        }
+      }
+      const landingX=(p.x+.5)*TILE,landingY=(p.y+.5)*TILE;
+      ctx.save();
+      ctx.globalAlpha=elapsed>.87?Math.max(0,(1-elapsed)/.13):1;
+      // Sombra fixa no terreno deixa os três impactos bem claros.
+      ctx.fillStyle="#1c362a66";ctx.beginPath();
+      ctx.ellipse(landingX,landingY-1,10,3,0,0,Math.PI*2);ctx.fill();
+      ctx.translate(0,-height);
+      let rendered=false;
+      const naturalKinds={twigs:"twig",wood:"log",stone:"pebble",
+        mushroom:"mushroom",grass:"grass",herbs:"herbs",flower:"flowers"};
+      const kind=naturalKinds[p.key];
+      if(kind){
+        World.drawObject(ctx,{x:p.x,y:p.y,kind,variant:0},sprite,TILE,part);
+        rendered=true;
+      }else if(p.key==="station"&&valid(sprite.workstation)){
+        ctx.drawImage(sprite.workstation,p.x*TILE-4,p.y*TILE-20,40,49);rendered=true;
+      }else if(p.key==="home"){
+        const roof=sprite.roof;
+        if(valid(roof)){part(roof,16,0,16,16,p.x*TILE,p.y*TILE-12,32,32);rendered=true;}
+      }else if(Crafting.itemFrame(p.key)){
+        const frame=Crafting.itemFrame(p.key);
+        if(valid(workshopAtlas)){part(workshopAtlas,frame.x,frame.y,frame.w,frame.h,
+          p.x*TILE+4,p.y*TILE+1,24,24);rendered=true;}
+      }else if(["seed","crop","food"].includes(p.key)){
+        const icon=Crops.imageFor(p.crop||state.selectedCrop,"icon");
+        if(valid(icon)){part(icon,0,0,16,16,p.x*TILE+5,p.y*TILE,23,23);rendered=true;}
+      }
+      if(!rendered)write(p.icon,landingX,landingY-12,"#fff4cc",18);
       ctx.restore();
+      if(elapsed>.84)write("+"+p.quantity,landingX,landingY-38,"#fff2a9",11);
     }
   }
   // Colônias têm conversas breves e intervaladas, não tutoriais repetidos sem parar.
