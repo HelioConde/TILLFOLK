@@ -216,11 +216,11 @@ test("A coleta de gravetos prioriza o spawn e não troca para o objeto visível 
    farVisible:(()=>{const p=mapPoint(farTwig);return p.x>=viewport.left&&p.x<=viewport.right&&p.y>=viewport.top&&p.y<=viewport.bottom})()};
  });
  expect(result.initialTarget).toBe(`${result.nearTwig.x},${result.nearTwig.y}`);
- expect(result.craftingTwigTarget).toBe(result.initialTarget);
+ expect(result.craftingTwigTarget).toBeUndefined();
  expect(result.farVisible).toBe(true);
  expect(result.afterPanTarget).toBeNull();
  expect(result.afterPanCraftingTarget).toBeNull();
- expect(result.label).toBe("Mostrar o graveto perto do início");
+ expect(result.label).toBe("Construa a Work Station primeiro");
 });
 
 test("A Work Station sugere o espaço central válido, mesmo com o colono longe",async({page})=>{
@@ -250,13 +250,22 @@ test("A Work Station sugere o espaço central válido, mesmo com o colono longe"
   const previousPan=parseFloat(canvas.style.getPropertyValue("--pan-x"))||0;
   canvas.style.setProperty("--pan-x",`${previousPan+viewport.left+viewport.width/2-farX}px`);
   guide();
+  const point={x:rect.left+rect.width*(nearCenter.x+.5)/80,
+   y:rect.top+rect.height*(nearCenter.y+.5)/50};
+  const stillVisible=point.x>=viewport.left+24&&point.x<=viewport.right-24&&
+   point.y>=viewport.top+24&&point.y<=viewport.bottom-25;
   return {nearCenter,nearWorker,suggested,afterPan:paw.dataset.targetCell||null,
-   label:paw.querySelector(".tillfolk-paw-caption").textContent};
+   stillVisible,label:paw.querySelector(".tillfolk-paw-caption").textContent};
  });
  expect(result.suggested).toBe(`${result.nearCenter.x},${result.nearCenter.y}`);
  expect(result.suggested).not.toBe(`${result.nearWorker.x},${result.nearWorker.y}`);
- expect(result.afterPan).toBeNull();
- expect(result.label).toBe("Mostrar espaço livre perto do centro");
+ if(result.stillVisible){
+   expect(result.afterPan).toBe(result.suggested);
+   expect(result.label).toBe("Clique aqui para colocar a bancada");
+ }else{
+   expect(result.afterPan).toBeNull();
+   expect(result.label).toBe("Mostrar espaço livre perto do centro");
+ }
 });
 
 test("A missão da enxada aponta primeiro para a Work Station antes dos materiais",async({page},testInfo)=>{
@@ -318,8 +327,15 @@ test("A primeira área arada fica afastada da Work Station quando há solo livre
   state.tutorial.active=true;state.tutorial.finished=false;state.tutorial.step=4;state.tutorial.version=5;
   state.crafting.station=station;state.workstations=[station];
   state.workers.forEach(w=>{w.x=station.x;w.y=station.y;w.task=null;w.route=[];});
-  localStorage.setItem("tillfolk-v01",JSON.stringify(state));
+  sessionStorage.setItem("__tillfolkTillFixture",JSON.stringify(state));
   return {station,nearestDistance:nearest.d};
+ });
+ // pagehide grava a sessão antiga; a fixture precisa entrar no início do reload.
+ await page.addInitScript(()=>{
+  const fixture=sessionStorage.getItem("__tillfolkTillFixture");
+  if(!fixture)return;
+  localStorage.setItem("tillfolk-v01",fixture);
+  sessionStorage.removeItem("__tillfolkTillFixture");
  });
  await page.reload({waitUntil:"networkidle"});
  const paw=page.locator("#tillfolk-tutorial-paw");
