@@ -1,5 +1,14 @@
 # Prólogo de sobrevivência — Missões e Oficina
 
+## Modos de jogo
+
+- **Tutorial guiado:** começa uma nova colônia sem ferramentas, habilita dez missões, painel contextual e falas dos personagens ancoradas sobre o sprite. Não consome comida diariamente enquanto ensina. Cada missão avança somente após ações finalizadas e salva a progressão.
+- **Sobrevivência (normal):** começa diretamente o jogo sem painel, balões nem geração de missões. Mantém fabricação e coleta manual; a comida é consumida a cada novo dia.
+- **Fazenda tranquila (normal):** também não exibe missões ou falas, mas remove o consumo diário de comida. A oficina permanece acessível pela barra de ferramentas em todos os modos.
+- **Encerramento:** a conclusão da décima missão transforma a partida de `tutorial` em `survival` na mesma sessão, sem reiniciar, apagar objetos, trocar personagens ou zerar o inventário. A missão desaparece definitivamente. Um save já concluído também migra ao abrir.
+
+Os balões mostram nome do colono e o próximo objetivo apenas ao começar ou mudar de missão; acompanham o trabalhador na câmera e somem após alguns segundos. Nos modos normais ficam sempre ocultos. Nenhum sprite novo foi adicionado.
+
 ## Objetivo
 O jogador aprende **fazendo**. O prólogo é finito: dez missões, progresso salvo, indicador compacto no jogo, texto de ajuda no hover e detalhes ao clicar (diálogo completo no celular). Ao concluir a última casa, a campanha marca **CONCLUÍDO**, não reinicia e não gera missões infinitas.
 
