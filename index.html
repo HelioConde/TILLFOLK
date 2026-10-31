@@ -15,7 +15,9 @@
   <link rel="stylesheet" href="./house-building.css">
   <link rel="stylesheet" href="./task-orders.css">
   <link rel="stylesheet" href="./team-ux.css?v=4">
+  <link rel="stylesheet" href="./menu-refinement.css">
   <script defer src="./src/menu.js"></script>
+  <script defer src="./src/tutorial.js"></script>
   <script defer src="./src/house-renderer.js"></script>
   <script defer src="./src/menu-scene.js"></script>
   <script defer src="./src/wild-world.js"></script>
@@ -88,7 +90,7 @@
           <p id="build-status" role="status" aria-live="polite">Marque a primeira fundação no vale. Cada peça custa uma madeira; os colonos podem coletar mais.</p>
         </div>
         <div class="hint-bar"><span>💡</span><p><strong>Como começar:</strong> abra <em>Ordens</em>, escolha <em>Limpar</em> para retirar obstáculos e <em>Arar</em> para preparar o solo. Semear, regar, colher e transportar exigem ordens separadas. Os ajudantes escolhem os trabalhos conforme prioridades e habilidades.</p></div>
-        <div class="footnote">Assets: Sprout Lands © Cup Nooble · Protótipo inicial TILLFOLK</div>
+        <div class="footnote">TILLFOLK · Gerencie o vale e organize sua equipe</div>
       </section>
       <aside class="sidebar" id="farm-sidebar" aria-label="Painel de trabalhadores e tarefas" aria-hidden="true" inert><div class="drawer-heading"><strong>Gestão da fazenda</strong><button type="button" id="drawer-close" aria-label="Fechar painel de gestão">✕ Fechar</button></div>
         <div class="panel worker-panel">
@@ -136,21 +138,26 @@
         <article><b>🌱 Gerencie prioridades</b><canvas class="title-card-preview" width="192" height="72" data-preview="crops" aria-hidden="true"></canvas><p>Organize atividades e mantenha tudo funcionando.</p></article>
         <article><b>⚙ Automatize sua fazenda</b><canvas class="title-card-preview" width="192" height="72" data-preview="farm" aria-hidden="true"></canvas><p>Construa estruturas e automatize sua produção.</p></article>
       </section>
-      <footer class="title-version"><span>✿ Build v1.0</span><span>Assets: Sprout Lands — Cup Nooble</span></footer>
+      <footer class="title-version"><span>✿ TILLFOLK · Fazenda & Automação</span><span>Um jogo de Hélio Conde</span></footer>
     </div>
   </div>
   <dialog id="title-settings-dialog" class="modal title-modal">
     <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
     <span class="overline">PREFERÊNCIAS</span><h2>Configurações</h2>
-    <p>Personalize a tela inicial.</p>
-    <label class="title-setting"><span><strong>Movimento do cenário</strong><small>Animação suave ao fundo do menu</small></span><input id="title-motion" type="checkbox" checked></label>
+    <p>Personalize a experiência. As preferências são salvas neste navegador.</p>
+    <label class="title-setting"><span><strong>Animar cenário</strong><small>Movimento suave das árvores e trabalhadores</small></span><input id="title-motion" type="checkbox" checked></label>
+    <label class="title-setting"><span><strong>Efeitos sonoros</strong><small>Som ao selecionar botões e navegar</small></span><input id="title-sound" type="checkbox" checked></label>
+    <label class="title-setting"><span><strong>Volume</strong><small id="title-volume-label">40%</small></span><input id="title-volume" type="range" min="0" max="100" step="5" value="40" aria-label="Volume dos efeitos sonoros"></label>
+    <button type="button" id="title-sound-test" class="large-secondary">♫ Testar som</button>
     <button type="button" id="title-fullscreen-setting" class="large-secondary">⛶ Alternar tela cheia</button>
   </dialog>
   <dialog id="title-credits-dialog" class="modal title-modal">
     <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
     <span class="overline">SOBRE O TILLFOLK</span><h2>Créditos</h2>
-    <p>TILLFOLK é um jogo independente de gerenciamento de fazenda e trabalhadores.</p>
-    <p>Sprites e recursos visuais: <strong>Sprout Lands, por Cup Nooble</strong>. Consulte os termos originais de uso no repositório.</p>
+    <p><strong>Criação e desenvolvimento:</strong> Hélio Conde.</p>
+    <p>TILLFOLK é um jogo independente de gerenciamento de fazenda, sobrevivência e automação.</p>
+    <p><strong>Arte e sprites:</strong> Sprout Lands — Cup Nooble. Consulte os termos originais de uso no repositório.</p>
+    <p><strong>Efeitos de interface:</strong> sintetizados no navegador.</p>
     <p><a href="https://github.com/HelioConde/TILLFOLK" target="_blank" rel="noopener noreferrer">Repositório e licenças</a></p>
   </dialog>
   <dialog id="title-exit-dialog" class="modal title-modal">
@@ -225,11 +232,37 @@
     <p>Até 3 habilidades positivas e 3 restrições. Menos habilidades significam bônus maiores.</p>
     <div id="candidates" class="candidate-list"></div>
   </dialog>
-  <dialog id="help-dialog" class="modal">
-    <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
-    <span class="overline">PRIMEIROS PASSOS</span><h2>Como funciona o TILLFOLK</h2>
-    <ol><li>Escolha o modo de jogo e dê um nome à fazenda.</li><li>Ao criar uma nova fazenda, escolha seus <b>2 trabalhadores iniciais</b> e confirme a equipe.</li><li>O mapa começa selvagem: escolha <b>Cultivar</b> e marque árvores, pedras, arbustos ou chão para que sua equipe abra espaço.</li><li>Os trabalhadores limpam recursos naturais e depois aram, fertilizam, semeiam, regam, colhem e transportam.</li><li>Flores, cogumelos, pedras, madeira e ervas são armazenados no inventário; a vegetação volta a crescer aos poucos.</li><li>Trabalhadores executam qualquer tarefa que não esteja proibida por seus traços negativos.</li><li>Contrate especialistas: 1 habilidade = 100% mais rapidez; 2 = 60%; 3 = 30%.</li><li>Use as prioridades e velocidades para organizar o trabalho. O jogo salva o progresso localmente.</li></ol>
-    <button id="help-close" class="large-primary">Entendi!</button>
+  <dialog id="help-dialog" class="modal help-guide" aria-labelledby="guide-title">
+    <header class="guide-header"><div><span class="overline">PRIMEIROS PASSOS · GUIA ILUSTRADO</span><h2 id="guide-title">Como jogar TILLFOLK</h2><p>Aprenda a comandar sua fazenda, etapa por etapa.</p></div>
+    <form method="dialog"><button class="modal-x" aria-label="Fechar tutorial">✕</button></form></header>
+    <div class="guide-stage">      <section class="guide-step" data-guide-step="0" >
+        <canvas width="384" height="160" class="guide-art" data-guide-art="world" role="img" aria-label="Cena em pixel art: Nova fazenda"></canvas>
+        <div class="guide-copy"><span class="overline">ETAPA 1 DE 6</span><h3>Nova fazenda</h3><p>Escolha Sobrevivência ou Fazenda Tranquila e dê um nome ao vale.</p><div class="guide-tip">✦ O terreno começa selvagem e precisa de ordens para mudar.</div></div>
+      </section>
+      <section class="guide-step" data-guide-step="1" hidden>
+        <canvas width="384" height="160" class="guide-art" data-guide-art="workers" role="img" aria-label="Cena em pixel art: Sua equipe"></canvas>
+        <div class="guide-copy"><span class="overline">ETAPA 2 DE 6</span><h3>Sua equipe</h3><p>Compare habilidades, restrições e velocidade dos dois primeiros trabalhadores.</p><div class="guide-tip">✦ 1 habilidade: +100% na atividade; 2: +60%; 3: +30%.</div></div>
+      </section>
+      <section class="guide-step" data-guide-step="2" hidden>
+        <canvas width="384" height="160" class="guide-art" data-guide-art="clear" role="img" aria-label="Cena em pixel art: Primeira ordem"></canvas>
+        <div class="guide-copy"><span class="overline">ETAPA 3 DE 6</span><h3>Primeira ordem</h3><p>Abra Ordens, escolha Limpar e marque árvores, pedras ou arbustos para liberar espaço.</p><div class="guide-tip">✦ Nenhum ajudante começa a trabalhar sem a sua ordem.</div></div>
+      </section>
+      <section class="guide-step" data-guide-step="3" hidden>
+        <canvas width="384" height="160" class="guide-art" data-guide-art="crops" role="img" aria-label="Cena em pixel art: Cultivar"></canvas>
+        <div class="guide-copy"><span class="overline">ETAPA 4 DE 6</span><h3>Cultivar</h3><p>Organize Arar, Fertilizar, Semear e Regar, uma tarefa de cada vez.</p><div class="guide-tip">✦ Tarefas agrícolas são demoradas; especialização é importante.</div></div>
+      </section>
+      <section class="guide-step" data-guide-step="4" hidden>
+        <canvas width="384" height="160" class="guide-art" data-guide-art="harvest" role="img" aria-label="Cena em pixel art: Colheita"></canvas>
+        <div class="guide-copy"><span class="overline">ETAPA 5 DE 6</span><h3>Colheita</h3><p>Quando a plantação amadurecer, emita ordens separadas de Colher e Transportar.</p><div class="guide-tip">✦ Os ajudantes não avançam automaticamente para a próxima atividade.</div></div>
+      </section>
+      <section class="guide-step" data-guide-step="5" hidden>
+        <canvas width="384" height="160" class="guide-art" data-guide-art="management" role="img" aria-label="Cena em pixel art: Automatizar"></canvas>
+        <div class="guide-copy"><span class="overline">ETAPA 6 DE 6</span><h3>Automatizar</h3><p>Ajuste prioridades, contrate novos trabalhadores e construa estruturas.</p><div class="guide-tip">✦ O progresso é salvo localmente no navegador.</div></div>
+      </section></div>
+    <footer class="guide-footer">
+      <div class="guide-dots" aria-label="Etapas do tutorial"><button type="button" data-guide-dot="0" aria-label="Etapa 1: Nova fazenda" aria-current="step">1</button><button type="button" data-guide-dot="1" aria-label="Etapa 2: Sua equipe" >2</button><button type="button" data-guide-dot="2" aria-label="Etapa 3: Primeira ordem" >3</button><button type="button" data-guide-dot="3" aria-label="Etapa 4: Cultivar" >4</button><button type="button" data-guide-dot="4" aria-label="Etapa 5: Colheita" >5</button><button type="button" data-guide-dot="5" aria-label="Etapa 6: Automatizar" >6</button></div>
+      <div class="guide-actions"><button type="button" id="help-prev" class="large-secondary" disabled>← Anterior</button><span id="guide-counter" role="status" aria-live="polite">1 de 6</span><button type="button" id="help-next" class="large-primary">Próximo →</button><button type="button" id="help-close" class="large-primary" hidden>Entendi!</button></div>
+    </footer>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>
