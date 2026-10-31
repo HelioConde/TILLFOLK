@@ -55,13 +55,13 @@ body.play-session .camera-ui button:disabled{
  body.play-session .camera-title{font-size:8px}
 }
 @media(max-width:760px){
- body.play-session .camera-ui{width:148px;top:108px;right:8px;padding:5px;gap:3px;border-width:7px;border-image-width:7px}
+ body.play-session .camera-ui{width:148px;top:168px;right:8px;padding:5px;gap:3px;border-width:7px;border-image-width:7px}
  body.play-session .camera-controls{grid-template-columns:27px 1fr 27px 27px;gap:2px}
  body.play-session .camera-controls button{min-width:26px;min-height:27px}
  body.play-session #zoom-value{font-size:11px}
 }
 @media(max-width:460px){
- body.play-session .camera-ui{width:145px;top:96px;right:7px}
+ body.play-session .camera-ui{width:145px;top:155px;right:7px}
  body.play-session .camera-title{font-size:8px}
 }
 @media(prefers-reduced-motion:reduce){
