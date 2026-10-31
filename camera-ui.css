@@ -72,3 +72,30 @@ body.play-session .camera-ui button:disabled{
 @media(prefers-reduced-motion:reduce){
  body.play-session .camera-ui *{animation:none!important;transition:none!important}
 }
+
+/* Navegação por bioma: cores da malha gerada, dentro do tema Sprout Lands. */
+body.play-session .biome-legend{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:3px;margin:1px 0 0;
+}
+body.play-session .biome-legend[hidden]{display:none}
+body.play-session .biome-legend button{
+  display:flex;align-items:center;justify-content:flex-start;
+  min-width:0;min-height:24px;padding:3px 4px;gap:4px;
+  background:#314a39!important;border:1px solid #a39870;border-radius:2px;
+  color:#fff0cb;font:700 9px/1.1 system-ui,sans-serif;
+  cursor:pointer;box-shadow:0 2px 0 #213123;
+}
+body.play-session .biome-legend button:hover,
+body.play-session .biome-legend button:focus-visible{
+  background:#546e47!important;border-color:#f0d6a2!important;
+  outline-offset:1px;
+}
+body.play-session .biome-legend i{
+  display:block;flex:0 0 9px;width:9px;height:9px;
+  border:1px solid #f0e9cc;background:var(--swatch);image-rendering:pixelated;
+}
+@media(max-width:760px){
+  body.play-session .biome-legend{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}
+  body.play-session .biome-legend button{font-size:9px;min-height:22px}
+}
