@@ -130,6 +130,12 @@ test("UI mobile: missão pode expandir e oficina não corta a tela",async({page}
   await newFarm(page);
   await expect(page.locator("#tutorial-speech")).toBeVisible();
   await expect(page.locator("#tutorial-speech-text")).toContainText("gravetos");
+  const speech=await page.locator("#tutorial-speech").boundingBox();
+  const mission=await page.locator("#prologue-card").boundingBox();
+  expect(speech&&mission).toBeTruthy();
+  const overlapX=speech.x<mission.x+mission.width&&speech.x+speech.width>mission.x;
+  const overlapY=speech.y<mission.y+mission.height&&speech.y+speech.height>mission.y;
+  expect(overlapX&&overlapY).toBe(false);
   await page.screenshot({path:"screenshots/tutorial-primeira-missao-390x844.png",animations:"disabled"});
   await page.locator("#prologue-open").click();
   await expect(page.locator("#prologue-dialog")).toBeVisible();
