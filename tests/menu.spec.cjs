@@ -1003,7 +1003,7 @@ test('Sprout Lands UI: atlas original em botões, painel, slots e celular',async
 });
 
 
-test('Menu vivo: lenhador derruba árvore, toco regenera, horta cresce e animais passeiam',async({page})=>{
+test('Menu vivo: lenhador derruba árvore, toco regenera, horta cresce sem animais',async({page})=>{
   const fs=require('node:fs');
   const failures=[];
   page.on('pageerror',error=>failures.push(String(error)));
@@ -1040,10 +1040,10 @@ test('Menu vivo: lenhador derruba árvore, toco regenera, horta cresce e animais
   expect(regrown.tree.phase).toBe('mature');
   expect(initial.logger.x).not.toBe(chopping.logger.x);
   expect(initial.gardener.x).not.toBe(chopping.gardener.x);
-  expect(initial.animals).toHaveLength(3);
-  expect(initial.animals.some(a=>a.kind==='cow')).toBe(true);
-  expect(initial.animals.filter(a=>a.kind==='chicken')).toHaveLength(2);
-  expect(initial.animals[0].x).not.toBe(chopping.animals[0].x);
+  expect(initial.animals).toEqual([]);
+  expect(chopping.animals).toEqual([]);
+  expect(info.sourceFiles).not.toContain('animals/cow.png');
+  expect(info.sourceFiles).not.toContain('animals/chicken.png');
   expect(initial.cropStage).not.toBe(growing.cropStage);
   fs.mkdirSync('screenshots',{recursive:true});
   const phases=[['lavoura',0],['lenhador',8500],['queda',13000],['toco',15000],['reflorestamento',22500],['arvore-adulta',30000]];
@@ -1068,34 +1068,26 @@ test('Menu vivo: lenhador derruba árvore, toco regenera, horta cresce e animais
   expect(failures).toEqual([]);
 });
 
-test('Animais sempre visíveis na clareira acima da casa, em todo o ciclo',async({page})=>{
+test('A abertura não carrega nem desenha animais em nenhum quadro',async({page})=>{
   const fs=require('node:fs');
   await page.setViewportSize({width:1366,height:768});
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
   await page.waitForFunction(()=>window.TillfolkMenuScene?.assetHealth().ready===
     window.TillfolkMenuScene?.assetHealth().total);
-  const results=await page.evaluate(()=>{
+  const snapshot=await page.evaluate(()=>{
     const scene=window.TillfolkMenuScene;
-    return Array.from({length:37},(_,i)=>scene.sample(i*1000).animals);
+    return {
+      frames:Array.from({length:37},(_,i)=>scene.sample(i*1000).animals),
+      assets:Object.values(scene.sources)
+    };
   });
-  for(const animals of results){
-    expect(animals).toHaveLength(3);
-    for(const animal of animals){
-      const width=animal.kind==='cow'?74:41;
-      const height=animal.kind==='cow'?66:41;
-      expect(animal.x).toBeGreaterThanOrEqual(655);
-      expect(animal.x+width).toBeLessThanOrEqual(960);
-      expect(animal.y).toBeGreaterThanOrEqual(70);
-      // O teto da casa começa em y=174: nenhum animal o sobrepõe.
-      expect(animal.y+height).toBeLessThan(168);
-    }
-  }
-  // Captura determinística da clareira; não depende de esperar o ciclo real.
+  expect(snapshot.frames.every(animals=>Array.isArray(animals)&&animals.length===0)).toBe(true);
+  expect(snapshot.assets.some(path=>path.startsWith('animals/'))).toBe(false);
   const image=await page.evaluate(()=>{
     window.TillfolkMenuScene.drawAt(5000);
     return document.querySelector('#title-scene').toDataURL('image/png').split(',')[1];
   });
   fs.mkdirSync('screenshots',{recursive:true});
-  fs.writeFileSync('screenshots/menu-animais-acima-da-casa.png',Buffer.from(image,'base64'));
-  await page.screenshot({path:'screenshots/menu-animais-acima-da-casa-desktop.png',animations:'disabled'});
+  fs.writeFileSync('screenshots/menu-inicial-sem-animais.png',Buffer.from(image,'base64'));
+  await page.screenshot({path:'screenshots/menu-inicial-sem-animais-desktop.png',animations:'disabled'});
 });
