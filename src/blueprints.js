@@ -78,7 +78,12 @@
     const px=x*size,py=y*size;
     frame(ctx,px,py,size,size,valid,.17);
     part(ctx,sprites.dirt,0,80,16,16,px,py,size,size,valid,.55);
-    if(grown)part(ctx,sprites.crops,0,0,16,16,px+4,py+3,size-8,size-8,valid,.86);
+    if(grown){
+      const image=window.TillfolkCrops?.farmItemImage?.();
+      if(!(image?.complete&&image.naturalWidth>=16)||
+         !part(ctx,image,0,0,16,16,px+7,py+4,size-14,size-12,valid,.85))
+        part(ctx,sprites.crops,0,0,16,16,px+4,py+3,size-8,size-8,valid,.86);
+    }
     else{
       ctx.save();ctx.fillStyle=valid?"#d0f3ff":"#ffd3b6";
       ctx.fillRect(px+Math.round(size*.45),py+Math.round(size*.46),5,5);
