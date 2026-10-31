@@ -311,7 +311,7 @@ test('Casa usa atlas original e telhas sem alongamento',async({page})=>{
   const menuCode=fs.readFileSync('src/menu-scene.js','utf8');
   expect(menuCode).toContain('builder.draw(ctx,{roof:imgs.roof,walls:imgs.walls,door:imgs.door}');
   const builderCode=fs.readFileSync('src/house-renderer.js','utf8');
-  expect(builderCode).toContain('const ridge=Math.floor((height-1)/2)');
+  expect(builderCode).toContain('const y=height===4?[0,1,2,4][row]');
   expect(errors).toEqual([]);
 });
 
@@ -583,8 +583,8 @@ test('Telhado em primeiro plano, sem recortes nas janelas e porta',async({page})
   expect(detail.firstRoof).toBeGreaterThan(detail.lastDoor);
   expect(detail.lastDraw).toBe('roof');
   const source=require('node:fs').readFileSync('src/house-renderer.js','utf8');
-  expect(source.includes('ctx.clip(roofMask')).toBe(true);
-  expect(source.includes('if(canClip)ctx.restore()')).toBe(true);
+  expect(source.includes('ctx.clip(roofMask')).toBe(false);
+  expect(source.includes('if(canClip)ctx.restore()')).toBe(false);
   expect(detail.clipReleased).toBe(true);
   expect(detail.png).toMatch(/^data:image\/png;base64,/);
   await page.screenshot({path:'screenshots/casa-telhado-primeiro-plano-1366x768.png',animations:'disabled'});
