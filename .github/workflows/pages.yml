@@ -31,7 +31,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
-          cp index.html styles.css menu.css menu-layout.css game-polish.css fullscreen-game.css house-building.css ui-polish.css _site/
+          cp index.html styles.css menu.css menu-layout.css game-polish.css fullscreen-game.css house-building.css ui-polish.css team-ux.css _site/
           cp src/game.js src/wild-world.js src/house-building.js src/menu.js src/house-renderer.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
@@ -47,6 +47,8 @@ jobs:
           test -f _site/src/menu.js
           test -f _site/src/house-renderer.js
           test -f _site/src/house-building.js
+          test -f _site/team-ux.css
+          grep -q 'team-ux.css' _site/index.html
           test -f _site/house-building.css
           test -f _site/src/menu-scene.js
           # Falhar a publicação caso alguma arte utilizada na abertura esteja ausente.
