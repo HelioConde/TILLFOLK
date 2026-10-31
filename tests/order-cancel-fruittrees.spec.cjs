@@ -1,3 +1,7 @@
+async function continueIfMenuVisible(page){
+  if(await page.locator('#menu').isVisible())await page.locator('#continue').click();
+  await expect(page.locator('#menu')).toBeHidden();
+}
 const {test,expect}=require('@playwright/test');
 const BASE='http://127.0.0.1:4173/';
 const snap=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
@@ -57,7 +61,7 @@ test('Clique direito cancela ordem e remove o destaque persistente, sem remover 
    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
  },{x,y});
  await page.reload({waitUntil:'networkidle'});
- await page.locator('#continue').click();
+ await continueIfMenuVisible(page);
  s=await snap(page);
  expect(s.orders.some(o=>o.x===x&&o.y===y)).toBe(false);
  expect(s.plots.find(p=>p.x===x&&p.y===y).selected).toBe(false);
@@ -108,7 +112,7 @@ test('Árvores frutíferas não são geradas e saves legados são convertidos se
    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
  },indices);
  await page.reload({waitUntil:'networkidle'});
- await page.locator('#continue').click();
+ await continueIfMenuVisible(page);
  s=await snap(page);
  expect(s.world.objects.filter(o=>o.kind==='tree').length).toBe(trees.length);
  expect(s.world.objects.filter(o=>o.kind==='tree').every(o=>[0,1,6].includes(o.variant))).toBe(true);
@@ -128,7 +132,7 @@ test('Saves antigos com marcação sem tarefa voltam ao solo natural',async({pag
    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
  },{x,y});
  await page.reload({waitUntil:'networkidle'});
- await page.locator('#continue').click();
+ await continueIfMenuVisible(page);
  const s=await snap(page);
  expect(s.plots.find(p=>p.x===x&&p.y===y).selected).toBe(false);
  await page.screenshot({path:'screenshots/mobile-390x844-sem-marcacao-fantasma.png',animations:'disabled'});
