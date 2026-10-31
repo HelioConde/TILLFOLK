@@ -141,6 +141,7 @@ summary{cursor:pointer;font-weight:850;color:#f0dfb5}
 </section>
 <footer>O editor só salva um mapeamento de recursos e uma prévia. Ele ainda não substitui automaticamente o terreno das partidas do TILLFOLK; a integração será feita a partir do JSON aprovado por você.</footer>
 </main>
+<script src="./src/terrain-catalog.js"></script>
 <script src="./src/terrain-autotile.js"></script>
 <script>
 "use strict";
@@ -170,7 +171,10 @@ const valid=id=>Boolean(A.coords(id));
 let roles={},activeRole="centro",brush="paint",drawing=false;
 let map=Array.from({length:H},()=>Array(W).fill(false));
 const roleButtons=new Map(),atlasButtons=new Map();
-try{roles=JSON.parse(localStorage.getItem(STORAGE)||"{}");}catch{roles={}}
+try{
+  const saved=localStorage.getItem(STORAGE);
+  roles=saved?JSON.parse(saved):{...window.TillfolkTerrainCatalog.ROLES};
+}catch{roles={...window.TillfolkTerrainCatalog.ROLES}}
 roles=Object.fromEntries(A.ROLES.filter(key=>valid(roles[key])).map(key=>[key,roles[key]]));
 function store(){try{localStorage.setItem(STORAGE,JSON.stringify(roles));}catch{}}
 function previewSource(canvas,id){

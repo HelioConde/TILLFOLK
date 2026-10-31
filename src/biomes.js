@@ -63,12 +63,50 @@
   }
   const at=(world,x,y)=>TYPES[kind(world,x,y)];
   const COLORS=Object.freeze(Object.fromEntries(Object.entries(TYPES).map(([k,v])=>[k,v.color])));
+  // Cada bioma usa a MESMA grade de cantos aprovada pelo jogador.
+  // A máscara fica em cache, preservando a geração e os saves existentes.
+  const Autotile=window.TillfolkTerrainAutotile;
+  const Catalog=window.TillfolkTerrainCatalog;
+  const masksCache=new WeakMap();
+  function masksFor(world,w,h){
+    if(!world||typeof world!=="object")return null;
+    const signature=world.biomeMap;
+    const cached=masksCache.get(world);
+    if(cached&&cached.signature===signature&&cached.w===w&&cached.h===h)return cached.masks;
+    const masks=Object.fromEntries(Object.keys(TYPES).map(id=>
+      [id,Array.from({length:h},()=>Array(w).fill(false))]));
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const raw=signature?.[y*w+x],id=TYPES[raw]?raw:"g";
+      masks[id][y][x]=true;
+    }
+    masksCache.set(world,{signature,w,h,masks});
+    return masks;
+  }
   function draw(ctx,sprites,world,w,h,size,part,bounds){
     const x0=clamp(bounds?.x0??0,0,w-1),x1=clamp(bounds?.x1??w-1,0,w-1);
     const y0=clamp(bounds?.y0??0,0,h-1),y1=clamp(bounds?.y1??h-1,0,h-1);
+    const ready=Boolean(Autotile&&Catalog&&Catalog.isLoaded(sprites.terrain_grassGround));
+    const masks=ready?masksFor(world,w,h):null;
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
       const tile=kind(world,x,y),t=TYPES[tile],px=x*size,py=y*size;
       const v=hash(world.seed||1,x,y),v2=hash((world.seed||1)+17,x,y);
+      const atlas=ready?sprites["terrain_"+Catalog.BIOME_ATLAS[tile]]:null;
+      if(ready&&Catalog.isLoaded(atlas)){
+        // Substrato uniforme sob o recorte transparente: regiões se misturam
+        // com a pradaria, evitando quadrados chapados nas bordas.
+        part(sprites.terrain_grassGround,16,80,16,16,px,py,size,size);
+        Autotile.draw(ctx,atlas,masks[tile],x,y,Catalog.ROLES,px,py,size);
+        // Pequenos detalhes dentro do próprio tile, sem pintar blocos opacos.
+        if(tile==="i"&&v>.62){
+          ctx.fillStyle="#e5f3ef";ctx.fillRect(px+Math.floor(v2*13)+4,py+6,3,2);
+        }else if(tile==="w"&&v>.63){
+          ctx.fillStyle="#56898c";ctx.fillRect(px+6,py+Math.floor(v2*12)+10,8,2);
+        }else if(tile==="p"&&v2>.59){
+          ctx.fillStyle="#a57bc4";ctx.fillRect(px+8,py+Math.floor(v*13)+7,3,3);
+        }
+        continue;
+      }
+      // Se o atlas ainda não carregou, manter os gráficos antigos funcionais.
       ctx.fillStyle=t.color;ctx.fillRect(px,py,size,size);
       if(tile==="g"||tile==="f"||tile==="w"){
         if(sprites.grass&&sprites.grass.complete&&sprites.grass.naturalWidth){

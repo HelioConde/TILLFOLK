@@ -338,6 +338,10 @@
     valleyCliff:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles/Grass_Hill_Tiles_v2.png"
   };
   const sprite = {};
+  // Atlas premium de terrenos, colinas e declives: imagens locais do projeto.
+  const TerrainCatalog=window.TillfolkTerrainCatalog;
+  for(const key of Object.keys(TerrainCatalog?.ATLAS||{}))
+    spriteUrls["terrain_"+key]=TerrainCatalog.url(key);
   for (const [key,url] of Object.entries(spriteUrls)) {
     const img = new Image(); img.src = url; sprite[key] = img;
   }
@@ -1225,7 +1229,7 @@
     for(const item of layers){
       const {x,y,type}=item;
       if(type==="nature"){
-        World.drawObject(ctx,item.object,sprite,TILE,part);
+        World.drawObject(ctx,item.object,sprite,TILE,part,World.biomeAt(state.world,item.object.x,item.object.y));
       }else if(type==="animal"){
         const a=item.animal,x=a.x*TILE,y=a.y*TILE;
         part(sprite.cow,0,0,32,32,x-20,y-32,40,38);
@@ -1387,7 +1391,7 @@
         mushroom:"mushroom",grass:"grass",herbs:"herbs",flower:"flowers"};
       const kind=naturalKinds[p.key];
       if(kind){
-        World.drawObject(ctx,{x:p.x,y:p.y,kind,variant:0},sprite,TILE,part);
+        World.drawObject(ctx,{x:p.x,y:p.y,kind,variant:0},sprite,TILE,part,World.biomeAt(state.world,p.x,p.y));
         rendered=true;
       }else if(p.key==="station"&&valid(sprite.workstation)){
         ctx.drawImage(sprite.workstation,p.x*TILE-4,p.y*TILE-20,40,49);rendered=true;

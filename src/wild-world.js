@@ -261,14 +261,17 @@
       }
     }
   }
-  function drawObject(ctx,obj,sprites,size,part){
+  function drawObject(ctx,obj,sprites,size,part,biomeCode="g"){
     const x=obj.x*size,y=obj.y*size,v=obj.variant||0,kind=obj.kind;
     const frame=spriteFrame(kind,v);
     if(kind==="ridge"){
       // Parede natural usando os tiles premium de colinas.
       ctx.fillStyle="#354c31";ctx.fillRect(x,y+size*.26,size,size*.74);
       ctx.fillStyle="#7a9f63";ctx.fillRect(x+2,y+1,size-4,6);
-      part(sprites.valleyCliff,0,0,16,16,x,y,size,size);
+      const hillKey=window.TillfolkTerrainCatalog?.HILL_ATLAS?.[biomeCode]||"grassHill";
+      const hill=sprites["terrain_"+hillKey];
+      const art=window.TillfolkTerrainCatalog?.isLoaded(hill)?hill:sprites.valleyCliff;
+      part(art,0,0,16,16,x,y,size,size);
       ctx.fillStyle="#223d2b55";ctx.fillRect(x+2,y+size-6,size-4,6);
       return;
     }

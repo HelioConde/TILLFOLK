@@ -22,6 +22,8 @@ jobs:
         run: |
           node --check src/biomes.js
           node --check src/terrain-autotile.js
+          node --check src/terrain-catalog.js
+          node --test tests/terrain-biomes.test.cjs
           node --test tests/terrain-autotile.test.cjs
           node --test tests/terrain-editor.test.cjs
           node --check src/wild-world.js
@@ -48,9 +50,17 @@ jobs:
           set -euo pipefail
           mkdir -p _site/src _site/public/assets
           cp index.html crop-workshop.css tutorial-missions.css styles.css menu.css menu-layout.css menu-refinement.css game-hud.css sprout-ui.css game-refinement.css camera-ui.css top-speed.css game-interface.css game-polish.css fullscreen-game.css house-building.css hud-settings.css task-orders.css team-ux.css ui-polish.css _site/
-          cp src/terrain-autotile.js src/crafting.js src/crop-catalog.js src/missions.js src/biomes.js src/game.js src/wild-world.js src/blueprints.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
+          cp src/terrain-catalog.js src/terrain-autotile.js src/crafting.js src/crop-catalog.js src/missions.js src/biomes.js src/game.js src/wild-world.js src/blueprints.js src/house-building.js src/task-orders.js src/game-hud.js src/sprout-ui-skin.js src/menu.js src/tutorial.js src/house-renderer.js src/menu-scene.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
           cp -a public/assets/tillfolk _site/public/assets/
+          # Texturas de todos os terrenos Sprout Lands usados pelo jogo.
+          TERRAIN_ROOT="Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles"
+          mkdir -p "_site/public/assets/$TERRAIN_ROOT"
+          cp "public/assets/$TERRAIN_ROOT/"*.png "_site/public/assets/$TERRAIN_ROOT/"
+          cp "public/assets/$TERRAIN_ROOT/Grass_Tile_Layers_terrain.json" "_site/public/assets/$TERRAIN_ROOT/"
+          test -f "_site/public/assets/$TERRAIN_ROOT/Grass_Tile_Layers.png"
+          test -f "_site/public/assets/$TERRAIN_ROOT/Soil_Ground_Tiles.png"
+          test -f "_site/public/assets/$TERRAIN_ROOT/Stone_Ground_Tiles.png"
           mkdir -p _site/public/assets/assets
           cp -a public/assets/assets/crops _site/public/assets/assets/
           mkdir -p "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects"
@@ -69,6 +79,8 @@ jobs:
           test -f _site/public/assets/tillfolk/menu-landscape.svg
           test -f _site/src/biomes.js
           test -f _site/src/terrain-autotile.js
+          test -f _site/src/terrain-catalog.js
+          grep -q 'src/terrain-catalog.js' _site/index.html
           test -f _site/terrain-editor.html
           grep -q 'terrain-autotile.js' _site/terrain-editor.html
           test -f _site/src/wild-world.js

@@ -1,0 +1,32 @@
+{
+  "schema": "tillfolk-terrain-autotile/v1",
+  "terrain": "grass",
+  "atlas": "Grass_Tile_Layers.png",
+  "tileSize": 16,
+  "atlasColumns": 11,
+  "atlasRows": 7,
+  "neighbors": 8,
+  "method": "cardinal + complementary inner corners",
+  "roles": {
+    "canto_noroeste": "C01_L01",
+    "borda_norte": "C02_L01",
+    "canto_nordeste": "C03_L01",
+    "borda_oeste": "C01_L02",
+    "centro": "C02_L02",
+    "borda_leste": "C03_L02",
+    "canto_sudoeste": "C01_L03",
+    "borda_sul": "C02_L03",
+    "canto_sudeste": "C03_L03",
+    "interno_noroeste": "C07_L03",
+    "interno_nordeste": "C06_L03",
+    "interno_sudoeste": "C07_L02",
+    "interno_sudeste": "C06_L02",
+    "isolado": null,
+    "horizontal": null,
+    "vertical": null,
+    "ponta_norte": null,
+    "ponta_leste": null,
+    "ponta_sul": null,
+    "ponta_oeste": null
+  }
+}
