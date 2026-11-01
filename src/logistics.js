@@ -28,7 +28,7 @@
     const red=Math.min(3,worker?.neg?.length||0);
     const skill=worker?.skills?.includes("carry");
     // 1 unidade sem logística; transportadores especialistas fazem viagens maiores.
-    return skill?Math.min(12,(worker.skills.length===1?4:worker.skills.length===2?3:2)+red):1;
+    return skill?Math.min(12,(worker.skills.length===1?4:worker.skills.length===2?3:2)+red+(worker.carryBonus||0)):1+(worker.carryBonus||0);
   };
   const costFor=order=>{
     if(order.type==="craftTool")return window.TillfolkCrafting?.recipe(order.recipe)?.cost||{};
