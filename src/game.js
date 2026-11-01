@@ -1432,8 +1432,10 @@
       ctx.fillText(markers[next.type]||"?",x*TILE+5,y*TILE+12);
       if(jobs.length>1){ctx.fillStyle="#273a2d";ctx.fillText(String(jobs.length),x*TILE+23,y*TILE+12);}
     }
-    // Profundidade natural: árvores cobrem personagens atrás delas e vice-versa.
+    // Drops não somem após o efeito visual; ficam no solo até uma entrega real.
     const layers=[
+      ...(state.groundItems||[]).filter(d=>inView(d.x,d.y,2))
+        .map(drop=>({type:"drop",drop,depth:(drop.y+.7)*TILE})),
       ...state.world.objects.filter(object=>inView(object.x,object.y,3))
         .map(object=>({type:"nature",object,depth:(object.y+.8)*TILE})),
       ...state.workers.filter(worker=>inView(worker.x,worker.y,3))
@@ -1449,7 +1451,16 @@
     const actionRow={till:0,fertilize:0,sow:0,clear:4,harvest:4,carry:8};
     for(const item of layers){
       const {x,y,type}=item;
-      if(type==="nature"){
+      if(type==="drop"){
+        const d=item.drop,xx=d.x*TILE,yy=d.y*TILE;
+        const mapped={twigs:"twig",wood:"log",stone:"pebble",
+          grass:"grass",flower:"flowers",herbs:"herbs",mushroom:"mushroom"};
+        if(mapped[d.kind])World.drawObject(ctx,{x:d.x,y:d.y,kind:mapped[d.kind],variant:0},sprite,TILE,part);
+        else write(pickupTypes[d.kind]?.icon||"📦",xx+16,yy+17,"#fff4c8",17);
+        ctx.fillStyle="#1c382ce9";ctx.fillRect(xx+19,yy+19,Math.max(12,7+String(d.qty).length*8),12);
+        ctx.fillStyle="#ffedb8";ctx.textAlign="left";ctx.font="bold 10px system-ui";
+        ctx.fillText(String(d.qty),xx+21,yy+28);
+      }else if(type==="nature"){
         World.drawObject(ctx,item.object,sprite,TILE,part);
       }else if(type==="animal"){
         const a=item.animal,x=a.x*TILE,y=a.y*TILE;
@@ -1459,6 +1470,7 @@
         const w=item.worker,px=w.x*TILE,py=w.y*TILE;
         if(w.carryingWater)write("💧",px+18,py-32,"#b6f3fe",13);
         if(w.carryingManure)write("💩",px+18,py-32,"#eac7a4",13);
+        if(w.haul?.phase==="deliver")write(pickupTypes[w.haul.kind]?.icon||"📦",px+17,py-31,"#f4eac1",12);
         ctx.fillStyle="#223c3180";ctx.beginPath();ctx.ellipse(px,py-2,11,4,0,0,Math.PI*2);ctx.fill();
         const active=tasks.find(t=>t.id===w.task);
         const working=Boolean(active&&!w.moving&&w.progress>0);
@@ -1735,9 +1747,9 @@
       ["manure","💩","Esterco"]
     ];
     $("#inventory").innerHTML=inventoryItems.map(([kind,icon,label])=>
-      '<div class="resource-slot" title="'+label+': '+(stock[kind]||0)+'" aria-label="'+label+': '+(stock[kind]||0)+'">'+
+      '<div class="resource-slot" title="'+label+': '+Logistics.available(state,kind)+' (no chão, baús ou estoque)" aria-label="'+label+': '+Logistics.available(state,kind)+'">'+
       '<span class="resource-art" aria-hidden="true">'+icon+'</span>'+
-      '<span class="resource-amount">'+(stock[kind]||0)+'</span>'+
+      '<span class="resource-amount">'+Logistics.available(state,kind)+'</span>'+
       '<small>'+label+'</small></div>').join("")+
       '<div class="resource-slot housing" aria-label="Moradias: '+state.homes.length+' de '+state.workers.length+'">'+
       '<span class="resource-art" aria-hidden="true">⌂</span><span class="resource-amount">'+state.homes.length+'/'+state.workers.length+'</span><small>Casas</small></div>';
