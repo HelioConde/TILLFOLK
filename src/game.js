@@ -1,7 +1,8 @@
 "use strict";
 (() => {
   const TILE = 32, W = 192, H = 120, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
-  const Exploration=window.TillfolkExploration;
+  const Exploration=window.TillfolkExploration,Progression=window.TillfolkProgression;
+  if(!Progression)throw new Error("Carregue src/progression.js antes do motor TILLFOLK.");
   if(!Exploration)throw new Error("Carregue src/exploration.js antes do motor TILLFOLK.");
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
   if(!Crops)throw new Error("Carregue src/crop-catalog.js antes do motor TILLFOLK.");
@@ -635,6 +636,7 @@
     speechScene.step=-1;speechScene.sequence=0;speechScene.text="";
     speechScene.workerId=null;speechScene.until=0;speechScene.next=0;
   }
+  let progressAccumulator=0;
   let state = null, tasks = [], selectedTool = "universal", buildLayer = "home", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
@@ -665,6 +667,7 @@
       survivalVersion:1,startingColonists:initialColonists,deaths:[],gameOver:false,
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     Life.normalize(state);
+    Progression.normalize(state);
     tasks=[]; simSpeed=1; updateSpeed();
   }
   // "play" significa que a fazenda estava aberta na última visita.
@@ -827,6 +830,10 @@
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
       state.candidates.forEach(homageSavedName);
       state.journal=Array.isArray(s.journal)?s.journal:[];
+      // Antigas partidas reconhecem suas conquistas, mas não recebem
+      // recompensas retroativas que alterariam a economia já existente.
+      Progression.normalize(state);
+      Progression.advance(state,{backfill:!s.progression});
       tasks=[];recalcTasks();
       // Retomar a velocidade anterior, inclusive pausa, sem mexer no tempo do dia.
       simSpeed=[0,1,3,6].includes(s.sessionSpeed)?s.sessionSpeed:1;
@@ -1425,6 +1432,20 @@
       }
     }
 
+    progressAccumulator+=scaled;
+    if(progressAccumulator>=.8){
+      progressAccumulator=0;
+      const events=Progression.advance(state);
+      if(events.length){
+        for(const event of events)log(event.text);
+        const chapter=events.find(event=>event.type==="chapter");
+        if(chapter)notify(chapter.text);
+        else if(events.some(event=>event.type==="discovery"))
+          notify(events.find(event=>event.type==="discovery").text);
+        // Não salvar em cada frame; conquistas relevantes são persistidas imediatamente.
+        save();
+      }
+    }
     if(state.mode==="survival"){
       const deadWorkers=Survival.removeDeadWorkers(state);
       for(const dead of deadWorkers){
@@ -1939,12 +1960,15 @@
     if(button){button.setAttribute("aria-pressed",String(life.autoFarm));
       button.textContent=life.autoFarm?"🌱 Automação: ativada":"🌱 Automação: desligada";}
     const level=life.researchLevel,required=Life.cost(state);
+    const gate=Life.researchLock(state);
     const research=$("#colony-research-status");
     if(research)research.textContent="Nível "+level+"/4 · "+life.researchPoints+
       " pontos de conhecimento · Próxima melhoria: "+
-      (Life.TECH[level]||"Todas concluídas")+" ("+required+" pontos)";
+      (Life.TECH[level]||"Todas concluídas")+" ("+required+" pontos)"+
+      (gate?" · 🔒 "+gate:"");
     const upgrade=$("#colony-research-upgrade");
-    if(upgrade)upgrade.disabled=level>=4||life.researchPoints<required||!state.crafting?.station;
+    if(upgrade){upgrade.disabled=level>=4||life.researchPoints<required||Boolean(gate);
+      upgrade.title=gate||"Pesquisar a próxima melhoria";}
     const workers=$("#colony-life-workers");
     // Não reconstruir <select> enquanto o jogador escolhe um turno no mobile.
     if(workers&&!workers.contains(document.activeElement))workers.innerHTML=state.workers.map(w=>
@@ -1959,6 +1983,41 @@
       '<option value="flex" '+(w.shift==="flex"?"selected":"")+'>⚡ Flexível · dormir por cansaço</option>'+
       '</select></label></div>').join("");
   }
+  function renderProgressionPanel(){
+    if(!state)return;
+    const journey=Progression.status(state),overview=$("#progression-overview"),chapters=$("#progression-chapters");
+    if(!overview||!chapters)return;
+    const current=journey.current;
+    overview.innerHTML='<div class="progression-overview"><div class="progression-overview-head">'+
+      '<strong>'+(journey.allDone?'🏆 Jornada principal concluída':
+        current.icon+' '+escapeHtml(current.title))+'</strong>'+
+      '<span>'+journey.total+'/'+journey.maximum+' conquistas</span></div>'+
+      '<progress max="'+journey.maximum+'" value="'+journey.total+'" aria-label="Conquistas da colônia"></progress>'+
+      '<small>🗺️ '+journey.discovered+'/5 continentes explorados · '+
+      (journey.allDone?'Continue desenvolvendo sua colônia livremente.':
+        'Próximo objetivo: '+escapeHtml(
+          current.objectives.find(o=>!o.done)?.title||'Concluir o capítulo'))+
+      '</small></div>';
+    chapters.innerHTML=journey.chapters.map(chapter=>
+      '<section class="progression-chapter" data-current="'+(chapter.index===current.index&&!journey.allDone)+'" data-done="'+chapter.complete+'">'+
+      '<div class="progression-chapter-header"><div class="progression-chapter-heading">'+
+      '<strong>'+chapter.icon+' Capítulo '+(chapter.index+1)+' · '+escapeHtml(chapter.title)+'</strong>'+
+      '<small>'+escapeHtml(chapter.description)+'</small></div>'+
+      '<span class="progression-chapter-count">'+chapter.done+'/'+chapter.total+'</span></div>'+
+      '<progress max="'+chapter.total+'" value="'+chapter.done+'" aria-label="Progresso do capítulo '+(chapter.index+1)+'"></progress>'+
+      '<ul class="progression-tasks">'+chapter.objectives.map(goal=>
+        '<li data-done="'+goal.done+'"><span class="progression-marker">'+(goal.done?'✓':'○')+'</span>'+
+        '<div><strong>'+escapeHtml(goal.title)+'</strong><small>'+
+        (goal.done?'Concluído!':escapeHtml(goal.hint))+
+        ' · +'+goal.reward+' conhecimento</small></div></li>').join('')+'</ul>'+
+      '<div class="progression-prize">✦ '+escapeHtml(chapter.unlock)+'</div></section>'
+    ).join('');
+  }
+  $("#progression-open").addEventListener("click",()=>{
+    if(!playing||!state)return;
+    renderProgressionPanel();
+    if(!$("#progression-dialog").open)$("#progression-dialog").showModal();
+  });
   $("#colony-life-open").addEventListener("click",()=>{
     if(!playing||!state)return;
     renderColonyPanel();
@@ -2006,6 +2065,13 @@
     if(colonyToggle)colonyToggle.title=Life.season(state.day)+" · "+
       Life.weatherLabels[climate]+" · Sono, pesquisa e automação";
     if($("#colony-life-dialog")?.open)renderColonyPanel();
+    const journey=Progression.status(state);
+    const count=$("#progression-hud-count");
+    if(count)count.textContent=journey.total+"/"+journey.maximum;
+    const progressionButton=$("#progression-open");
+    if(progressionButton)progressionButton.title="Jornada: "+journey.current.title+
+      " · "+journey.total+" de "+journey.maximum+" conquistas";
+    if($("#progression-dialog")?.open)renderProgressionPanel();
     for(const key of ["seeds","water","food"])set("#"+key,state[key]);
     set("#worker-count",state.workers.length);set("#task-count",tasks.length);
     const manureOrderButton=$('[data-order-type="collectManure"]');
