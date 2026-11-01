@@ -540,7 +540,7 @@
     const id="haul:"+job.phase+":"+goal.x+","+goal.y+":"+job.kind;
     if(w.routeTask!==id){
       w.route=routeBetween(w.x,w.y,goal.x,goal.y);
-      if(!w.route.length){w.haul=null;w.route=[];w.routeTask=null;return true;}
+      if(!w.route.length){refundHaul(w);w.route=[];w.routeTask=null;return true;}
       w.routeTask=id;
     }
     const target=w.route[0]||{x:goal.x+.5,y:goal.y+.5};
@@ -558,10 +558,24 @@
     w.routeTask=null;w.route=[];
     if(job.phase==="fetch"){
       const grabbed=Logistics.collect(state,job);
-      if(!grabbed){w.haul=null;return true;}
-      job.phase="deliver";w.inventory=w.inventory||{tools:{},items:{}};
-      w.inventory.carrying={kind:job.kind,qty:grabbed};
-      log(w.name+" pegou "+grabbed+" "+job.kind+" do chão ou baú.");
+      job.cargo=(job.cargo||0)+grabbed;
+      if(job.cargo<=0){w.haul=null;return true;}
+      w.inventory=w.inventory||{tools:{},items:{}};
+      w.inventory.carrying={kind:job.kind,qty:job.cargo};
+      // Transportadores visitam vários gravetos/pilhas antes de retornar.
+      // A capacidade vale para a CARGA TOTAL, não apenas uma pilha.
+      const remainder=Math.max(0,(job.limit||job.cargo)-job.cargo);
+      const next=remainder>0?[...Logistics.sources(state,job.kind)]
+        .sort((a,b)=>Math.abs(w.x-a.x)+Math.abs(w.y-a.y)-
+          Math.abs(w.x-b.x)-Math.abs(w.y-b.y))
+        .find(source=>source.qty>0&&routeBetween(w.x,w.y,source.x,source.y).length>0):null;
+      if(next){
+        job.source=next;job.qty=Math.min(remainder,next.qty);
+        job.phase="fetch";w.routeTask=null;w.route=[];
+      }else{
+        job.qty=job.cargo;job.phase="deliver";
+      }
+      log(w.name+" pegou "+grabbed+" "+job.kind+" (carga: "+job.cargo+"/"+job.limit+").");
     }else{
       const order=job.orderId?state.orders.find(o=>o.id===job.orderId):null;
       if(job.orderId&&!order)Logistics.drop(state,goal.x,goal.y,job.kind,job.qty);
@@ -578,8 +592,8 @@
     w.haul=job;w.route=[];w.routeTask=null;return true;
   }
   function refundHaul(w){
-    if(w.haul?.phase==="deliver"&&w.haul.qty>0)
-      Logistics.drop(state,Math.floor(w.x),Math.floor(w.y),w.haul.kind,w.haul.qty);
+    if((w.haul?.cargo||0)>0)
+      Logistics.drop(state,Math.floor(w.x),Math.floor(w.y),w.haul.kind,w.haul.cargo);
     w.haul=null;
     if(w.inventory)w.inventory.carrying=null;
   }
@@ -739,8 +753,8 @@
         if(w.carryingWater)state.water=(Number(state.water)||0)+1;
         if(w.carryingManure)state.inventory.manure++;
         w.carryingWater=false;w.carryingManure=false;w.supplyStage=null;w.supplyTarget=null;
-        if(w.haul?.phase==="deliver"&&w.haul.qty>0)
-          Logistics.drop(state,Math.floor(w.x),Math.floor(w.y),w.haul.kind,w.haul.qty);
+        if((w.haul?.cargo||0)>0)
+          Logistics.drop(state,Math.floor(w.x),Math.floor(w.y),w.haul.kind,w.haul.cargo);
         w.haul=null;if(w.inventory)w.inventory.carrying=null;
         w.task=null;w.progress=0;w.personalPriority=w.personalPriority||{};
         w.x=Number.isFinite(w.x)?w.x:state.spawn.x;w.y=Number.isFinite(w.y)?w.y:state.spawn.y;
@@ -1476,7 +1490,7 @@
         const w=item.worker,px=w.x*TILE,py=w.y*TILE;
         if(w.carryingWater)write("💧",px+18,py-32,"#b6f3fe",13);
         if(w.carryingManure)write("💩",px+18,py-32,"#eac7a4",13);
-        if(w.haul?.phase==="deliver")write(pickupTypes[w.haul.kind]?.icon||"📦",px+17,py-31,"#f4eac1",12);
+        if((w.haul?.cargo||0)>0)write(pickupTypes[w.haul.kind]?.icon||"📦",px+17,py-31,"#f4eac1",12);
         ctx.fillStyle="#223c3180";ctx.beginPath();ctx.ellipse(px,py-2,11,4,0,0,Math.PI*2);ctx.fill();
         const active=tasks.find(t=>t.id===w.task);
         const working=Boolean(active&&!w.moving&&w.progress>0);
