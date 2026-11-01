@@ -845,6 +845,10 @@
         }))
       ];
       World.connectWater(state.world,protectedWaterTiles);
+      // Saves antigos com pontes em zigue-zague são reparados uma única vez.
+      // A água e o tilemap do jogador permanecem exatamente nas mesmas células.
+      const repairedBridges=World.repairCrossings(state.world,protectedWaterTiles);
+      if(repairedBridges)console.info("TILLFOLK: travessias antigas corrigidas sem alterar o terreno.");
       Minerals.normalize(state);
       Minerals.populate(state.world,[
         ...protectedWaterTiles,...state.chests,...state.wells,
