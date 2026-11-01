@@ -31,7 +31,7 @@ O código de referência é `src/missions.js`, não uma lista antiga neste docum
 | 12 | `tree` | Derrubar a primeira árvore usando o machado |
 | 13 | `home` | Construir a primeira cabana usando madeira transportada fisicamente |
 
-**Atenção:** o machado de pedra foi removido. O tronco é cortado com o machado comum. O frame da enxada deve corresponder à enxada real do atlas. Esses itens não são intercambiáveis.
+**Atenção:** o machado inicial no jogo é o **Machado de pedra**, fabricado na Work Station. Não existe uma receita separada chamada “Machado comum”. A enxada usa seu próprio frame no atlas: os sprites não são intercambiáveis.
 
 Após o machado, os objetivos de madeira e primeira moradia criam uma conclusão tangível. A faixa de **Jornada** orienta os capítulos seguintes depois da cabana.
 
