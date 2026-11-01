@@ -782,7 +782,7 @@
           ...state.workers.map(w=>({x:w.x,y:w.y})),
           ...state.plots.filter(p=>p.tilled||p.seeded||p.selected||p.produce),
           ...state.homes,...state.workstations];
-        state.animals.push(...Exploration.spawn(state.world,occupied));
+        state.animals.push(...Exploration.spawn(state.world,occupied,[state.spawn]));
       }
       // Ordens da vaca removida não ficam bloqueadas para sempre.
       state.orders=state.orders.filter(o=>o.type!=="collectManure"||
