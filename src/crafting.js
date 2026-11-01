@@ -60,7 +60,10 @@
     return state?.crafting?.equipment?.[key]===true;
   }
   function missing(state,cost){
-    return Object.entries(cost).filter(([key,need])=>(Number(state?.inventory?.[key])||0)<need);
+    // Bancada aceita matérias-primas espalhadas no solo ou guardadas nos baús;
+    // a retirada real só ocorre quando o colono faz a entrega física.
+    return Object.entries(cost).filter(([key,need])=>
+      (window.TillfolkLogistics?.available(state,key)??Number(state?.inventory?.[key])??0)<need);
   }
   function canBuild(state){return !state?.crafting?.station&&(window.TillfolkLogistics?.available(state,"twigs")??state?.inventory?.twigs??0)>=STATION_COST;}
   function recipe(key){return RECIPES.find(item=>item.key===key)||null;}
