@@ -34,7 +34,7 @@
   const equipped=Object.freeze(Object.fromEntries(RECIPES.filter(item=>item.type!=="material").map(({key})=>[key,false])));
   // Equipamentos profissionais seguem as mesmas proibições vermelhas das tarefas.
   // Roupas de proteção e materiais continuam liberados a qualquer trabalhador.
-  const toolActivity=Object.freeze({hoe:"till",wateringCan:"water",axe:"clear",shovel:"clear",pickaxe:"clear"});
+  const toolActivity=Object.freeze({hoe:"till",wateringCan:"water",axe:"clear",shovel:"clear",pickaxe:"clear",bronzePickaxe:"clear",ironPickaxe:"clear",diamondPickaxe:"clear"});
   const forbiddenActivity=(worker,key)=>{
     const activity=toolActivity[key];
     return activity&&worker?.neg?.includes(activity)?activity:null;
