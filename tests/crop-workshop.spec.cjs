@@ -82,6 +82,8 @@ test("receitas da Work Station produzem machado e sementes com consumo real",asy
    s.crafting.station=ws;s.workstations=[ws];s.firstHarvest=true; // estação perto dos colonos no mapa 192x120
   s.inventory.twigs=50;s.inventory.gravel=20;s.inventory.grass=20;s.inventory.wood=20;s.inventory.stone=10;
   s.cropProduce.tomato=4;s.food=10;
+  // Evita que um traço inicial aleatório impeça o artesão da fixture.
+  for(const worker of s.workers){worker.neg=[];worker.energy=100;worker.resting=false;worker.atRest=false;}
   localStorage.setItem("tillfolk-v01",JSON.stringify(s));
   sessionStorage.setItem("workshop-fixture-loaded","1");
  });
