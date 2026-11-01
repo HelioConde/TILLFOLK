@@ -74,15 +74,22 @@
   function masksFor(world,w,h){
     if(!world||typeof world!=="object")return null;
     const signature=world.biomeMap;
+    // Agua não pertence a nenhum autotile terrestre. Cada célula molhada
+    // deve ser uma lacuna REAL na máscara de oito vizinhos; caso contrário,
+    // a borda do atlas é coberta depois pelo desenho do rio.
+    const waterRef=world.water,waterLength=Array.isArray(waterRef)?waterRef.length:0;
     const cached=masksCache.get(world);
-    if(cached&&cached.signature===signature&&cached.w===w&&cached.h===h)return cached.masks;
+    if(cached&&cached.signature===signature&&cached.w===w&&cached.h===h&&
+       cached.waterRef===waterRef&&cached.waterLength===waterLength)return cached.masks;
+    const wet=new Set((waterRef||[]).map(p=>p.y*w+p.x));
     const masks=Object.fromEntries(Object.keys(TYPES).map(id=>
       [id,Array.from({length:h},()=>Array(w).fill(false))]));
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      if(wet.has(y*w+x))continue;
       const raw=signature?.[y*w+x],id=TYPES[raw]?raw:"g";
       masks[id][y][x]=true;
     }
-    masksCache.set(world,{signature,w,h,masks});
+    masksCache.set(world,{signature,w,h,waterRef,waterLength,masks});
     return masks;
   }
   function draw(ctx,sprites,world,w,h,size,part,bounds){
@@ -90,7 +97,11 @@
     const y0=clamp(bounds?.y0??0,0,h-1),y1=clamp(bounds?.y1??h-1,0,h-1);
     const ready=Boolean(Autotile&&Catalog&&Catalog.isLoaded(sprites.terrain_grassGround));
     const masks=ready?masksFor(world,w,h):null;
+    const water=new Set((world?.water||[]).map(p=>p.y*w+p.x));
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+      // O espaço entre as ilhas permanece ÁGUA, nunca centro/borda de terra.
+      // Inclui o fallback enquanto o PNG do atlas ainda não terminou de carregar.
+      if(water.has(y*w+x))continue;
       const tile=kind(world,x,y),t=TYPES[tile],px=x*size,py=y*size;
       const v=hash(world.seed||1,x,y),v2=hash((world.seed||1)+17,x,y);
       const atlas=ready?sprites["terrain_"+Catalog.BIOME_ATLAS[tile]]:null;
