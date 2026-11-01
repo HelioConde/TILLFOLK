@@ -41,6 +41,13 @@ test("quadros de animação cabem nos atlas sem repetir a spritesheet inteira",(
         const dims=pngDimensions(path.join(root,decodeURIComponent(file.url.slice(2))));
         const rect=Exploration.frameRect(frame,dims);
         assert.ok(rect,"frame inválido para "+frame.key);
+        const required=frame.frame.frames===4?4:
+          frame.frame.frames===6?6:
+          frame.frame.frames==="auto-square"||frame.frame.frames==="auto-16"?2:1;
+        const detected=Math.floor(dims.naturalWidth/rect.sw);
+        assert.ok(detected>=required,
+          "spritesheet sem os quadros declarados: "+frame.key+
+          " ("+dims.naturalWidth+"x"+dims.naturalHeight+", "+detected+" quadros)");
         assert.ok(rect.sx>=0&&rect.sy>=0&&rect.sx+rect.sw<=dims.naturalWidth&&
           rect.sy+rect.sh<=dims.naturalHeight,"frame fora do atlas: "+frame.key);
       }
