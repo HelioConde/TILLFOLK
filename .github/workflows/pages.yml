@@ -27,7 +27,7 @@ jobs:
           node --test tests/terrain-autotile.test.cjs
           node --test tests/terrain-editor.test.cjs
           node --check src/wild-world.js
-          node --test tests/biome-rivers.test.cjs tests/continent-protection.test.cjs
+          node --test tests/biome-rivers.test.cjs tests/continent-protection.test.cjs tests/wildlife-animations.test.cjs
           node --check src/game.js
           node --check src/day-night.js
           node --check src/colony-life.js
