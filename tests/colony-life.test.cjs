@@ -75,6 +75,14 @@ test("alimentos estragam gradualmente sem ficar negativos",()=>{
  Life.advance(s,60);
  assert.equal(s.food,0);
 });
+test("poço construído fornece água limitada para a irrigação",()=>{
+ const s=state();s.water=0;s.wells=[{x:7,y:6}];
+ for(let i=0;i<3;i++)Life.advance(s,60);
+ assert.equal(s.water,1);
+ assert.ok(s.colonyLife.wellProgress>=0);
+ s.water=24;Life.advance(s,60);
+ assert.equal(s.water,24);
+});
 test("criação de animais exige casal adulto, tempo e alimento",()=>{
  const s=state();s.day=11;s.food=12;
  s.animals=[{x:10,y:10,age:10},{x:11,y:10,age:10}];
