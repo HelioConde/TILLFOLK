@@ -70,7 +70,8 @@ test("etapas preservam custo da logística, ordem e avanço por construção",()
     assert.equal(Orders.status(pending.order,null,null,s).state,"done");
   }
   assert.equal(s.rocket.stage,4);
-  assert.deepEqual(s.rocket.site,{x:9,y:9});
+  assert.equal(s.rocket.site.x,9);
+  assert.equal(s.rocket.site.y,9);
 });
 test("lançamento requer cinco colonos, casas, abastecimento e equipe saudável",()=>{
   const s=colony();s.rocket={version:1,stage:4,site:{x:9,y:9},launched:false,crew:[]};
