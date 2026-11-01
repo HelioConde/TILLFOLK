@@ -132,8 +132,11 @@ test('Jornada da colônia apresenta seis capítulos e progresso persistente sem 
   await page.locator('#progression-open').click();
   await expect(page.locator('#progression-dialog')).toBeVisible();
   await expect(page.locator('#progression-chapters .progression-chapter')).toHaveCount(6);
-  await expect(page.locator('#progression-chapters .progression-tasks li')).toHaveCount(23);
+  await expect(page.locator('#progression-chapters .progression-tasks li')).toHaveCount(28);
   await expect(page.locator('#progression-overview')).toContainText('conquistas');
+  await expect(page.locator('#mineral-progression-list .mineral-zone')).toHaveCount(6);
+  await expect(page.locator('#mineral-progression-list')).toContainText('Bronze');
+  await expect(page.locator('#mineral-progression-list')).toContainText('Bauxita');
   await page.screenshot({path:'screenshots/jornada-colonia-1366x768.png',animations:'disabled'});
   await page.locator('#progression-dialog .modal-x').click();
   await expect(page.locator('#progression-dialog')).toBeHidden();
