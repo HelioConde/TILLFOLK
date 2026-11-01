@@ -2,9 +2,9 @@
 /* Um colono pode escolher uma ordem existente, mas nunca criar novas ordens.
    A lista pertence ao jogador e é salva em state.orders. Sem backend. */
 (() => {
-  const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry","collectWater","collectManure","buildHome","buildStation","buildChest","craftTool"]);
-  const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina",buildChest:"Construir baú",craftTool:"Fabricar ferramenta"});
-  const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️",buildChest:"🧰",craftTool:"⚒️"});
+  const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry","collectWater","collectManure","buildHome","buildStation","buildChest","buildWell","craftTool"]);
+  const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina",buildChest:"Construir baú",buildWell:"Construir poço",craftTool:"Fabricar ferramenta"});
+  const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️",buildChest:"🧰",buildWell:"🚰",craftTool:"⚒️"});
   let worldWidth=28,worldHeight=18;
   function setBounds(width,height){
     if(Number.isInteger(width)&&Number.isInteger(height)&&width>=28&&height>=18){
@@ -43,13 +43,19 @@
         :{state:"blocked",reason:"Aguardando esterco do animal"};
     }
     const Logistics=window.TillfolkLogistics;
+    if(order.type==="buildWell"){
+      if(resources?.wells?.some(w=>w.x===order.x&&w.y===order.y))
+        return {state:"done",reason:"Poço já concluído"};
+      if((resources?.colonyLife?.researchLevel||0)<2)
+        return {state:"blocked",reason:"Pesquise conservação para desbloquear o poço"};
+    }
     if(order.type==="buildChest"){
       if(resources?.chests?.some(c=>c.x===order.x&&c.y===order.y))
         return {state:"done",reason:"Baú já concluído"};
       if(!resources?.crafting?.station)
         return {state:"blocked",reason:"Construa uma Work Station para fabricar o baú"};
     }
-    if(Logistics&&["buildStation","buildHome","buildChest","craftTool"].includes(order.type)){
+    if(Logistics&&["buildStation","buildHome","buildChest","buildWell","craftTool"].includes(order.type)){
       if(order.type==="buildStation"&&(resources?.crafting?.station||resources?.workstations?.length))
         return {state:"done",reason:"Work Station já montada"};
       if(order.type==="buildHome"&&resources?.homes?.some(h=>h.x===order.x&&h.y===order.y))
@@ -152,7 +158,7 @@
     }
   }
   function add(orders,type,x,y,plot,object,resources){
-    if(!TYPES.includes(type)||!validCell(x,y)||(!plot&&!["collectWater","collectManure","buildStation","buildChest"].includes(type)))return {error:"Escolha um terreno válido."};
+    if(!TYPES.includes(type)||!validCell(x,y)||(!plot&&!["collectWater","collectManure","buildStation","buildChest","buildWell"].includes(type)))return {error:"Escolha um terreno válido."};
     const key=id(type,x,y);
     if(orders.some(o=>o.id===key))return {error:"Esta ordem já está na lista."};
     if(orders.length>=1500)return {error:"Fila cheia. Cancele algumas ordens."};
