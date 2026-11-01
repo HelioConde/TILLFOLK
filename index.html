@@ -86,6 +86,11 @@
     <main class="game-layout">
       <section class="play-area" aria-label="Fazenda">
         <div class="scene-head"><div><span id="mode-label" class="overline">SOBREVIVÊNCIA · DIA 1</span><h1 id="farm-title">Seu pequeno pedaço de terra</h1></div><div class="scene-actions"><button id="focus-game" type="button" class="focus-game-btn" aria-pressed="false" title="Alternar a tela cheia do navegador">⛶ Tela cheia</button><div id="status" class="status-pill">● Fazenda em funcionamento</div></div></div>
+        <div id="progression-focus" class="progression-focus" hidden role="status" aria-live="polite">
+          <span id="progression-focus-chapter">🌱 Sua jornada</span>
+          <strong id="progression-focus-goal">Organize sua primeira colônia</strong>
+          <button type="button" id="progression-focus-open" aria-controls="progression-dialog" title="Abrir objetivos da jornada">Ver jornada</button>
+        </div>
         <section id="mission-card" class="mission-card" aria-label="Missão atual do tutorial" hidden>
           <div class="mission-top"><span id="mission-chapter" class="mission-chapter">MISSÃO 1 / 12</span><span class="mission-badge">✦ APRENDIZ DO VALE</span></div>
           <h2 id="mission-title">O vale está vivo</h2><p id="mission-goal" class="mission-goal">Sua primeira tarefa</p>
