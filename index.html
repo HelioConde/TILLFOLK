@@ -31,7 +31,7 @@
   <link rel="stylesheet" href="./tutorial-missions.css?v=20261031-menu-missao-fix">
   <link rel="stylesheet" href="./hud-settings.css?v=20261031-icones-ajuste-v4">
   <link rel="stylesheet" href="./crop-workshop.css?v=20261031-ground-hauling-v1">
-  <link rel="stylesheet" href="./progression.css?v=20261101-foguete-v1">
+  <link rel="stylesheet" href="./progression.css?v=20261101-minerais-v2">
   <link rel="stylesheet" href="./space-program.css?v=20261101-foguete-v1">
   <link rel="stylesheet" href="./colony-life.css?v=20261101-shifts-fixes-v4">
   <script defer src="./src/menu.js?v=20261031-sync-preferencias"></script>
@@ -46,7 +46,7 @@
   <script defer src="./src/blueprints.js?v=20261031-fazenda-automacao-v7"></script>
   <script defer src="./src/house-building.js?v=20261031-fazenda-casa"></script>
   <script defer src="./src/crop-catalog.js?v=20261031-fazenda-automacao-v7"></script>
-  <script defer src="./src/mineral-progression.js?v=20261101-geologia-v1"></script>
+  <script defer src="./src/mineral-progression.js?v=20261101-minerais-v2"></script>
   <script defer src="./src/crafting.js?v=20261101-minerais-v2"></script>
   <script defer src="./src/logistics.js?v=20261101-lifecycle-v3"></script>
   <script defer src="./src/task-orders.js?v=20261101-lifecycle-v3"></script>
@@ -116,13 +116,13 @@
           </div>
           <canvas id="minimap" width="224" height="144" tabindex="0" role="button" aria-label="Minimapa interativo: clique ou use as setas para deslocar a câmera" title="Clique para deslocar a câmera"></canvas>
           <div id="biome-legend" class="biome-legend" role="group" aria-label="Ir para um bioma">
-            <button type="button" data-visit-biome="g" title="Ir para a pradaria"><i style="--swatch:#a4d17c"></i>Grama</button>
-            <button type="button" data-visit-biome="f" title="Floresta: exige luvas resistentes"><i style="--swatch:#638b57"></i>Bosque</button>
-            <button type="button" data-visit-biome="s" title="Deserto: exige manto do deserto"><i style="--swatch:#e2c083"></i>Areia</button>
-            <button type="button" data-visit-biome="i" title="Gelo: exige roupa de frio"><i style="--swatch:#b8dce0"></i>Gelo</button>
-            <button type="button" data-visit-biome="w" title="Pântano: exige botas impermeáveis"><i style="--swatch:#63866a"></i>Pântano</button>
-            <button type="button" data-visit-biome="p" title="Cogumelos tóxicos: exige máscara filtrante"><i style="--swatch:#8b719e"></i>Cogumelos</button>
-            <p class="biome-protection-note">🧤 Bosque · 🧣 Deserto · 🧥 Gelo · 🥾 Pântano · 😷 Cogumelos <strong>Equipe-se na oficina para explorar.</strong></p>
+            <button type="button" data-visit-biome="g" title="Ir para a pradaria"><i style="--swatch:#a4d17c"></i>Centro 🪨</button>
+            <button type="button" data-visit-biome="f" title="Floresta: exige luvas resistentes"><i style="--swatch:#638b57"></i>Bosque 🥉</button>
+            <button type="button" data-visit-biome="s" title="Deserto: exige manto do deserto"><i style="--swatch:#e2c083"></i>Areia ⚙️</button>
+            <button type="button" data-visit-biome="i" title="Gelo: exige roupa de frio"><i style="--swatch:#b8dce0"></i>Gelo 🟨</button>
+            <button type="button" data-visit-biome="w" title="Pântano: exige botas impermeáveis"><i style="--swatch:#63866a"></i>Pântano 💎</button>
+            <button type="button" data-visit-biome="p" title="Cogumelos tóxicos: exige máscara filtrante"><i style="--swatch:#8b719e"></i>Cogumelos 🔶</button>
+            <p class="biome-protection-note">⛏️ Picaretas: pedra → bronze → ferro → diamante · 🧤🧣🧥🥾😷 EPI individual <strong>O último continente fornece bauxita para fabricar a liga do foguete.</strong></p>
           </div>
           <div class="camera-controls" role="group" aria-label="Controle de zoom do mapa">
             <button id="zoom-out" type="button" aria-label="Diminuir zoom">−</button>
