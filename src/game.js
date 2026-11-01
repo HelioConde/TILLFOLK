@@ -388,10 +388,10 @@
   sprite.premium.addEventListener("load",()=>{workerPaletted.clear();redrawStarterAvatars();});
   sprite.worker.addEventListener("load",()=>{workerPaletted.clear();redrawStarterAvatars();});
   sprite.actions.addEventListener("load",()=>workerPaletted.clear());
-  const labels = {buildChest:"Construir baú",craftTool:"Fabricar",clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina"};
-  const icons = {buildChest:"🧰",craftTool:"⚒️",clear:"🪓",till:"⛏️",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️"};
-  const baseTime = {buildChest:120,craftTool:45,clear:120,till:90,fertilize:60,sow:60,water:90,harvest:120,carry:60,collectWater:65,collectManure:45,buildHome:180,buildStation:150};
-  const startPriorities = {buildChest:6,craftTool:7,clear:7,till:6,fertilize:5,sow:6,water:8,harvest:9,carry:8,collectWater:7,collectManure:5,buildHome:7,buildStation:6};
+  const labels = {buildWell:"Construir poço",buildChest:"Construir baú",craftTool:"Fabricar",clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina"};
+  const icons = {buildWell:"🚰",buildChest:"🧰",craftTool:"⚒️",clear:"🪓",till:"⛏️",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️"};
+  const baseTime = {buildWell:150,buildChest:120,craftTool:45,clear:120,till:90,fertilize:60,sow:60,water:90,harvest:120,carry:60,collectWater:65,collectManure:45,buildHome:180,buildStation:150};
+  const startPriorities = {buildWell:6,buildChest:6,craftTool:7,clear:7,till:6,fertilize:5,sow:6,water:8,harvest:9,carry:8,collectWater:7,collectManure:5,buildHome:7,buildStation:6};
   // Homenagem à Simone misturada a nomes brasileiros e apelidos divertidos.
   // Nomes novos são sorteados; não renomeamos saves com nomes personalizados.
   const names=[
@@ -449,9 +449,15 @@
       !occupiedByStation(x,y)&&!occupiedByHome(x,y)&&
       !window.TillfolkHouseBuilder.occupied(state.house,x,y)&&
       !state.chests?.some(c=>c.x===x&&c.y===y)&&
+      !state.wells?.some(c=>c.x===x&&c.y===y)&&
       !state.orders.some(o=>o.type!=="buildChest"&&
         (o.type==="buildHome"?homeTiles(o.x,o.y).some(([hx,hy])=>hx===x&&hy===y):
          o.x===x&&o.y===y&&o.type==="buildStation"));
+  }
+  function wellSiteValid(x,y){
+    if(!state||!state.crafting?.station||!state.colonyLife||state.colonyLife.researchLevel<2)return false;
+    return chestSiteValid(x,y)&&!state.wells.some(w=>w.x===x&&w.y===y)&&
+      !state.orders.some(o=>o.x===x&&o.y===y&&o.type==="buildWell");
   }
   function homeSiteValid(x,y){
     if(x<2||y<2||x>=W-3||y>=H-3)return false;
@@ -628,7 +634,7 @@
     state = {day:1,minutes:8*60,seeds:0,water:0,food:8,firstHarvest:false,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",tutorial:Missions.create(),
       plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),
       cropSeeds:Crops.normalizeStock({}),cropProduce:Crops.normalizeStock({}),selectedCrop:"potato",workstations:[],crafting:Crafting.normalize(null),
-      groundItems:[],chests:[],nextDropId:1,homes:[],animals:[],inventory:{wood:0,twigs:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
+      groundItems:[],chests:[],wells:[],nextDropId:1,homes:[],animals:[],inventory:{wood:0,twigs:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},buildPriority:5,
       survivalVersion:1,startingColonists:initialColonists,deaths:[],gameOver:false,
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
@@ -675,6 +681,7 @@
         Number.isInteger(ws.x)&&Number.isInteger(ws.y)&&ws.x>0&&ws.y>0&&ws.x<W-1&&ws.y<H-1):[];
       state.crafting=Crafting.normalize(s.crafting,!s.crafting);
       Logistics.normalize(state);
+      state.wells=Array.isArray(s.wells)?s.wells.filter(w=>Number.isInteger(w.x)&&Number.isInteger(w.y)):[];
       if(!state.crafting.station&&state.workstations.length)
         state.crafting.station={x:state.workstations[0].x,y:state.workstations[0].y};
       if(state.crafting.station&&!state.workstations.some(ws=>ws.x===state.crafting.station.x&&ws.y===state.crafting.station.y))
@@ -962,6 +969,7 @@
     const personalBlock=Crafting.blocked(state,t.type,World.at(state.world,t.x,t.y),w);
     if(personalBlock)return personalBlock;
     if(t.type==="buildChest"&&!chestSiteValid(t.x,t.y))return "Baú exige terreno livre";
+    if(t.type==="buildWell"&&!wellSiteValid(t.x,t.y))return "Poço exige pesquisa e solo livre";
     if(t.type==="buildStation"&&!stationSiteValid(t.x,t.y))
       return "Escolha um terreno livre para a bancada";
     if(t.type==="buildHome"){
@@ -1122,6 +1130,15 @@
       showPickup(t.x,t.y,"home");
       Life.discover(state,2);
       log(w.name+" concluiu uma cabana. "+housingVacancy()+" vaga(s) livres.");return true;
+    }
+    if(t.type==="buildWell"){
+      if(!Logistics.complete(t)||!wellSiteValid(t.x,t.y))return false;
+      state.wells.push({x:t.x,y:t.y});
+      state.plots=state.plots.filter(p=>p.x!==t.x||p.y!==t.y);
+      showPickup(t.x,t.y,"water",1);
+      Life.discover(state,1);
+      log(w.name+" construiu um poço. A água agora será armazenada lentamente.");
+      return true;
     }
     if(t.type==="buildChest"){
       if(!Logistics.complete(t)||!chestSiteValid(t.x,t.y))return false;
@@ -1286,7 +1303,7 @@
       }
       const t=tasks.find(t=>t.id===w.task);
       if(!t){refundHaul(w);releaseSupply(w);w.task=null;w.progress=0;w.route=[];continue;}
-      if(["buildStation","buildHome","buildChest","craftTool"].includes(t.type)&&
+      if(["buildStation","buildHome","buildChest","buildWell","craftTool"].includes(t.type)&&
          !Logistics.complete(state.orders.find(o=>o.id===t.id)||t)){
         const original=state.orders.find(o=>o.id===t.id);
         if(original&&beginHaul(w,original))processHaul(w,scaled);
@@ -2000,7 +2017,7 @@
         '<small>Terreno '+(t.x+1)+', '+(t.y+1)+' · '+escapeHtml(statusDetail)+'</small>'+
         (w?'<div class="order-progress" role="progressbar" aria-label="Progresso da tarefa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+progress+'"><i style="width:'+progress+'%"></i></div>':'')+
         '</div><div class="order-task-controls">'+
-        (["buildHome","buildStation","buildChest"].includes(t.type)?
+        (["buildHome","buildStation","buildChest","buildWell"].includes(t.type)?
           '<button class="order-priority-edit" data-order-priority="'+t.id+'" data-delta="-1" aria-label="Diminuir prioridade da construção">−</button>'+
           '<b title="Prioridade da construção, de 1 a 9">P'+(t.priority??5)+'</b>'+
           '<button class="order-priority-edit" data-order-priority="'+t.id+'" data-delta="1" aria-label="Aumentar prioridade da construção">+</button>':
@@ -2242,6 +2259,7 @@
     if(!Number.isInteger(x)||!Number.isInteger(y)||x<1||y<1||x>=W-1||y>=H-1)
       return {error:"Escolha uma área dentro do vale."};
     if(buildLayer==="field")return canPlanField(x,y);
+    if(buildLayer==="well")return wellSiteValid(x,y)?{house:true}:{error:"Poço: pesquisa nível 2 e terreno livre."};
     if(buildLayer==="chest")return chestSiteValid(x,y)?{house:true}:{error:"Baú precisa de solo livre."};
     if(buildLayer==="station")return stationSiteValid(x,y)?{house:true}:{error:"Oficina exige chão firme livre."};
     if(buildLayer==="station")return stationSiteValid(x,y)?
@@ -2357,6 +2375,14 @@
     if(!playing||selectedTool!=="construir")return;
     const result=getBuildEdit(x,y,erase);
     if(!result.house){$("#build-status").textContent=result.error;return;}
+    if(buildLayer==="well"){
+      const test=Orders.add(state.orders,"buildWell",x,y,findPlot(x,y),World.at(state.world,x,y),state);
+      if(!test.order){$("#build-status").textContent=test.error;return;}
+      test.order.priority=state.buildPriority;pushBuildHistory();
+      state.orders.push(test.order);recalcTasks();refresh();save();
+      $("#build-status").textContent="🚰 Poço planejado: entrega de 4 madeiras e 3 pedras.";
+      return;
+    }
     if(buildLayer==="chest"){
       const test=Orders.add(state.orders,"buildChest",x,y,findPlot(x,y),World.at(state.world,x,y),state);
       if(!test.order){$("#build-status").textContent=test.error;return;}
@@ -2398,6 +2424,8 @@
         "Work Station: junte 10 gravetos e planeje a bancada no chão livre. Clique direito cancela.":
       buildLayer==="chest"?
         "Baú: coloque uma blueprint e espere a equipe levar os recursos ao destino.":
+      buildLayer==="well"?
+        "Poço: pesquisa nível 2, 4 madeiras e 3 pedras; a água é produzida automaticamente.":
         "Camada: "+btn.textContent.trim()+". Clique para construir ou use o botão direito para apagar.";
   }));
   function openWorkerInventory(worker){
@@ -2431,6 +2459,7 @@
           o.x===x&&o.y===y&&["till","sow"].includes(o.type):
           buildLayer==="station"?o.type==="buildStation"&&o.x===x&&o.y===y:
           buildLayer==="chest"?o.type==="buildChest"&&o.x===x&&o.y===y:
+          buildLayer==="well"?o.type==="buildWell"&&o.x===x&&o.y===y:
           o.type==="buildHome"&&homeTiles(o.x,o.y).some(([hx,hy])=>hx===x&&hy===y))
           .map(o=>o.id);
         if(ids.length){removeOrders(ids);$("#build-status").textContent="Blueprint cancelado.";}
