@@ -247,7 +247,9 @@
     if(!world||!Array.isArray(world.water))return false;
     // Saves antigos tinham "escadas" sobre a água. Substituir SOMENTE as
     // pontes; preservar água, biomas, construções, recursos e coordenadas.
-    if(world.crossingsVersion===BRIDGE_VERSION&&Array.isArray(world.crossings))return false;
+    if(world.crossingsVersion===BRIDGE_VERSION&&Array.isArray(world.crossings)&&
+      world.crossings.every(tile=>world.water.some(w=>w.x===tile.x&&w.y===tile.y)))
+      return false;
     const reserved=new Set(protectedTiles.filter(p=>Number.isFinite(p?.x)&&Number.isFinite(p?.y))
       .map(p=>key(Math.floor(p.x),Math.floor(p.y))));
     createCrossings(world,reserved);
@@ -378,11 +380,13 @@
   function index(world){
     if(!world)return null;
     let current=indices.get(world);
-    if(!current||current.length!==world.objects.length||current.waterLength!==world.water.length){
+    if(!current||current.length!==world.objects.length||
+       current.waterLength!==world.water.length||current.crossingsRef!==world.crossings){
       current={objects:new Map(world.objects.map(o=>[key(o.x,o.y),o])),
         waters:new Set(world.water.map(o=>key(o.x,o.y))),
         bridges:new Set((world.crossings||[]).map(o=>key(o.x,o.y))),
-        length:world.objects.length,waterLength:world.water.length};
+        length:world.objects.length,waterLength:world.water.length,
+        crossingsRef:world.crossings};
       indices.set(world,current);
     }
     return current;
@@ -595,8 +599,10 @@
       .concat((legacy?.objects||[]).filter(o=>o&&Number.isFinite(o.x)&&Number.isFinite(o.y)));
     enlarged.water=enlarged.water.filter(o=>!withinOld(o))
       .concat((legacy?.water||[]).filter(o=>o&&Number.isFinite(o.x)&&Number.isFinite(o.y)));
-    enlarged.crossings=enlarged.crossings.filter(o=>!withinOld(o))
-      .concat((legacy?.crossings||[]).filter(o=>o&&Number.isFinite(o.x)&&Number.isFinite(o.y)));
+    // As pontes antigas não preservam a geometria do rio: eram escadas
+    // diagonais. Preservamos apenas os rios e o tilemap, e recalculamos
+    // as travessias retas sobre o mapa expandido.
+    enlarged.crossings=[];enlarged.crossingsVersion=0;
     const cells=enlarged.biomeMap.split("");
     const previousMap=typeof legacy?.biomeMap==="string"&&
       legacy.biomeMap.length===oldWidth*oldHeight?legacy.biomeMap:null;
@@ -606,6 +612,7 @@
     enlarged.lastRegrownDay=legacy?.lastRegrownDay||1;
     stripFruitTrees(enlarged);
     removeValleyEnclosure(enlarged);
+    repairCrossings(enlarged);
     return enlarged;
   }
   window.TillfolkWild=Object.freeze({create,expand,valleyBounds,ringTile,removeValleyEnclosure,connectWater,repairCrossings,at,waterAt,bridgeAt,blocked,clear,regrow,
