@@ -1,7 +1,9 @@
 "use strict";
 (() => {
   const TILE = 32, W = 192, H = 120, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
-  const Exploration=window.TillfolkExploration,Progression=window.TillfolkProgression,Space=window.TillfolkSpace;
+  const Exploration=window.TillfolkExploration,Progression=window.TillfolkProgression,
+    Space=window.TillfolkSpace,Minerals=window.TillfolkMinerals;
+  if(!Minerals)throw new Error("Carregue src/mineral-progression.js antes do motor TILLFOLK.");
   if(!Space)throw new Error("Carregue src/space-program.js antes de src/game.js.");
   if(!Progression)throw new Error("Carregue src/progression.js antes do motor TILLFOLK.");
   if(!Exploration)throw new Error("Carregue src/exploration.js antes do motor TILLFOLK.");
@@ -654,6 +656,7 @@
     // O jogador recebe uma clareira e recursos naturais, não uma fazenda pronta.
     const seed=Math.floor(Math.random()*0xFFFFFFFF)>>>0;
     const world=World.create(seed,W,H);
+    Minerals.populate(world);
     const plots=[];
     for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
       if(!World.waterAt(world,x,y))plots.push(makePlot(x,y,false));
@@ -675,6 +678,7 @@
       survivalVersion:1,startingColonists:initialColonists,deaths:[],gameOver:false,
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     Life.normalize(state);
+    Minerals.normalize(state);
     Space.normalize(state);
     Progression.normalize(state);
     tasks=[]; simSpeed=1; updateSpeed();
@@ -837,6 +841,11 @@
         }))
       ];
       World.connectWater(state.world,protectedWaterTiles);
+      Minerals.normalize(state);
+      Minerals.populate(state.world,[
+        ...protectedWaterTiles,...state.chests,...state.wells,
+        ...state.orders.map(o=>({x:o.x,y:o.y}))
+      ]);
       state.orders=state.orders.filter(order=>!World.waterAt(state.world,order.x,order.y));
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
       state.candidates.forEach(homageSavedName);
@@ -1157,7 +1166,11 @@
       const result=Crafting.craft(state,t.recipe,w,true);
       if(result.error){log("Fabricação aguardando: "+result.error);return false;}
       const item=result.item;
-      showPickup(t.x,t.y,item.key,1);
+      if(result.material){
+        Logistics.drop(state,t.x,t.y,result.material.kind,result.material.qty);
+        Minerals.discover(state,result.material.kind);
+      }
+      showPickup(t.x,t.y,result.material?.kind||item.key,result.material?.qty||1);
       if(item.key==="hoe")recordTutorial("hoe");
       if(item.key==="wateringCan")recordTutorial("wateringCan");
       if(item.key==="axe")recordTutorial("axe");
@@ -1234,11 +1247,17 @@
           if(Crafting.blocked(state,"clear",obj,w))return false;
           const kind=obj.kind, result=World.clear(state.world,p.x,p.y);
           if(result.blocked)return false;
-          const types={tree:"wood",stump:"wood",log:"wood",boulder:"stone",pebble:"stone",
+          const types={tree:"wood",stump:"wood",log:"wood",boulder:"stone",pebble:"gravel",
             mushroom:"mushroom",flowers:"flower",herbs:"herbs",grass:"grass",thicket:"wood",twig:"twigs"};
-          const amount={tree:3,stump:2,log:2,boulder:3,twig:1}[kind]||1;
-          const resource=types[kind]||"grass";
+          const amount=obj.mineral?Math.max(1,Number(obj.amount)||3):
+            ({tree:3,stump:2,log:2,boulder:3,twig:1}[kind]||1);
+          const resource=obj.mineral||types[kind]||"grass";
           Logistics.drop(state,t.x,t.y,resource,amount);
+          if(Minerals.discover(state,resource)){
+            log("⛏️ Novo material descoberto: "+Minerals.RESOURCES[resource].name+".");
+            notify("⛏️ "+Minerals.RESOURCES[resource].name+" descoberto!");
+            Life.discover(state,2);
+          }
           showPickup(t.x,t.y,resource,amount);
           // Grama alta tem chance de soltar uma semente. Não existe semente infinita.
           if(kind==="grass"){
@@ -2219,6 +2238,13 @@
         $("#progression-focus-goal").textContent=next?next.title:"Próxima conquista";
       }
     }
+    const minerPanel=$("#mineral-progression-list");
+    if(minerPanel)minerPanel.innerHTML=Minerals.progress(state).map(zone=>
+      '<div class="mineral-zone" data-discovered="'+zone.found+'"><span>'+
+      zone.icon+' '+escapeHtml(zone.name)+'</span><strong>'+
+      (zone.found?'✓ '+escapeHtml(zone.label):'🔒 '+escapeHtml(zone.label))+
+      '</strong><small>'+(zone.tier?'Picareta nível '+zone.tier:'Coleta manual')+
+      ' · Depósitos: '+zone.oreAvailable+'</small></div>').join("");
     const count=$("#progression-hud-count");
     if(count)count.textContent=journey.total+"/"+journey.maximum;
     if(buildLayer==="rocket"&&selectedTool==="construir")updateBuildPanel();
@@ -2238,10 +2264,13 @@
     if($("#selected-crop-label"))$("#selected-crop-label").textContent=(Crops.get(state.selectedCrop)?.name||"Cenoura")+" · "+(state.cropSeeds[state.selectedCrop]||0)+" sementes";
     const stock=state.inventory||{};
     const inventoryItems=[
-      ["twigs","🌿","Gravetos"],["wood","🪵","Madeira"],["stone","🪨","Pedra"],
+      ["twigs","🌿","Gravetos"],["gravel","🪨","Cascalho"],
+      ["wood","🪵","Madeira"],["stone","🪨","Pedra"],
+      ["bronze","🥉","Bronze"],["iron","⚙️","Ferro"],["gold","🟨","Ouro"],
+      ["diamond","💎","Diamante"],["bauxite","🔶","Bauxita"],
+      ["aluminumAlloy","🔩","Liga de Al."],["goldCircuit","🔌","Circuitos"],
       ["mushroom","🍄","Cogumelos"],["flower","🌸","Flores"],
-      ["herbs","🌿","Ervas"],["grass","🌾","Fibras"],
-      ["manure","💩","Esterco"]
+      ["herbs","🌿","Ervas"],["grass","🌾","Fibras"],["manure","💩","Esterco"]
     ];
     $("#inventory").innerHTML=inventoryItems.map(([kind,icon,label])=>
       '<div class="resource-slot" title="'+label+': '+Logistics.available(state,kind)+' (no chão, baús ou estoque)" aria-label="'+label+': '+Logistics.available(state,kind)+'">'+
@@ -2430,9 +2459,12 @@
   function inspect(p){
     const planned=state.orders.filter(o=>o.x===p.x&&o.y===p.y);
     $("#tile-tooltip").hidden=false;
+    const deposit=World.at(state.world,p.x,p.y);
+    const oreName=deposit?.mineral?Minerals.RESOURCES[deposit.mineral]?.name:"";
     $("#tile-tooltip").textContent="Terreno "+(p.x+1)+", "+(p.y+1)+
       ((p.seeded||p.produce)?" · "+(Crops.get(p.crop||"carrot")?.name||"Cultivo"):"")+
       " · "+World.terrainAt(state.world,p.x,p.y).name+
+      (oreName?" · Depósito: "+oreName+" (picareta "+Minerals.oreTier(deposit)+")":"")+
       (Exploration.requirement(state.world,p.x,p.y).gear?
         " · EPI: "+Exploration.GEAR[Exploration.requirement(state.world,p.x,p.y).gear].name:
         " · Área segura")+
