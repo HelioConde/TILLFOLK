@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="./tutorial-missions.css?v=20261031-menu-missao-fix">
   <link rel="stylesheet" href="./hud-settings.css?v=20261031-icones-ajuste-v4">
   <link rel="stylesheet" href="./crop-workshop.css?v=20261031-ground-hauling-v1">
+  <link rel="stylesheet" href="./colony-life.css?v=20261101-colony-v1">
   <script defer src="./src/menu.js?v=20261031-sync-preferencias"></script>
   <script defer src="./src/tutorial.js?v=20261031-fim-escolhas"></script>
   <script defer src="./src/house-renderer.js?v=20261031-fazenda-casa"></script>
@@ -48,8 +49,9 @@
   <script defer src="./src/missions.js?v=20261031-fazenda-automacao-v7"></script>
   <script defer src="./src/tutorial-pointer.js?v=20261031-guia-completo-v11"></script>
   <script defer src="./src/day-night.js?v=20261101-night-v1"></script>
+  <script defer src="./src/colony-life.js?v=20261101-colony-v1"></script>
   <script defer src="./src/survival.js?v=20261031-sobrevivencia-s1"></script>
-  <script defer src="./src/game.js?v=20261101-night-v1"></script>
+  <script defer src="./src/game.js?v=20261101-colony-v2"></script>
   <script defer src="./src/game-hud.js?v=20261031-painel-autofecha-v1"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
   <script defer src="./src/live-update.js"></script>
@@ -62,6 +64,7 @@
         <div class="metric"><span>☀</span><small>Dia</small><b id="day">01</b></div>
         <div class="metric"><span>◷</span><small>Hora</small><b id="clock">08:00</b></div>
         <div class="metric" id="day-night-metric"><b id="day-night-phase" data-phase="day">☀️ Dia</b></div>
+        <button type="button" id="colony-life-open" class="colony-life-trigger" title="Sono, clima, pesquisas e automação">🌙 <span>Colônia</span></button>
         <div class="metric survival-metric" id="survival-population" hidden><span>♟</span><small>Vivos</small><b id="survival-population-count">0</b></div>
         <div class="metric survival-metric" id="survival-food" hidden><span>🥕</span><small>Comida</small><b id="survival-food-count">0</b></div>
         <div class="metric survival-metric" id="survival-days" hidden><span>📅</span><small>Dias Rest.</small><b id="survival-days-count">--</b></div>
@@ -380,6 +383,30 @@
     <p>Você construiu uma Work Station, fabricou o primeiro machado e aprendeu a recolher recursos, plantar, regar e cuidar do vale.</p>
     <p><strong>A fazenda continua exatamente como você a deixou.</strong> Qual será seu próximo capítulo?</p>
     <div class="tutorial-end-actions"><button id="tutorial-continue-game" type="button" class="large-primary">▶ Continuar jogando</button><button id="tutorial-back-menu" type="button" class="large-secondary">↩ Voltar ao menu inicial</button></div>
+  </dialog>
+  <dialog id="colony-life-dialog" class="game-modal colony-life-dialog" aria-labelledby="colony-life-title">
+    <form method="dialog"><button class="modal-x" aria-label="Fechar gestão da colônia">✕</button></form>
+    <span class="overline">SOBREVIVÊNCIA E PROGRESSO</span>
+    <h2 id="colony-life-title">🌙 Vida da colônia</h2>
+    <p id="colony-life-environment">🌤️ Primavera · Dia 1</p>
+    <div class="colony-life-grid">
+      <section><h3>🛏️ Sono e moral</h3>
+        <p>Os colonos se cansam ao trabalhar, caminham até suas casas para descansar e recuperam energia. Dormir sem abrigo prejudica o moral.</p>
+        <div id="colony-life-workers" class="colony-life-worker-list"></div>
+      </section>
+      <section><h3>🔬 Pesquisa</h3>
+        <p id="colony-research-status"></p>
+        <button type="button" id="colony-research-upgrade" class="large-primary">Pesquisar melhoria</button>
+        <p class="colony-life-note">Ganhe conhecimento ao fabricar ferramentas, construir e colher. Pesquisas melhoram a agricultura, a conservação e o descanso.</p>
+      </section>
+      <section><h3>🌱 Agricultura automatizada</h3>
+        <p>Quando ativada, os colonos cuidam de canteiros existentes: semeiam, regam, colhem e transportam. Não criam fazendas nem construções sem ordem.</p>
+        <button type="button" id="colony-auto-farm" aria-pressed="false" class="large-secondary">Automação: desligada</button>
+      </section>
+      <section><h3>🌦️ Estações e armazenamento</h3>
+        <p>Chuva irriga plantações, seca e frio reduzem o crescimento, e comida armazenada estraga lentamente. Animais adultos podem se reproduzir com alimento suficiente.</p>
+      </section>
+    </div>
   </dialog>
   <dialog id="workshop-dialog" class="game-modal farm-catalog-dialog" aria-labelledby="workshop-title">
     <form method="dialog"><button class="modal-x" aria-label="Fechar oficina">✕</button></form>
