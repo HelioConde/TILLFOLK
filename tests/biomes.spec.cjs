@@ -123,7 +123,7 @@ test('Biomas: gelo/veneno bloqueiam agricultura e terreno possui custo de locomo
  expect(errors).toEqual([]);
 });
 
-test('Jornada da colônia apresenta cinco capítulos e progresso persistente sem invadir tutorial',async({page})=>{
+test('Jornada da colônia apresenta seis capítulos e progresso persistente sem invadir tutorial',async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.setViewportSize({width:1366,height:768});
   await newGame(page);
