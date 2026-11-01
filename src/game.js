@@ -1027,6 +1027,53 @@
       .sort((a,b)=>a.options-b.options||a.worker.id-b.worker.id);
     for(const entry of ranked)assign(entry.worker);
   }
+  // Rotina real: o trabalhador caminha até o abrigo antes de descansar.
+  // Sem casa ele descansa na clareira, mas perde moral e recupera-se mais devagar.
+  function processRest(w,scaled){
+    const assigned=state.homes.find(h=>h.residentId===w.id);
+    const goal=assigned?{x:Math.max(1,assigned.x-1),y:assigned.y}:{x:Math.floor(state.spawn.x),y:Math.floor(state.spawn.y)};
+    const key="rest:"+goal.x+","+goal.y;
+    if(w.routeTask!==key){
+      w.route=routeBetween(w.x,w.y,goal.x,goal.y);
+      w.routeTask=key;
+    }
+    const target=w.route?.[0]||{x:goal.x+.5,y:goal.y+.5};
+    const dx=target.x-w.x,dy=target.y-w.y,d=Math.hypot(dx,dy);
+    if(d>.07&&w.route?.length){
+      w.facing=Math.abs(dx)>Math.abs(dy)?(dx>0?"right":"left"):(dy>0?"down":"up");
+      const terrain=World.terrainAt(state.world,Math.floor(w.x),Math.floor(w.y));
+      const move=Math.min(d,scaled*2.3/(terrain?.moveCost||1));
+      w.x+=dx/d*move;w.y+=dy/d*move;
+      w.moving=true;w.walkFrame=(w.walkFrame||0)+move*4.3;
+      w.atRest=false;
+      return;
+    }
+    if(w.route?.length){w.x=target.x;w.y=target.y;w.route.shift();}
+    w.atRest=true;w.moving=false;
+    if(!assigned)w.morale=Math.max(0,w.morale-scaled*.009);
+  }
+  function automateFarmIfEnabled(){
+    if(!Life.canAutomate(state,state.day*1440+state.minutes)||state.orders.length>=350)return;
+    let added=0;
+    for(const plot of state.plots){
+      if(added>=5||state.orders.length>=350)break;
+      if(!plot.tilled&&!(plot.seeded||plot.produce))continue;
+      const kind=plot.produce?"carry":plot.seeded?
+        (plot.growth>=1?"harvest":!plot.watered?"water":null):
+        state.cropSeeds[state.selectedCrop]>0?"sow":null;
+      if(!kind||state.orders.some(o=>o.x===plot.x&&o.y===plot.y&&o.type===kind))continue;
+      const result=Orders.status({type:kind,x:plot.x,y:plot.y,crop:state.selectedCrop},
+        plot,World.at(state.world,plot.x,plot.y),state);
+      if(result.state!=="ready")continue;
+      const next=Orders.add(state.orders,kind,plot.x,plot.y,
+        plot,World.at(state.world,plot.x,plot.y),state);
+      if(!next.order)continue;
+      if(kind==="sow")next.order.crop=state.selectedCrop;
+      next.order.priority=6;
+      state.orders.push(next.order);added++;
+    }
+    if(added){recalcTasks();log("🌱 Rotina agrícola: "+added+" tarefa(s) agendada(s) automaticamente.");}
+  }
   function finish(w,t){
     const p=findPlot(t.x,t.y);
     if(t.type==="craftTool"){
@@ -1039,6 +1086,7 @@
       if(item.key==="hoe")recordTutorial("hoe");
       if(item.key==="wateringCan")recordTutorial("wateringCan");
       if(item.key==="axe")recordTutorial("axe");
+      Life.discover(state,1);
       log(w.name+" terminou "+item.name+" na Work Station e guardou no próprio inventário.");
       return true;
     }
@@ -1058,6 +1106,7 @@
       state.crafting.station={x:t.x,y:t.y};
       state.plots=state.plots.filter(plot=>plot.x!==t.x||plot.y!==t.y);
       showPickup(t.x,t.y,"station");
+      Life.discover(state,2);
       recordTutorial("workstation");
       log(w.name+" terminou a Work Station! Agora podemos fabricar ferramentas.");
       return true;
@@ -1070,6 +1119,7 @@
       }
       assignHomes();
       showPickup(t.x,t.y,"home");
+      Life.discover(state,2);
       log(w.name+" concluiu uma cabana. "+housingVacancy()+" vaga(s) livres.");return true;
     }
     if(t.type==="buildChest"){
@@ -1077,6 +1127,7 @@
       state.chests.push({x:t.x,y:t.y,items:{}});
       state.plots=state.plots.filter(plot=>plot.x!==t.x||plot.y!==t.y);
       showPickup(t.x,t.y,"chest");
+      Life.discover(state,1);
       log(w.name+" terminou o baú. A equipe agora pode guardar materiais.");
       return true;
     }
@@ -1135,7 +1186,7 @@
         if(!w.carryingWater&&state.water<=0)return false;
         if(w.carryingWater)w.carryingWater=false;else state.water--;
         p.watered=true;recordTutorial("water");break;
-      case "harvest":showPickup(t.x,t.y,"crop");state.firstHarvest=true;p.produce=true;p.seeded=false;p.watered=false;p.growth=0;recordTutorial("harvest");break;
+      case "harvest":Life.discover(state,2);showPickup(t.x,t.y,"crop");state.firstHarvest=true;p.produce=true;p.seeded=false;p.watered=false;p.growth=0;recordTutorial("harvest");break;
       case "carry":{
         const variety=Crops.get(p.crop)?p.crop:"carrot";
         const amount=Crops.get(variety).food;
