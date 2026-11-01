@@ -480,8 +480,12 @@
     return options[index];
   }
   function drawGround(ctx,sprites,world,w,h,size,part,bounds){
-    Biomes.draw(ctx,sprites,world,w,h,size,part,bounds);
-    const waters=new Set((world?.water||[]).map(t=>key(t.x,t.y)));
+    // 1. A água ocupa um espaço REAL entre as ilhas. É desenhada ANTES do
+    // solo para nunca cobrir o contorno 16x16 do autotile aprovado.
+    // 2. Biomes.draw desenha somente terra firme, com as células de água
+    // removidas da máscara de oito vizinhos (bordas e cantos corretos).
+    // 3. Pontes continuam por cima de ambos, exclusivamente em canais.
+    const waters=index(world)?.waters||new Set((world?.water||[]).map(t=>key(t.x,t.y)));
     for(const tile of world?.water||[]){
       if(bounds&&(tile.x<bounds.x0||tile.x>bounds.x1||tile.y<bounds.y0||tile.y>bounds.y1))continue;
       const x=tile.x*size,y=tile.y*size,v=noise(world.seed,tile.x,tile.y);
@@ -501,6 +505,9 @@
         ctx.fillStyle="#84b963";ctx.fillRect(x+8,y+16,10,3);
       }
     }
+    // A água não pode ser a última camada do chão: as bordas terrestres
+    // precisam ficar visíveis junto ao canal, sem invadir seus tiles.
+    Biomes.draw(ctx,sprites,world,w,h,size,part,bounds);
     // Pontes Sprout Lands preservam o canal de água e fornecem acesso a biomas.
     const bridge=sprites.bridge;
     for(const crossing of world?.crossings||[]){
