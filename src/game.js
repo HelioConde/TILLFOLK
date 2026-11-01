@@ -2844,6 +2844,20 @@
     if(!playing||selectedTool!=="construir")return;
     const result=getBuildEdit(x,y,erase);
     if(!result.house){$("#build-status").textContent=result.error;return;}
+    if(buildLayer==="field"){
+      if(erase){
+        const ids=state.orders.filter(o=>o.x===x&&o.y===y&&["till","sow"].includes(o.type)).map(o=>o.id);
+        if(ids.length)removeOrders(ids);
+        $("#build-status").textContent=ids.length?"Canteiro cancelado.":"Nenhuma ordem de canteiro neste terreno.";
+        return;
+      }
+      pushBuildHistory();
+      const queued=queueFieldBlueprint(x,y);
+      if(!queued.count){houseHistory.pop();$("#build-status").textContent=queued.error;return;}
+      recalcTasks();refresh();save();buildHover=null;
+      $("#build-status").textContent="🌱 Canteiro planejado: "+queued.count+" ordem(ns) de arar e semear. Regar e colher continuam manuais.";
+      return;
+    }
     if(buildLayer==="rocket"){
       if(erase){$("#build-status").textContent="Para cancelar a obra, use o botão direito na plataforma.";return;}
       const test=Orders.add(state.orders,"buildRocket",x,y,findPlot(x,y),
