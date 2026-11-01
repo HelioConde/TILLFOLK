@@ -1455,6 +1455,10 @@
       },position.x,position.y,{scale:1});
       if(home.residentId==null)write("LIVRE",x+TILE,y-21,"#e5f7ae",9);
     }
+    // Poços usam a sprite de estrutura existente no jogo, sem nova arte.
+    if(valid(sprite.well))
+      for(const well of state.wells||[])if(inView(well.x,well.y,2))
+        ctx.drawImage(sprite.well,well.x*TILE-2,well.y*TILE-8,TILE+4,TILE+8);
     // Baús do pacote premium Sprout Lands, sem sprites improvisados.
     if(valid(chestImage)){
       for(const chest of state.chests||[])if(inView(chest.x,chest.y,2)){
@@ -1518,6 +1522,10 @@
         }
         ctx.fillStyle="#56aee280";ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
         ctx.strokeStyle="#a0e5ff";ctx.lineWidth=2;ctx.strokeRect(x+2,y+2,TILE-4,TILE-4);
+      }else if(order.type==="buildWell"&&inView(order.x,order.y,2)){
+        if(valid(sprite.well))Blueprint.part(ctx,sprite.well,0,0,sprite.well.naturalWidth,
+          sprite.well.naturalHeight,order.x*TILE-2,order.y*TILE-8,TILE+4,TILE+8,true,.7);
+        Blueprint.frame(ctx,order.x*TILE,order.y*TILE,TILE,TILE,true);
       }else if(order.type==="buildChest"&&inView(order.x,order.y,2)){
         if(valid(chestImage))Blueprint.part(ctx,chestImage,0,0,16,16,
           order.x*TILE,order.y*TILE-4,TILE,TILE,true,.7);
@@ -1655,6 +1663,12 @@
       if(x>=0&&y>=0&&x<W&&y<H){
         const valid=Boolean(getBuildEdit(x,y,eraseBuild).house);
         if(buildLayer==="home")Blueprint.home(ctx,sprite,x,y,TILE,valid);
+        else if(buildLayer==="well"){
+          if(validImage(sprite.well))Blueprint.part(ctx,sprite.well,0,0,
+            sprite.well.naturalWidth,sprite.well.naturalHeight,
+            x*TILE-2,y*TILE-8,TILE+4,TILE+8,valid,.70);
+          Blueprint.frame(ctx,x*TILE,y*TILE,TILE,TILE,valid);
+        }
         else if(buildLayer==="chest"){
           if(validImage(chestImage))Blueprint.part(ctx,chestImage,0,0,16,16,
             x*TILE,y*TILE-4,TILE,TILE,valid,.72);
@@ -2642,6 +2656,10 @@
     const clickType=selectedTool==="universal"?nextUniversalOrder(x,y):selectedTool;
     const restriction=clickType&&Crafting.blocked(state,clickType,World.at(state.world,x,y));
     if(restriction){markBlocked(x,y,restriction);return;}
+    if(state.wells.some(w=>w.x===x&&w.y===y)){
+      notify("🚰 Poço: "+Math.floor(state.water||0)+" unidades de água disponíveis.");
+      return;
+    }
     const clickedChest=state.chests.find(c=>c.x===x&&c.y===y);
     if(clickedChest){
       const items=Object.entries(clickedChest.items).filter(([,qty])=>qty>0);
