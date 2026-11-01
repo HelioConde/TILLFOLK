@@ -96,9 +96,9 @@
     function place(x,y,resource,amount){
       const id=key(x,y);
       if(x<2||y<2||x>=w-2||y>=h-2||occupied.has(id))return false;
-      if(resource==="gravel"){
+      if(resource==="gravel"||resource==="twigs"){
         if(biome(world,x,y)!=="g")return false;
-        world.objects.push({x,y,kind:"pebble",variant:0,age:0});
+        world.objects.push({x,y,kind:resource==="gravel"?"pebble":"twig",variant:0,age:0});
       }else{
         if(biome(world,x,y)!==DEPOSITS.find(d=>d.kind===resource)?.biome)return false;
         world.objects.push({x,y,kind:"boulder",mineral:resource,amount,variant:0,age:0});
@@ -121,6 +121,16 @@
         if(Math.abs(dx)!==radius&&Math.abs(dy)!==radius)continue;
         if((counts.gravel||0)>=18)break;
         if(hash(world.seed+17,midX+dx,midY+dy)>.65)place(midX+dx,midY+dy,"gravel",1);
+      }
+    }
+    // A primeira Work Station exige dez gravetos. Garantimos fontes naturais
+    // alcançáveis na ilha inicial, sem conceder estoque grátis ao jogador.
+    for(let radius=5;(counts.twigs||0)<14&&radius<=18;radius++){
+      for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++){
+        if(Math.abs(dx)!==radius&&Math.abs(dy)!==radius)continue;
+        if((counts.twigs||0)>=14)break;
+        if(hash(world.seed+211,midX+dx,midY+dy)>.56)
+          place(midX+dx,midY+dy,"twigs",1);
       }
     }
     for(const d of DEPOSITS){
