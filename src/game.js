@@ -975,6 +975,7 @@
     return null;
   }
   function idleReason(w){
+    if(w.resting)return "Descansando para recuperar energia";
     if(simSpeed===0)return "Simulação pausada";
     if(!tasks.length)return "Sem ordens: designe um trabalho no mapa";
     const open=tasks.filter(t=>t.status==="ready");
@@ -1836,6 +1837,53 @@
     display.forEach((message,index)=>ctx.fillText(message,left+artSize+18,top+20+index*15));
     ctx.restore();
   }
+  function renderColonyPanel(){
+    if(!state)return;
+    const life=Life.normalize(state);
+    const climate=Life.weather(state.day,state.world?.seed||1);
+    const environment=$("#colony-life-environment");
+    if(environment)environment.textContent="🌿 "+Life.season(state.day)+" · "+
+      Life.weatherLabels[climate]+" · Dia "+state.day;
+    const button=$("#colony-auto-farm");
+    if(button){button.setAttribute("aria-pressed",String(life.autoFarm));
+      button.textContent=life.autoFarm?"🌱 Automação: ativada":"🌱 Automação: desligada";}
+    const level=life.researchLevel,required=Life.cost(state);
+    const research=$("#colony-research-status");
+    if(research)research.textContent="Nível "+level+"/4 · "+life.researchPoints+
+      " pontos de conhecimento · Próxima melhoria: "+
+      (Life.TECH[level]||"Todas concluídas")+" ("+required+" pontos)";
+    const upgrade=$("#colony-research-upgrade");
+    if(upgrade)upgrade.disabled=level>=4||life.researchPoints<required||!state.crafting?.station;
+    const workers=$("#colony-life-workers");
+    if(workers)workers.innerHTML=state.workers.map(w=>
+      '<div class="colony-life-worker"><strong>'+escapeHtml(w.name)+'</strong>'+
+      '<small>'+(w.resting?"💤 Descansando":w.energy<25?"⚠️ Exausto":"Disponível")+'</small>'+
+      '<span class="colony-worker-needs"><span>⚡ Energia '+Math.round(w.energy||0)+'%</span>'+
+      '<span>♥ Moral '+Math.round(w.morale||0)+'%</span></span>'+
+      '<meter min="0" max="100" value="'+Math.round(w.energy||0)+'" aria-label="Energia"></meter>'+
+      '</div>').join("");
+  }
+  $("#colony-life-open").addEventListener("click",()=>{
+    if(!playing||!state)return;
+    renderColonyPanel();
+    const dialog=$("#colony-life-dialog");
+    if(!dialog.open)dialog.showModal();
+  });
+  $("#colony-auto-farm").addEventListener("click",()=>{
+    if(!state)return;
+    const life=Life.normalize(state);
+    life.autoFarm=!life.autoFarm;
+    notify(life.autoFarm?"🌱 Rotina agrícola ativada.":"Rotina agrícola desligada.");
+    renderColonyPanel();save();
+  });
+  $("#colony-research-upgrade").addEventListener("click",()=>{
+    if(!state)return;
+    const result=Life.research(state);
+    if(result.error){notify(result.error);return;}
+    log("🔬 Pesquisa concluída: "+result.name+".");
+    notify("🔬 "+result.name+" desbloqueada!");
+    renderColonyPanel();refresh();save();
+  });
   function refresh(){
     if(!state)return;
     renderPickupHistory();
@@ -1845,6 +1893,11 @@
     const m=Math.floor(state.minutes);set("#clock",String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
     const phase=Night.phase(state.minutes),label=$("#day-night-phase");
     if(label){label.textContent=Night.labels[phase];label.dataset.phase=phase;}
+    const climate=Life.weather(state.day,state.world?.seed||1);
+    const colonyToggle=$("#colony-life-open");
+    if(colonyToggle)colonyToggle.title=Life.season(state.day)+" · "+
+      Life.weatherLabels[climate]+" · Sono, pesquisa e automação";
+    if($("#colony-life-dialog")?.open)renderColonyPanel();
     for(const key of ["seeds","water","food"])set("#"+key,state[key]);
     set("#worker-count",state.workers.length);set("#task-count",tasks.length);
     const manureOrderButton=$('[data-order-type="collectManure"]');
@@ -1889,7 +1942,7 @@
     }
     $("#workers").innerHTML=state.workers.map(w=>{
       const t=tasks.find(t=>t.id===w.task);
-      const title=w.supplyStage==="water"?"Buscando água na lagoa":
+      const title=w.resting?"💤 Descansando":w.supplyStage==="water"?"Buscando água na lagoa":
         w.carryingWater?"Levando água ao canteiro":
         w.supplyStage==="manure"?"Buscando esterco na vaca":
         w.carryingManure?"Levando esterco ao canteiro":
@@ -1907,7 +1960,8 @@
       const healthColor = health <= 20 ? "#f4b0a7" : health <= 50 ? "#f4d18b" : "#b6de81";
       const healthBar = '<div class="worker-bar health-bar" role="progressbar" aria-label="Saúde de '+escapeHtml(w.name)+': '+health+'%" aria-valuenow="'+health+'" aria-valuemin="0" aria-valuemax="100" style="background:'+healthColor+'"><i style="width:'+health+'%"></i></div>';
       const healthLabel = '<div class="worker-health" style="color:'+healthColor+'" title="Saúde: '+health+'%">❤ '+health+'%</div>';
-      return '<div class="worker" data-worker-state="'+(w.moving?"moving":t?"working":"idle")+'"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div class="worker-identity"><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+escapeHtml(title)+'</div><span class="worker-status">'+(w.moving?"➤ Caminhando":t?"● Em atividade":tasks.length?"⏳ Aguardando ordens compatíveis":"● Disponível")+'</span></div></div><div class="tags">'+positive+neg+'</div><div class="worker-hunger" style="color:'+hungerColor+'" title="Saciedade: '+satiety+'%">'+hungerIcon+' '+satiety+'%</div>'+satietyBar+healthLabel+healthBar+'<div class="worker-role">Especialização: '+factor+'</div></div>';
+      return '<div class="worker" data-worker-state="'+(w.moving?"moving":t?"working":"idle")+'"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div class="worker-identity"><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+escapeHtml(title)+'</div><span class="worker-status">'+(w.moving?"➤ Caminhando":t?"● Em atividade":tasks.length?"⏳ Aguardando ordens compatíveis":"● Disponível")+'</span></div></div><div class="tags">'+positive+neg+'</div><div class="worker-hunger" style="color:'+hungerColor+'" title="Saciedade: '+satiety+'%">'+hungerIcon+' '+satiety+'%</div>'+satietyBar+healthLabel+healthBar+'<div class="worker-role">Especialização: '+factor+'</div>'+
+        '<div class="worker-role">⚡ Energia '+Math.round(w.energy||0)+'% · ♥ Moral '+Math.round(w.morale||0)+'%</div></div>';
     }).join("");
     // Ordens ativas/prontas ficam em destaque; dependências aguardando são
     // recolhidas para não ocupar toda a tela com tarefas impossíveis agora.
