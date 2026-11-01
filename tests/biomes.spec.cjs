@@ -11,7 +11,7 @@ async function newGame(page){
  await page.locator('#starter-confirm').click();
  await expect(page.locator('body')).toHaveClass(/play-session/);
 }
-test('Mapa 128x80 determinístico com seis biomas, claro inicial e zoom 600%',async({page})=>{
+test('Mapa 192x120 determinístico com seis biomas, claro inicial e zoom 600%',async({page})=>{
  const errors=[];page.on('pageerror',err=>errors.push(err.message));
  await page.setViewportSize({width:1600,height:900});await newGame(page);
  const world=await page.evaluate(()=>{
@@ -22,16 +22,20 @@ test('Mapa 128x80 determinístico com seis biomas, claro inicial e zoom 600%',as
    return {width:s.world.width,height:s.world.height,version:s.world.version,
      length:s.world.biomeMap.length,groups,canvas:[document.querySelector('#world').width,
        document.querySelector('#world').height],workers:s.workers.map(w=>[w.x,w.y]),
-     spawn:s.spawn,terrain:biome.terrainAt(s.world,64,40).name,
-     center:biome.biomeAt(s.world,64,40)};
+     spawn:s.spawn,terrain:biome.terrainAt(s.world,96,60).name,
+     center:biome.biomeAt(s.world,96,60),
+     wildlife:s.animals.filter(a=>a.wild),
+     unsafeWildlife:s.animals.filter(a=>a.wild&&window.TillfolkExploration.insideSanctuary(s.world,Math.floor(a.x),Math.floor(a.y))).length};
  });
- expect(world.width).toBe(128);expect(world.height).toBe(80);
- expect(world.length).toBe(10240);expect(world.version).toBeGreaterThanOrEqual(2);
- expect(world.canvas).toEqual([4096,2560]);
+ expect(world.width).toBe(192);expect(world.height).toBe(120);
+ expect(world.length).toBe(23040);expect(world.version).toBeGreaterThanOrEqual(2);
+ expect(world.canvas).toEqual([6144,3840]);
  expect(world.center).toBe('g');
+ expect(world.wildlife.length).toBeGreaterThan(20);
+ expect(world.unsafeWildlife).toBe(0);
  for(const name of ['g','f','s','i','w','p'])
    expect(world.groups[name],name).toBeGreaterThan(40);
- expect(world.workers.every(([x,y])=>Math.abs(x-64)<4&&Math.abs(y-40)<4)).toBe(true);
+ expect(world.workers.every(([x,y])=>Math.abs(x-96)<4&&Math.abs(y-60)<4)).toBe(true);
  const map=await page.locator('#world').boundingBox();
  expect(map.width).toBeGreaterThan(1600*1.4);
  await page.screenshot({path:'screenshots/biomas-map-1600x900.png',animations:'disabled'});
@@ -87,8 +91,8 @@ test('Salvar e continuar migra mapa legado sem apagar recursos, cultivos ou trab
     tilled:s.plots.find(p=>p.x===11&&p.y===8)?.tilled,
     order:s.orders.some(o=>o.id==='11-8:sow'),spawn:s.spawn};
  });
- expect(result.worldWidth).toBe(128);expect(result.worldHeight).toBe(80);
- expect(result.biomeLength).toBe(10240);
+ expect(result.worldWidth).toBe(192);expect(result.worldHeight).toBe(120);
+ expect(result.biomeLength).toBe(23040);
  expect(result.count).toBeGreaterThan(original.plots);
  expect(result.wood).toBe(87);expect(result.seeds).toBe(7);expect(result.food).toBe(55);
  expect(result.tilled).toBe(true);expect(result.order).toBe(true);
@@ -104,7 +108,7 @@ test('Biomas: gelo/veneno bloqueiam agricultura e terreno possui custo de locomo
   const world=window.TillfolkWild,orders=window.TillfolkOrders;
   return ['g','f','s','i','w','p'].map(id=>{
     const index=s.world.biomeMap.indexOf(id);
-    const x=index%128,y=Math.floor(index/128),terrain=world.terrainAt(s.world,x,y);
+    const x=index%192,y=Math.floor(index/192),terrain=world.terrainAt(s.world,x,y);
     const plot={x,y,dirty:false,tilled:false,seeded:false,watered:false};
     const check=orders.status({x,y,type:'till'},plot,null,s);
     return {id,name:terrain.name,moveCost:terrain.moveCost,
