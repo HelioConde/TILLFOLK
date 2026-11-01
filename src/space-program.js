@@ -16,7 +16,7 @@
     Object.freeze({id:"life",name:"Suporte de vida",icon:"💚",
       description:"Filtros e cabines para manter a tripulação viva.",cost:Object.freeze({wood:12,grass:16,herbs:9,mushroom:6}),work:160})
   ]);
-  const LAUNCH=Object.freeze({food:30,water:20,crew:4,homes:4});
+  const LAUNCH=Object.freeze({food:30,water:20,crew:4,support:1,homes:5});
   const FOOTPRINT=3;
   function normalize(state){
     const original=state?.rocket&&typeof state.rocket==="object"?state.rocket:{};
@@ -45,9 +45,9 @@
     const occupied=new Set([
       ...(state.chests||[]),...(state.wells||[]),...(state.workstations||[]),
       ...(state.orders||[]).filter(o=>o.type.startsWith("build")&&o.type!=="buildRocket"),
-      ...(state.homes||[]).flatMap(h=>footprint(h.x,h.y).slice(0,0).concat([
+      ...(state.homes||[]).flatMap(h=>[
         {x:h.x,y:h.y},{x:h.x+1,y:h.y},{x:h.x,y:h.y+1},{x:h.x+1,y:h.y+1}
-      ]))
+      ])
     ].map(p=>p.x+","+p.y));
     const activePlots=new Set((state.plots||[]).filter(p=>
       p.tilled||p.seeded||p.produce||p.fertilized).map(p=>p.x+","+p.y));
@@ -93,10 +93,12 @@
     if(rocket.stage<STAGES.length)return "Conclua todas as quatro etapas da construção.";
     const locked=unlock(state);if(locked)return locked;
     const workers=state.workers||[],homes=state.homes||[];
-    if(workers.length<LAUNCH.crew)return "Recrute quatro tripulantes.";
+    if(workers.length<LAUNCH.crew+LAUNCH.support)
+      return "Recrute cinco colonos: quatro embarcam e um mantém a base funcionando.";
+    if(homes.length<LAUNCH.homes)return "Construa cinco moradias antes do lançamento.";
     const rested=workers.filter(w=>(w.health??100)>=50&&(w.satiety??100)>=35&&
-      homes.some(h=>h.residentId===w.id));
-    if(rested.length<LAUNCH.crew)return "Prepare quatro colonos saudáveis, alimentados e com moradia.";
+      !w.task&&!w.haul&&homes.some(h=>h.residentId===w.id));
+    if(rested.length<LAUNCH.crew)return "Prepare quatro colonos saudáveis, alimentados, com moradia e sem tarefa ativa.";
     if((Number(state.food)||0)<LAUNCH.food)return "Estoque "+LAUNCH.food+" alimentos para a viagem.";
     if((Number(state.water)||0)<LAUNCH.water)return "Armazene "+LAUNCH.water+" águas para a viagem.";
     return null;
@@ -106,10 +108,13 @@
     if(blocked)return {error:blocked};
     const rocket=state.rocket;
     const team=state.workers.filter(w=>(w.health??100)>=50&&(w.satiety??100)>=35&&
-      state.homes.some(h=>h.residentId===w.id)).slice(0,LAUNCH.crew);
+      !w.task&&!w.haul&&state.homes.some(h=>h.residentId===w.id)).slice(0,LAUNCH.crew);
     state.food-=LAUNCH.food;state.water-=LAUNCH.water;
     rocket.launched=true;rocket.launchDay=Math.max(1,state.day||1);
     rocket.crew=team.map(w=>w.name);
+    const travelers=new Set(team.map(w=>w.id));
+    state.workers=state.workers.filter(w=>!travelers.has(w.id));
+    for(const h of state.homes||[])if(travelers.has(h.residentId))h.residentId=null;
     return {success:true,day:rocket.launchDay,crew:[...rocket.crew]};
   }
   // Arte original desenhada em blocos de pixels dentro do motor (sem CDN).
