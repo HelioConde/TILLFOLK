@@ -16,6 +16,7 @@ test("seis áreas geram os recursos exclusivos e cascalho inicial sem invadir ri
     const count=world.objects.length;
     const r=M.populate(world);
     assert.ok(r.counts.gravel>=18,"cascalho inicial ausente");
+    assert.ok(r.counts.twigs>=14,"gravetos iniciais insuficientes para Work Station");
     for(const zone of Object.values(M.ZONES)){
       if(zone.index===1)continue;
       assert.ok(r.counts[zone.resource]>=18,"faltou minério "+zone.resource);
