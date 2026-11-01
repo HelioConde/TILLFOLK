@@ -736,6 +736,9 @@
         if(w.carryingWater)state.water=(Number(state.water)||0)+1;
         if(w.carryingManure)state.inventory.manure++;
         w.carryingWater=false;w.carryingManure=false;w.supplyStage=null;w.supplyTarget=null;
+        if(w.haul?.phase==="deliver"&&w.haul.qty>0)
+          Logistics.drop(state,Math.floor(w.x),Math.floor(w.y),w.haul.kind,w.haul.qty);
+        w.haul=null;if(w.inventory)w.inventory.carrying=null;
         w.task=null;w.progress=0;w.personalPriority=w.personalPriority||{};
         w.x=Number.isFinite(w.x)?w.x:state.spawn.x;w.y=Number.isFinite(w.y)?w.y:state.spawn.y;
         w.route=[];w.routeTask=null;w.facing=w.facing||"down";w.moving=false;w.walkFrame=0;
@@ -1782,7 +1785,7 @@
         t?labels[t.type]+" em ("+(t.x+1)+", "+(t.y+1)+")":idleReason(w);
       const positive=w.skills.length?w.skills.map(s=>'<span class="tag">✦ '+labels[s]+'</span>').join(""):'<span class="tag">Generalista</span>';
       const neg=w.neg.map(s=>'<span class="tag negative">✕ '+labels[s]+'</span>').join("");
-      const factor=w.skills.length===1?"+100%":w.skills.length===2?"+60%":w.skills.length===3?"+30%":"sem bônus";
+      const factor=w.skills.length?"+"+Math.round((specialtyMultiplier(w,w.skills[0])-1)*100)+"%":"sem bônus";
       // S1+S2: Indicadores de saciedade e saúde
       const satiety = Number.isFinite(w.satiety) ? Math.round(w.satiety) : 100;
       const hungerState = Survival.hungerState(satiety);
@@ -2685,7 +2688,7 @@
     const availableTasks=Object.keys(labels);
     $("#starter-slots").innerHTML=starters.map((person,index)=>{
       const count=person.skills.length;
-      const bonus=count===1?100:count===2?60:count===3?30:0;
+      const bonus=count?Math.round((specialtyMultiplier(person,person.skills[0])-1)*100):0;
       const profile=count===1?"Especialista":count===2?"Multitalento":count===3?"Versátil":"Generalista";
       const allowed=availableTasks.length-person.neg.length;
       const skills=person.skills.length
@@ -2855,7 +2858,7 @@
     } else {
       const worker=state.workers.find(w=>w.id===managementWorker)||state.workers[0];
       if(!worker){target.innerHTML='<p>Sem trabalhadores. Contrate uma equipe.</p>';return;}
-      const percentage=worker.skills.length===1?100:worker.skills.length===2?60:worker.skills.length===3?30:0;
+      const percentage=worker.skills.length?Math.round((specialtyMultiplier(worker,worker.skills[0])-1)*100):0;
       target.innerHTML='<p class="management-explainer">Especialidades são bônus de eficiência e não desbloqueios de atividades. Quanto menos especialidades, mais rápido o trabalhador executa cada uma delas.</p>'+
         '<div class="skills-view"><nav class="skills-roster" aria-label="Selecionar trabalhador">'+
         state.workers.map(w=>'<button type="button" data-select-worker="'+w.id+'" class="'+(worker.id===w.id?'active':'')+'">'+escapeHtml(w.name)+'<br><small>'+w.skills.length+' especialidades</small></button>').join("")+
@@ -2919,7 +2922,7 @@
     const objects=state.world.objects||[];
     let candidates=[];
     if(step.target==="grass")candidates=objects.filter(item=>item.kind==="grass");
-    else if(step.target==="workstation")candidates=state.inventory.twigs<Crafting.STATION_COST?
+    else if(step.target==="workstation")candidates=Logistics.available(state,"twigs")<Crafting.STATION_COST?
       objects.filter(item=>item.kind==="twig"):
       state.plots.filter(p=>stationSiteValid(p.x,p.y));
     else if(step.target==="till")candidates=state.plots.filter(p=>
@@ -2936,7 +2939,7 @@
     else if(step.target==="plan")candidates=state.plots.filter(p=>homeSiteValid(p.x,p.y));
     const target=nearest(candidates);
     if(["axe","hoe","wateringCan"].includes(step.target)){openWorkshop();return;}
-    if(step.target==="workstation"&&state.inventory.twigs<Crafting.STATION_COST){setTool("clear");}
+    if(step.target==="workstation"&&Logistics.available(state,"twigs")<Crafting.STATION_COST){setTool("clear");}
     else if(step.tool==="construir"){
       setTool("construir");
       $(step.target==="workstation"?'[data-build-layer="station"]':'[data-build-layer="home"]').click();
@@ -2944,7 +2947,7 @@
     if(target){
       focusCameraAt(target.x+.5,target.y+.5);
       showMapFeedback(target.x,target.y,"#ecf8a8");
-      notify(step.target==="workstation"&&state.inventory.twigs<Crafting.STATION_COST?"Graveto encontrado! Marque Limpar para recolhê-lo.":
+      notify(step.target==="workstation"&&Logistics.available(state,"twigs")<Crafting.STATION_COST?"Graveto encontrado! Marque Limpar para recolhê-lo.":
         step.target==="grass"?"Tufo de grama encontrado! Marque a ordem de Limpar.":
         "Local sugerido destacado. Clique no terreno para dar a ordem.");
     }else{
