@@ -69,5 +69,7 @@
       queueMicrotask(sync);
     }
   });
+  // O atalho do minimapa reutiliza o reset de câmera já implementado no motor.
+  $("#camera-home")?.addEventListener("click",()=>$("#zoom-reset")?.click());
   sync();
 })();
