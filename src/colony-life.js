@@ -32,7 +32,8 @@
      researchLevel:clamp(Math.floor(Number(base.researchLevel)||0),0,4),
      lastWeatherDay:Math.max(0,Math.floor(Number(base.lastWeatherDay)||0)),
      lastAnimalBirthDay:Math.max(0,Math.floor(Number(base.lastAnimalBirthDay)||0)),
-     lastAutoMinute:Number(base.lastAutoMinute)||0
+     lastAutoMinute:Number(base.lastAutoMinute)||0,
+     wellProgress:Math.max(0,Number(base.wellProgress)||0)
    };
    for(const worker of state.workers||[]){
      if(!Number.isFinite(worker.energy))worker.energy=100;
@@ -76,6 +77,19 @@
      life.foodSpoil+=(state.food||0)*spoilPerDay*passed/1440;
      const lost=Math.min(state.food,Math.floor(life.foodSpoil));
      if(lost>0){state.food-=lost;life.foodSpoil-=lost;events.push(lost+" alimento(s) estragaram no estoque.");}
+   }
+   // Poços construídos produzem água de forma gradual e limitada,
+   // sem teletransportar água da lagoa.
+   if((state.wells||[]).length){
+     life.wellProgress+=passed*state.wells.length;
+     const produced=Math.min(Math.max(0,24-(state.water||0)),
+       Math.floor(life.wellProgress/150));
+     if(produced>0){
+       state.water=(state.water||0)+produced;
+       life.wellProgress-=produced*150;
+       events.push("Poço: +"+produced+" água disponível para regar.");
+     }
+     life.wellProgress=Math.min(life.wellProgress,900);
    }
    // Chuva molha os canteiros; não inventa água em baldes.
    if(currentWeather==="chuva")
