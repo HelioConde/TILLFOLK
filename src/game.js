@@ -2013,11 +2013,13 @@
       '<div class="progression-prize">✦ '+escapeHtml(chapter.unlock)+'</div></section>'
     ).join('');
   }
-  $("#progression-open").addEventListener("click",()=>{
+  function openProgressionDialog(){
     if(!playing||!state)return;
     renderProgressionPanel();
     if(!$("#progression-dialog").open)$("#progression-dialog").showModal();
-  });
+  }
+  $("#progression-open").addEventListener("click",openProgressionDialog);
+  $("#progression-focus-open").addEventListener("click",openProgressionDialog);
   $("#colony-life-open").addEventListener("click",()=>{
     if(!playing||!state)return;
     renderColonyPanel();
@@ -2066,6 +2068,19 @@
       Life.weatherLabels[climate]+" · Sono, pesquisa e automação";
     if($("#colony-life-dialog")?.open)renderColonyPanel();
     const journey=Progression.status(state);
+    const focus=$("#progression-focus");
+    if(focus){
+      // O tutorial orienta o início. A jornada assume depois, sem duplicar HUDs.
+      const tutorialRunning=state.tutorial?.active===true&&!state.tutorial?.finished;
+      focus.hidden=tutorialRunning||journey.allDone;
+      if(!focus.hidden){
+        $("#progression-focus-chapter").textContent=journey.current.icon+
+          " Capítulo "+(journey.current.index+1)+"/5 · "+
+          journey.current.title;
+        const next=journey.current.objectives.find(objective=>!objective.done);
+        $("#progression-focus-goal").textContent=next?next.title:"Próxima conquista";
+      }
+    }
     const count=$("#progression-hud-count");
     if(count)count.textContent=journey.total+"/"+journey.maximum;
     const progressionButton=$("#progression-open");
