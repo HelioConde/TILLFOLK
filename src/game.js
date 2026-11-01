@@ -345,8 +345,9 @@
   const TerrainCatalog=window.TillfolkTerrainCatalog;
   for(const key of Object.keys(TerrainCatalog?.ATLAS||{}))
     spriteUrls["terrain_"+key]=TerrainCatalog.url(key);
-  for(const kind of Object.keys(Exploration.FILES))
-    spriteUrls["wild_"+kind]=Exploration.speciesUrl(kind);
+  // Animações direcionais locais: imagens carregadas uma única vez.
+  for(const entry of Exploration.spriteSources())
+    spriteUrls[entry.key]=entry.url;
   for (const [key,url] of Object.entries(spriteUrls)) {
     const img = new Image(); img.src = url; sprite[key] = img;
   }
@@ -634,7 +635,6 @@
     speechScene.step=-1;speechScene.sequence=0;speechScene.text="";
     speechScene.workerId=null;speechScene.until=0;speechScene.next=0;
   }
-  let wildlifeAccumulator=0;
   let state = null, tasks = [], selectedTool = "universal", buildLayer = "home", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
@@ -777,6 +777,13 @@
         .map(a=>({...a,manure:a.wild?0:Math.max(0,Number(a.manure)||0),
           timer:Number(a.timer)||0}));
       // Saves antigos recebem fauna sem apagar animais e construções existentes.
+      for(const animal of state.animals)if(animal.wild){
+        animal.kind=Exploration.normalizedKind(animal);
+        animal.moving=false;
+        delete animal.fromX;delete animal.fromY;
+        delete animal.toX;delete animal.toY;
+        animal.moveTime=0;
+      }
       if(!state.animals.some(a=>a.wild)){
         const occupied=[...state.world.objects,
           ...state.workers.map(w=>({x:w.x,y:w.y})),
@@ -1289,13 +1296,10 @@
         animal.manure=Math.min(3,(animal.manure||0)+1);
       }
     }
-    wildlifeAccumulator+=scaled;
-    if(wildlifeAccumulator>=8){
-      Exploration.step(state.animals,state.world,wildlifeAccumulator,
-        (x,y)=>Boolean(World.at(state.world,x,y))||
-          state.homes.some(home=>homeTiles(home.x,home.y).some(([hx,hy])=>hx===x&&hy===y)));
-      wildlifeAccumulator=0;
-    }
+    // Animação com caminhada contínua, sem saltos tile a tile.
+    Exploration.step(state.animals,state.world,scaled,
+      (x,y)=>Boolean(World.at(state.world,x,y))||
+        state.homes.some(home=>homeTiles(home.x,home.y).some(([hx,hy])=>hx===x&&hy===y)));
     for(const p of state.plots)if(p.seeded&&p.watered&&p.growth<1){
       const fertility=World.terrainAt(state.world,p.x,p.y).fertility;
       p.growth=Math.min(1,p.growth+
@@ -1641,11 +1645,19 @@
         World.drawObject(ctx,item.object,sprite,TILE,part);
       }else if(type==="animal"){
         const a=item.animal,x=a.x*TILE,y=a.y*TILE;
-        const picture=a.wild?sprite["wild_"+a.kind]:sprite.cow;
-        if(valid(picture))part(picture,0,0,Math.min(32,picture.naturalWidth),
-          Math.min(32,picture.naturalHeight),x-20,y-35,40,40);
-        else write("🐾",x,y-15,"#ffedb8",22);
-        if(!a.wild&&a.manure>0)write("💩 "+a.manure,x+5,y-33,"#f3dcb0",10);
+        if(a.wild){
+          const clip=Exploration.spriteFrame(a,performance.now(),
+            animationsEnabled()&&simSpeed>0);
+          const picture=sprite[clip.key];
+          if(valid(picture)){
+            const src=Exploration.frameRect(clip,picture);
+            if(src)part(picture,src.sx,src.sy,src.sw,src.sh,
+              x-clip.drawW/2,y-clip.drawH+6,clip.drawW,clip.drawH);
+          }
+        }else{
+          part(sprite.cow,0,0,32,32,x-20,y-32,40,38);
+          if(a.manure>0)write("💩 "+a.manure,x+5,y-33,"#f3dcb0",10);
+        }
       }else{
         const w=item.worker,px=w.x*TILE,py=w.y*TILE;
         if(w.carryingWater)write("💧",px+18,py-32,"#b6f3fe",13);
