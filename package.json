@@ -1,7 +1,9 @@
 {
   "scripts": {
     "test:survival": "node tests/hunger.test.cjs && node tests/survival-death.test.cjs && node tests/survival-hud.test.cjs",
-    "test:e2e:survival": "playwright test tests/survival.spec.cjs"
+    "test:e2e:survival": "playwright test tests/survival.spec.cjs",
+    "test:workers": "node tests/worker-restrictions.test.cjs",
+    "test": "npm run test:workers && npm run test:survival"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
