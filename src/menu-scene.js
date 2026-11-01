@@ -113,12 +113,15 @@
       ]
     };
   }
-  function bed(x,y,row,stage=3){
-    for(let col=0;col<11;col++){
-      for(let dy=0;dy<2;dy++)earth(x+col*18,y+dy*14);
-      // O avanço visual da lavoura ocorre em estágios, sem modificar a partida.
-      const step=Math.max(0,Math.min(4,stage-((col+row)%3===0?1:0)));
-      stamp("crops",step*16,Math.min(14,row)*16,16,16,x+col*18,y-5,21,26);
+  function bed(x,y,row,stage=3,columns=9){
+    // Canteiros separados por corredores: apenas ilustração, sem efeito no jogo.
+    const shift=(row%2)*3;
+    for(let col=0;col<columns;col++){
+      const px=x+col*18+shift;
+      for(let dy=0;dy<2;dy++)earth(px,y+dy*14);
+      // Pequenas diferenças de crescimento dão naturalidade à horta.
+      const step=Math.max(0,Math.min(4,stage-((col+row)%4===0?1:0)));
+      if(step>0)stamp("crops",step*16,Math.min(14,row)*16,16,16,px,y-5,21,26);
     }
   }
   function workerFrame(x,y,index,frame=0,moving=false,facing="down",w=58,h=60,target=ctx){
@@ -217,9 +220,11 @@
     stamp("chest",0,0,32,32,560,332,42,42);
     stamp("furniture",16,16,16,16,887,320,30,30);
     stamp("furniture",48,32,16,16,590,333,28,28);
-    for(let row=0;row<5;row++){
-      bed(462,322+row*32,[0,1,3,5,8][row],Math.max(0,Math.min(4,stage.cropStage+row%2)));
-    }
+    // Dois talhões de tamanhos diferentes deixam o corredor livre entre eles.
+    for(let row=0;row<2;row++)
+      bed(465,326+row*32,[0,1][row],Math.max(0,Math.min(4,stage.cropStage+row%2)),9);
+    for(let row=0;row<2;row++)
+      bed(487,422+row*32,[3,5][row],Math.max(0,Math.min(4,stage.cropStage+1+row%2)),7);
     for(let i=0;i<8;i++)stamp("crops",64,0,16,16,646+i*24,374,22,27);
     for(let i=0;i<7;i++)stamp("furniture",48,16,16,16,695+i*27,384,22,24);
     // Animais passeiam em área livre ao norte da casa, sem sobrepor o telhado.
