@@ -2498,6 +2498,9 @@
     if(state.food<price){notify("Comida insuficiente para a troca.");return;}
     state.food-=price;
     state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},inventory:{tools:{},items:{}},x:state.spawn.x,y:state.spawn.y,task:null,progress:0,facing:"down",moving:false,walkFrame:0,satiety:100,health:100,hungerState:"fed",starvationMinutes:0,lastMealDay:state.day,energy:100,morale:75});
+    // Reaproveita ferramentas legadas que não puderam ser realocadas no load.
+    // Não cria nem destrói equipamento: transfere apenas a quem pode usá-lo.
+    Crafting.reconcileEquipment(state);
     assignHomes();
     state.candidates[i]=newCandidate();
     log(c.name+" entrou para a equipe.");

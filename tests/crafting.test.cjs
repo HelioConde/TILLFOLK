@@ -107,3 +107,34 @@ test("migração de saves antigos preserva ferramentas antes ilimitadas",()=>{
   assert.equal(C.normalize(null,true).equipment.pickaxe,true);
   assert.equal(C.normalize(null).equipment.pickaxe,false);
 });
+
+test("save legado mantém ferramenta sem destinatário e transfere na contratação",()=>{
+  const s=state();
+  const restricted={id:1,neg:["clear"],inventory:{tools:{axe:true},items:{}}};
+  s.workers=[restricted];
+  C.reconcileEquipment(s);
+  assert.equal(restricted.inventory.tools.axe,true,
+    "Não apagar item quando todos os colonos são incompatíveis");
+  assert.equal(C.has(s,"axe",restricted),false,"Não equipar ferramenta proibida");
+  const newcomer={id:2,neg:[],inventory:{tools:{},items:{}}};
+  C.normalizeWorker(newcomer);
+  s.workers.push(newcomer);
+  C.reconcileEquipment(s);
+  assert.equal(restricted.inventory.tools.axe,false);
+  assert.equal(newcomer.inventory.tools.axe,true);
+  C.reconcileEquipment(s);
+  assert.equal(newcomer.inventory.tools.axe,true,"Não duplicar item ao conciliar novamente");
+});
+test("ferramenta legada sem colono apto não desaparece após nova conciliação",()=>{
+  const s=state();
+  const restricted={id:1,neg:["till"],inventory:{tools:{hoe:true},items:{}}};
+  s.workers=[restricted];
+  for(let i=0;i<3;i++)C.reconcileEquipment(s);
+  assert.equal(restricted.inventory.tools.hoe,true);
+  assert.equal(C.has(s,"hoe",restricted),false);
+});
+test("contratação religa reconciliação de ferramentas preservadas",()=>{
+  const game=require("node:fs").readFileSync("src/game.js","utf8");
+  const hire=game.slice(game.indexOf("  function hire(i){"),game.indexOf("  let plotCache="));
+  assert.match(hire,/Crafting\.reconcileEquipment\(state\);/);
+});
