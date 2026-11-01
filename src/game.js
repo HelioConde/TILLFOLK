@@ -1895,13 +1895,29 @@
       '<span class="colony-worker-needs"><span>⚡ Energia '+Math.round(w.energy||0)+'%</span>'+
       '<span>♥ Moral '+Math.round(w.morale||0)+'%</span></span>'+
       '<meter min="0" max="100" value="'+Math.round(w.energy||0)+'" aria-label="Energia"></meter>'+
-      '</div>').join("");
+      '<label class="colony-shift-label">Horário de trabalho <select data-colony-shift="'+w.id+'" aria-label="Turno de '+escapeHtml(w.name)+'">'+
+      '<option value="day" '+(w.shift==="day"||!w.shift?"selected":"")+'>☀️ Diurno · dormir 21h–6h</option>'+
+      '<option value="night" '+(w.shift==="night"?"selected":"")+'>🌙 Noturno · dormir 8h–16h</option>'+
+      '<option value="flex" '+(w.shift==="flex"?"selected":"")+'>⚡ Flexível · dormir por cansaço</option>'+
+      '</select></label></div>').join("");
   }
   $("#colony-life-open").addEventListener("click",()=>{
     if(!playing||!state)return;
     renderColonyPanel();
     const dialog=$("#colony-life-dialog");
     if(!dialog.open)dialog.showModal();
+  });
+  $("#colony-life-workers").addEventListener("change",event=>{
+    const selector=event.target.closest("select[data-colony-shift]");
+    if(!selector||!state)return;
+    const worker=state.workers.find(w=>String(w.id)===selector.dataset.colonyShift);
+    if(!worker||!["day","night","flex"].includes(selector.value))return;
+    worker.shift=selector.value;
+    worker.resting=false;worker.atRest=false;
+    log("🛏️ Turno de "+worker.name+" alterado para "+
+      (selector.value==="night"?"noturno":selector.value==="flex"?"flexível":"diurno")+".");
+    notify("Novo turno de "+worker.name+" salvo.");
+    save();
   });
   $("#colony-auto-farm").addEventListener("click",()=>{
     if(!state)return;
