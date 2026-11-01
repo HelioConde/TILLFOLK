@@ -29,7 +29,7 @@
         working:["Boa, já vi onde é! Vou abrir caminho por aqui.","Opa, serviço à vista! Pelo menos esse mato vai servir pra alguma coisa."]
       },tool:"clear",target:"grass"},
     {key:"seed",goal:1,icon:"🌱",title:"A primeira sementinha",subtitle:"Encontre uma semente ao cortar grama",
-      help:"Continue usando Limpar nos tufos de grama alta. Cada tufo tem 25% de chance de render uma semente; se não vier de primeira, tente outro. Confira seu estoque no botão Estoque.",
+      help:"Continue usando Limpar nos tufos de grama alta. Nesta primeira descoberta, o próximo tufo vai revelar uma semente! Depois, a chance natural será de 25%. Confira o estoque no botão Estoque.",
       complete:"Olha só o que apareceu! Nossa primeira semente.",
       dialogue:{
         intro:["Ei, sabia que às vezes a gente encontra sementes escondidas no capim?","Imagina: dessa grama toda pode sair a primeira plantinha do vale!"],
@@ -301,7 +301,7 @@
         step.key==="home"?"Madeira para a cabana: "+Math.min(8,available("wood"))+" / 8":
         step.key==="tree"?"Um colono equipado com machado deve cortar a árvore":
         missing?.length?"Falta: "+window.TillfolkCrafting.formatCost(
-          Object.fromEntries(missing)):"Procure: "+artNames[step.key];
+          Object.fromEntries(missing.map(([kind,need])=>[kind,Math.max(0,need-available(kind))]))):"Procure: "+artNames[step.key];
     }
     const currentCount=Math.min(step.goal,progress.stats[step.key]);
     document.querySelector("#mission-progress").value=currentCount;
