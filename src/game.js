@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  const TILE = 32, W = 80, H = 50, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
+  const TILE = 32, W = 128, H = 80, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
   if(!Crops)throw new Error("Carregue src/crop-catalog.js antes do motor TILLFOLK.");
   if(!Crafting)throw new Error("Carregue src/crafting.js antes do motor TILLFOLK.");
@@ -210,6 +210,11 @@
     for(const tile of state.world.water)miniCtx.fillRect(
       Math.floor(tile.x*pixelWidth),Math.floor(tile.y*pixelHeight),
       Math.ceil(pixelWidth)+1,Math.ceil(pixelHeight)+1);
+    // As pontes ficam legíveis no minimapa, inclusive após restaurar o save.
+    miniCtx.fillStyle="#d6ad75";
+    for(const tile of state.world.crossings||[])miniCtx.fillRect(
+      Math.floor(tile.x*pixelWidth),Math.floor(tile.y*pixelHeight),
+      Math.max(1,Math.ceil(pixelWidth)),Math.max(1,Math.ceil(pixelHeight)));
     miniCtx.fillStyle="#2d5532";
     for(const obj of state.world.objects)if(obj.kind==="tree"||obj.kind==="thicket"){
       miniCtx.fillRect(Math.floor(obj.x*pixelWidth),Math.floor(obj.y*pixelHeight),
@@ -326,6 +331,7 @@
     cow:A+"animals/cow.png", well:A+"structures/water-well.png", fences:A+"structures/fences.png",
     roof:A+"structures/wood-roof.png",walls:A+"structures/wood-walls.png",door:A+"structures/wood-door.png",furniture:A+"structures/furniture.png",chest:A+"structures/chest.png",paths:A+"structures/paths.png",fenceGates:A+"structures/fence-gates.png",
     rocks:A+"environment/forageables.png",
+    bridge:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/Building parts/Wooden_Bridge_v2.png",
     workstation:"./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/work station.png"
   };
   const sprite = {};
@@ -515,7 +521,12 @@
     const origin=id(...start);
     // Ao clicar num ponto interno da lagoa, qualquer margem da MESMA lagoa
     // é válida: um trabalhador nunca precisa pisar na água.
-    const sourceTiles=World.waterAt(state?.world,toX,toY)?state.world.water:[{x:toX,y:toY}];
+    // Rios maiores não devem gerar milhares de destinos de BFS a cada busca.
+    const sourceTiles=World.waterAt(state?.world,toX,toY)?
+      state.world.water.slice().sort((a,b)=>
+        (Math.abs(a.x-fromX)+Math.abs(a.y-fromY))-
+        (Math.abs(b.x-fromX)+Math.abs(b.y-fromY))).slice(0,64):
+      [{x:toX,y:toY}];
     const goals=blocked(toX,toY)?sourceTiles.flatMap(tile=>
       directions.map(([dx,dy])=>[tile.x+dx,tile.y+dy])
         .filter(([x,y])=>!blocked(x,y))):[[toX,toY]];
@@ -714,7 +725,7 @@
       const legacySize=state.world.width!==W||state.world.height!==H||
         state.world.version<2;
       if(legacySize){
-        // Migração aditiva: mantém a fazenda 28x18 intacta, expande só o exterior.
+        // Migração aditiva: preserva o retângulo do save antigo (28x18 ou 80x50).
         const previousWidth=state.world.width||BASE_W,
           previousHeight=state.world.height||BASE_H;
         state.world=World.expand(state.world,W,H,previousWidth,previousHeight);
@@ -3262,6 +3273,9 @@
     }
     mapCtx.fillStyle="#669eae";
     for(const tile of state.world.water||[])mapCtx.fillRect(tile.x*tileW,tile.y*tileH,tileW+1,tileH+1);
+    mapCtx.fillStyle="#d6ad75";
+    for(const tile of state.world.crossings||[])mapCtx.fillRect(
+      tile.x*tileW,tile.y*tileH,Math.max(1,tileW),Math.max(1,tileH));
     mapCtx.fillStyle="#305c34";
     for(const tree of state.world.objects||[])if(["tree","thicket"].includes(tree.kind))
       mapCtx.fillRect(tree.x*tileW,tree.y*tileH,Math.max(2,tileW*.75),Math.max(2,tileH*.75));
