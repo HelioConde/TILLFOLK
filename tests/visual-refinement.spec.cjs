@@ -30,7 +30,7 @@ test('HUD Sprout v3: compactação real, painel de inventário e indicador de es
   expect(measure.slot).toContain('url(');
   await page.screenshot({path:'screenshots/hud-refinado-desktop-1366x768.png',animations:'disabled'});
   await page.locator('#open-workers').click();
-  await expect(page.locator('.resource-slot')).toHaveCount(8);
+  await expect(page.locator('.resource-slot')).toHaveCount(9);
   await expect(page.locator('.worker-status').first()).toBeVisible();
   await expect(page.locator('.worker-bar').first()).toHaveAttribute('role','progressbar');
   await page.screenshot({path:'screenshots/hud-refinado-equipe-1366x768.png',animations:'disabled'});
@@ -55,7 +55,7 @@ test('HUD Sprout v3: 390px com slots e controles dentro da viewport',async({page
   expect(rects.slots.every(r=>r.left>=-1&&r.right<=rects.width+1&&r.height>=48)).toBe(true);
   await page.screenshot({path:'screenshots/hud-refinado-mobile-390x844.png',animations:'disabled'});
   await page.locator('#open-workers').click();
-  await expect(page.locator('.resource-slot')).toHaveCount(8);
+  await expect(page.locator('.resource-slot')).toHaveCount(9);
   await page.screenshot({path:'screenshots/hud-refinado-mobile-inventario.png',animations:'disabled'});
   expect(errors).toEqual([]);
 });
