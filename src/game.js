@@ -1,6 +1,8 @@
 "use strict";
 (() => {
   const TILE = 32, W = 192, H = 120, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
+  const Contracts=window.TillfolkContracts;
+  if(!Contracts)throw new Error("Carregue src/colony-contracts.js antes do motor TILLFOLK.");
   const Exploration=window.TillfolkExploration,Progression=window.TillfolkProgression,
     Space=window.TillfolkSpace,Minerals=window.TillfolkMinerals;
   if(!Minerals)throw new Error("Carregue src/mineral-progression.js antes do motor TILLFOLK.");
@@ -1509,10 +1511,19 @@
       w.progress+=scaled*bonus(w,t.type)/taskDuration(t);
       if(w.progress>=1){
         const order=state.orders.find(o=>o.id===t.id)||t;
+        const originalObject=t.type==="clear"?World.at(state.world,t.x,t.y):null;
         const complete=finish(w,order);
         if(complete)showMapFeedback(t.x,t.y,"#ddf2a2");
         if(complete)state.orders=state.orders.filter(order=>order.id!==t.id);
         w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
+        if(complete){
+          const result=Contracts.record(state,order,{kind:originalObject?.kind});
+          if(result?.completed){
+            log("✦ Mutirão concluído: "+result.plan.title+". Moral +"+result.reward+".");
+            notify("✦ Mutirão concluído! Moral da equipe +"+result.reward+".");
+          }
+          if(result?.progressed)save(); // Progresso nunca volta após recarregar.
+        }
         recalcTasks();
       }
     }
@@ -2218,6 +2229,24 @@
   }
   $("#progression-open").addEventListener("click",openProgressionDialog);
   $("#progression-focus-open").addEventListener("click",openProgressionDialog);
+  $("#colony-contracts").addEventListener("click",event=>{
+    if(!playing||!state)return;
+    const choice=event.target.closest("[data-contract-choice]");
+    if(choice){
+      const response=Contracts.select(state,choice.dataset.contractChoice);
+      if(!response.ok){notify(response.reason);return;}
+      log("✦ Mutirão escolhido: "+response.plan.title+".");
+      notify("✦ Novo mutirão: "+response.plan.title);
+      Contracts.render(state,$("#colony-contracts"),playing);save();return;
+    }
+    const action=event.target.closest("[data-contract-action]");
+    if(action){
+      const plan=Contracts.current(state);
+      if(!plan)return;
+      document.querySelector('.tool[data-tool="'+plan.action+'"]')?.click();
+      notify(plan.action==="construir"?"Escolha o projeto em Objetos.":"Clique no alvo apropriado com Universal.");
+    }
+  });
   $("#colony-life-open").addEventListener("click",()=>{
     if(!playing||!state)return;
     renderColonyPanel();
@@ -2255,6 +2284,7 @@
     if(!state)return;
     renderPickupHistory();
     if(playing)Missions.render(state);else $("#mission-card").hidden=true;
+    Contracts.render(state,$("#colony-contracts"),playing);
     const set=(id,value)=>{$(id).textContent=value;};
     set("#day",String(state.day).padStart(2,"0"));
     const m=Math.floor(state.minutes);set("#clock",String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
