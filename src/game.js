@@ -446,6 +446,12 @@
   function occupiedByStation(x,y){
     return Boolean(state?.workstations?.some(ws=>ws.x===x&&ws.y===y)||state?.crafting?.station?.x===x&&state?.crafting?.station?.y===y);
   }
+  function occupiedByRocket(x,y){
+    const pad=state?.rocket?.site||
+      state?.orders?.find(order=>order.type==="buildRocket");
+    return Boolean(pad&&x>=pad.x&&x<pad.x+Space.FOOTPRINT&&
+      y>=pad.y&&y<pad.y+Space.FOOTPRINT);
+  }
   function stationSiteValid(x,y){
     if(!state||state.workstations?.length||state.crafting?.station||x<2||y<2||x>=W-2||y>=H-2)return false;
     const plot=findPlot(x,y);
@@ -453,7 +459,7 @@
       !plot.dirty&&!plot.seeded&&!plot.produce&&!plot.tilled&&
       !World.waterAt(state.world,x,y)&&!World.at(state.world,x,y)&&
       !window.TillfolkHouseBuilder.occupied(state.house,x,y)&&
-      !occupiedByHome(x,y)&&!occupiedByStation(x,y)&&
+      !occupiedByHome(x,y)&&!occupiedByStation(x,y)&&!occupiedByRocket(x,y)&&
       !state.chests?.some(c=>c.x===x&&c.y===y)&&!state.wells?.some(c=>c.x===x&&c.y===y)&&
       !state.orders.some(order=>order.x===x&&order.y===y&&order.type!=="buildStation"));
   }
@@ -465,7 +471,7 @@
     return x>=2&&y>=2&&x<W-2&&y<H-2&&Boolean(findPlot(x,y))&&
       World.terrainAt(state.world,x,y).buildable&&
       !World.at(state.world,x,y)&&!World.waterAt(state.world,x,y)&&
-      !occupiedByStation(x,y)&&!occupiedByHome(x,y)&&
+      !occupiedByStation(x,y)&&!occupiedByHome(x,y)&&!occupiedByRocket(x,y)&&
       !window.TillfolkHouseBuilder.occupied(state.house,x,y)&&
       !state.chests?.some(c=>c.x===x&&c.y===y)&&
       !state.wells?.some(c=>c.x===x&&c.y===y)&&
@@ -487,7 +493,7 @@
       !window.TillfolkHouseBuilder.occupied(state.house,tx,ty)&&
       !state.chests?.some(c=>c.x===tx&&c.y===ty)&&
       !state.wells?.some(c=>c.x===tx&&c.y===ty)&&
-      !occupiedByHome(tx,ty)&&!occupiedByStation(tx,ty)&&
+      !occupiedByHome(tx,ty)&&!occupiedByStation(tx,ty)&&!occupiedByRocket(tx,ty)&&
       !state.plots.some(p=>p.x===tx&&p.y===ty&&(p.tilled||p.seeded||p.produce||
         (p.selected&&!state.orders.some(o=>o.type==="buildHome"&&o.x===x&&o.y===y))))&&
       !state.orders.some(o=>o.type==="buildHome"&&
@@ -824,6 +830,7 @@
           .map(p=>({x:p.x,y:p.y})),
         ...state.workstations,
         ...state.homes.flatMap(home=>homeTiles(home.x,home.y).map(([x,y])=>({x,y}))),
+        ...(state.rocket?.site?Space.footprint(state.rocket.site.x,state.rocket.site.y):[]),
         ...state.animals.map(animal=>({x:Math.floor(animal.x),y:Math.floor(animal.y)})),
         ...["floor","walls","roof"].flatMap(layer=>state.house[layer].map(id=>{
           const [x,y]=id.split("-").map(Number);return {x,y};
@@ -1295,6 +1302,9 @@
       state.minutes-=1440;state.day++;
       // A água agora vem somente de ordens manuais para a lagoa.
       const houseCells=[...state.house.floor,...state.house.walls].map(id=>{const [x,y]=id.split("-").map(Number);return {x,y,selected:true};});
+      const futurePad=state.rocket?.site||state.orders.find(o=>o.type==="buildRocket");
+      if(futurePad)for(const tile of Space.footprint(futurePad.x,futurePad.y))
+        houseCells.push({...tile,selected:true});
       for(const home of state.homes.filter(h=>!h.legacy))for(const [x,y] of homeTiles(home.x,home.y))houseCells.push({x,y,selected:true});
       for(const order of state.orders.filter(o=>o.type==="buildHome"))for(const [x,y] of homeTiles(order.x,order.y))houseCells.push({x,y,selected:true});
       for(const animal of state.animals)animal.age=(Number(animal.age)||0)+1;
@@ -2447,7 +2457,8 @@
   function nextUniversalOrder(x,y){
     const plot=findPlot(x,y);
     if(!plot||World.waterAt(state.world,x,y)||
-       occupiedByHome(x,y)||occupiedByStation(x,y)||window.TillfolkHouseBuilder.occupied(state.house,x,y))return null;
+       occupiedByHome(x,y)||occupiedByStation(x,y)||occupiedByRocket(x,y)||
+       window.TillfolkHouseBuilder.occupied(state.house,x,y))return null;
     if(World.at(state.world,x,y)||plot.dirty)return "clear";
     if(plot.tilled&&!(state.cropSeeds[state.selectedCrop]>0)){
       const available=Object.keys(state.cropSeeds).find(id=>state.cropSeeds[id]>0&&Crops.get(id));
@@ -2518,6 +2529,9 @@
   function placeOrder(type,x,y){
     const toolProblem=Crafting.blocked(state,type,World.at(state.world,x,y));
     if(toolProblem){markBlocked(x,y,toolProblem);return;}
+    if(occupiedByRocket(x,y)&&type!=="buildRocket"){
+      markBlocked(x,y,"Terreno reservado para o foguete.");return;
+    }
     if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||occupiedByHome(x,y)||
        (World.waterAt(state.world,x,y)&&type!=="collectWater")){
       notify("Terreno indisponível para ordens.");return;
@@ -2549,7 +2563,8 @@
       y:Math.floor((event.clientY-rect.top)/rect.height*H)};
   }
   function isBuildCellBusy(x,y){
-    if(occupiedByStation(x,y)||occupiedByHome(x,y)||World.waterAt(state.world,x,y)||World.at(state.world,x,y))return true;
+    if(occupiedByStation(x,y)||occupiedByHome(x,y)||occupiedByRocket(x,y)||
+       World.waterAt(state.world,x,y)||World.at(state.world,x,y))return true;
     if(state.workers.some(w=>Math.max(Math.abs(Math.floor(w.x)-x),Math.abs(Math.floor(w.y)-y))<=1))return true;
     return state.plots.some(p=>p.x===x&&p.y===y&&(p.selected||p.tilled||p.seeded||p.produce));
   }
