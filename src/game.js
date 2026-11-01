@@ -448,8 +448,7 @@
       !World.at(state.world,x,y)&&!World.waterAt(state.world,x,y)&&
       !occupiedByStation(x,y)&&!occupiedByHome(x,y)&&
       !window.TillfolkHouseBuilder.occupied(state.house,x,y)&&
-      !state.chests?.some(c=>c.x===x&&c.y===y)&&
-      !state.orders.some(o=>o.x===x&&o.y===y&&o.type==="buildChest");
+      !state.chests?.some(c=>c.x===x&&c.y===y);
   }
   function homeSiteValid(x,y){
     if(x<2||y<2||x>=W-3||y>=H-3)return false;
@@ -838,6 +837,7 @@
   function releaseSupply(w){
     if(w.carryingWater){state.water++;w.carryingWater=false;}
     if(w.carryingManure){state.inventory.manure++;w.carryingManure=false;}
+    refundHaul(w);
     w.supplyStage=null;w.supplyTarget=null;
   }
 
@@ -945,7 +945,7 @@
     if(t.type==="buildHome"){
       const alreadyAssigned=state.workers.filter(other=>other.id!==w.id&&other.task&&
         tasks.some(job=>job.id===other.task&&job.type==="buildHome")).length;
-      if(state.inventory.wood<HOME_WOOD_COST*(alreadyAssigned+1))
+      if(Logistics.available(state,"wood")<HOME_WOOD_COST*(alreadyAssigned+1))
         return "Madeira reservada para outras construções";
     }
     if(!routeBetween(w.x,w.y,t.x,t.y).length)
@@ -1921,6 +1921,8 @@
   function removeOrders(ids){
     if(!ids.length)return;
     const cancelled=new Set(ids);
+    const toRefund=state.orders.filter(o=>cancelled.has(o.id));
+    for(const order of toRefund)Logistics.refund(state,order);
     state.orders=state.orders.filter(o=>!cancelled.has(o.id));
     for(const worker of state.workers)if(cancelled.has(worker.task)){
       releaseSupply(worker);
@@ -2116,9 +2118,9 @@
   }
   function updateBuildPanel(){
     if(!state)return;
-    $("#build-stock").textContent=String(state.inventory?.wood||0);
+    $("#build-stock").textContent=String(Logistics.available(state,"wood"));
     const p=$("#build-priority-value");if(p)p.textContent=state.buildPriority;
-    const sticks=$("#build-twigs");if(sticks)sticks.textContent=String(state.inventory?.twigs||0);
+    const sticks=$("#build-twigs");if(sticks)sticks.textContent=String(Logistics.available(state,"twigs"));
     if($("#build-homes-count"))$("#build-homes-count").textContent=String(state.homes.length);
     document.querySelectorAll("[data-build-layer]").forEach(btn=>{
       const on=btn.dataset.buildLayer===buildLayer;
@@ -2243,6 +2245,7 @@
         const ids=state.orders.filter(o=>buildLayer==="field"?
           o.x===x&&o.y===y&&["till","sow"].includes(o.type):
           buildLayer==="station"?o.type==="buildStation"&&o.x===x&&o.y===y:
+          buildLayer==="chest"?o.type==="buildChest"&&o.x===x&&o.y===y:
           o.type==="buildHome"&&homeTiles(o.x,o.y).some(([hx,hy])=>hx===x&&hy===y))
           .map(o=>o.id);
         if(ids.length){removeOrders(ids);$("#build-status").textContent="Blueprint cancelado.";}
@@ -2425,6 +2428,15 @@
     const clickType=selectedTool==="universal"?nextUniversalOrder(x,y):selectedTool;
     const restriction=clickType&&Crafting.blocked(state,clickType,World.at(state.world,x,y));
     if(restriction){markBlocked(x,y,restriction);return;}
+    const clickedChest=state.chests.find(c=>c.x===x&&c.y===y);
+    if(clickedChest){
+      const items=Object.entries(clickedChest.items).filter(([,qty])=>qty>0);
+      const tip=$("#tile-tooltip");
+      tip.classList.remove("locked");tip.hidden=false;
+      tip.textContent="🧰 Baú ("+(x+1)+","+(y+1)+"): "+
+        (items.length?items.map(([kind,qty])=>qty+" "+kind).join(" · "):"vazio — equipe vai guardar as coletas");
+      return;
+    }
     if(occupiedByStation(x,y)){openWorkshop();return;}
     if(selectedTool==="construir"){paintHouse(x,y);return;}
     if(window.TillfolkHouseBuilder.occupied(state.house,x,y)){notify("Esta área já faz parte da casa.");return;}
