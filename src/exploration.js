@@ -59,7 +59,7 @@
     return ((a^(a>>>16))>>>0)/4294967296;
   };
   const tileKey=(x,y)=>x+","+y;
-  function spawn(world,objects=[]){
+  function spawn(world,objects=[],protectedOrigins=[]){
     if(!world?.biomeMap||!Number.isInteger(world.width))return [];
     const {width:w,height:h}=world;
     const occupied=new Set((objects||[]).map(o=>tileKey(Math.floor(o.x),Math.floor(o.y))));
@@ -70,7 +70,9 @@
       const candidates=[];
       for(let y=2;y<h-2;y++)for(let x=2;x<w-2;x++){
         if(world.biomeMap[y*w+x]!==biome)continue;
-        if(insideSanctuary(world,x,y))continue;
+        if(insideSanctuary(world,x,y)||
+          protectedOrigins.some(origin=>Number.isFinite(origin?.x)&&Number.isFinite(origin?.y)&&
+            Math.hypot((x-origin.x)/1.25,(y-origin.y)/1.1)<22))continue;
         const id=tileKey(x,y);
         if(occupied.has(id)||water.has(id))continue;
         // Ordenação pseudoaleatória determinística; fauna não cobre os recursos.
@@ -106,7 +108,8 @@
       if(animal.timer<8)continue;
       animal.timer%=8;
       const x=Math.floor(animal.x),y=Math.floor(animal.y);
-      const n=hash(world.seed+Math.floor((animal.age||0)*13),x,y+Math.floor(animal.homeX));
+      animal.roamSteps=(Math.max(0,Number(animal.roamSteps)||0)+1)%100000;
+      const n=hash(world.seed+animal.roamSteps*97,x,y+Math.floor(animal.homeX));
       const options=[[1,0],[-1,0],[0,1],[0,-1],[0,0]];
       const [dx,dy]=options[Math.floor(n*options.length)];
       const nx=x+dx,ny=y+dy;
