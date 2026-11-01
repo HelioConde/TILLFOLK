@@ -9,7 +9,7 @@ const keys=M.STEPS.map(item=>item.key);
 
 test("a enxada precede o cultivo e o machado comum vem após a colheita",()=>{
   assert.deepEqual(keys,["workstation","hoe","grass","seed","till","sow",
-    "wateringCan","water","harvest","carry","axe"]);
+    "wateringCan","water","harvest","carry","axe","tree","home"]);
 });
 test("o tutorial inicia na primeira missão sem cumprir objetivos automaticamente",()=>{
  const state=make();
@@ -56,8 +56,20 @@ test("saves antigos não recebem tutorial novo, saves atuais são restaurados",(
  assert.equal(restored.active,true);
  assert.equal(restored.step,1);
  assert.equal(restored.stats[keys[0]],1);
- assert.equal(restored.version,5);
+ assert.equal(restored.version,6);
  assert.ok(M.speech({tutorial:restored,workers:[{}]},{}).length>10);
+});
+test("saves v5 concluídos não reabrem o tutorial novo",()=>{
+  const old=M.normalize({active:true,step:11,stats:{axe:1},finished:true,version:5});
+  assert.equal(old.finished,true);assert.equal(old.step,keys.length);
+});
+test("machado abre corte de árvore e depois a primeira cabana",()=>{
+  const state=make();
+  for(const key of keys.slice(0,11))M.record(state,key);
+  assert.equal(state.tutorial.finished,false);
+  assert.equal(M.current(state).key,"tree");
+  M.record(state,"tree");assert.equal(M.current(state).key,"home");
+  M.record(state,"home");assert.equal(state.tutorial.finished,true);
 });
 test("saves antigos que aguardavam a abertura do vale concluem o tutorial removido",()=>{
  const migrated=M.normalize({active:true,step:11,stats:{axe:1,exit:0},finished:false,version:4});
