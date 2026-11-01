@@ -28,6 +28,9 @@ jobs:
           node --test tests/terrain-editor.test.cjs
           node --check src/wild-world.js
           node --check src/game.js
+          node --check src/day-night.js
+          node --check src/colony-life.js
+          node --test tests/day-night.test.cjs tests/colony-life.test.cjs
           node --test tests/specialization.test.cjs
           node --check src/survival.js
           node --check src/tutorial-pointer.js
@@ -135,6 +138,11 @@ jobs:
           test -f _site/public/assets/sprout-lands/farming/crops.png
           test -f _site/public/assets/tillfolk/menu-landscape.svg
           test -f _site/src/biomes.js
+          test -f _site/src/day-night.js
+          test -f _site/src/colony-life.js
+          test -f _site/colony-life.css
+          grep -q 'src/day-night.js' _site/index.html
+          grep -q 'src/colony-life.js' _site/index.html
           test -f _site/src/terrain-autotile.js
           test -f _site/src/terrain-catalog.js
           grep -q 'src/terrain-catalog.js' _site/index.html
