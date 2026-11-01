@@ -179,3 +179,20 @@
 #menu .title-navigation > .title-divider{
   justify-content:center;
 }
+
+
+/* UX v20261101 — ações do menu com prioridades claras. */
+#menu .title-menu-button{position:relative;min-height:44px;border-radius:9px;padding-inline:clamp(11px,1.25vw,17px);transition:transform .14s,border-color .14s,box-shadow .14s}
+#menu .title-menu-button > span{width:27px;flex-basis:27px;font-size:19px;line-height:1}
+#menu .title-menu-button strong{font-size:clamp(13px,1.05vw,16px);line-height:1.3}
+#menu .title-menu-button.primary{border-color:#e5f7b2;box-shadow:inset 0 -3px #95bb69,0 4px 13px rgba(4,26,14,.4)}
+#menu #tutorial-start{background:linear-gradient(180deg,#315a3f,#214731);border-color:#b4d98c}
+#menu #title-settings{margin-top:clamp(8px,1.1vh,12px)}
+#menu :is(#title-settings,#title-credits,#title-exit){background:rgba(13,48,34,.91);border-color:rgba(152,187,123,.78);box-shadow:inset 0 -2px #0f3223,0 2px 7px rgba(4,22,15,.25)}
+#menu .title-menu-chip{margin-left:auto;flex:none;padding:4px 7px;border-radius:5px;border:1px solid rgba(225,240,181,.7);color:#f3e8b2;background:rgba(9,36,24,.62);font:800 10px/1.1 system-ui,"Segoe UI",sans-serif;letter-spacing:.015em}
+#menu .title-menu-button:hover:not(:disabled){transform:translateX(3px);border-color:#e5efb0}
+#menu .title-menu-button:active:not(:disabled){transform:translate(1px,1px)}
+#menu .title-topline button:focus-visible,#menu .title-menu-button:focus-visible{outline:3px solid #ffe0a1;outline-offset:3px}
+@media(max-height:720px) and (min-width:851px){#menu #title-settings{margin-top:3px}#menu .title-menu-actions{gap:5px}}
+@media(max-width:520px){#menu .title-menu-button strong{font-size:14px}#menu .title-menu-chip{font-size:9px;padding:4px 6px}#menu .title-menu-button > span{width:24px;flex-basis:24px}}
+@media(prefers-reduced-motion:reduce){#menu .title-menu-button{transition:none!important}#menu .title-menu-button:hover:not(:disabled),#menu .title-menu-button:active:not(:disabled){transform:none}}
