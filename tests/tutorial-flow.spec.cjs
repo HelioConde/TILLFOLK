@@ -20,7 +20,7 @@ async function startFarm(page,button="tutorial-start"){
  await expect(page.locator("#menu")).toBeHidden();
  await expect(page.locator("#mission-card")).toBeVisible();
 }
-async function jumpToFinalMission(page){
+async function jumpToAxeMission(page){
  // pagehide salva a sessão ativa; aplicar o fixture ANTES do script do jogo no reload.
  await page.addInitScript(()=>{
    const fixture=sessionStorage.getItem("__tutorialFinalFixture");
@@ -32,8 +32,8 @@ async function jumpToFinalMission(page){
  await page.evaluate(()=>{
   const save=JSON.parse(localStorage.getItem("tillfolk-v01"));
   const steps=window.TillfolkMissions.STEPS;
-  save.tutorial={active:true,step:steps.length-1,finished:false,version:5,
-   stats:Object.fromEntries(steps.map((step,i)=>[step.key,i===steps.length-1?0:1]))};
+  save.tutorial={active:true,step:steps.findIndex(s=>s.key==="axe"),finished:false,version:6,
+   stats:Object.fromEntries(steps.map((step,i)=>[step.key,i<steps.findIndex(s=>s.key==="axe")?1:0]))};
   save.tutorial.stats.harvest=1;
   save.firstHarvest=true;
   save.crafting.station={x:40,y:29};
@@ -50,15 +50,16 @@ async function jumpToFinalMission(page){
  });
  await page.reload({waitUntil:"networkidle"});
  await continueIfMenuVisible(page);
- await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 11 / 11");
+ await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 11 / 13");
 }
 async function finishAxeMission(page){
  await page.locator("#open-workshop").click();
  await page.locator('[data-craft-tool="axe"]').click();
  await page.locator("#workshop-dialog .modal-x").click();
  await page.locator('[data-speed="6"]').click();
- await expect(page.locator("#tutorial-done-dialog")).toBeVisible({timeout:55000});
- await expect(page.locator("#mission-card")).toBeHidden();
+ await expect(page.locator("#mission-title")).toHaveText("O primeiro corte de madeira",{timeout:55000});
+ await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 12 / 13");
+ await expect(page.locator("#tutorial-done-dialog")).toBeHidden();
 }
 
 test("Como jogar permanece um guia independente, sem substituir saves",async({page})=>{
@@ -83,7 +84,7 @@ test("Tutorial inicia no jogo: objetivos, ajuda ao passar mouse e localização"
  const errors=[];page.on("pageerror",e=>errors.push(e.message));
  await visit(page);
  await startFarm(page);
- await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 11");
+ await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 13");
  await expect(page.locator("#mission-count")).toHaveText("0 / 1");
  await expect(page.locator("#mission-help")).toBeHidden();
  await page.locator("#mission-card").hover();
@@ -105,28 +106,22 @@ test("Nova Fazenda tem missões e Continuar preserva o progresso no celular",asy
  await page.reload({waitUntil:"networkidle"});
  await expect(page.locator("#continue")).toBeEnabled();
  await continueIfMenuVisible(page);
- await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 11");
+ await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 1 / 13");
  expect(errors).toEqual([]);
 });
 
-test("A última missão termina ao fabricar o machado e respeita Continuar ou Menu",async({page})=>{
+test("Machado abre o primeiro corte sem encerrar o tutorial",async({page})=>{
  test.setTimeout(140000);
  const errors=[];page.on("pageerror",e=>errors.push(e.message));
  await visit(page);
  await startFarm(page);
- await jumpToFinalMission(page);
+ await jumpToAxeMission(page);
  await finishAxeMission(page);
- await page.screenshot({path:"screenshots/tutorial-concluido-escolhas.png",animations:"disabled"});
- await page.locator("#tutorial-continue-game").click();
- await expect(page.locator("#tutorial-done-dialog")).toBeHidden();
- await expect(page.locator("#menu")).toBeHidden();
- await jumpToFinalMission(page);
- await finishAxeMission(page);
- await page.locator("#tutorial-back-menu").click();
- await expect(page.locator("#menu")).toBeVisible();
- await expect(page.locator("#continue")).toBeEnabled();
+ await expect(page.locator("#mission-card")).toBeVisible();
+ await page.screenshot({path:"screenshots/tutorial-primeira-madeira.png",animations:"disabled"});
+ await page.reload({waitUntil:"networkidle"});
  await continueIfMenuVisible(page);
+ await expect(page.locator("#mission-title")).toHaveText("O primeiro corte de madeira");
  await expect(page.locator("#tutorial-done-dialog")).toBeHidden();
- await expect(page.locator("#mission-card")).toBeHidden();
  expect(errors).toEqual([]);
 });
