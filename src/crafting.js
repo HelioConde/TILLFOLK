@@ -22,9 +22,11 @@
     {key:"shovel",name:"Pá",icon:"🪏",cost:{twigs:8,grass:2},help:"Arrancar tocos e escavar terreno."},
     {key:"pickaxe",name:"Picareta",icon:"⛏️",cost:{twigs:10,wood:2},help:"Extrair pedras grandes."},
     {key:"hoe",name:"Enxada",icon:"🌱",cost:{twigs:4,grass:2},help:"Arar e preparar canteiros."},
-    {key:"wateringCan",name:"Regador",icon:"💧",cost:{twigs:4,grass:2},help:"Irrigar as plantações."}
+    {key:"wateringCan",name:"Regador",icon:"💧",cost:{twigs:4,grass:2},help:"Irrigar as plantações."},
+    ...Object.entries(window.TillfolkExploration?.GEAR||{}).map(([key,gear])=>
+      Object.freeze({key,name:gear.name,icon:gear.icon,cost:gear.cost,help:gear.help}))
   ]);
-  const equipped=Object.freeze({axe:false,shovel:false,pickaxe:false,hoe:false,wateringCan:false});
+  const equipped=Object.freeze(Object.fromEntries(RECIPES.map(({key})=>[key,false])));
   function normalize(raw,legacy=false){
     // Saves anteriores tinham acesso irrestrito a ferramentas: preservar seu progresso.
     const equipment={...equipped};
