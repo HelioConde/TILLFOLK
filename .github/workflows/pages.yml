@@ -82,14 +82,26 @@ jobs:
           mkdir -p "_site/public/assets/$CHEST_ROOT"
           cp "public/assets/$CHEST_ROOT/Chest.png" "_site/public/assets/$CHEST_ROOT/"
           cp "public/assets/$CHEST_ROOT/Wooden_Bridge_v2.png" "_site/public/assets/$CHEST_ROOT/"
-          # Fauna por continente: publicar apenas os sprites usados, todos já no repositório.
-          WILD_ROOT="FREE 64 Tiny Animals – 32x32 Pixel Art Pack"
-          for entry in "Pets/rabbit.png" "Farm Animals/chicken.png" "Forest Animals/fox.png" "Forest Animals/dear.png" "Forest Animals/squirrel.png" "Farm Animals/goat.png" "Wild-Jungle Animals/zebra.png" "Cute Animals/penguin.png" "Cute Animals/seal.png" "Water Animals/frog.png" "Water Animals/toad.png" "Small Creatures/bat.png" "Small Creatures/spider.png"; do
-            mkdir -p "_site/public/assets/$WILD_ROOT/$(dirname "$entry")"
-            cp "public/assets/$WILD_ROOT/$entry" "_site/public/assets/$WILD_ROOT/$entry"
-          done
-          test -f "_site/public/assets/$WILD_ROOT/Cute Animals/penguin.png"
-          test -f "_site/public/assets/$WILD_ROOT/Small Creatures/spider.png"
+          # Publicar todas as direções e quadros declarados no catálogo, sem
+          # copiar pastas gigantes nem deixar algum frame faltando no Pages.
+          node <<'NODE'
+          const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+          const context={window:{}};
+          vm.runInNewContext(fs.readFileSync('src/exploration.js','utf8'),context);
+          const sprites=context.window.TillfolkExploration.spriteSources();
+          if(sprites.length<40)throw new Error('Catálogo de animações incompleto');
+          for(const sprite of sprites){
+            const relative=decodeURIComponent(sprite.url.replace(/^\.\//,''));
+            if(!relative.startsWith('public/assets/')||relative.includes('..'))
+              throw new Error('Sprite inseguro: '+relative);
+            if(!fs.existsSync(relative))throw new Error('Animação ausente: '+relative);
+            const destination=path.join('_site',relative);
+            fs.mkdirSync(path.dirname(destination),{recursive:true});
+            fs.copyFileSync(relative,destination);
+            if(fs.statSync(destination).size<100)throw new Error('PNG inválido: '+relative);
+          }
+          console.log(sprites.length+' spritesheets de animais publicados');
+          NODE
           test -f "_site/public/assets/$CHEST_ROOT/Chest.png"
           test -f "_site/public/assets/$CHEST_ROOT/Wooden_Bridge_v2.png"
           node --check src/logistics.js
