@@ -66,7 +66,8 @@
     candidates.sort((a,b)=>a.distance-b.distance);
     const best=candidates[0];if(!best)return null;
     return {orderId:order.id,phase:"fetch",source:best.source,kind:best.kind,
-      qty:best.qty,destination:{x:order.x,y:order.y}};
+      qty:best.qty,limit:Math.min(capacity(worker),needs[best.kind]),
+      cargo:0,destination:{x:order.x,y:order.y}};
   }
   function collect(state,job){
     normalize(state);
@@ -106,7 +107,8 @@
     const chest=[...state.chests].sort((a,b)=>
       Math.abs(a.x-source.x)+Math.abs(a.y-source.y)-
       Math.abs(b.x-source.x)-Math.abs(b.y-source.y))[0];
-    return {orderId:null,phase:"fetch",kind:source.kind,qty:Math.min(capacity(worker),source.qty),
+    return {orderId:null,phase:"fetch",kind:source.kind,
+      qty:Math.min(capacity(worker),source.qty),limit:capacity(worker),cargo:0,
       source:{type:"ground",id:source.id,x:source.x,y:source.y},
       destination:{x:chest.x,y:chest.y}};
   }
