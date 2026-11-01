@@ -46,7 +46,8 @@
   <script defer src="./src/blueprints.js?v=20261031-fazenda-automacao-v7"></script>
   <script defer src="./src/house-building.js?v=20261031-fazenda-casa"></script>
   <script defer src="./src/crop-catalog.js?v=20261031-fazenda-automacao-v7"></script>
-  <script defer src="./src/crafting.js?v=20261101-protecao-v2"></script>
+  <script defer src="./src/mineral-progression.js?v=20261101-geologia-v1"></script>
+  <script defer src="./src/crafting.js?v=20261101-geologia-v1"></script>
   <script defer src="./src/logistics.js?v=20261101-lifecycle-v3"></script>
   <script defer src="./src/task-orders.js?v=20261101-lifecycle-v3"></script>
   <script defer src="./src/missions.js?v=20261031-fazenda-automacao-v7"></script>
@@ -56,7 +57,7 @@
   <script defer src="./src/space-program.js?v=20261101-foguete-v1"></script>
   <script defer src="./src/colony-life.js?v=20261101-jornada-v1"></script>
   <script defer src="./src/survival.js?v=20261031-sobrevivencia-s1"></script>
-  <script defer src="./src/game.js?v=20261101-foguete-v1"></script>
+  <script defer src="./src/game.js?v=20261101-geologia-v1"></script>
   <script defer src="./src/game-hud.js?v=20261101-shifts-fixes-v4"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
   <script defer src="./src/live-update.js"></script>
@@ -253,7 +254,7 @@
     <canvas id="title-scene" class="title-scene-canvas" width="960" height="540" aria-hidden="true"></canvas>
     <div class="title-shading" aria-hidden="true"></div>
     <div class="title-content">
-      <div class="title-topline"><span>✿ CULTIVE · RECRUTE · EXPLORE · DECOLE</span><button type="button" id="title-fullscreen" aria-label="Alternar tela cheia" aria-pressed="false">⛶ Tela cheia</button></div>
+      <div class="title-topline"><span>✿ CULTIVE · MINE · RECRUTE · EXPLORE · DECOLE</span><button type="button" id="title-fullscreen" aria-label="Alternar tela cheia" aria-pressed="false">⛶ Tela cheia</button></div>
       <section class="title-navigation" aria-labelledby="game-title">
         <div class="title-sprout" aria-hidden="true">✦ 🌱 ✦</div>
         <h2 id="game-title">TILLFOLK</h2>
@@ -410,6 +411,11 @@
     <p class="progression-intro">A superpopulação tornou o planeta insustentável. Sua equipe chega à última região habitável para começar do zero, acolher novos colonos e dominar os continentes. A única saída definitiva é construir um foguete e partir para outro mundo. Cada etapa nasce de trabalho real, não de cliques automáticos.</p>
     <div id="progression-overview" aria-live="polite"></div>
     <div id="progression-chapters"></div>
+    <section class="mineral-progression" aria-labelledby="mineral-progression-title">
+      <h3 id="mineral-progression-title">⛏️ Evolução dos minerais por continente</h3>
+      <p>Pedrinhas → bronze → ferro → ouro → diamante → bauxita. Refine bauxita e ferro na oficina para produzir a liga usada no foguete.</p>
+      <div id="mineral-progression-list"></div>
+    </section>
     <section class="progression-expeditions" aria-labelledby="progression-expeditions-title">
       <h3 id="progression-expeditions-title">🗺️ Diário dos continentes</h3>
       <div id="progression-continents"></div>
@@ -465,7 +471,7 @@
   <dialog id="workshop-dialog" class="game-modal farm-catalog-dialog" aria-labelledby="workshop-title">
     <form method="dialog"><button class="modal-x" aria-label="Fechar oficina">✕</button></form>
     <span class="overline">FERRAMENTAS E AGRICULTURA</span><h2 id="workshop-title">Work Station · Oficina</h2>
-    <p>A primeira bancada é construída com 10 gravetos. Fabrique ferramentas e equipamentos individuais de proteção para explorar outros continentes. Cada bioma exige proteção específica.</p>
+    <p>Primeiro recolha gravetos e cascalho manualmente. Monte a bancada com 10 gravetos; nela você fabrica machados e picaretas, depois evolui a mineração com bronze, ferro e diamante. Refine bauxita em liga de alumínio para o foguete. Cada bioma também exige EPI.</p>
     <img class="farm-item-atlas" src="./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items/tools and meterials.png" alt="Sprites de ferramentas e materiais do pacote Sprout Lands">
     <div id="workshop-tools" class="farm-tools-list" aria-label="Receitas de ferramentas"></div>
     <h3>🌱 Preparar sementes</h3><p>Troque 2 unidades de um cultivo armazenado por 3 sementes da mesma cultura.</p>
