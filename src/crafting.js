@@ -62,7 +62,7 @@
   function missing(state,cost){
     return Object.entries(cost).filter(([key,need])=>(Number(state?.inventory?.[key])||0)<need);
   }
-  function canBuild(state){return !state?.crafting?.station&&missing(state,{twigs:STATION_COST}).length===0;}
+  function canBuild(state){return !state?.crafting?.station&&(window.TillfolkLogistics?.available(state,"twigs")??state?.inventory?.twigs??0)>=STATION_COST;}
   function recipe(key){return RECIPES.find(item=>item.key===key)||null;}
   function locked(state,key){
     if(key==="axe"&&state?.tutorial?.active===true&&
