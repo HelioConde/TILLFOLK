@@ -70,15 +70,17 @@
       return "Colha sua primeira plantação antes de fabricar machados.";
     return null;
   }
-  function craft(state,key,worker=null){
+  function craft(state,key,worker=null,prepaid=false){
     const item=recipe(key);
     if(!item)return {error:"Receita desconhecida."};
     if(!state?.crafting?.station)return {error:"Construa e acesse uma Work Station primeiro."};
     if(has(state,key,worker))return {error:item.name+" já foi fabricado"+(worker?" para este colono":"")+"."};
     const unavailableStage=locked(state,key);if(unavailableStage)return {error:unavailableStage};
-    const unavailable=missing(state,item.cost);
-    if(unavailable.length)return {error:"Faltam materiais para "+item.name.toLowerCase()+"."};
-    for(const [resource,amount] of Object.entries(item.cost))state.inventory[resource]-=amount;
+    if(!prepaid){
+      const unavailable=missing(state,item.cost);
+      if(unavailable.length)return {error:"Faltam materiais para "+item.name.toLowerCase()+"."};
+      for(const [resource,amount] of Object.entries(item.cost))state.inventory[resource]-=amount;
+    }
     state.crafting.equipment[key]=true;
     if(worker)normalizeWorker(worker).tools[key]=true;
     return {item,workerId:worker?.id??null};
