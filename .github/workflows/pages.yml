@@ -25,6 +25,8 @@ jobs:
           node --check src/terrain-catalog.js
           node --test tests/terrain-biomes.test.cjs
           node --test tests/terrain-autotile.test.cjs
+          # Regra obrigatória: impede alterar posições, cantos e grade dos 9 terrenos.
+          node --test tests/terrain-contract.test.cjs
           node --test tests/terrain-editor.test.cjs
           node --check src/wild-world.js
           node --test tests/biome-rivers.test.cjs tests/bridge-geometry.test.cjs tests/continent-protection.test.cjs tests/wildlife-animations.test.cjs
@@ -76,6 +78,7 @@ jobs:
           mkdir -p "_site/public/assets/$TERRAIN_ROOT"
           cp "public/assets/$TERRAIN_ROOT/"*.png "_site/public/assets/$TERRAIN_ROOT/"
           cp "public/assets/$TERRAIN_ROOT/Grass_Tile_Layers_terrain.json" "_site/public/assets/$TERRAIN_ROOT/"
+          test -f "_site/public/assets/$TERRAIN_ROOT/Grass_Tile_Layers_terrain.json"
           test -f "_site/public/assets/$TERRAIN_ROOT/Grass_Tile_Layers.png"
           test -f "_site/public/assets/$TERRAIN_ROOT/Soil_Ground_Tiles.png"
           test -f "_site/public/assets/$TERRAIN_ROOT/Stone_Ground_Tiles.png"
