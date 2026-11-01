@@ -2200,7 +2200,11 @@
     $("#tile-tooltip").hidden=false;
     $("#tile-tooltip").textContent="Terreno "+(p.x+1)+", "+(p.y+1)+
       ((p.seeded||p.produce)?" · "+(Crops.get(p.crop||"carrot")?.name||"Cultivo"):"")+
-      " · "+World.terrainAt(state.world,p.x,p.y).name+" · "+(p.produce?"Colheita pronta":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural")+
+      " · "+World.terrainAt(state.world,p.x,p.y).name+
+      (Exploration.requirement(state.world,p.x,p.y).gear?
+        " · EPI: "+Exploration.GEAR[Exploration.requirement(state.world,p.x,p.y).gear].name:
+        " · Área segura")+
+      " · "+(p.produce?"Colheita pronta":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural")+
       " · Ordens: "+(planned.length?planned.map(o=>labels[o.type]).join(" → "):"nenhuma");
   }
   function removeOrders(ids){
