@@ -32,6 +32,24 @@
       Object.freeze({key,name:gear.name,icon:gear.icon,cost:gear.cost,help:gear.help}))
   ]);
   const equipped=Object.freeze(Object.fromEntries(RECIPES.filter(item=>item.type!=="material").map(({key})=>[key,false])));
+  // Equipamentos profissionais seguem as mesmas proibições vermelhas das tarefas.
+  // Roupas de proteção e materiais continuam liberados a qualquer trabalhador.
+  const toolActivity=Object.freeze({hoe:"till",wateringCan:"water",axe:"clear",shovel:"clear",pickaxe:"clear"});
+  const forbiddenActivity=(worker,key)=>{
+    const activity=toolActivity[key];
+    return activity&&worker?.neg?.includes(activity)?activity:null;
+  };
+  const canEquip=(worker,key)=>!forbiddenActivity(worker,key);
+  function reconcileEquipment(state){
+    // Preserva o progresso de saves antigos, realocando ferramentas mal atribuídas.
+    const workers=state?.workers||[];
+    for(const worker of workers)for(const key of Object.keys(worker.inventory?.tools||{})){
+      if(!worker.inventory.tools[key]||canEquip(worker,key))continue;
+      const receiver=workers.find(other=>other!==worker&&canEquip(other,key)&&!other.inventory?.tools?.[key]);
+      worker.inventory.tools[key]=false;
+      if(receiver)normalizeWorker(receiver).tools[key]=true;
+    }
+  }
   function normalize(raw,legacy=false){
     // Saves anteriores tinham acesso irrestrito a ferramentas: preservar seu progresso.
     const equipment={...equipped};
@@ -62,9 +80,9 @@
     return worker.inventory;
   }
   function has(state,key,worker=null){
-    if(worker)return Boolean(worker.inventory?.tools?.[key]);
+    if(worker)return canEquip(worker,key)&&Boolean(worker.inventory?.tools?.[key]);
     if(Array.isArray(state?.workers)&&state.workers.length)
-      return state.workers.some(w=>Boolean(w.inventory?.tools?.[key]));
+      return state.workers.some(w=>canEquip(w,key)&&Boolean(w.inventory?.tools?.[key]));
     return state?.crafting?.equipment?.[key]===true;
   }
   function missing(state,cost){
@@ -85,6 +103,7 @@
   function craft(state,key,worker=null,prepaid=false){
     const item=recipe(key);
     if(!item)return {error:"Receita desconhecida."};
+    if(worker&&!canEquip(worker,key))return {error:"Restrição vermelha: este colono não pode usar "+item.name.toLowerCase()+"."};
     if(!state?.crafting?.station)return {error:"Construa e acesse uma Work Station primeiro."};
     if(item.type!=="material"&&has(state,key,worker))
       return {error:item.name+" já foi fabricado"+(worker?" para este colono":"")+"."};
@@ -128,6 +147,6 @@
   }
   window.TillfolkCrafting=Object.freeze({
     STATION_COST,STATION_SPRITE,ITEMS_SPRITE,ITEM_FRAMES,itemFrame,RECIPES,
-    normalize,normalizeWorker,has,missing,canBuild,recipe,craft,locked,requiredTool,blocked,formatCost
+    normalize,normalizeWorker,reconcileEquipment,canEquip,forbiddenActivity,has,missing,canBuild,recipe,craft,locked,requiredTool,blocked,formatCost
   });
 })();
