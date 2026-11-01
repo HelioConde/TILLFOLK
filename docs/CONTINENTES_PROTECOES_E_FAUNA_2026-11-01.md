@@ -22,7 +22,9 @@ Esses equipamentos são **individuais**, fabricados como ferramentas pelo sistem
 
 ## Fauna selvagem
 
-- Espécies do pacote local `FREE 64 Tiny Animals – 32x32 Pixel Art Pack`: coelhos e galinhas (pradaria externa); raposas, veados e esquilos (floresta); cabras e zebras (areia); pinguins e focas (gelo); sapos e rãs (pântano); morcegos e aranhas (cogumelos tóxicos).
+- **Sprites animados, sem o pack estático anterior:** coelhos (bunnies), raposas (foxes), pássaros (birds), porcos (pigs) e vacas (cows) usam spritesheets de caminhada por direção de `assets_premium_preview/animals/`; galinhas usam `Little Dreamyland/Animals/CHICKEN/Chicken_Idle.png`; sapos usam `Sprout Sorry pack/.../frog/frog_spritesheet.png`; morcegos usam `Little Dreamyland/.../BAT/Bat idle.png`.
+- Distribuição: pradaria externa (coelho, galinha, vaca, porco); floresta (raposa, coelho, pássaro); areia (raposa, pássaro); gelo (coelho, pássaro); pântano (sapo, pássaro); cogumelos tóxicos (morcego). Os animais do bioma frio são provisórios até haver sprites animados de espécies polares compatíveis no projeto.
+- Os deslocamentos são interpolados progressivamente entre células. Sprites animadas seguem a direção da movimentação; o usuário pode desligar animações pelas preferências de movimento, e a simulação respeita a pausa.
 - Distribuição reproduzível pela semente do mapa e por região; em testes foram gerados aproximadamente **49–51 animais**.
 - Nenhum animal é criado na ilha central ou no entorno imediato de um antigo ponto de partida preservado em save migrado.
 - Os animais possuem deslocamento local por bioma, sem entrar na água, cruzar de bioma ou pisar em árvores.
@@ -30,14 +32,14 @@ Esses equipamentos são **individuais**, fabricados como ferramentas pelo sistem
 
 ## Compatibilidade e implementação
 
-- `src/exploration.js`: riscos, receitas e distribuição/movimentação da fauna.
+- `src/exploration.js`: riscos, receitas, distribuição e catálogo/recorte de sprites animados da fauna.
 - `src/crafting.js`: equipamentos individuais na Work Station.
 - `src/game.js`: mapa 192×120, restrições de caminho por colono, desenho dos animais e indicadores de proteção.
 - `src/biomes.js`: aumento da ilha central, mesmo atlas/máscaras do autotile.
 - `src/colony-life.js`: separação de animais selvagens e domesticados.
 - `index.html`, `camera-ui.css`: informações de EPI.
 - `.github/workflows/pages.yml`: publica seletivamente os 13 sprites usados.
-- `tests/continent-protection.test.cjs` e `tests/biomes.spec.cjs`: verificações dos novos sistemas.
+- `tests/continent-protection.test.cjs`, `tests/wildlife-animations.test.cjs` e `tests/biomes.spec.cjs`: verificações dos novos sistemas, PNGs originais e recortes sem sair dos atlases.
 
 O save permanece em **LocalStorage**. A ampliação usa migração não destrutiva: terrenos e objetos das partidas antigas mantêm suas coordenadas. O mapa novo só adiciona terreno ao exterior, por isso uma fazenda antiga pode não estar no centro geométrico do mapa ampliado.
 
