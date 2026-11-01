@@ -93,16 +93,35 @@
         intro:["Nossa primeira colheita já está guardada! Que tal preparar um machado para explorar?","Já temos comida! Agora a gente pode fabricar um machado para coletar madeira."],
         waiting:["A receita do machado tá na bancada. Confere os gravetos e as pedrinhas.","Se estiver faltando material, podemos recolher cascalho no chão."],
         working:["Pronto, vou separar os materiais. Cuidado com a lâmina!","Com o machado feito, nosso trabalho vai render muito mais."]
-      },tool:"construir",target:"axe"}
+      },tool:"construir",target:"axe"},
+    {key:"tree",goal:1,icon:"🌳",title:"O primeiro corte de madeira",
+      subtitle:"Derrube uma árvore com o machado recém-fabricado",
+      help:"O machado agora tem uma função. Selecione Universal (ou Ordens → Limpar) e clique em uma árvore perto do acampamento. Espere um colono equipado concluir o corte. A madeira cai no chão e pode ser usada em construções.",
+      complete:"Conseguimos madeira! Agora precisamos de um lugar seguro para dormir.",
+      dialogue:{
+        intro:["O machado não é só enfeite! Vamos buscar madeira para sair do relento.","A mata está cheia de madeira. Que tal construir nosso primeiro abrigo?"],
+        waiting:["Escolha uma árvore perto da bancada. O machado já está pronto.","Marca uma árvore para cortar! Depois construiremos um teto."],
+        working:["Segura aí! Esse tronco é grande, mas já vai cair.","Mais umas machadadas e vamos ter madeira pra nossa casa."]
+      },tool:"clear",target:"tree"},
+    {key:"home",goal:1,icon:"🏡",title:"Antes que a noite chegue",
+      subtitle:"Construa a primeira cabana para a equipe",
+      help:"Uma cabana exige 8 madeiras. Derrube mais árvores e remova tocos se precisar. A madeira pode permanecer no chão: a equipe vai transportá-la até a construção. Abra Objetos → Cabana, escolha um espaço livre de 2×2 e espere a obra terminar. Depois, continue sua Jornada pelo botão 🧭.",
+      complete:"Nossa primeira casa está de pé! O vale já começa a parecer um lar.",
+      dialogue:{
+        intro:["Agora a noite vai ser mais tranquila com um teto! Vamos construir a cabana.","Temos comida e ferramentas. Falta um lugar para descansar sem medo."],
+        waiting:["Precisamos de oito madeiras e um espaço livre de dois por dois.","Uma casa perto da horta seria ótima! A equipe transporta a madeira."],
+        working:["Olha só, a primeira casa já está tomando forma.","Cada tábua no lugar. Logo teremos um teto de verdade!"]
+      },tool:"construir",target:"home"}
   ]);
 
   const artNames=Object.freeze({
     workstation:"Work Station",hoe:"Enxada",wateringCan:"Regador",shovel:"Pá",pickaxe:"Picareta",axe:"Machado",
     grass:"Tufo de grama alta",seed:"Grama alta: pode soltar sementes",
     till:"Terra arada",sow:"Semente plantada",water:"Planta regada",
-    harvest:"Plantação madura",carry:"Colheita",plan:"Cabana"
+    harvest:"Plantação madura",carry:"Colheita",tree:"Árvore",home:"Cabana",plan:"Cabana"
   });
   const atlasPaths={ground:"terrain/grass.png",forage:"environment/forageables.png",
+    trees:"environment/trees-and-bushes.png",
     dirt:"terrain/tilled-dirt.png",crops:"farming/crops.png",
     roof:"structures/wood-roof.png",walls:"structures/wood-walls.png",door:"structures/wood-door.png",
     station:"structures/work-station.png",items:"items/tools-materials.png"};
@@ -160,6 +179,10 @@
         ctx.fillStyle="#603b20";ctx.fillRect(x+size*.7,y+size*.71,size*.12,size*.12);
         ctx.fillStyle="#edcc78";ctx.fillRect(x+size*.73,y+size*.73,size*.07,size*.07);
       }
+    }else if(key==="tree"){
+      const frame=window.TillfolkWild?.spriteFrame("tree",1)||[16,0,32,32];
+      stamp(ctx,"trees",frame[0],frame[1],frame[2],frame[3],
+        x+size*.12,y+size*.04,size*.76,size*.9);
     }else if(key==="till")soil();
     else if(key==="sow"){
       soil();ctx.fillStyle="#563925";ctx.fillRect(x+size*.39,y+size*.4,size*.23,size*.2);
@@ -169,7 +192,7 @@
       ctx.fillRect(x+size*.73,y+size*.17,size*.08,size*.18);
     }else if(key==="harvest"){soil();crop(64);}
     else if(key==="carry"){soil();crop(48,16);}
-    else if(key==="plan"){
+    else if(key==="plan"||key==="home"){
       const roof=atlasImage("roof"),walls=atlasImage("walls"),door=atlasImage("door");
       if(window.TillfolkHouse?.draw&&[roof,walls,door].every(i=>i?.complete&&i.naturalWidth)){
         ctx.save();ctx.translate(x+size*.07,y+size*.08);ctx.scale(size/120,size/120);
@@ -203,14 +226,18 @@
     return canvas;
   }
   const emptyStats=()=>Object.fromEntries(STEPS.map(step=>[step.key,0]));
-  function create(){return {active:true,step:0,stats:emptyStats(),finished:false,version:5};}
+  function create(){return {active:true,step:0,stats:emptyStats(),finished:false,version:6};}
   function normalize(raw){
     if(!raw||typeof raw!=="object")return {active:false,step:0,stats:emptyStats(),finished:false,version:1};
     const stats=emptyStats();
     for(const key of Object.keys(stats))stats[key]=Math.max(0,Math.min(9999,Number(raw.stats?.[key])||0));
     const version=Number(raw.version)||1;
     let step=0;
-    if(version>=4)step=Math.max(0,Math.min(STEPS.length,Math.floor(Number(raw.step)||0)));
+    // Quem concluiu as 11 missões antigas não é forçado a refazê-las.
+    const legacyFinished=version<6&&(raw.finished===true||
+      (version>=4&&Number(raw.step)>=11));
+    if(version>=4)step=legacyFinished?STEPS.length:
+      Math.max(0,Math.min(STEPS.length,Math.floor(Number(raw.step)||0)));
     else if(raw.finished===true)step=STEPS.length;
     else {
       // Reorganizar a progressão sem obrigar novos jogadores a usar o machado antes da horta.
@@ -225,7 +252,7 @@
       if(stats.water)stats.wateringCan=1;
       while(step<STEPS.length&&stats[STEPS[step].key]>=STEPS[step].goal)step++;
     }
-    return {active:raw.active===true,step,stats,finished:raw.finished===true||step>=STEPS.length,version:5};
+    return {active:raw.active===true,step,stats,finished:raw.finished===true||legacyFinished||step>=STEPS.length,version:6};
   }
   function current(state){
     const progress=state?.tutorial;
@@ -264,9 +291,18 @@
     const preview=ensureTargetUI();
     if(preview)paintTarget(preview,step.key);
     const label=document.querySelector("#mission-objective-label");
-    if(label)label.textContent=step.key==="workstation"?
-      "Gravetos: "+Math.min(10,(window.TillfolkLogistics?.available(state,"twigs")??state.inventory?.twigs??0))+" / 10 · depois monte a bancada":
-      "Procure: "+artNames[step.key];
+    if(label){
+      const available=kind=>window.TillfolkLogistics?.available(state,kind)??state.inventory?.[kind]??0;
+      const recipe=["hoe","wateringCan","axe"].includes(step.key)&&
+        window.TillfolkCrafting?.recipe(step.key);
+      const missing=recipe&&window.TillfolkCrafting?.missing(state,recipe.cost);
+      label.textContent=step.key==="workstation"?
+        "Gravetos: "+Math.min(10,available("twigs"))+" / 10 · depois monte a bancada":
+        step.key==="home"?"Madeira para a cabana: "+Math.min(8,available("wood"))+" / 8":
+        step.key==="tree"?"Um colono equipado com machado deve cortar a árvore":
+        missing?.length?"Falta: "+window.TillfolkCrafting.formatCost(
+          Object.fromEntries(missing)):"Procure: "+artNames[step.key];
+    }
     const currentCount=Math.min(step.goal,progress.stats[step.key]);
     document.querySelector("#mission-progress").value=currentCount;
     document.querySelector("#mission-count").textContent=currentCount+" / "+step.goal;
