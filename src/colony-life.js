@@ -40,6 +40,7 @@
      worker.energy=clamp(worker.energy,0,100);
      worker.morale=clamp(worker.morale,0,100);
      worker.resting=worker.resting===true;
+     worker.carryBonus=state.colonyLife.researchLevel>=4?1:0;
    }
    return state.colonyLife;
  }
