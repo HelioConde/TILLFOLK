@@ -67,19 +67,29 @@
     const protectedSet=new Set(protectedTiles.filter(tile=>
       Number.isFinite(tile?.x)&&Number.isFinite(tile?.y))
       .map(tile=>key(Math.floor(tile.x),Math.floor(tile.y))));
-    const narrowGaps=[];
-    for(let y=1;y<world.height-1;y++)for(let x=1;x<world.width-1;x++){
-      const id=key(x,y);
-      if(water.has(id)||occupied.has(id)||protectedSet.has(id))continue;
-      const horizontal=water.has(key(x-1,y))&&water.has(key(x+1,y));
-      const vertical=water.has(key(x,y-1))&&water.has(key(x,y+1));
-      if(horizontal||vertical)narrowGaps.push({x,y,id});
-    }
-    for(const tile of narrowGaps){
-      world.water.push({x:tile.x,y:tile.y});
-      water.add(tile.id);
-    }
-    let added=narrowGaps.length;
+    // O conector pode criar novos gargalos de apenas uma célula. Fechar
+    // esses espaços até estabilizar, preservando objetos e tiles protegidos.
+    const fillNarrowGaps=()=>{
+      let changed=0,pass;
+      do{
+        pass=0;
+        const gaps=[];
+        for(let y=1;y<world.height-1;y++)for(let x=1;x<world.width-1;x++){
+          const id=key(x,y);
+          if(water.has(id)||occupied.has(id)||protectedSet.has(id))continue;
+          if((water.has(key(x-1,y))&&water.has(key(x+1,y)))||
+             (water.has(key(x,y-1))&&water.has(key(x,y+1))))
+            gaps.push({x,y,id});
+        }
+        for(const tile of gaps){
+          world.water.push({x:tile.x,y:tile.y});
+          water.add(tile.id);pass++;
+        }
+        changed+=pass;
+      }while(pass>0);
+      return changed;
+    };
+    let added=fillNarrowGaps();
     const remaining=new Set(water),components=[];
     const directions=[[1,0],[-1,0],[0,1],[0,-1]];
     while(remaining.size){
@@ -119,7 +129,7 @@
       }
       for(const tile of component)connected.add(tile);
     }
-    return added;
+    return added+fillNarrowGaps();
   }
 
   // Os seis biomas mantêm o autotile original. Água ocupa os dois lados das
