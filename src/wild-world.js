@@ -142,29 +142,116 @@
       }
     }
   }
-  // Pontes são travessias transitáveis SOBRE a água, não buracos nos rios.
-  // Rotas 4-conectadas partem da clareira rumo ao núcleo de cada bioma.
-  function createCrossings(world,used){
+  // Travessias são segmentos RETOS e curtos entre duas margens secas.
+  // Não transformar trajetos em escadinhas sobre lagos, nem modificar autotiles.
+  const BRIDGE_VERSION=2,MAX_BRIDGE_WIDTH=4;
+  function createCrossings(world,used=new Set()){
     const {width:w,height:h}=world,water=new Set(world.water.map(p=>key(p.x,p.y)));
-    const crossings=new Map(),cx=Math.floor(w/2),cy=Math.floor(h/2);
-    const destinations=[[.18,.79],[.81,.18],[.79,.77],[.22,.17],[.54,.17]];
-    for(const [tx,ty] of destinations){
-      let x=cx,y=cy;
-      const endX=Math.max(2,Math.min(w-3,Math.floor(tx*w)));
-      const endY=Math.max(2,Math.min(h-3,Math.floor(ty*h)));
-      // O corredor de navegação permanece livre de árvores que prendam o colono.
-      used.add(key(x,y));
-      while(x!==endX||y!==endY){
-        const dx=endX-x,dy=endY-y;
-        const horizontal=dx!==0&&(dy===0||Math.abs(dx/w)>=Math.abs(dy/h));
-        if(horizontal)x+=Math.sign(dx);
-        else y+=Math.sign(dy);
-        const id=key(x,y);
-        used.add(id);
-        if(water.has(id))crossings.set(id,{x,y,axis:horizontal?"horizontal":"vertical"});
+    const solid=new Set((world.objects||[]).filter(o=>solidKinds.has(o.kind))
+      .map(o=>key(o.x,o.y)));
+    const directions=[[1,0],[-1,0],[0,1],[0,-1]];
+    const cell=(x,y)=>y*w+x,land=(x,y)=>
+      inMap(x,y,w,h)&&!water.has(key(x,y));
+    // Descobrir as ilhas de terra FIRME, sem abrir cortes no rio original.
+    const owner=new Int32Array(w*h).fill(-1),components=[];
+    for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+      if(!land(x,y)||owner[cell(x,y)]!==-1)continue;
+      const id=components.length,queue=[[x,y]],biomes=new Set();
+      owner[cell(x,y)]=id;
+      for(let i=0;i<queue.length;i++){
+        const [tx,ty]=queue[i];
+        biomes.add(world.biomeMap[ty*w+tx]);
+        for(const [dx,dy] of directions){
+          const nx=tx+dx,ny=ty+dy;
+          if(!land(nx,ny)||owner[cell(nx,ny)]!==-1)continue;
+          owner[cell(nx,ny)]=id;queue.push([nx,ny]);
+        }
+      }
+      components.push({id,biomes});
+    }
+    const crossingOptions=new Map();
+    // Cada opção exige: margem seca -> até 4 tiles de água RETOS -> margem seca.
+    for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+      const from=owner[cell(x,y)];
+      if(from<0||solid.has(key(x,y)))continue;
+      for(const [dx,dy] of [[1,0],[0,1]]){
+        const tiles=[];let nx=x+dx,ny=y+dy;
+        while(tiles.length<MAX_BRIDGE_WIDTH&&land(nx,ny)===false&&
+          inMap(nx,ny,w,h)&&water.has(key(nx,ny))){
+          tiles.push({x:nx,y:ny});
+          nx+=dx;ny+=dy;
+        }
+        if(!tiles.length||!land(nx,ny)||solid.has(key(nx,ny)))continue;
+        const to=owner[cell(nx,ny)];
+        if(to<0||to===from)continue; // Nunca construir uma ponte dentro do mesmo lado de um lago.
+        const id=Math.min(from,to)+":"+Math.max(from,to);
+        const axis=dx?"horizontal":"vertical";
+        const score=tiles.length*100+noise(world.seed+419,x,y)*5;
+        const previous=crossingOptions.get(id);
+        if(!previous||score<previous.score)
+          crossingOptions.set(id,{from,to,tiles,axis,score,banks:[{x,y},{x:nx,y:ny}]});
       }
     }
-    world.crossings=Array.from(crossings.values());
+    const links=Array.from({length:components.length},()=>[]);
+    for(const option of crossingOptions.values()){
+      links[option.from].push({other:option.to,option});
+      links[option.to].push({other:option.from,option});
+    }
+    const cx=Math.floor(w/2),cy=Math.floor(h/2),start=owner[cell(cx,cy)];
+    const dist=new Float64Array(components.length).fill(Infinity),previous=new Array(components.length);
+    const seen=new Set();
+    if(start>=0)dist[start]=0;
+    // Grafo pequeno das ilhas; cada aresta corresponde a uma ponte curta e reta.
+    for(let i=0;i<components.length;i++){
+      let best=-1;
+      for(let j=0;j<components.length;j++)
+        if(!seen.has(j)&&(best<0||dist[j]<dist[best]))best=j;
+      if(best<0||!Number.isFinite(dist[best]))break;
+      seen.add(best);
+      for(const edge of links[best]){
+        const cost=3+edge.option.tiles.length*edge.option.tiles.length;
+        if(dist[edge.other]>dist[best]+cost){
+          dist[edge.other]=dist[best]+cost;
+          previous[edge.other]={parent:best,option:edge.option};
+        }
+      }
+    }
+    // Uma região de cada bioma basta para exploração. Preferir os caminhos
+    // curtos que respeitam as margens, em vez de pontes em diagonal no lago.
+    const selected=new Set(),biomeNames=["g","f","s","i","w","p"];
+    for(const biome of biomeNames){
+      let target=-1;
+      for(const component of components){
+        if(!component.biomes.has(biome)||!Number.isFinite(dist[component.id]))continue;
+        if(target<0||dist[component.id]<dist[target])target=component.id;
+      }
+      for(let node=target;node>=0&&node!==start&&previous[node];node=previous[node].parent)
+        selected.add(previous[node].option);
+    }
+    const crossings=[],reserved=new Set();
+    for(const option of selected){
+      const bridgeId=crossings.length+"-"+option.axis;
+      for(const tile of option.tiles){
+        const id=key(tile.x,tile.y);
+        if(reserved.has(id))continue;
+        reserved.add(id);
+        crossings.push({...tile,axis:option.axis,bridgeId});
+      }
+      for(const bank of option.banks)used.add(key(bank.x,bank.y));
+    }
+    world.crossings=crossings;
+    world.crossingsVersion=BRIDGE_VERSION;
+    return crossings.length;
+  }
+  function repairCrossings(world,protectedTiles=[]){
+    if(!world||!Array.isArray(world.water))return false;
+    // Saves antigos tinham "escadas" sobre a água. Substituir SOMENTE as
+    // pontes; preservar água, biomas, construções, recursos e coordenadas.
+    if(world.crossingsVersion===BRIDGE_VERSION&&Array.isArray(world.crossings))return false;
+    const reserved=new Set(protectedTiles.filter(p=>Number.isFinite(p?.x)&&Number.isFinite(p?.y))
+      .map(p=>key(Math.floor(p.x),Math.floor(p.y))));
+    createCrossings(world,reserved);
+    return true;
   }
   function create(seed,w,h,exclude=[]){
     const random=randSeed(seed), reserved=new Set(exclude.map(p=>key(p.x,p.y)));
@@ -521,7 +608,7 @@
     removeValleyEnclosure(enlarged);
     return enlarged;
   }
-  window.TillfolkWild=Object.freeze({create,expand,valleyBounds,ringTile,removeValleyEnclosure,connectWater,at,waterAt,bridgeAt,blocked,clear,regrow,
+  window.TillfolkWild=Object.freeze({create,expand,valleyBounds,ringTile,removeValleyEnclosure,connectWater,repairCrossings,at,waterAt,bridgeAt,blocked,clear,regrow,
     drawGround,drawObject,drawAmbient,spriteFrame,atlasFrames,
     stripFruitTrees,nonFruitTreeVariants,
     terrainAt:Biomes.at,biomeAt:Biomes.kind});
