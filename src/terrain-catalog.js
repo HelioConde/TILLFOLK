@@ -55,6 +55,22 @@
  const url=key=>ATLAS[key]?DIRECTORY+encodeURIComponent(ATLAS[key].file):null;
  const isLoaded=(img,kind="terrain")=>Boolean(img&&img.complete&&
    img.naturalWidth>=(kind==="terrain"?176:1)&&img.naturalHeight>=(kind==="terrain"?112:1));
- const config=Object.freeze({...{"schema":"tillfolk-terrain-autotile/v1","terrain":"grass","atlas":"Grass_Tile_Layers.png","tileSize":16,"atlasColumns":11,"atlasRows":7,"neighbors":8,"method":"cardinal + complementary inner corners"},roles:ROLES});
- return Object.freeze({DIRECTORY,ROLES,ATLAS,BIOME_ATLAS,url,isLoaded,config});
+ // CONTRATO VISUAL FIXO: os 9 atlases de terreno compatíveis compartilham
+ // EXATAMENTE os mesmos 20 papéis. Nunca alterar as coordenadas silenciosamente.
+ // O JSON Grass_Tile_Layers_terrain.json deve permanecer idêntico ao padrão.
+ const CONTRACT=Object.freeze({
+  schema:"tillfolk-terrain-autotile/v1",tileSize:16,atlasColumns:11,atlasRows:7,
+  neighbors:8,method:"cardinal + complementary inner corners"
+ });
+ const TERRAIN_KEYS=Object.freeze(source.filter(([, ,kind])=>kind==="terrain")
+  .map(([key])=>key));
+ const configForAtlas=key=>{
+  const entry=ATLAS[key];
+  if(!entry||entry.kind!=="terrain")return null;
+  return Object.freeze({...CONTRACT,terrain:key==="grassLayer"?"grass":key,
+   atlas:entry.file,roles:ROLES});
+ };
+ const config=configForAtlas("grassLayer");
+ return Object.freeze({DIRECTORY,ROLES,CONTRACT,TERRAIN_KEYS,ATLAS,BIOME_ATLAS,
+  url,isLoaded,config,configForAtlas});
 });
