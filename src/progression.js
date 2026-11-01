@@ -28,14 +28,21 @@
     {id:"explore3",chapter:4,title:"Explorar três continentes",hint:"Planeje expedições com as proteções específicas.",reward:3},
     {id:"research3",chapter:4,title:"Pesquisar rotina de descanso",hint:"Visite um continente e construa um poço.",reward:2},
     {id:"research4",chapter:4,title:"Pesquisar transporte avançado",hint:"Explore três continentes e organize ao menos três colonos.",reward:3},
-    {id:"exploreAll",chapter:4,title:"Conhecer os cinco continentes",hint:"Visite bosque, deserto, gelo, pântano e cogumelos.",reward:5}
+    {id:"exploreAll",chapter:4,title:"Conhecer os cinco continentes",hint:"Visite bosque, deserto, gelo, pântano e cogumelos.",reward:5},
+    {id:"rocketPad",chapter:5,title:"Fundar a plataforma espacial",hint:"Construa uma pista 3×3 segura na ilha; recursos são transportados até a obra.",reward:3},
+    {id:"rocketHull",chapter:5,title:"Montar casco e cabine",hint:"Planeje a segunda etapa, entregando madeira, pedra e fibra.",reward:3},
+    {id:"rocketEngine",chapter:5,title:"Construir o motor",hint:"Recolha minerais, cogumelos e ervas para equipar a propulsão.",reward:4},
+    {id:"rocketSupport",chapter:5,title:"Instalar suporte de vida",hint:"Complete filtros e estrutura da nave; prepare alimento e água.",reward:4},
+    {id:"rocketCrew",chapter:5,title:"Preparar a equipe de evacuação",hint:"Quatro colonos com moradia, saúde e alimentação para embarcar.",reward:4},
+    {id:"rocketLaunch",chapter:5,title:"Lançar o foguete",hint:"Com 30 alimentos e 20 águas estocados, inicie o lançamento pelo programa espacial.",reward:6}
   ]);
   const CHAPTERS=Object.freeze([
     {title:"O primeiro abrigo",icon:"🌱",description:"Sobreviver, cultivar e fabricar as primeiras ferramentas.",unlock:"Conhecimento inicial + acesso a toda a oficina."},
     {title:"Uma fazenda de verdade",icon:"🏡",description:"Criar estrutura, preservar recursos e manter comida guardada.",unlock:"Base para pesquisar conservação e construir o poço."},
     {title:"Colônia organizada",icon:"💧",description:"Garantir água e descanso antes de sair da ilha central.",unlock:"Estrutura para expedições duradouras."},
     {title:"Além dos rios",icon:"🧭",description:"Preparar proteção e enviar colonos aos novos continentes.",unlock:"Descobertas dão conhecimento para pesquisas avançadas."},
-    {title:"Domínio dos continentes",icon:"🌍",description:"Explorar os cinco biomas e dominar as tecnologias.",unlock:"Jornada principal concluída; a colônia continua livre."}
+    {title:"Domínio dos continentes",icon:"🌍",description:"Explorar os cinco biomas e dominar as tecnologias.",unlock:"Projeto espacial desbloqueado: reunir materiais e preparar a partida."},
+    {title:"Última esperança: abandonar o planeta",icon:"🚀",description:"Construir, abastecer e lançar uma nave para escapar do mundo superpovoado.",unlock:"Vitória narrativa: a tripulação deixa o planeta, e a colônia pode continuar livre."}
   ]);
   const count=(array)=>Array.isArray(array)?array.length:0;
   function normalize(state){
@@ -88,6 +95,14 @@
       case "research3":return research>=3;
       case "research4":return research>=4;
       case "exploreAll":return discovered>=5;
+      case "rocketPad":return (state?.rocket?.stage||0)>=1;
+      case "rocketHull":return (state?.rocket?.stage||0)>=2;
+      case "rocketEngine":return (state?.rocket?.stage||0)>=3;
+      case "rocketSupport":return (state?.rocket?.stage||0)>=4;
+      case "rocketCrew":return Boolean(state?.rocket?.launched)||
+        (state?.workers||[]).filter(w=>(w.health??100)>=50&&
+          (w.satiety??100)>=35&&(state?.homes||[]).some(h=>h.residentId===w.id)).length>=4;
+      case "rocketLaunch":return state?.rocket?.launched===true;
       default:return false;
     }
   }
