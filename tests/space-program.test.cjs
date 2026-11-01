@@ -62,6 +62,9 @@ test("etapas preservam custo da logística, ordem e avanço por construção",()
     assert.equal(Orders.status(pending.order,null,null,s).state,"ready");
     // O trabalhador pode chegar à área da obra sem torná-la inválida.
     s.workers[0].x=9.5;s.workers[0].y=9.5;
+    assert.ok(Space.finish(s,pending.order).error,"não construir sem entrega física");
+    pending.order.delivered={...Space.stageCost(stage)};
+    assert.equal(Logistics.complete(pending.order),true);
     const result=Space.finish(s,pending.order);
     assert.equal(result.stage,stage+1);
     assert.equal(Orders.status(pending.order,null,null,s).state,"done");
