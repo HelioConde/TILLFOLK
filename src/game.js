@@ -2694,7 +2694,7 @@
       const skills=person.skills.length
         ?person.skills.map(type=>{
           const seconds=Math.round(baseTime[type]/bonusForCandidate(person,type));
-          const description=labels[type]+': '+seconds+' segundos por ação (velocidade 1×, sem deslocamento). Bônus de +'+bonus+'% nesta especialidade.';
+          const description=labels[type]+': '+seconds+' segundos por ação (velocidade da especialidade, sem deslocamento). Bônus de +'+bonus+'% nesta especialidade.';
           return '<button type="button" class="starter-chip specialty" data-specialty-tooltip="'+escapeHtml(description)+'" aria-label="'+escapeHtml(description)+'" aria-expanded="false">'+icons[type]+' '+labels[type]+' <span aria-hidden="true" class="chip-info">ⓘ</span></button>';
         }).join("")
         :'<span class="starter-chip none">Sem especialidade · velocidade normal</span>';
@@ -2839,7 +2839,7 @@
     const target=$("#management-body");
     if(managementTab==="priorities"){
       const types=Object.keys(labels);
-      target.innerHTML='<p class="management-explainer">Defina as atividades preferidas de cada trabalhador (1–9). As prioridades globais continuam valendo para toda a fazenda. A especialidade aumenta a velocidade; traços negativos bloqueiam completamente a tarefa.</p>'+
+      target.innerHTML='<p class="management-explainer">Defina as atividades preferidas de cada trabalhador (1–9). As prioridades globais continuam valendo para toda a fazenda. A especialidade azul aumenta a velocidade. Mais traços vermelhos fortalecem as especializações, mas continuam proibindo as tarefas correspondentes.</p>'+
         '<div class="matrix-scroll"><table class="priority-matrix"><thead><tr><th>Trabalhador</th>'+
         types.map(type=>'<th>'+icons[type]+' '+labels[type]+'</th>').join("")+
         '</tr></thead><tbody>'+state.workers.map(w=>
@@ -2859,7 +2859,7 @@
       const worker=state.workers.find(w=>w.id===managementWorker)||state.workers[0];
       if(!worker){target.innerHTML='<p>Sem trabalhadores. Contrate uma equipe.</p>';return;}
       const percentage=worker.skills.length?Math.round((specialtyMultiplier(worker,worker.skills[0])-1)*100):0;
-      target.innerHTML='<p class="management-explainer">Especialidades são bônus de eficiência e não desbloqueios de atividades. Quanto menos especialidades, mais rápido o trabalhador executa cada uma delas.</p>'+
+      target.innerHTML='<p class="management-explainer">Especialidades azuis aumentam a velocidade; três restrições vermelhas com uma única habilidade azul conferem 3× nessa tarefa. As atividades vermelhas permanecem proibidas.</p>'+
         '<div class="skills-view"><nav class="skills-roster" aria-label="Selecionar trabalhador">'+
         state.workers.map(w=>'<button type="button" data-select-worker="'+w.id+'" class="'+(worker.id===w.id?'active':'')+'">'+escapeHtml(w.name)+'<br><small>'+w.skills.length+' especialidades</small></button>').join("")+
         '</nav><section class="skills-detail"><h3>✦ '+escapeHtml(worker.name)+'</h3>'+
