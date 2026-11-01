@@ -10,11 +10,11 @@
     Object.freeze({id:"pad",name:"Plataforma de lançamento",icon:"🧱",
       description:"Fundação 3×3 em terra firme, perto da colônia.",cost:Object.freeze({wood:18,stone:12}),work:110}),
     Object.freeze({id:"hull",name:"Casco e cabine",icon:"🚀",
-      description:"Estrutura reforçada para transportar os habitantes.",cost:Object.freeze({wood:25,stone:18,grass:14}),work:150}),
+      description:"Estrutura reforçada com metal dos continentes e liga refinada.",cost:Object.freeze({wood:18,bronze:8,iron:14,aluminumAlloy:12}),work:150}),
     Object.freeze({id:"engine",name:"Motor de propulsão",icon:"⚙️",
-      description:"Ligas minerais e reagentes reunidos nos continentes.",cost:Object.freeze({stone:24,mushroom:8,herbs:7}),work:180}),
+      description:"Circuitos de ouro, cristais e liga de alumínio para impulsão.",cost:Object.freeze({aluminumAlloy:20,goldCircuit:6,diamond:5,iron:8}),work:180}),
     Object.freeze({id:"life",name:"Suporte de vida",icon:"💚",
-      description:"Filtros e cabines para manter a tripulação viva.",cost:Object.freeze({wood:12,grass:16,herbs:9,mushroom:6}),work:160})
+      description:"Cabines leves, sensores e filtros para sobreviver no espaço.",cost:Object.freeze({aluminumAlloy:12,goldCircuit:4,grass:10,herbs:9}),work:160})
   ]);
   const LAUNCH=Object.freeze({food:30,water:20,crew:4,support:1,homes:5});
   const FOOTPRINT=3;
