@@ -38,20 +38,21 @@
   <script defer src="./src/menu-scene.js?v=20261031-arvores-verdes"></script>
   <script defer src="./src/terrain-autotile.js?v=20261031-terrain-integrado-v1"></script>
   <script defer src="./src/terrain-catalog.js?v=20261031-terrain-integrado-v1"></script>
-  <script defer src="./src/biomes.js?v=20261031-terrain-integrado-v1"></script>
-  <script defer src="./src/wild-world.js?v=20261101-biome-rivers-v1"></script>
+  <script defer src="./src/biomes.js?v=20261101-continentes-v2"></script>
+  <script defer src="./src/exploration.js?v=20261101-continentes-v2"></script>
+  <script defer src="./src/wild-world.js?v=20261101-continentes-v2"></script>
   <script defer src="./src/blueprints.js?v=20261031-fazenda-automacao-v7"></script>
   <script defer src="./src/house-building.js?v=20261031-fazenda-casa"></script>
   <script defer src="./src/crop-catalog.js?v=20261031-fazenda-automacao-v7"></script>
-  <script defer src="./src/crafting.js?v=20261031-ground-hauling-v1"></script>
+  <script defer src="./src/crafting.js?v=20261101-protecao-v2"></script>
   <script defer src="./src/logistics.js?v=20261101-lifecycle-v3"></script>
   <script defer src="./src/task-orders.js?v=20261101-lifecycle-v3"></script>
   <script defer src="./src/missions.js?v=20261031-fazenda-automacao-v7"></script>
   <script defer src="./src/tutorial-pointer.js?v=20261031-guia-completo-v11"></script>
   <script defer src="./src/day-night.js?v=20261101-night-v1"></script>
-  <script defer src="./src/colony-life.js?v=20261101-shifts-fixes-v4"></script>
+  <script defer src="./src/colony-life.js?v=20261101-fauna-v2"></script>
   <script defer src="./src/survival.js?v=20261031-sobrevivencia-s1"></script>
-  <script defer src="./src/game.js?v=20261101-biome-rivers-128x80-v1"></script>
+  <script defer src="./src/game.js?v=20261101-continentes-192x120-v2"></script>
   <script defer src="./src/game-hud.js?v=20261101-shifts-fixes-v4"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
   <script defer src="./src/live-update.js"></script>
@@ -92,10 +93,10 @@
         </section>
         <div class="canvas-scroll">
           <div class="canvas-wrap">
-            <canvas id="world" width="4096" height="2560" aria-label="Mapa interativo da fazenda. Botão esquerdo cria ordens; botão direito cancela ordens pendentes."></canvas>
+            <canvas id="world" width="6144" height="3840" aria-label="Mapa interativo da fazenda. Botão esquerdo cria ordens; botão direito cancela ordens pendentes."></canvas>
             <div id="tile-tooltip" class="tile-tooltip" hidden></div>
              <div id="pickup-feed" class="pickup-feed" role="status" aria-live="polite" hidden></div>
-            <div class="world-tag">🌿 VALE SELVAGEM <span>•</span> ESCOLHA ORDENS PARA SUA EQUIPE</div>
+            <div class="world-tag">🌿 ILHA CENTRAL SEGURA <span>•</span> 🐾 <span id="wildlife-count">0</span> ANIMAIS SELVAGENS NO MUNDO</div>
           </div>
         </div>
         <section id="camera-ui" class="camera-ui" aria-label="Câmera e minimapa">
@@ -106,11 +107,11 @@
           <canvas id="minimap" width="224" height="144" tabindex="0" role="button" aria-label="Minimapa interativo: clique ou use as setas para deslocar a câmera" title="Clique para deslocar a câmera"></canvas>
           <div id="biome-legend" class="biome-legend" role="group" aria-label="Ir para um bioma">
             <button type="button" data-visit-biome="g" title="Ir para a pradaria"><i style="--swatch:#a4d17c"></i>Grama</button>
-            <button type="button" data-visit-biome="f" title="Ir para a floresta"><i style="--swatch:#638b57"></i>Bosque</button>
-            <button type="button" data-visit-biome="s" title="Ir para o deserto"><i style="--swatch:#e2c083"></i>Areia</button>
-            <button type="button" data-visit-biome="i" title="Ir para a região gelada"><i style="--swatch:#b8dce0"></i>Gelo</button>
-            <button type="button" data-visit-biome="w" title="Ir para o pântano"><i style="--swatch:#63866a"></i>Pântano</button>
-            <button type="button" data-visit-biome="p" title="Ir para a área venenosa"><i style="--swatch:#8b719e"></i>Veneno</button>
+            <button type="button" data-visit-biome="f" title="Floresta: exige luvas resistentes"><i style="--swatch:#638b57"></i>Bosque</button>
+            <button type="button" data-visit-biome="s" title="Deserto: exige manto do deserto"><i style="--swatch:#e2c083"></i>Areia</button>
+            <button type="button" data-visit-biome="i" title="Gelo: exige roupa de frio"><i style="--swatch:#b8dce0"></i>Gelo</button>
+            <button type="button" data-visit-biome="w" title="Pântano: exige botas impermeáveis"><i style="--swatch:#63866a"></i>Pântano</button>
+            <button type="button" data-visit-biome="p" title="Cogumelos tóxicos: exige máscara filtrante"><i style="--swatch:#8b719e"></i>Cogumelos</button>
           </div>
           <div class="camera-controls" role="group" aria-label="Controle de zoom do mapa">
             <button id="zoom-out" type="button" aria-label="Diminuir zoom">−</button>
@@ -412,7 +413,7 @@
   <dialog id="workshop-dialog" class="game-modal farm-catalog-dialog" aria-labelledby="workshop-title">
     <form method="dialog"><button class="modal-x" aria-label="Fechar oficina">✕</button></form>
     <span class="overline">FERRAMENTAS E AGRICULTURA</span><h2 id="workshop-title">Work Station · Oficina</h2>
-    <p>A primeira bancada é construída com 10 gravetos. Fabrique ferramentas para sua equipe e converta alimentos armazenados em novas sementes.</p>
+    <p>A primeira bancada é construída com 10 gravetos. Fabrique ferramentas e equipamentos individuais de proteção para explorar outros continentes. Cada bioma exige proteção específica.</p>
     <img class="farm-item-atlas" src="./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items/tools and meterials.png" alt="Sprites de ferramentas e materiais do pacote Sprout Lands">
     <div id="workshop-tools" class="farm-tools-list" aria-label="Receitas de ferramentas"></div>
     <h3>🌱 Preparar sementes</h3><p>Troque 2 unidades de um cultivo armazenado por 3 sementes da mesma cultura.</p>
