@@ -1,6 +1,6 @@
 const {test,expect}=require("@playwright/test");
 const ROOT="http://127.0.0.1:4173/";
-test("todas as 11 missões reaparecem corretamente após salvar, recarregar e continuar",async({page})=>{
+test("todas as 13 missões reaparecem corretamente após salvar, recarregar e continuar",async({page})=>{
   test.setTimeout(115000);
   const errors=[];page.on("pageerror",e=>errors.push(e.message));
   await page.goto(ROOT,{waitUntil:"networkidle"});
@@ -17,12 +17,12 @@ test("todas as 11 missões reaparecem corretamente após salvar, recarregar e co
   const steps=await page.evaluate(()=>window.TillfolkMissions.STEPS.map(s=>({key:s.key,title:s.title})));
   expect(steps.map(s=>s.key)).toEqual([
     "workstation","hoe","grass","seed","till","sow",
-    "wateringCan","water","harvest","carry","axe"
+    "wateringCan","water","harvest","carry","axe","tree","home"
   ]);
   for(let index=0;index<steps.length;index++){
     await page.evaluate(({index,steps})=>{
       const state=JSON.parse(localStorage.getItem("tillfolk-v01"));
-      state.tutorial={active:true,step:index,finished:false,version:5,
+      state.tutorial={active:true,step:index,finished:false,version:6,
         stats:Object.fromEntries(steps.map((s,i)=>[s.key,i<index?1:0]))};
       if(index>=1){
         state.crafting.station={x:40,y:25};
