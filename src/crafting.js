@@ -18,15 +18,20 @@
   });
   const itemFrame=key=>ITEM_FRAMES[key]||null;
   const RECIPES=Object.freeze([
-    {key:"axe",name:"Machado",icon:"🪓",cost:{twigs:8,grass:3},help:"Derrubar árvores e retirar troncos."},
-    {key:"shovel",name:"Pá",icon:"🪏",cost:{twigs:8,grass:2},help:"Arrancar tocos e escavar terreno."},
-    {key:"pickaxe",name:"Picareta",icon:"⛏️",cost:{twigs:10,wood:2},help:"Extrair pedras grandes."},
-    {key:"hoe",name:"Enxada",icon:"🌱",cost:{twigs:4,grass:2},help:"Arar e preparar canteiros."},
-    {key:"wateringCan",name:"Regador",icon:"💧",cost:{twigs:4,grass:2},help:"Irrigar as plantações."},
+    {key:"axe",name:"Machado de pedra",icon:"🪓",cost:{twigs:4,gravel:2},help:"Primeira ferramenta: gravetos e pedrinhas. Derruba árvores."},
+    {key:"shovel",name:"Pá de pedra",icon:"🪏",cost:{twigs:4,gravel:2},help:"Tira tocos e prepara solo."},
+    {key:"pickaxe",name:"Picareta de pedra",icon:"⛏️",cost:{twigs:5,gravel:4},help:"Extrai pedra grande e bronze do bosque."},
+    {key:"hoe",name:"Enxada",icon:"🌱",cost:{twigs:3,gravel:1},help:"Arar e preparar canteiros."},
+    {key:"wateringCan",name:"Regador",icon:"💧",cost:{twigs:3,gravel:2,grass:1},help:"Irrigar as plantações."},
+    {key:"bronzePickaxe",name:"Picareta de bronze",icon:"⛏️",cost:{twigs:5,bronze:7,gravel:2},help:"Minera ferro no deserto."},
+    {key:"ironPickaxe",name:"Picareta de ferro",icon:"⛏️",cost:{twigs:5,iron:9,bronze:3},help:"Minera ouro e diamante nos continentes avançados."},
+    {key:"diamondPickaxe",name:"Picareta de diamante",icon:"⛏️",cost:{twigs:5,iron:8,diamond:6},help:"Extrai bauxita resistente no último continente."},
+    {key:"aluminumAlloy",type:"material",name:"Fundir liga de alumínio",icon:"🔩",cost:{bauxite:3,iron:1},output:{kind:"aluminumAlloy",qty:2},help:"Refina bauxita e reforço de ferro para construir o foguete."},
+    {key:"goldCircuit",type:"material",name:"Circuito de ouro",icon:"🔌",cost:{gold:3,bronze:1},output:{kind:"goldCircuit",qty:1},help:"Circuitos de alta condutividade para o motor e a nave."},
     ...Object.entries(window.TillfolkExploration?.GEAR||{}).map(([key,gear])=>
       Object.freeze({key,name:gear.name,icon:gear.icon,cost:gear.cost,help:gear.help}))
   ]);
-  const equipped=Object.freeze(Object.fromEntries(RECIPES.map(({key})=>[key,false])));
+  const equipped=Object.freeze(Object.fromEntries(RECIPES.filter(item=>item.type!=="material").map(({key})=>[key,false])));
   function normalize(raw,legacy=false){
     // Saves anteriores tinham acesso irrestrito a ferramentas: preservar seu progresso.
     const equipment={...equipped};
@@ -70,22 +75,25 @@
   function canBuild(state){return !state?.crafting?.station&&(window.TillfolkLogistics?.available(state,"twigs")??state?.inventory?.twigs??0)>=STATION_COST;}
   function recipe(key){return RECIPES.find(item=>item.key===key)||null;}
   function locked(state,key){
-    if(key==="axe"&&state?.tutorial?.active===true&&
-       !state?.firstHarvest&&!(state.tutorial.stats?.harvest>0))
-      return "Colha sua primeira plantação antes de fabricar machados.";
+    if(key==="aluminumAlloy"&&(state?.colonyLife?.researchLevel||0)<4)
+      return "Para fundir liga de alumínio, conclua as quatro pesquisas.";
+    if(key==="goldCircuit"&&(state?.colonyLife?.researchLevel||0)<3)
+      return "Pesquise rotina de descanso para estudar circuitos condutores.";
     return null;
   }
   function craft(state,key,worker=null,prepaid=false){
     const item=recipe(key);
     if(!item)return {error:"Receita desconhecida."};
     if(!state?.crafting?.station)return {error:"Construa e acesse uma Work Station primeiro."};
-    if(has(state,key,worker))return {error:item.name+" já foi fabricado"+(worker?" para este colono":"")+"."};
+    if(item.type!=="material"&&has(state,key,worker))
+      return {error:item.name+" já foi fabricado"+(worker?" para este colono":"")+"."};
     const unavailableStage=locked(state,key);if(unavailableStage)return {error:unavailableStage};
     if(!prepaid){
       const unavailable=missing(state,item.cost);
       if(unavailable.length)return {error:"Faltam materiais para "+item.name.toLowerCase()+"."};
       for(const [resource,amount] of Object.entries(item.cost))state.inventory[resource]-=amount;
     }
+    if(item.type==="material")return {item,material:{...item.output},workerId:worker?.id??null};
     state.crafting.equipment[key]=true;
     if(worker)normalizeWorker(worker).tools[key]=true;
     return {item,workerId:worker?.id??null};
@@ -104,12 +112,17 @@
     return null;
   }
   function blocked(state,type,object,worker=null){
+    if(type==="clear"&&object?.kind==="boulder"&&window.TillfolkMinerals)
+      return window.TillfolkMinerals.missingTool(state,object,worker);
     const tool=requiredTool(type,object);
     const name=recipe(tool)?.name||"Ferramenta";
     return tool&&!has(state,tool,worker)?"Precisa de "+name.toLowerCase()+" no inventário do colono":null;
   }
   function formatCost(cost){
-    const labels={twigs:"gravetos",grass:"fibras",wood:"madeiras",stone:"pedras",mushroom:"cogumelos",herbs:"ervas"};
+    const labels={twigs:"gravetos",grass:"fibras",wood:"madeiras",stone:"pedras",
+      gravel:"cascalhos",bronze:"bronzes",iron:"ferros",gold:"ouros",diamond:"diamantes",
+      bauxite:"bauxitas",aluminumAlloy:"ligas de alumínio",goldCircuit:"circuitos",
+      mushroom:"cogumelos",herbs:"ervas"};
     return Object.entries(cost).map(([key,n])=>n+" "+(labels[key]||key)).join(" · ");
   }
   window.TillfolkCrafting=Object.freeze({
