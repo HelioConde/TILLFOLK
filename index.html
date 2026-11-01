@@ -44,14 +44,14 @@
   <script defer src="./src/house-building.js?v=20261031-fazenda-casa"></script>
   <script defer src="./src/crop-catalog.js?v=20261031-fazenda-automacao-v7"></script>
   <script defer src="./src/crafting.js?v=20261031-ground-hauling-v1"></script>
-  <script defer src="./src/logistics.js?v=20261031-ground-hauling-v1"></script>
-  <script defer src="./src/task-orders.js?v=20261031-ground-hauling-v1"></script>
+  <script defer src="./src/logistics.js?v=20261101-lifecycle-v3"></script>
+  <script defer src="./src/task-orders.js?v=20261101-lifecycle-v3"></script>
   <script defer src="./src/missions.js?v=20261031-fazenda-automacao-v7"></script>
   <script defer src="./src/tutorial-pointer.js?v=20261031-guia-completo-v11"></script>
   <script defer src="./src/day-night.js?v=20261101-night-v1"></script>
-  <script defer src="./src/colony-life.js?v=20261101-colony-v1"></script>
+  <script defer src="./src/colony-life.js?v=20261101-lifecycle-v3"></script>
   <script defer src="./src/survival.js?v=20261031-sobrevivencia-s1"></script>
-  <script defer src="./src/game.js?v=20261101-colony-v2"></script>
+  <script defer src="./src/game.js?v=20261101-lifecycle-v3"></script>
   <script defer src="./src/game-hud.js?v=20261031-painel-autofecha-v1"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
   <script defer src="./src/live-update.js"></script>
@@ -156,6 +156,7 @@
             <button type="button" data-build-layer="home" aria-pressed="true">🏠 Cabana · Equipe</button>
             <button type="button" data-build-layer="station" aria-pressed="false">🛠️ Work Station</button>
             <button type="button" data-build-layer="chest" aria-pressed="false">🧰 Baú · 8 gravetos + 3 fibras</button>
+            <button type="button" data-build-layer="well" aria-pressed="false">🚰 Poço · Pesquisa 2 · 4 madeiras + 3 pedras</button>
           </div>
           <p id="build-status" role="status" aria-live="polite">Escolha Cabana ou Work Station. Azul = posição válida. Clique no mapa para planejar.</p>
         </div>
@@ -404,7 +405,7 @@
         <button type="button" id="colony-auto-farm" aria-pressed="false" class="large-secondary">Automação: desligada</button>
       </section>
       <section><h3>🌦️ Estações e armazenamento</h3>
-        <p>Chuva irriga plantações, seca e frio reduzem o crescimento, e comida armazenada estraga lentamente. Animais adultos podem se reproduzir com alimento suficiente.</p>
+        <p>Chuva irriga plantações; seca e frio reduzem o crescimento. Após pesquisa nível 2, construa um poço para produzir água para os canteiros. A comida estraga lentamente e animais adultos podem se reproduzir.</p>
       </section>
     </div>
   </dialog>
