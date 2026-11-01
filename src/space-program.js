@@ -84,6 +84,9 @@
   function finish(state,order){
     const rocket=normalize(state);
     if(order?.type!=="buildRocket"||canOrder(state,order.x,order.y,order.stage))return {error:"Obra espacial inválida."};
+    if(Object.entries(stageCost(order.stage)).some(([kind,qty])=>
+      (Number(order.delivered?.[kind])||0)<qty))
+      return {error:"Todos os materiais precisam ser entregues fisicamente."};
     if(!rocket.site)rocket.site={x:order.x,y:order.y};
     rocket.stage++;
     return {stage:rocket.stage,name:STAGES[order.stage].name,ready:rocket.stage===STAGES.length};
