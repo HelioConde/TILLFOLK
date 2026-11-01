@@ -2099,7 +2099,7 @@
     if(!state||!playing)return;
     const problem=Space.unlock(state);
     if(problem){notify(problem);return;}
-    $("#progression-dialog").close();
+    if($("#progression-dialog").open)$("#progression-dialog").close();
     setTool("construir");
     $('[data-build-layer="rocket"]').click();
     const rocket=Space.normalize(state);
