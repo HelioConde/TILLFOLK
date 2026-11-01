@@ -131,10 +131,11 @@
       if(!inMap(x,y,w,h)||reserved.has(id)||nearStart(x,y,w,h)||used.has(id))return;
       world.water.push({x,y});used.add(id);
     };
-    for(let y=2;y<h-2;y++)for(let x=2;x<w-2;x++){
+    for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
       const current=map[y*w+x];
       for(const [dx,dy] of [[1,0],[0,1]]){
         const nx=x+dx,ny=y+dy;
+        if(nx>=w-1||ny>=h-1)continue;
         if(map[ny*w+nx]!==current){
           add(x,y);add(nx,ny);
         }
