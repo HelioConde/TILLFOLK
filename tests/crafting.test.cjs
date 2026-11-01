@@ -8,13 +8,13 @@ for(const file of ["src/crafting.js","src/task-orders.js"]){
 }
 const C=context.window.TillfolkCrafting,O=context.window.TillfolkOrders;
 const state=()=>({
-  inventory:{twigs:0,wood:0,grass:0,stone:0},
+  inventory:{twigs:0,wood:0,grass:0,stone:0,gravel:0},
   crafting:C.normalize(null),workstations:[],orders:[],world:{water:[]}
 });
 const plot={x:10,y:10,dirty:false,tilled:false,seeded:false,watered:false,produce:false,growth:0};
 test("a primeira bancada requer muitos gravetos e não nasce pronta",()=>{
   const s=state();assert.equal(s.crafting.station,null);
-  assert.equal(Object.keys(s.crafting.equipment).length,C.RECIPES.length);
+  assert.equal(Object.keys(s.crafting.equipment).length,C.RECIPES.filter(r=>r.type!=="material").length);
   assert.ok(Object.values(s.crafting.equipment).every(value=>value===false));
   assert.equal(C.STATION_COST,10);
   assert.equal(C.canBuild(s),false);
@@ -34,12 +34,12 @@ test("grama e gravetos são recolhidos à mão, árvore precisa de machado",()=>
   assert.match(O.status({type:"clear",x:10,y:10},plot,{kind:"tree"},s).reason,/machado/);
 });
 test("fabricar consome recursos, persiste ferramenta e libera a ordem",()=>{
-  const s=state();s.inventory.twigs=20;s.inventory.grass=3;
+  const s=state();s.inventory.twigs=20;s.inventory.gravel=2;
   assert.match(C.craft(s,"axe").error,/Work Station/);
   s.crafting.station={x:10,y:10};
   assert.equal(C.craft(s,"axe").item.key,"axe");
-  assert.equal(s.inventory.twigs,12);
-  assert.equal(s.inventory.grass,0);
+  assert.equal(s.inventory.twigs,16);
+  assert.equal(s.inventory.gravel,0);
   assert.equal(C.has(s,"axe"),true);
   assert.equal(C.blocked(s,"clear",{kind:"tree"}),null);
   assert.equal(C.requiredTool("clear",{kind:"ridge"}),null);
@@ -61,15 +61,13 @@ test("a enxada usa o recorte correto do atlas, antes confundido com machado de p
 test("o regador continua bloqueado até ser fabricado",()=>{
   const s=state();s.crafting.station={x:10,y:10};
   assert.match(C.blocked(s,"water"),/regador/);
-  s.inventory.twigs=4;s.inventory.grass=2;
+  s.inventory.twigs=4;s.inventory.gravel=2;s.inventory.grass=1;
   assert.equal(C.craft(s,"wateringCan").item.key,"wateringCan");
   assert.equal(C.blocked(s,"water"),null);
 });
-test("o machado comum só libera a fabricação após a primeira colheita no tutorial",()=>{
+test("machado de pedra é equipamento inicial: basta coletar gravetos e cascalho",()=>{
   const s=state();s.crafting.station={x:10,y:10};
-  s.tutorial={active:true,stats:{}};s.inventory.twigs=12;s.inventory.grass=3;
-  assert.match(C.craft(s,"axe").error,/Colha sua primeira plantação/);
-  s.firstHarvest=true;
+  s.tutorial={active:true,stats:{}};s.inventory.twigs=12;s.inventory.gravel=2;
   assert.equal(C.craft(s,"axe").item.key,"axe");
 });
 test("machado antigo é migrado para machado comum sem perder ferramentas do save",()=>{
@@ -89,7 +87,7 @@ test("ferramentas são individuais e a fila de fabricação sobrevive ao save",(
   const first={id:1,inventory:{tools:{},items:{}}};
   const second={id:2,inventory:{tools:{},items:{}}};
   C.normalizeWorker(first);C.normalizeWorker(second);
-  s.workers=[first,second];s.inventory.twigs=16;s.inventory.grass=4;
+  s.workers=[first,second];s.inventory.twigs=16;s.inventory.gravel=4;
   assert.match(C.blocked(s,"till"),/enxada/);
   const craft=C.craft(s,"hoe",first);
   assert.equal(craft.item.key,"hoe");
