@@ -1,0 +1,48 @@
+/* TILLFOLK — programa espacial: visual integrado à madeira / verde da colônia. */
+.rocket-build-controls{
+  padding:10px 12px;border:1px solid #7e9e7e;border-radius:8px;
+  background:#283e36;margin-top:10px;display:grid;gap:6px;
+}
+.rocket-build-controls[hidden]{display:none}
+.rocket-build-controls strong{color:#f7deb0;font-size:13px}
+.rocket-build-controls p{margin:0;color:#cbd8c5;font-size:12px}
+.rocket-build-controls button{justify-self:start}
+.space-mission{
+  border:1px solid #8aa07e;border-radius:12px;
+  padding:14px;margin-top:16px;background:linear-gradient(125deg,#243e37,#33433d);
+}
+.space-mission h3{color:#ffe0a2;font-size:16px;margin:0 0 9px}
+#space-mission-status{line-height:1.45;color:#e4e6cb;margin-bottom:9px}
+#space-mission-stages{display:grid;gap:7px}
+.space-mission-step{
+  display:flex;gap:10px;align-items:center;padding:8px 10px;
+  border:1px solid #637f6a;background:#20332e;border-radius:8px;
+}
+.space-mission-step[data-finished="true"]{border-color:#9eba79;opacity:.84}
+.space-mission-step[data-active="true"]{border-color:#edcf8c;background:#344638}
+.space-mission-step-icon{font-size:23px;flex:0 0 27px}
+.space-mission-step strong{font-size:12px;color:#f3e4b6}
+.space-mission-step small{display:block;color:#c2d2c5;font-size:11px;line-height:1.5}
+.space-mission-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.space-mission-actions [hidden],.rocket-build-controls button[hidden]{display:none!important}
+.rocket-victory-dialog{max-width:min(540px,calc(100vw - 22px));text-align:center}
+.rocket-victory-art{height:150px;position:relative;overflow:hidden}
+.rocket-victory-art span{display:block;font-size:75px;line-height:125px;transform:rotate(-32deg);animation:tillfolk-blastoff 2.7s ease-in-out both}
+.rocket-victory-art i{font-size:30px;color:#f3d6a6;position:absolute;left:20%;top:25%}
+.rocket-victory-art i+ i{left:80%;top:65%}
+.rocket-victory-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.rocket-victory-dialog p{line-height:1.5;color:#e7e3d2}
+#rocket-victory-crew{font-weight:800;color:#fff0c5}
+@keyframes tillfolk-blastoff{
+  0%{transform:translate(-40px,80px) rotate(-32deg);opacity:0}
+  25%{opacity:1}
+  85%{transform:translate(30px,-15px) rotate(-32deg);opacity:1}
+  100%{transform:translate(75px,-100px) rotate(-32deg);opacity:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .rocket-victory-art span{animation:none;transform:rotate(-32deg)}
+}
+@media(max-width:600px){
+  .space-mission{padding:11px}
+  .space-mission-actions>button{flex:1 1 165px}
+}
