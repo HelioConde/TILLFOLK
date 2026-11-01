@@ -1,7 +1,8 @@
 "use strict";
 (() => {
   const TILE = 32, W = 192, H = 120, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
-  const Contracts=window.TillfolkContracts;
+  const Contracts=window.TillfolkContracts,Council=window.TillfolkCouncil;
+  if(!Council)throw new Error("Carregue src/colony-council.js antes de src/game.js.");
   if(!Contracts)throw new Error("Carregue src/colony-contracts.js antes do motor TILLFOLK.");
   const Exploration=window.TillfolkExploration,Progression=window.TillfolkProgression,
     Space=window.TillfolkSpace,Minerals=window.TillfolkMinerals;
@@ -695,6 +696,7 @@
       survivalVersion:1,startingColonists:initialColonists,deaths:[],gameOver:false,
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     Life.normalize(state);
+    Council.normalize(state);
     Minerals.normalize(state);
     Space.normalize(state);
     Progression.normalize(state);
@@ -876,6 +878,7 @@
       // recompensas retroativas que alterariam a economia já existente.
       Progression.normalize(state);
       Progression.advance(state,{backfill:!s.progression});
+      Council.normalize(state); // Saves antigos recebem o próximo encontro sem prêmios retroativos.
       tasks=[];recalcTasks();
       // Retomar a velocidade anterior, inclusive pausa, sem mexer no tempo do dia.
       simSpeed=[0,1,3,6].includes(s.sessionSpeed)?s.sessionSpeed:1;
@@ -2076,6 +2079,7 @@
     if(!state)return;
     const life=Life.normalize(state);
     const climate=Life.weather(state.day,state.world?.seed||1);
+    Council.render(state,$("#council-notice"),$("#council-panel"),Life,playing);
     const environment=$("#colony-life-environment");
     if(environment)environment.textContent="🌿 "+Life.season(state.day)+" · "+
       Life.weatherLabels[climate]+" · Dia "+state.day;
@@ -2263,6 +2267,16 @@
       notify(plan.action==="construir"?"Escolha o projeto em Objetos.":"Clique no alvo apropriado com Universal.");
     }
   });
+  $("#council-notice").addEventListener("click",()=>$("#colony-life-open").click());
+  $("#council-panel").addEventListener("click",event=>{
+    const selected=event.target.closest("button[data-council-choice]");
+    if(!playing||!state||!selected||selected.disabled)return;
+    const result=Council.decide(state,selected.dataset.councilChoice);
+    if(!result.ok){notify(result.reason);return;}
+    log("🗣️ Conselho do Vale: "+result.option.title+" · "+result.cost+" alimento(s).");
+    notify("Decisão registrada. Próximo conselho no dia "+result.nextDay+".");
+    refresh();save();
+  });
   $("#colony-life-open").addEventListener("click",()=>{
     if(!playing||!state)return;
     renderColonyPanel();
@@ -2301,6 +2315,7 @@
     renderPickupHistory();
     if(playing)Missions.render(state);else $("#mission-card").hidden=true;
     Contracts.render(state,$("#colony-contracts"),playing);
+    Council.render(state,$("#council-notice"),$("#council-panel"),Life,playing);
     const set=(id,value)=>{$(id).textContent=value;};
     set("#day",String(state.day).padStart(2,"0"));
     const m=Math.floor(state.minutes);set("#clock",String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));

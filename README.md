@@ -7,6 +7,8 @@
 
 **Novidade de jogabilidade (01/11):** após o tutorial, escolha um dos **Mutirões do Vale**. Objetivos curtos acompanham trabalho real, dão bônus limitado de moral e renovam no próximo dia. [Design e QA](./docs/ENGAJAMENTO_E_RETENCAO.md).
 
+**Nova decisão estratégica:** o **Conselho do Vale** permite preservar alimentos ou realizar refeições opcionais para recuperar moral/energia, com previsão do tempo e sem vantagens gratuitas. Um encontro a cada três dias após o tutorial.
+
 **Regra visual permanente:** [autotile oficial 16×16, 11×7, 8 vizinhos — NÃO ALTERAR](./docs/AUTOTILE_PADRAO_IMUTAVEL.md). Os nove atlases de solo compartilham o mesmo mapeamento de bordas e cantos; melhorias de cenário não devem remapear o tilemap.
 
 ## Como o jogo deve funcionar

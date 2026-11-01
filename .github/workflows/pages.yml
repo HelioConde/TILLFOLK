@@ -44,6 +44,8 @@ jobs:
           node --test tests/mineral-progression.test.cjs
           node --test tests/crafting.test.cjs
           node --check src/colony-life.js
+          node --check src/colony-council.js
+          node --test tests/colony-council.test.cjs
           node --test tests/day-night.test.cjs tests/colony-life.test.cjs
           node --test tests/specialization.test.cjs
           node --check src/survival.js

@@ -1,0 +1,29 @@
+/* Conselho do Vale — decisões voluntárias sem diálogos que bloqueiam o jogo. */
+#council-notice[hidden],#council-panel[hidden]{display:none!important}
+#council-notice:not([hidden]){
+ display:inline-flex;align-items:center;max-width:100%;min-height:36px;
+ margin:4px 0 8px;padding:7px 12px;border:1px solid #abcb88;border-radius:8px;
+ background:#294a36;color:#fff3ce;font:700 12px/1.4 system-ui,sans-serif;
+ cursor:pointer;box-shadow:0 2px 9px #0b20173b
+}
+#council-notice:hover{background:#365943}
+#council-notice:focus-visible,.council-options button:focus-visible{outline:3px solid #e0c46f;outline-offset:2px}
+#council-panel{grid-column:1 / -1;border:1px solid #91ac78;border-radius:10px;padding:12px;background:#f0f4de;color:#243e2c}
+#council-panel h3{margin:0 0 6px;font-size:16px}
+#council-panel p{margin:5px 0 8px;line-height:1.5;font-size:12px}
+#council-panel .council-forecast{font-size:12px;font-weight:650;color:#395d46}
+.council-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:9px}
+.council-options button{display:flex;flex-direction:column;gap:4px;min-height:112px;padding:10px;
+ text-align:left;background:#fffdf1;border:1px solid #8ba47c;border-radius:8px;
+ color:#263e2b;cursor:pointer;line-height:1.35}
+.council-options button:hover:not(:disabled){border-color:#4e754a;background:#f8f9e1}
+.council-options button:disabled{opacity:.48;cursor:not-allowed}
+.council-options strong{font-size:12px}
+.council-options span{font-size:11px}
+.council-options small{font-size:10px;margin-top:auto;color:#435b3c;font-weight:650}
+@media(max-width:740px){
+ .council-options{grid-template-columns:1fr}
+ .council-options button{min-height:68px;padding:8px}
+ #council-panel{padding:9px}
+ #council-notice:not([hidden]){min-height:44px}
+}
