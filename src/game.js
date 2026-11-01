@@ -1210,6 +1210,9 @@
       const houseCells=[...state.house.floor,...state.house.walls].map(id=>{const [x,y]=id.split("-").map(Number);return {x,y,selected:true};});
       for(const home of state.homes.filter(h=>!h.legacy))for(const [x,y] of homeTiles(home.x,home.y))houseCells.push({x,y,selected:true});
       for(const order of state.orders.filter(o=>o.type==="buildHome"))for(const [x,y] of homeTiles(order.x,order.y))houseCells.push({x,y,selected:true});
+      for(const animal of state.animals)animal.age=(Number(animal.age)||0)+1;
+      const newborns=Life.animalBirths(state);
+      if(newborns)log("🐄 Nasceu um filhote na fazenda! A reprodução consumiu 2 comidas.");
       const births=World.regrow(state.world,state.day,W,H,[...state.plots,...houseCells]);
       if(births>0)log("A natureza renovou "+births+" pequenos elementos do vale.");
       if(state.mode==="survival"){
@@ -1372,6 +1375,21 @@
         gameOver();
       }
     }
+  }
+  // Chuva pixelada renderizada apenas na janela visível e sem novos assets.
+  function drawClimate(bounds){
+    if(Life.weather(state.day,state.world?.seed||1)!=="chuva")return;
+    const time=animationsEnabled()?performance.now()/36:0;
+    const left=bounds.x0*TILE,top=bounds.y0*TILE;
+    const width=(bounds.x1-bounds.x0+1)*TILE,height=(bounds.y1-bounds.y0+1)*TILE;
+    ctx.save();ctx.strokeStyle="rgba(164,211,235,.48)";ctx.lineWidth=1.3;
+    ctx.beginPath();
+    for(let i=0;i<100;i++){
+      const x=left+(((i*173+time*.35)%width)+width)%width;
+      const y=top+(((i*107+time*1.8)%height)+height)%height;
+      ctx.moveTo(x,y);ctx.lineTo(x-3,y+9);
+    }
+    ctx.stroke();ctx.restore();
   }
   function valid(img){return img&&img.complete&&img.naturalWidth>0;}
   const validImage=valid;
@@ -1610,6 +1628,7 @@
     World.drawAmbient(ctx,state.world,animationsEnabled()?performance.now():0,TILE);
     // Iluminação somente no mundo; HUD, menus, missão e prévias continuam legíveis.
     Night.paint(ctx,state.minutes,visibleBounds,TILE,state.workers,state.homes,state.workstations);
+    drawClimate(visibleBounds);
     drawTutorialSpeech(visibleBounds);
     // Prévia ANTES de construir: azul transparente para posição válida,
     // vermelho transparente se a regra de terreno/ocupação impedir a obra.
