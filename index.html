@@ -31,7 +31,8 @@
   <link rel="stylesheet" href="./tutorial-missions.css?v=20261031-menu-missao-fix">
   <link rel="stylesheet" href="./hud-settings.css?v=20261031-icones-ajuste-v4">
   <link rel="stylesheet" href="./crop-workshop.css?v=20261031-ground-hauling-v1">
-  <link rel="stylesheet" href="./progression.css?v=20261101-jornada-v1">
+  <link rel="stylesheet" href="./progression.css?v=20261101-foguete-v1">
+  <link rel="stylesheet" href="./space-program.css?v=20261101-foguete-v1">
   <link rel="stylesheet" href="./colony-life.css?v=20261101-shifts-fixes-v4">
   <script defer src="./src/menu.js?v=20261031-sync-preferencias"></script>
   <script defer src="./src/tutorial.js?v=20261031-fim-escolhas"></script>
@@ -51,10 +52,11 @@
   <script defer src="./src/missions.js?v=20261031-fazenda-automacao-v7"></script>
   <script defer src="./src/tutorial-pointer.js?v=20261031-guia-completo-v11"></script>
   <script defer src="./src/day-night.js?v=20261101-night-v1"></script>
-  <script defer src="./src/progression.js?v=20261101-jornada-v1"></script>
+  <script defer src="./src/progression.js?v=20261101-foguete-v1"></script>
+  <script defer src="./src/space-program.js?v=20261101-foguete-v1"></script>
   <script defer src="./src/colony-life.js?v=20261101-jornada-v1"></script>
   <script defer src="./src/survival.js?v=20261031-sobrevivencia-s1"></script>
-  <script defer src="./src/game.js?v=20261101-jornada-v1"></script>
+  <script defer src="./src/game.js?v=20261101-foguete-v1"></script>
   <script defer src="./src/game-hud.js?v=20261101-shifts-fixes-v4"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
   <script defer src="./src/live-update.js"></script>
@@ -166,8 +168,15 @@
             <button type="button" data-build-layer="station" aria-pressed="false">🛠️ Work Station</button>
             <button type="button" data-build-layer="chest" aria-pressed="false">🧰 Baú · 8 gravetos + 3 fibras</button>
             <button type="button" data-build-layer="well" aria-pressed="false">🚰 Poço · Pesquisa 2 · 4 madeiras + 3 pedras</button>
+            <button type="button" data-build-layer="rocket" aria-pressed="false">🚀 Foguete · Objetivo final</button>
           </div>
           <p id="build-status" role="status" aria-live="polite">Escolha Cabana ou Work Station. Azul = posição válida. Clique no mapa para planejar.</p>
+          <div id="rocket-build-controls" class="rocket-build-controls" hidden>
+            <strong id="rocket-build-phase">🚀 Projeto espacial</strong>
+            <p id="rocket-build-materials">A próxima etapa será construída com entregas físicas.</p>
+            <button id="rocket-build-next" type="button" class="large-primary" hidden>Planejar próxima etapa</button>
+            <button id="rocket-build-launch" type="button" class="large-primary" hidden>🚀 Iniciar lançamento</button>
+          </div>
         </div>
         <div class="hint-bar"><span>💡</span><p><strong>Como começar:</strong> Sua equipe chegou sem ferramentas. Recolha gravetos e grama com as mãos, junte 10 gravetos e monte uma Work Station. Fabrique ferramentas nela. Depois, Universal cria uma ordem por toque: solo livre → arar, arado → semear, plantado → regar, maduro → colher. Arraste para marcar áreas. Use Ordens para ações específicas; limpe obstáculos para encontrar sementes e madeira. O vale começa <strong>sem animais</strong>; a fertilização com esterco fica para uma fase posterior. Construa três casas para liberar o terceiro ajudante.</p></div>
         <div class="footnote">TILLFOLK · Gerencie o vale e organize sua equipe</div>
@@ -397,15 +406,37 @@
   <dialog id="progression-dialog" class="game-modal progression-dialog" aria-labelledby="progression-title">
     <form method="dialog"><button class="modal-x" aria-label="Fechar jornada da colônia">✕</button></form>
     <span class="overline">JORNADA DA COLÔNIA</span>
-    <h2 id="progression-title">🧭 Do primeiro abrigo aos continentes</h2>
-    <p class="progression-intro">Cada conquista nasce de uma ação real: cultivar, construir, pesquisar ou explorar. Você escolhe as ordens; a evolução é registrada automaticamente.</p>
+    <h2 id="progression-title">🧭 Da sobrevivência à fuga do planeta</h2>
+    <p class="progression-intro">A superpopulação tornou o planeta insustentável. Sua equipe chega à última região habitável para começar do zero, acolher novos colonos e dominar os continentes. A única saída definitiva é construir um foguete e partir para outro mundo. Cada etapa nasce de trabalho real, não de cliques automáticos.</p>
     <div id="progression-overview" aria-live="polite"></div>
     <div id="progression-chapters"></div>
     <section class="progression-expeditions" aria-labelledby="progression-expeditions-title">
       <h3 id="progression-expeditions-title">🗺️ Diário dos continentes</h3>
       <div id="progression-continents"></div>
     </section>
-    <p class="progression-footnote">Recompensas: conhecimento para pesquisa. Visitar um continente exige equipamento individual e um colono alcançando terra firme. Suas conquistas permanecem no save.</p>
+    <section class="space-mission" aria-labelledby="space-mission-title">
+      <h3 id="space-mission-title">🚀 Projeto: Última Esperança</h3>
+      <div id="space-mission-status"></div>
+      <div id="space-mission-stages"></div>
+      <div class="space-mission-actions">
+        <button id="space-mission-focus" type="button" class="large-secondary">⌖ Mostrar plataforma no mapa</button>
+        <button id="space-mission-build" type="button" class="large-primary">🧱 Planejar construção</button>
+        <button id="space-mission-launch" type="button" class="large-primary" hidden>🚀 Autorizar lançamento</button>
+      </div>
+    </section>
+    <p class="progression-footnote">Recompensas: conhecimento para pesquisa. A nave exige cinco colonos: quatro tripulantes e uma pessoa para manter a colônia. Materiais de construção são entregues fisicamente; água e comida são consumidas no lançamento. A vitória fica salva no navegador.</p>
+  </dialog>
+  <dialog id="rocket-victory-dialog" class="game-modal rocket-victory-dialog" aria-labelledby="rocket-victory-title">
+    <span class="overline">FINAL DA JORNADA · NOVO COMEÇO</span>
+    <div class="rocket-victory-art" aria-hidden="true"><span>🚀</span><i>✦</i><i>✧</i></div>
+    <h2 id="rocket-victory-title">Um novo horizonte!</h2>
+    <p id="rocket-victory-copy">A equipe deixou o planeta superpovoado em busca de um novo lar.</p>
+    <p id="rocket-victory-crew"></p>
+    <p>A base permanece no planeta, sob os cuidados da equipe que ficou. Sua conquista e sua colônia estão salvas.</p>
+    <div class="rocket-victory-actions">
+      <button id="rocket-victory-continue" type="button" class="large-primary">▶ Continuar cuidando da colônia</button>
+      <button id="rocket-victory-menu" type="button" class="large-secondary">↩ Voltar ao menu</button>
+    </div>
   </dialog>
   <dialog id="colony-life-dialog" class="game-modal colony-life-dialog" aria-labelledby="colony-life-title">
     <form method="dialog"><button class="modal-x" aria-label="Fechar gestão da colônia">✕</button></form>
