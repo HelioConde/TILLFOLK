@@ -1,0 +1,51 @@
+/* TILLFOLK · Jornada da colônia, sem biblioteca externa */
+body.play-session #progression-open{
+  display:inline-flex;align-items:center;gap:5px;
+  white-space:nowrap;border-color:#b29c65;
+}
+body.play-session #progression-hud-count{
+  color:#ffe3a6;font-weight:800;font-variant-numeric:tabular-nums;
+}
+body.play-session .progression-dialog{
+  width:min(810px,calc(100vw - 20px));
+  max-height:min(86dvh,940px);overflow:auto;
+}
+.progression-intro{max-width:64ch;color:#d4dfc6;line-height:1.5}
+.progression-overview{
+  border:1px solid #8da16c;border-radius:10px;
+  background:linear-gradient(125deg,#253e31,#38543c);
+  padding:15px;margin:12px 0 16px;
+  display:grid;gap:8px;
+}
+.progression-overview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.progression-overview-head strong{color:#fff0c0;font-size:16px}
+.progression-overview-head span{color:#dae5c5;font-variant-numeric:tabular-nums}
+.progression-overview progress{display:block;width:100%;height:12px;accent-color:#b1d78c}
+.progression-overview small{color:#d8e4c7;line-height:1.45}
+.progression-chapter{
+  border:1px solid #718b66;border-radius:10px;
+  margin:10px 0;padding:12px 13px;background:#283b30;
+}
+.progression-chapter[data-current="true"]{border-color:#edcc85;background:#374834}
+.progression-chapter[data-done="true"]{border-color:#63846a;background:#273c30}
+.progression-chapter-header{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.progression-chapter-heading{min-width:0}
+.progression-chapter-heading strong{display:block;color:#f9e6b1;font-size:15px}
+.progression-chapter-heading small{color:#d9e0ca;font-size:11px}
+.progression-chapter-count{flex:0 0 auto;color:#fbebb7;font-variant-numeric:tabular-nums}
+.progression-chapter progress{width:100%;height:8px;margin:8px 0;accent-color:#97c879}
+.progression-chapter > p{margin:4px 0 7px;color:#dce4ce;font-size:12px;line-height:1.35}
+.progression-tasks{display:grid;gap:5px;padding:0;margin:7px 0;list-style:none}
+.progression-tasks li{display:flex;gap:9px;align-items:flex-start;padding:7px 8px;background:#1b3129;border-radius:6px}
+.progression-tasks li[data-done="true"]{opacity:.78}
+.progression-tasks .progression-marker{flex:0 0 17px;text-align:center;color:#e4c77f}
+.progression-tasks li[data-done="true"] .progression-marker{color:#acd38f}
+.progression-tasks strong{display:block;font-size:12px;color:#f5eac8}
+.progression-tasks small{display:block;color:#b9c8b7;font-size:11px;line-height:1.45}
+.progression-prize{font-size:11px;color:#bfdca5;border-top:1px solid #617b62;padding-top:7px}
+.progression-footnote{color:#d4ddcb;font-size:12px;line-height:1.5}
+@media(max-width:640px){
+  .progression-dialog{padding:15px!important}
+  .progression-chapter{padding:10px}
+  body.play-session #progression-open{font-size:11px}
+}
