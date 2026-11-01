@@ -1,7 +1,8 @@
 "use strict";
 (() => {
   const TILE = 32, W = 192, H = 120, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
-  const Exploration=window.TillfolkExploration,Progression=window.TillfolkProgression;
+  const Exploration=window.TillfolkExploration,Progression=window.TillfolkProgression,Space=window.TillfolkSpace;
+  if(!Space)throw new Error("Carregue src/space-program.js antes de src/game.js.");
   if(!Progression)throw new Error("Carregue src/progression.js antes do motor TILLFOLK.");
   if(!Exploration)throw new Error("Carregue src/exploration.js antes do motor TILLFOLK.");
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
@@ -80,6 +81,7 @@
       latest.map(item=>'<div class="pickup-entry"><span>'+item.icon+'</span><span>+'+item.quantity+' '+item.name+'</span></div>').join("");
   }
   function taskDuration(task){
+    if(task.type==="buildRocket")return Space.STAGES[task.stage]?.work||150;
     if(task.type==="craftTool")return 45;
     if(task.type==="clear"){
       const object=World.at(state.world,task.x,task.y);
@@ -667,6 +669,7 @@
       survivalVersion:1,startingColonists:initialColonists,deaths:[],gameOver:false,
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
     Life.normalize(state);
+    Space.normalize(state);
     Progression.normalize(state);
     tasks=[]; simSpeed=1; updateSpeed();
   }
@@ -688,6 +691,7 @@
       if(!s||!Array.isArray(s.plots)||!Array.isArray(s.workers))return false;
       state=s;
       Life.normalize(state);
+      Space.normalize(state);
       state.survivalVersion=1;
       state.gameOver=Boolean(s.gameOver);
       state.deaths=Array.isArray(s.deaths)?s.deaths.filter(death=>
@@ -959,7 +963,7 @@
   // permanente da seleção. Limpa inclusive saves antigos que tinham selected=true.
   let lastSelectionPlots=null,lastSelectionSignature=null;
   function syncOrderSelections(){
-    const signature=state.orders.filter(o=>!["collectWater","collectManure","buildHome","buildStation"].includes(o.type))
+    const signature=state.orders.filter(o=>!["collectWater","collectManure","buildHome","buildStation","buildRocket"].includes(o.type))
       .map(o=>o.x+","+o.y).sort().join("|");
     if(lastSelectionPlots===state.plots&&lastSelectionSignature===signature)return;
     const selected=new Set(signature?signature.split("|"):[]);
@@ -1021,6 +1025,10 @@
     if(personalBlock)return personalBlock;
     if(t.type==="buildChest"&&!chestSiteValid(t.x,t.y))return "Baú exige terreno livre";
     if(t.type==="buildWell"&&!wellSiteValid(t.x,t.y))return "Poço exige pesquisa e solo livre";
+    if(t.type==="buildRocket"){
+      const obstacle=Space.canOrder(state,t.x,t.y,t.stage);
+      if(obstacle)return obstacle;
+    }
     if(t.type==="buildStation"&&!stationSiteValid(t.x,t.y))
       return "Escolha um terreno livre para a bancada";
     if(t.type==="buildHome"){
@@ -1159,6 +1167,16 @@
       if(!animal)return false;
       animal.manure--;state.inventory.manure++;showPickup(t.x,t.y,"manure");
       log(w.name+" recolheu esterco de "+(animal.kind==="cow"?"vaca":"animal")+".");return true;
+    }
+    if(t.type==="buildRocket"){
+      if(!Logistics.complete(t))return false;
+      const result=Space.finish(state,t);
+      if(result.error)return false;
+      Life.discover(state,3);
+      log("🚀 "+w.name+" concluiu "+result.name+
+        (result.ready?". A nave está pronta para abastecimento!":". Próxima etapa liberada."));
+      notify("🚀 "+result.name+" concluído!");
+      return true;
     }
     if(t.type==="buildStation"){
       if(!Logistics.complete(t)||!stationSiteValid(t.x,t.y))return false;
@@ -1359,7 +1377,7 @@
       }
       const t=tasks.find(t=>t.id===w.task);
       if(!t){refundHaul(w);releaseSupply(w);w.task=null;w.progress=0;w.route=[];continue;}
-      if(["buildStation","buildHome","buildChest","buildWell","craftTool"].includes(t.type)&&
+      if(["buildStation","buildHome","buildChest","buildWell","buildRocket","craftTool"].includes(t.type)&&
          !Logistics.complete(state.orders.find(o=>o.id===t.id)||t)){
         const original=state.orders.find(o=>o.id===t.id);
         if(original&&beginHaul(w,original))processHaul(w,scaled);
@@ -1543,6 +1561,8 @@
       if(valid(sprite.workstation))ctx.drawImage(sprite.workstation,x-4,y-20,40,49);
       else{ctx.fillStyle="#96724c";ctx.fillRect(x+3,y+7,26,13);}
     }
+    if(state.rocket?.site&&inView(state.rocket.site.x,state.rocket.site.y,8))
+      Space.draw(ctx,state.rocket,TILE,performance.now());
     // A vegetação e os colonos são desenhados juntos, ordenados pelos pés.
     for(const p of state.plots){
       if(!inView(p.x,p.y,1)||!p.tilled&&!p.seeded&&!p.produce&&!p.dirty&&!p.fertilized)continue;
@@ -1592,6 +1612,9 @@
         }
         ctx.fillStyle="#56aee280";ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
         ctx.strokeStyle="#a0e5ff";ctx.lineWidth=2;ctx.strokeRect(x+2,y+2,TILE-4,TILE-4);
+      }else if(order.type==="buildRocket"&&inView(order.x,order.y,6)){
+        Space.draw(ctx,{site:{x:order.x,y:order.y},
+          stage:Math.min(Space.STAGES.length,order.stage+1)},TILE,performance.now(),true,true);
       }else if(order.type==="buildWell"&&inView(order.x,order.y,2)){
         if(valid(sprite.well))Blueprint.part(ctx,sprite.well,0,0,sprite.well.naturalWidth,
           sprite.well.naturalHeight,order.x*TILE-2,order.y*TILE-8,TILE+4,TILE+8,true,.7);
@@ -1744,6 +1767,9 @@
       if(x>=0&&y>=0&&x<W&&y<H){
         const valid=Boolean(getBuildEdit(x,y,eraseBuild).house);
         if(buildLayer==="home")Blueprint.home(ctx,sprite,x,y,TILE,valid);
+        else if(buildLayer==="rocket")Space.draw(ctx,{site:{x,y},
+          stage:Math.min(Space.STAGES.length,state.rocket.stage+1)},TILE,
+          performance.now(),true,valid);
         else if(buildLayer==="well"){
           if(validImage(sprite.well))Blueprint.part(ctx,sprite.well,0,0,
             sprite.well.naturalWidth,sprite.well.naturalHeight,
@@ -2452,6 +2478,10 @@
     if(!Number.isInteger(x)||!Number.isInteger(y)||x<1||y<1||x>=W-1||y>=H-1)
       return {error:"Escolha uma área dentro do vale."};
     if(buildLayer==="field")return canPlanField(x,y);
+    if(buildLayer==="rocket"){
+      const problem=Space.canOrder(state,x,y,state.rocket.stage);
+      return problem?{error:problem}:{house:true};
+    }
     if(buildLayer==="well")return wellSiteValid(x,y)?{house:true}:{error:"Poço: pesquisa nível 2 e terreno livre."};
     if(buildLayer==="chest")return chestSiteValid(x,y)?{house:true}:{error:"Baú precisa de solo livre."};
     if(buildLayer==="station")return stationSiteValid(x,y)?{house:true}:{error:"Oficina exige chão firme livre."};
@@ -2517,6 +2547,22 @@
     const p=$("#build-priority-value");if(p)p.textContent=state.buildPriority;
     const sticks=$("#build-twigs");if(sticks)sticks.textContent=String(Logistics.available(state,"twigs"));
     if($("#build-homes-count"))$("#build-homes-count").textContent=String(state.homes.length);
+    const rocket=Space.normalize(state),spaceControls=$("#rocket-build-controls");
+    if(spaceControls){
+      spaceControls.hidden=buildLayer!=="rocket";
+      if(buildLayer==="rocket"){
+        const stage=Space.STAGES[rocket.stage],pending=state.orders.some(o=>o.type==="buildRocket");
+        $("#rocket-build-phase").textContent=rocket.launched?"🚀 Foguete lançado":
+          stage?"🚀 Etapa "+(rocket.stage+1)+"/4 · "+stage.name:"🚀 Pronto para abastecer";
+        $("#rocket-build-materials").textContent=stage?
+          "Entregas físicas: "+Crafting.formatCost(stage.cost)+
+          (Space.unlock(state)?" · "+Space.unlock(state):""):
+          "Partida: "+Space.LAUNCH.food+" alimentos, "+Space.LAUNCH.water+" água e cinco colonos.";
+        $("#rocket-build-next").hidden=!rocket.site||rocket.stage>=4||pending||rocket.launched;
+        $("#rocket-build-launch").hidden=rocket.stage<4||rocket.launched;
+        $("#rocket-build-launch").title=Space.ready(state)||"Iniciar a evacuação.";
+      }
+    }
     document.querySelectorAll("[data-build-layer]").forEach(btn=>{
       const on=btn.dataset.buildLayer===buildLayer;
       btn.classList.toggle("chosen",on);btn.setAttribute("aria-pressed",String(on));
@@ -2568,6 +2614,18 @@
     if(!playing||selectedTool!=="construir")return;
     const result=getBuildEdit(x,y,erase);
     if(!result.house){$("#build-status").textContent=result.error;return;}
+    if(buildLayer==="rocket"){
+      if(erase){$("#build-status").textContent="Para cancelar a obra, use o botão direito na plataforma.";return;}
+      const test=Orders.add(state.orders,"buildRocket",x,y,findPlot(x,y),
+        World.at(state.world,x,y),state);
+      if(!test.order){$("#build-status").textContent=test.error;return;}
+      test.order.priority=state.buildPriority;
+      state.orders.push(test.order);
+      recalcTasks();refresh();save();buildHover=null;
+      $("#build-status").textContent="🚀 Etapa planejada: "+Space.STAGES[test.order.stage].name+
+        ". Os materiais devem chegar fisicamente ao canteiro.";
+      return;
+    }
     if(buildLayer==="well"){
       const test=Orders.add(state.orders,"buildWell",x,y,findPlot(x,y),World.at(state.world,x,y),state);
       if(!test.order){$("#build-status").textContent=test.error;return;}
@@ -2619,6 +2677,8 @@
         "Baú: coloque uma blueprint e espere a equipe levar os recursos ao destino.":
       buildLayer==="well"?
         "Poço: pesquisa nível 2, 4 madeiras e 3 pedras; a água é produzida automaticamente.":
+      buildLayer==="rocket"?
+        (Space.unlock(state)||"Foguete: escolha uma área 3×3 na ilha central. Materiais serão transportados até a obra."):
         "Camada: "+btn.textContent.trim()+". Clique para construir ou use o botão direito para apagar.";
   }));
   function openWorkerInventory(worker){
@@ -2647,10 +2707,12 @@
     const worker=state.workers.find(w=>Math.hypot(w.x-(x+.5),w.y-(y+.5))<=.85);
     if(worker){openWorkerInventory(worker);return;}
     if(selectedTool==="construir"){
-      if(buildLayer==="field"||buildLayer==="home"||buildLayer==="station"){
+      if(buildLayer==="field"||buildLayer==="home"||buildLayer==="station"||
+         buildLayer==="rocket"){
         const ids=state.orders.filter(o=>buildLayer==="field"?
           o.x===x&&o.y===y&&["till","sow"].includes(o.type):
           buildLayer==="station"?o.type==="buildStation"&&o.x===x&&o.y===y:
+          buildLayer==="rocket"?o.type==="buildRocket"&&o.x===x&&o.y===y:
           buildLayer==="chest"?o.type==="buildChest"&&o.x===x&&o.y===y:
           buildLayer==="well"?o.type==="buildWell"&&o.x===x&&o.y===y:
           o.type==="buildHome"&&homeTiles(o.x,o.y).some(([hx,hy])=>hx===x&&hy===y))
