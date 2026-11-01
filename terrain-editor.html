@@ -73,7 +73,7 @@ summary{cursor:pointer;font-weight:850;color:#f0dfb5}
 <div>
 <div class="eyebrow">TILLFOLK · FERRAMENTAS DE TERRENO</div>
 <h1>Editor de TileMap Terrain</h1>
-<p>Escolha os sprites do <strong>Grass_Tile_Layers</strong> para montar automaticamente centros, bordas e cantos externos e internos. Não precisa mexer em código.</p>
+<p>O jogo usa uma <strong>regra oficial fixa</strong> de 16×16, grade 11×7 e oito vizinhos. Este editor serve apenas para testar variações visuais: não altera o tilemap do TILLFOLK.</p>
 </div>
 <div class="row">
 <a class="control-link" href="./mapear_grama.html">Ver atlas numerado</a>
@@ -87,11 +87,11 @@ summary{cursor:pointer;font-weight:850;color:#f0dfb5}
 <p class="panel-note">Primeiro clique em uma <b>posição do modelo</b> ao lado; depois clique aqui no sprite correspondente. Pode repetir o mesmo sprite em mais de uma posição.</p>
 <div class="atlas-wrap"><div id="atlas" class="atlas" role="group" aria-label="77 tiles do Grass Tile Layers"></div></div>
 <div class="legend"><span class="dot"></span><span class="help">Tile já usado</span><span class="dot orange"></span><span class="help">Tile da posição selecionada</span></div>
-<div class="row"><button id="use-previous" type="button">Importar classificações do mapeador antigo</button><span id="count">0 / 20 posições preenchidas</span></div>
+<div class="row"><button id="use-previous" type="button">Importar classificações para testar</button><button id="reset-roles" type="button">Restaurar padrão oficial</button><span id="count">0 / 20 posições preenchidas</span></div>
 </section>
 <section class="panel" aria-labelledby="file-title">
 <h2 id="file-title"><span class="step">3</span> Salve ou envie o mapeamento</h2>
-<p class="panel-note">Suas escolhas são salvas neste navegador. Para integrá-las ao jogo, copie o JSON aqui e envie na conversa, ou baixe o arquivo.</p>
+<p class="panel-note">O padrão oficial é restaurado sempre que esta página abre. Alterações aqui são experimentais, não modificam o jogo nem o JSON canônico sem nova autorização explícita.</p>
 <div class="row">
 <button id="copy" class="primary">Copiar configuração</button>
 <button id="download">Baixar JSON</button>
@@ -171,11 +171,10 @@ const valid=id=>Boolean(A.coords(id));
 let roles={},activeRole="centro",brush="paint",drawing=false;
 let map=Array.from({length:H},()=>Array(W).fill(false));
 const roleButtons=new Map(),atlasButtons=new Map();
-try{
-  const saved=localStorage.getItem(STORAGE);
-  roles=saved?JSON.parse(saved):{...window.TillfolkTerrainCatalog.ROLES};
-}catch{roles={...window.TillfolkTerrainCatalog.ROLES}}
-roles=Object.fromEntries(A.ROLES.filter(key=>valid(roles[key])).map(key=>[key,roles[key]]));
+// CONTRATO FIXO: NUNCA restaurar automaticamente um rascunho antigo como
+// padrão. Experimentos no editor não podem substituir a regra do jogo.
+const OFFICIAL=window.TillfolkTerrainCatalog.ROLES;
+roles={...OFFICIAL};
 function store(){try{localStorage.setItem(STORAGE,JSON.stringify(roles));}catch{}}
 function previewSource(canvas,id){
   const ctx=canvas.getContext("2d");ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,16,16);
@@ -305,7 +304,11 @@ $("#erase-map").onclick=()=>setBrush("erase");
 $("#sample-island").onclick=()=>sample("island");
 $("#sample-corners").onclick=()=>sample("corners");
 $("#reset-map").onclick=()=>sample("empty");
-$("#remove-role").onclick=()=>{delete roles[activeRole];store();refresh();$("#notice").textContent="Posição limpa: "+labels[activeRole]};
+$("#remove-role").onclick=()=>{delete roles[activeRole];store();refresh();$("#notice").textContent="Rascunho alterado (não afeta o jogo): "+labels[activeRole]};
+$("#reset-roles").onclick=()=>{
+  roles={...OFFICIAL};store();refresh();
+  $("#notice").textContent="Padrão oficial 16×16, 11×7 e oito vizinhos restaurado.";
+};
 function importPrevious(existing){
   const m=existing?.mapeamento||existing;
   const keys={centro:"centro",borda_norte:"borda_norte",borda_sul:"borda_sul",
