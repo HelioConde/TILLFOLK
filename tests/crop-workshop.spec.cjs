@@ -24,7 +24,8 @@ test("work station exibe artes e receitas mesmo antes da construção",async({pa
  await openGame(page);
  await page.locator('[data-tool="construir"]').click();
  await page.locator("#open-workshop").click();
- await expect(page.locator("#workshop-tools button")).toHaveCount(await page.evaluate(()=>window.TillfolkCrafting.RECIPES.length));
+ await expect(page.locator("#workshop-tools button")).toHaveCount(await page.evaluate(()=>window.TillfolkCrafting.RECIPES.length+1));
+ await expect(page.locator('[data-craft-chest]')).toHaveCount(1);
  await expect(page.locator("#workshop-recipes button")).toHaveCount(19);
  await expect(page.locator('[data-craft-tool="axe"]')).toBeDisabled();
  // A antiga receita stoneAxe foi substituída pelo machado axe.
