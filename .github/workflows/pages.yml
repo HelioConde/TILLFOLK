@@ -28,6 +28,7 @@ jobs:
           node --test tests/terrain-editor.test.cjs
           node --check src/wild-world.js
           node --check src/game.js
+          node --test tests/specialization.test.cjs
           node --check src/survival.js
           node --check src/tutorial-pointer.js
           node --check src/live-update.js
