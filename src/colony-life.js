@@ -143,14 +143,15 @@
    return true;
  }
  function animalBirths(state){
-   const life=normalize(state),animals=state.animals||[];
+   const life=normalize(state),animals=(state.animals||[]).filter(a=>!a.wild);
    if(animals.length<2||animals.length>=8||state.day-life.lastAnimalBirthDay<9)return 0;
    // Somente fazendas com dois animais adultos reproduzem; nenhum animal mágico surge.
    const first=animals[0],second=animals[1];
    if((first.age||0)<1||(second.age||0)<1)return 0;
    if((state.food||0)<2)return 0;
    state.food-=2;
-   animals.push({x:first.x+.35,y:first.y+.45,manure:0,timer:0,age:0});
+   state.animals.push({x:first.x+.35,y:first.y+.45,kind:first.kind||"cow",
+     wild:false,manure:0,timer:0,age:0});
    life.lastAnimalBirthDay=state.day;
    return 1;
  }
