@@ -162,8 +162,8 @@
   }
   const progress=state=>Object.values(ZONES).map(zone=>({
     ...zone,found:zone.resource==="gravel"?true:Boolean(state?.minerals?.discovered?.[zone.resource]),
-    oreAvailable:zone.resource==="gravel"?0:(state?.world?.objects||[])
-      .filter(o=>o.kind==="boulder"&&o.mineral===zone.resource).length
+    oreAvailable:(state?.world?.objects||[]).filter(o=>zone.resource==="gravel"?
+      o.kind==="pebble":o.kind==="boulder"&&o.mineral===zone.resource).length
   }));
   return Object.freeze({ZONES,RESOURCES,PICKAXES,DEPOSITS,normalize,discover,populate,
     depositResource,oreTier,pickaxeTier,maxTier,missingTool,progress,draw});
