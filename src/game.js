@@ -2038,6 +2038,7 @@
         ' · +'+goal.reward+' conhecimento</small></div></li>').join('')+'</ul>'+
       '<div class="progression-prize">✦ '+escapeHtml(chapter.unlock)+'</div></section>'
     ).join('');
+    renderSpaceProgram();
     const continents=$("#progression-continents");
     if(continents)continents.innerHTML=Object.entries(Progression.BIOMES).map(([id,area])=>{
       const visited=state.progression?.discovered?.[id],protection=Exploration.PROTECTION[id],
@@ -2051,7 +2052,96 @@
         '</small></div></div>';
     }).join('');
   }
-  function openProgressionDialog(){
+  function renderSpaceProgram(){
+    if(!state)return;
+    const rocket=Space.normalize(state),status=$("#space-mission-status"),
+      stages=$("#space-mission-stages");
+    if(!status||!stages)return;
+    const requirement=Space.unlock(state);
+    const release=Space.ready(state),pending=state.orders.find(o=>o.type==="buildRocket");
+    status.textContent=rocket.launched?
+      "✓ Foguete lançado no dia "+rocket.launchDay+" · Tripulantes: "+rocket.crew.join(", "):
+      (rocket.stage<Space.STAGES.length?
+        "Etapa "+(rocket.stage+1)+"/4 · "+(requirement||
+          (pending?"Projeto ativo: os colonos estão entregando materiais.":Space.STAGES[rocket.stage].description)):
+        (release||"✓ Nave concluída! Equipe e suprimentos prontos. Autorize a partida."));
+    stages.innerHTML=Space.STAGES.map((part,i)=>{
+      const finished=i<rocket.stage,active=i===rocket.stage&&!rocket.launched;
+      const cost=Crafting.formatCost(part.cost);
+      const delivery=active&&pending?
+        " · Entregue: "+Object.entries(part.cost).map(([kind,num])=>
+          Math.min(num,pending.delivered?.[kind]||0)+"/"+num+" "+kind).join(", "):"";
+      return '<div class="space-mission-step" data-finished="'+finished+
+        '" data-active="'+active+'"><span class="space-mission-step-icon">'+part.icon+
+        '</span><div><strong>'+(finished?'✓ ':'')+(i+1)+'. '+escapeHtml(part.name)+
+        '</strong><small>'+escapeHtml(part.description)+
+        ' · '+escapeHtml(cost+delivery)+'</small></div></div>';
+    }).join('');
+    const launchButton=$("#space-mission-launch");
+    launchButton.hidden=rocket.launched||rocket.stage<Space.STAGES.length;
+    launchButton.disabled=Boolean(release);
+    launchButton.title=release||"Autorizar partida de quatro tripulantes";
+    const buildButton=$("#space-mission-build");
+    buildButton.hidden=rocket.launched||rocket.stage>=Space.STAGES.length;
+    buildButton.textContent=rocket.site?"🧱 Planejar próxima etapa":"🧱 Escolher local da plataforma";
+  }
+  function openRocketConstruction(){
+    if(!state||!playing)return;
+    const problem=Space.unlock(state);
+    if(problem){notify(problem);return;}
+    $("#progression-dialog").close();
+    setTool("construir");
+    $('[data-build-layer="rocket"]').click();
+    const rocket=Space.normalize(state);
+    if(!rocket.site){
+      notify("🚀 Escolha uma área livre 3×3 na ilha central para a plataforma.");
+    }else if(rocket.stage<Space.STAGES.length){
+      const place=rocket.site;
+      if(!state.orders.some(o=>o.type==="buildRocket"))
+        paintHouse(place.x,place.y,false);
+      focusCameraAt(place.x+1.5,place.y+1.5);
+    }
+    updateBuildPanel();
+  }
+  function performRocketLaunch(){
+    if(!state||!playing)return;
+    const result=Space.launch(state);
+    if(result.error){notify("🚀 "+result.error);refresh();return;}
+    const progressEvents=Progression.advance(state);
+    for(const item of progressEvents)log(item.text);
+    assignHomes();recalcTasks();
+    simSpeed=0;updateSpeed();
+    log("🚀 O foguete decolou! "+result.crew.join(", ")+" partiram no dia "+result.day+".");
+    if($("#progression-dialog").open)$("#progression-dialog").close();
+    if($("#colony-life-dialog").open)$("#colony-life-dialog").close();
+    const victory=$("#rocket-victory-dialog");
+    $("#rocket-victory-copy").textContent="No dia "+result.day+
+      ", o foguete Última Esperança deixou o planeta superpovoado. A equipe agora busca um novo mundo.";
+    $("#rocket-victory-crew").textContent="Tripulação: "+result.crew.join(" · ");
+    refresh();save();victory.showModal();
+  }
+  $("#space-mission-build").addEventListener("click",openRocketConstruction);
+  $("#space-mission-focus").addEventListener("click",()=>{
+    const rocket=Space.normalize(state);
+    if(!rocket.site){openRocketConstruction();return;}
+    $("#progression-dialog").close();
+    focusCameraAt(rocket.site.x+1.5,rocket.site.y+1.5);
+    notify("⌖ Plataforma do foguete localizada.");
+  });
+  $("#space-mission-launch").addEventListener("click",performRocketLaunch);
+  $("#rocket-build-next").addEventListener("click",openRocketConstruction);
+  $("#rocket-build-launch").addEventListener("click",performRocketLaunch);
+  const rocketVictory=$("#rocket-victory-dialog");
+  rocketVictory.addEventListener("cancel",event=>event.preventDefault());
+  $("#rocket-victory-continue").addEventListener("click",()=>{
+    rocketVictory.close();
+    simSpeed=1;updateSpeed();refresh();save();
+    notify("A base terrestre segue ativa. A missão foi concluída!");
+  });
+  $("#rocket-victory-menu").addEventListener("click",()=>{
+    rocketVictory.close();save();$("#game-return-title").click();
+  });
+    function openProgressionDialog(){
     if(!playing||!state)return;
     renderProgressionPanel();
     if(!$("#progression-dialog").open)$("#progression-dialog").showModal();
@@ -2121,6 +2211,7 @@
     }
     const count=$("#progression-hud-count");
     if(count)count.textContent=journey.total+"/"+journey.maximum;
+    if(buildLayer==="rocket"&&selectedTool==="construir")updateBuildPanel();
     const progressionButton=$("#progression-open");
     if(progressionButton)progressionButton.title="Jornada: "+journey.current.title+
       " · "+journey.total+" de "+journey.maximum+" conquistas";
