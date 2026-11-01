@@ -33,6 +33,7 @@
   };
   const costFor=order=>{
     if(order.type==="craftTool")return window.TillfolkCrafting?.recipe(order.recipe)?.cost||{};
+    if(order.type==="buildRocket")return window.TillfolkSpace?.stageCost(order.stage)||{};
     return COSTS[order.type]||{};
   };
   function available(state,kind){
