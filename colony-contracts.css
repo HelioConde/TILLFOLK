@@ -1,0 +1,40 @@
+/* Mutirões: objetivos curtos sem esconder o mapa nem competir com o tutorial. */
+body.play-session .colony-contracts:not([hidden]){
+ display:block;margin:0 0 9px;padding:9px 11px;border:1px solid #75976d;
+ border-radius:9px;background:#253e30;color:#f6eed5;
+ box-shadow:0 3px 9px #0d211c25;font-family:system-ui,sans-serif;
+}
+.colony-contracts[hidden]{display:none!important}
+.contract-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.contract-heading strong{font-size:11px;letter-spacing:.065em;color:#ebd493}
+.contract-heading small{font-size:10px;color:#b9d6ab}
+.contract-prompt,.contract-active p{margin:4px 0 8px;font-size:11px;line-height:1.4;color:#d8e5cd}
+.contract-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.contract-choices button{display:grid;grid-template-columns:26px 1fr;gap:2px 6px;text-align:left;align-items:start;cursor:pointer;
+ border:1px solid #688a67;border-radius:7px;background:#304e3c;color:#f6eacf;padding:7px;min-width:0}
+.contract-choices button:hover{background:#40644b;border-color:#d6c37a}
+.contract-choices button:focus-visible,.contract-active button:focus-visible{outline:2px solid #eecf87;outline-offset:2px}
+.contract-choices button span{font-size:20px;grid-row:span 3}
+.contract-choices button strong{font-size:11px;line-height:1.2}
+.contract-choices button small{font-size:10px;line-height:1.35;color:#d0debd}
+.contract-choices button em{font-style:normal;color:#b8e69c;font-size:10px;font-weight:700}
+.contract-main{display:flex;align-items:center;gap:9px}
+.contract-main>span{font-size:25px}
+.contract-main strong{display:block;font-size:12px;color:#ffe8b3}
+.contract-main small{display:block;font-size:11px;color:#dce9d0}
+.contract-progress{display:flex;gap:10px;align-items:center;margin:7px 0 3px}
+.contract-progress progress{flex:1;height:9px;accent-color:#b4db80}
+.contract-progress b{font-size:11px;color:#fff0b9;font-variant-numeric:tabular-nums}
+.contract-active button{border:1px solid #b5c37e;border-radius:6px;background:#344c38;
+ color:#f5e8c2;cursor:pointer;padding:7px 10px;font-size:11px;font-weight:700;min-height:32px}
+.contract-done{display:flex;gap:8px;align-items:center;flex-wrap:wrap;color:#c6ecae;font-size:11px}
+.contract-done small{color:#dce9cf}
+@media(max-width:700px){
+ body.play-session .colony-contracts:not([hidden]){padding:8px;margin-bottom:7px}
+ .contract-choices{grid-template-columns:1fr;gap:5px}
+ .contract-choices button{grid-template-columns:24px 1fr;padding:6px;min-height:44px}
+ .contract-choices button span{grid-row:span 2}
+ .contract-choices button em{grid-column:2}
+ .contract-prompt{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.colony-contracts *{transition:none!important;animation:none!important}}
