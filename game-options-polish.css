@@ -1,0 +1,116 @@
+/* Menu de pausa do TILLFOLK — CSS escopado; não modifica telas, tilemap ou sprites. */
+#game-options-dialog.modal[open]{
+  display:block; /* neutraliza o grid genérico que centralizava o X e cada item */
+}
+#game-options-dialog{
+  position:fixed;
+  width:min(548px,calc(100vw - 28px));
+  max-width:548px;
+  max-height:calc(100dvh - 32px);
+  margin:auto;
+  padding:clamp(20px,3vw,30px);
+  overflow-x:hidden;
+  overflow-y:auto;
+  color:#f8edd0;
+  text-align:left;
+  border:2px solid #bcad7c;
+  border-radius:12px;
+  background:#22382e;
+  box-shadow:0 8px 0 #10271dc4,0 28px 75px #06160fd9;
+}
+#game-options-dialog::backdrop{background:rgba(7,23,15,.77);backdrop-filter:blur(3px)}
+#game-options-dialog .game-options-close-form{
+  position:absolute;top:18px;right:18px;z-index:2;
+  margin:0;padding:0;width:auto;line-height:1;
+}
+#game-options-dialog .modal-x{
+  float:none;display:grid;place-items:center;
+  width:38px;height:38px;min-width:38px;min-height:38px;
+  padding:0;line-height:1;font-size:17px;
+  background:#355241;border:1px solid #789573;color:#f7edd4;
+}
+#game-options-dialog .modal-x:hover{background:#4a6d4f;border-color:#d4dda4}
+#game-options-dialog .game-options-heading{padding-right:54px}
+#game-options-dialog .game-options-heading .overline{
+  display:block;color:#c3dc95;letter-spacing:1.1px;font-size:10px;font-weight:900;
+}
+#game-options-dialog .game-options-heading h2{
+  margin:8px 0 5px;line-height:1.12;font-size:clamp(24px,3vw,30px);color:#ffedbf;
+}
+#game-options-dialog .game-options-heading p{
+  margin:0;color:#d2ddc6;font-size:13px;line-height:1.5;
+}
+#game-options-dialog .game-options-actions{display:flex;flex-direction:column;gap:12px;margin-top:22px}
+#game-options-dialog .game-options-actions button{
+  display:flex;align-items:center;text-align:left;gap:12px;
+  width:100%;min-width:0;min-height:60px;
+  padding:11px 14px;white-space:normal;line-height:1.3;
+  border-radius:8px;transition:background-color .14s,border-color .14s;
+}
+#game-options-dialog .game-options-copy{
+  display:flex;flex-direction:column;gap:3px;min-width:0;align-items:flex-start;
+}
+#game-options-dialog .game-options-copy strong{font:850 14px/1.3 system-ui,sans-serif}
+#game-options-dialog .game-options-copy small{font:400 11px/1.35 system-ui,sans-serif;color:#cadbc3}
+#game-options-dialog .game-options-resume{
+  min-height:70px!important;
+  border:2px solid #e7efb0;
+  color:#223e2b;background:#cce6a3;
+  box-shadow:inset 0 -3px #a1c87d;
+}
+#game-options-dialog .game-options-resume:hover{background:#e4f3bc}
+#game-options-dialog .game-options-resume-icon{
+  flex:none;display:grid;place-items:center;
+  width:39px;height:39px;border-radius:8px;background:#acd081;
+  font-size:19px;
+}
+#game-options-dialog .game-options-resume .game-options-copy strong{font-size:16px}
+#game-options-dialog .game-options-resume .game-options-copy small{color:#3b6141}
+#game-options-dialog .game-options-shortcuts{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+}
+#game-options-dialog .game-options-shortcut{
+  min-height:74px!important;
+  border:1px solid #77946f;background:#314d3b;
+  box-shadow:inset 0 -2px #21382b;
+}
+#game-options-dialog .game-options-shortcut:hover{background:#406349;border-color:#c6d7a0}
+#game-options-dialog .game-option-icon{
+  flex:none;display:grid;place-items:center;
+  width:34px;height:34px;border-radius:6px;
+  background:#213d2f;border:1px solid #668c67;color:#e5f2bf;font-size:20px;
+}
+#game-options-dialog .game-options-map{grid-column:1/-1}
+#game-options-dialog .game-options-footer{
+  margin-top:6px;padding-top:13px;border-top:1px solid #58765d;
+}
+#game-options-dialog .game-options-footer p{
+  margin:0 0 9px;color:#d4dbb7;font-size:11px;line-height:1.45;
+}
+#game-options-dialog #game-return-title{
+  justify-content:center;text-align:center;min-height:45px;padding:10px;
+  border:1px solid #7a8d71;background:transparent;
+  color:#eaddbd;box-shadow:none;font-size:13px;font-weight:750;
+}
+#game-options-dialog #game-return-title:hover{background:#38503c;border-color:#d5ca9e}
+#game-options-dialog button:focus-visible{
+  outline:3px solid #ffe3a1;outline-offset:3px;
+}
+#game-options-dialog #game-settings-panel{padding-top:18px}
+@media(max-width:520px){
+  #game-options-dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 20px);padding:19px 16px}
+  #game-options-dialog .game-options-close-form{top:13px;right:13px}
+  #game-options-dialog .game-options-heading{padding-right:42px}
+  #game-options-dialog .game-options-shortcuts{grid-template-columns:1fr;gap:8px}
+  #game-options-dialog .game-options-map{grid-column:auto}
+  #game-options-dialog .game-options-shortcut{min-height:62px!important}
+  #game-options-dialog .game-options-actions{margin-top:15px;gap:9px}
+}
+@media(max-height:620px){
+  #game-options-dialog{max-height:calc(100dvh - 12px);padding-block:14px}
+  #game-options-dialog .game-options-actions{margin-top:12px;gap:8px}
+  #game-options-dialog .game-options-shortcut{min-height:60px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #game-options-dialog .game-options-actions button{transition:none}
+}

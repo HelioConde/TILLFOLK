@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="./progression.css?v=20261101-minerais-v2">
   <link rel="stylesheet" href="./space-program.css?v=20261101-foguete-v1">
   <link rel="stylesheet" href="./colony-life.css?v=20261101-shifts-fixes-v4">
+  <link rel="stylesheet" href="./game-options-polish.css?v=20261101-pause-menu-v1">
   <script defer src="./src/menu.js?v=20261031-sync-preferencias"></script>
   <script defer src="./src/tutorial.js?v=20261031-fim-escolhas"></script>
   <script defer src="./src/house-renderer.js?v=20261031-fazenda-casa"></script>
@@ -205,16 +206,24 @@
   </div>
 
   <dialog id="game-options-dialog" class="modal game-modal" aria-labelledby="game-options-title">
-    <form method="dialog"><button class="modal-x" aria-label="Fechar opções">✕</button></form>
-    <span class="overline">TILLFOLK · PARTIDA ATUAL</span><h2 id="game-options-title">Opções do jogo</h2>
+    <form method="dialog" class="game-options-close-form"><button class="modal-x" type="submit" aria-label="Fechar opções e continuar jogando" title="Continuar jogando">✕</button></form>
+    <header class="game-options-heading">
+      <span class="overline">TILLFOLK · SIMULAÇÃO PAUSADA</span>
+      <h2 id="game-options-title">Opções do jogo</h2>
+      <p>Organize sua próxima decisão antes de voltar à colônia.</p>
+    </header>
     <div id="game-options-main">
-      <p>Progresso salvo automaticamente no navegador.</p>
       <div class="game-options-actions">
-        <button type="button" id="game-resume" class="large-primary">▶ Continuar jogando</button>
-        <button type="button" id="game-open-settings" class="large-secondary" aria-controls="game-settings-panel" aria-expanded="false">⚙ Configurações · Áudio e animações</button>
-        <button type="button" id="game-open-stock" class="large-secondary">🥕 Estoque e recursos</button>
-        <button type="button" id="game-open-map" class="large-secondary">▦ Visualizar mapa completo</button>
-        <button type="button" id="game-return-title" class="large-secondary">↩ Salvar e voltar ao menu inicial</button>
+        <button type="button" id="game-resume" class="large-primary game-options-resume" aria-label="Continuar jogando"><span class="game-options-resume-icon" aria-hidden="true">▶</span><span class="game-options-copy"><strong>Continuar jogando</strong><small>Retomar a simulação</small></span></button>
+        <div class="game-options-shortcuts" role="group" aria-label="Painéis e configurações">
+          <button type="button" id="game-open-settings" class="large-secondary game-options-shortcut" aria-label="Configurações" aria-controls="game-settings-panel" aria-expanded="false"><span class="game-option-icon" aria-hidden="true">⚙</span><span class="game-options-copy"><strong>Configurações</strong><small>Áudio e animações</small></span></button>
+          <button type="button" id="game-open-stock" class="large-secondary game-options-shortcut" aria-label="Estoque e recursos"><span class="game-option-icon" aria-hidden="true">🥕</span><span class="game-options-copy"><strong>Estoque e recursos</strong><small>Materiais da colônia</small></span></button>
+          <button type="button" id="game-open-map" class="large-secondary game-options-shortcut game-options-map" aria-label="Visualizar mapa completo"><span class="game-option-icon" aria-hidden="true">▦</span><span class="game-options-copy"><strong>Visualizar mapa completo</strong><small>Explore as regiões e escolha um destino</small></span></button>
+        </div>
+        <div class="game-options-footer">
+          <p><span aria-hidden="true">✦</span> O progresso é guardado neste navegador.</p>
+          <button type="button" id="game-return-title" class="large-secondary" aria-label="Salvar e voltar ao menu inicial"><span aria-hidden="true">↩</span> Salvar e voltar ao menu inicial</button>
+        </div>
       </div>
     </div>
     <section id="game-settings-panel" class="game-settings-panel" aria-labelledby="game-settings-title" hidden>

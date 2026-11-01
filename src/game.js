@@ -891,7 +891,8 @@
       // de antes da janela para a retomada não abrir pausada por engano.
       const gameOptions=$("#game-options-dialog"),management=$("#management-dialog");
       state.sessionSpeed=gameOptions?.open?speedBeforeOptions:
-        management?.open?speedBeforeManagement:simSpeed;
+        management?.open?speedBeforeManagement:
+        optionsSubdialog?speedBeforeOptions:simSpeed;
       localStorage.setItem(SAVE_KEY,JSON.stringify(state));
       return true;
     }catch(error){console.warn("Não foi possível salvar:",error);return false;}
@@ -3697,13 +3698,28 @@
   // As opções preservam a partida e pausam enquanto a janela está aberta.
   const optionsDialog=$("#game-options-dialog"),stockDialog=$("#game-stock-dialog");
   const fullMapDialog=$("#full-map-dialog"),fullMapCanvas=$("#full-map-canvas");
-  let speedBeforeOptions=1;
+  let speedBeforeOptions=1,optionsSubdialog=null,selectedMapFromOptions=false;
   function showGameDialog(d){
     if(!playing||d.open)return;
     if(d===stockDialog)renderCropStock();
-    if(optionsDialog.open)optionsDialog.close();
+    // Subjanelas abertas pela pausa continuam pausadas. Fechá-las retorna ao menu.
+    if(optionsDialog.open){optionsSubdialog=d;optionsDialog.close();}
     d.showModal();
   }
+  function finishOptionsSubdialog(d){
+    if(optionsSubdialog!==d)return;
+    optionsSubdialog=null;
+    if(d===fullMapDialog&&selectedMapFromOptions){
+      selectedMapFromOptions=false;
+      if(playing){simSpeed=speedBeforeOptions;updateSpeed();}
+      $("#menu-btn").focus({preventScroll:true});
+    }else if(playing){
+      optionsDialog.showModal();
+      $("#game-resume").focus({preventScroll:true});
+    }
+  }
+  stockDialog.addEventListener("close",()=>finishOptionsSubdialog(stockDialog));
+  fullMapDialog.addEventListener("close",()=>finishOptionsSubdialog(fullMapDialog));
   function drawFullMap(){
     if(!state)return;
     const mapCtx=fullMapCanvas.getContext("2d");
@@ -3738,6 +3754,7 @@
     save();closeDrawer();
     speedBeforeOptions=simSpeed;simSpeed=0;updateSpeed();
     optionsDialog.showModal();
+    $("#game-resume").focus({preventScroll:true});
   });
   const optionsMain=$("#game-options-main"),settingsPanel=$("#game-settings-panel");
   const gameSettingsTrigger=$("#game-open-settings");
@@ -3751,7 +3768,7 @@
   optionsDialog.addEventListener("close",()=>{
     optionsMain.hidden=false;settingsPanel.hidden=true;
     gameSettingsTrigger.setAttribute("aria-expanded","false");
-    if(playing){simSpeed=speedBeforeOptions;updateSpeed();}
+    if(playing&&!optionsSubdialog){simSpeed=speedBeforeOptions;updateSpeed();}
   });
   $("#game-resume").addEventListener("click",()=>optionsDialog.close());
   $("#open-stock").addEventListener("click",()=>showGameDialog(stockDialog));
@@ -3763,11 +3780,14 @@
     const bounds=fullMapCanvas.getBoundingClientRect();
     const x=(event.clientX-bounds.left)/bounds.width*W;
     const y=(event.clientY-bounds.top)/bounds.height*H;
+    if(optionsSubdialog===fullMapDialog)selectedMapFromOptions=true;
     fullMapDialog.close();focusCameraAt(x,y);paintMinimap();
   });
   $("#game-return-title").addEventListener("click",()=>{
+    // Primeiro persistir com a velocidade original, depois fechar a pausa.
+    if(save()!==true){notify("Não foi possível salvar. Libere espaço no navegador e tente novamente.");return;}
     optionsDialog.close();
-    save();setSessionMode("menu");playing=false;closeDrawer();setTool("universal");
+    setSessionMode("menu");playing=false;closeDrawer();setTool("universal");
     window.TillfolkTutorialPointer?.hide();
     // O HUD da missão faz parte do jogo, nunca deve permanecer sobre o menu inicial.
     const missionCard=$("#mission-card");
