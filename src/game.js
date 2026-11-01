@@ -2213,7 +2213,7 @@
       focus.hidden=tutorialRunning||journey.allDone;
       if(!focus.hidden){
         $("#progression-focus-chapter").textContent=journey.current.icon+
-          " Capítulo "+(journey.current.index+1)+"/5 · "+
+          " Capítulo "+(journey.current.index+1)+"/"+journey.chapters.length+" · "+
           journey.current.title;
         const next=journey.current.objectives.find(objective=>!objective.done);
         $("#progression-focus-goal").textContent=next?next.title:"Próxima conquista";
