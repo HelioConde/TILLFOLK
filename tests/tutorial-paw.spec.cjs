@@ -86,7 +86,7 @@ test("A patinha acompanha as etapas agrícolas, saída e a Oficina sobre o diál
    if(requested===null||!raw)return;
    const state=JSON.parse(raw);
    state.tutorial.active=true;state.tutorial.finished=false;state.tutorial.step=Number(requested);
-   state.tutorial.version=5;
+   state.tutorial.version=6;
    // Controla os materiais para testar a indicação do botão da oficina.
    state.inventory.twigs=100;state.inventory.gravel=100;state.inventory.grass=100;state.inventory.wood=100;
    state.inventory.stone=100;
@@ -96,7 +96,7 @@ test("A patinha acompanha as etapas agrícolas, saída e a Oficina sobre o diál
    }
    localStorage.setItem("tillfolk-v01",JSON.stringify(state));
  });
- for(const index of Array.from({length:11},(_,index)=>index)){
+ for(const index of Array.from({length:13},(_,index)=>index)){
    await page.evaluate(step=>sessionStorage.setItem("tillfolk-paw-test-step",String(step)),index);
    await page.reload({waitUntil:"domcontentloaded"});
    await expect(page.locator("#mission-card")).toBeVisible();
@@ -284,7 +284,7 @@ test("A missão da enxada aponta cascalho e Mostrar no mapa localiza a pedrinha"
    const raw=localStorage.getItem("tillfolk-v01");if(!raw)return;
    const state=JSON.parse(raw);
    state.tutorial.active=true;state.tutorial.finished=false;state.tutorial.step=1;
-   state.tutorial.version=5;state.inventory.twigs=10;
+   state.tutorial.version=6;state.inventory.twigs=10;
    state.inventory.gravel=Number(sessionStorage.getItem("pointer-gravel-ready")||0);
    const origin=state.spawn||{x:96,y:60};
    const pebble=state.world.objects.find(o=>o.kind==="pebble"&&
@@ -296,7 +296,7 @@ test("A missão da enxada aponta cascalho e Mostrar no mapa localiza a pedrinha"
  });
  await page.reload({waitUntil:"networkidle"});
  const paw=page.locator("#tillfolk-tutorial-paw");
- await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 2 / 11");
+ await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 2 / 13");
  await expect(paw).toBeVisible();
  await expect(paw).toContainText(/Recolha este cascalho|Mostrar a pedrinha mais próxima/);
  const cell=await paw.getAttribute("data-target-cell");
@@ -340,7 +340,7 @@ test("A primeira área arada fica afastada da Work Station quando há solo livre
    .sort((a,b)=>a.d-b.d)[0];
   const distant=available.find(p=>Math.hypot(p.x-station.x,p.y-station.y)>=4);
   if(!nearest||!distant)throw new Error("O mapa precisa ter solo livre perto e longe da Work Station.");
-  state.tutorial.active=true;state.tutorial.finished=false;state.tutorial.step=4;state.tutorial.version=5;
+  state.tutorial.active=true;state.tutorial.finished=false;state.tutorial.step=4;state.tutorial.version=6;
   state.crafting.station=station;state.workstations=[station];
   state.workers.forEach(w=>{w.x=station.x;w.y=station.y;w.task=null;w.route=[];});
   sessionStorage.setItem("__tillfolkTillFixture",JSON.stringify(state));
@@ -355,7 +355,7 @@ test("A primeira área arada fica afastada da Work Station quando há solo livre
  });
  await page.reload({waitUntil:"networkidle"});
  const paw=page.locator("#tillfolk-tutorial-paw");
- await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 5 / 11");
+ await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 5 / 13");
  await expect(paw).toContainText("Prepare este solo para plantar");
  await expect(paw).toHaveClass(/over-map/);
  const target=await paw.getAttribute("data-target-cell");
