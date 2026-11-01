@@ -73,6 +73,12 @@ jobs:
           cp "public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/work station.png" "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/"
           mkdir -p "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items"
           cp "public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items/tools and meterials.png" "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/Items/"
+          CHEST_ROOT="Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/Building parts"
+          mkdir -p "_site/public/assets/$CHEST_ROOT"
+          cp "public/assets/$CHEST_ROOT/Chest.png" "_site/public/assets/$CHEST_ROOT/"
+          test -f "_site/public/assets/$CHEST_ROOT/Chest.png"
+          node --check src/logistics.js
+          node --test tests/logistics.test.cjs
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
           cp "public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/ground tiles/New tiles/Grass_Tile_Layers_MAPEAR.html" _site/mapear_grama.html
           cp terrain-editor.html _site/terrain-editor.html
