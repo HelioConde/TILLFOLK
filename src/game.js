@@ -436,6 +436,7 @@
       !World.waterAt(state.world,x,y)&&!World.at(state.world,x,y)&&
       !window.TillfolkHouseBuilder.occupied(state.house,x,y)&&
       !occupiedByHome(x,y)&&!occupiedByStation(x,y)&&
+      !state.chests?.some(c=>c.x===x&&c.y===y)&&!state.wells?.some(c=>c.x===x&&c.y===y)&&
       !state.orders.some(order=>order.x===x&&order.y===y&&order.type!=="buildStation"));
   }
   function tutorialTillSitePreferred(x,y){
@@ -456,8 +457,8 @@
   }
   function wellSiteValid(x,y){
     if(!state||!state.crafting?.station||!state.colonyLife||state.colonyLife.researchLevel<2)return false;
-    return chestSiteValid(x,y)&&!state.wells.some(w=>w.x===x&&w.y===y)&&
-      !state.orders.some(o=>o.x===x&&o.y===y&&o.type==="buildWell");
+    // A própria ordem buildWell não deve tornar o local inválido na conclusão.
+    return chestSiteValid(x,y)&&!state.wells.some(w=>w.x===x&&w.y===y);
   }
   function homeSiteValid(x,y){
     if(x<2||y<2||x>=W-3||y>=H-3)return false;
@@ -466,6 +467,8 @@
       !World.waterAt(state.world,tx,ty)&&!World.at(state.world,tx,ty)&&
       !state.animals?.some(a=>Math.floor(a.x)===tx&&Math.floor(a.y)===ty)&&
       !window.TillfolkHouseBuilder.occupied(state.house,tx,ty)&&
+      !state.chests?.some(c=>c.x===tx&&c.y===ty)&&
+      !state.wells?.some(c=>c.x===tx&&c.y===ty)&&
       !occupiedByHome(tx,ty)&&!occupiedByStation(tx,ty)&&
       !state.plots.some(p=>p.x===tx&&p.y===ty&&(p.tilled||p.seeded||p.produce||
         (p.selected&&!state.orders.some(o=>o.type==="buildHome"&&o.x===x&&o.y===y))))&&
@@ -502,7 +505,7 @@
     return Math.max(0,state.homes.length-state.workers.length);
   }
   const keyOf=(x,y)=>x+"-"+y;
-  const blocked=(x,y)=>Boolean(state?.chests?.some(c=>c.x===x&&c.y===y))||World.blocked(state?.world,x,y,W,H)||Boolean(state?.house&&window.TillfolkHouseBuilder.occupied(state.house,x,y))||occupiedByHome(x,y)||occupiedByStation(x,y);
+  const blocked=(x,y)=>Boolean(state?.chests?.some(c=>c.x===x&&c.y===y))||Boolean(state?.wells?.some(w=>w.x===x&&w.y===y))||World.blocked(state?.world,x,y,W,H)||Boolean(state?.house&&window.TillfolkHouseBuilder.occupied(state.house,x,y))||occupiedByHome(x,y)||occupiedByStation(x,y);
   // Caminhos em grade impedem que colonos atravessem a casa, árvores e objetos.
   // Só a navegação usa esta malha; o cultivo continua seguindo as regras existentes.
   const directions=[[1,0],[-1,0],[0,1],[0,-1]];
