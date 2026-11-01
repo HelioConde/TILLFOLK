@@ -78,7 +78,8 @@ test("receitas da Work Station produzem machado e sementes com consumo real",asy
   if(sessionStorage.getItem("workshop-fixture-loaded"))return;
   const s=JSON.parse(localStorage.getItem("tillfolk-v01"));
   if(!s)return;
-  s.crafting.station={x:38,y:24};s.workstations=[{x:38,y:24}];s.firstHarvest=true; // cenário avançado após a colheita
+  const ws={x:Math.floor(s.spawn?.x??96)+2,y:Math.floor(s.spawn?.y??60)+2};
+   s.crafting.station=ws;s.workstations=[ws];s.firstHarvest=true; // estação perto dos colonos no mapa 192x120
   s.inventory.twigs=50;s.inventory.gravel=20;s.inventory.grass=20;s.inventory.wood=20;s.inventory.stone=10;
   s.cropProduce.tomato=4;s.food=10;
   localStorage.setItem("tillfolk-v01",JSON.stringify(s));
@@ -89,7 +90,8 @@ test("receitas da Work Station produzem machado e sementes com consumo real",asy
  await page.locator('[data-tool="construir"]').click();
  await page.locator("#open-workshop").click();
  const loaded=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
- expect(loaded.crafting?.station).toEqual({x:38,y:24});
+ expect(loaded.crafting?.station).toEqual({
+    x:Math.floor(loaded.spawn?.x??96)+2,y:Math.floor(loaded.spawn?.y??60)+2});
  expect(loaded.inventory.twigs).toBe(50);
  expect(loaded.inventory.grass).toBe(20);
  await expect(page.locator('[data-craft-tool="axe"]')).toBeEnabled();
