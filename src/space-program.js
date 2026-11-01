@@ -55,7 +55,7 @@
       const key=p.x+","+p.y;
       return world.biomeMap?.[p.y*world.width+p.x]==="g"&&
         !water.has(key)&&!objects.has(key)&&!occupied.has(key)&&!activePlots.has(key)&&
-        !(state.workers||[]).some(w=>Math.floor(w.x)===p.x&&Math.floor(w.y)===p.y)&&
+        // Trabalhadores precisam pisar no terreno para executar a obra.
         !(state.animals||[]).some(a=>Math.floor(a.x)===p.x&&Math.floor(a.y)===p.y)&&
         !(state.orders||[]).some(o=>o.type!=="buildRocket"&&o.x===p.x&&o.y===p.y)&&
         !(typeof window!=="undefined"&&window.TillfolkHouseBuilder?.occupied?.(state.house,p.x,p.y));
