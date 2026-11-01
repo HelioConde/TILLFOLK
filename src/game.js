@@ -2620,7 +2620,13 @@
         '<small>Equipados: '+holders+' / '+state.workers.length+'</small>'+
         (Crafting.itemFrame(recipe.key)?'':'<small class="workstation-art-note">Ícone provisório · sem sprite identificado</small>')+
         '</span></button>';
-    }).join("");
+    }).join("")+
+      '<button type="button" data-craft-chest '+(!ready?'disabled':'')+'>'+
+      '<img class="workstation-tool-sprite" src="'+Logistics.CHEST_SPRITE+'" alt="Baú original Sprout Lands">'+
+      '<span class="workstation-tool-text"><strong>🧰 Baú de armazenamento</strong>'+
+      '<small>Guardar gravetos, madeira, fibras e outros recursos.</small>'+
+      '<small>'+Crafting.formatCost(Logistics.COSTS.buildChest)+'</small>'+
+      '<small>Planejar construção no mapa com entrega física dos materiais</small></span></button>';
     paintWorkshopTools();
     const grid=$("#workshop-recipes");
     grid.innerHTML=Crops.ALL.map(crop=>cropTile(crop,
@@ -2635,6 +2641,14 @@
   }
   $("#open-workshop").addEventListener("click",openWorkshop);
   $("#workshop-tools").addEventListener("click",event=>{
+    const chest=event.target.closest("[data-craft-chest]");
+    if(chest){
+      if(chest.disabled||!state.crafting?.station)return;
+      $("#workshop-dialog").close();
+      buildLayer="chest";setTool("construir");updateBuildPanel();
+      notify("🧰 Baú selecionado! Escolha a posição; a equipe levará os materiais.");
+      return;
+    }
     const button=event.target.closest("[data-craft-tool]");
     if(!button||button.disabled)return;
     const key=button.dataset.craftTool,item=Crafting.recipe(key),station=state.crafting.station;
