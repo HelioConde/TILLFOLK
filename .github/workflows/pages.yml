@@ -103,7 +103,12 @@ jobs:
           const context={window:{}};
           vm.runInNewContext(fs.readFileSync('src/exploration.js','utf8'),context);
           const sprites=context.window.TillfolkExploration.spriteSources();
-          if(sprites.length<40)throw new Error('Catálogo de animações incompleto');
+          const species=Object.entries(context.window.TillfolkExploration.ANIMATIONS);
+          const expected=species.reduce((total,[,profile])=>total+Object.keys(profile.clips).length,0);
+          const unique=new Set(sprites.map(sprite=>sprite.key));
+          if(species.length<6||sprites.length!==expected||unique.size!==expected)
+            throw new Error('Catálogo de animais inconsistente: '+species.length+
+              ' espécies / '+sprites.length+' sprites / '+expected+' animações esperadas');
           for(const sprite of sprites){
             const relative=decodeURIComponent(sprite.url.replace(/^\.\//,''));
             if(!relative.startsWith('public/assets/')||relative.includes('..'))
