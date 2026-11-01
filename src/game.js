@@ -2509,6 +2509,8 @@
     }
     if(cancelled){
       const ids=new Set(removals);
+      for(const order of state.orders)if(ids.has(order.id))
+        Logistics.refund(state,order);
       state.orders=state.orders.filter(o=>!ids.has(o.id));
       for(const worker of state.workers)if(ids.has(worker.task)){
         releaseSupply(worker);
