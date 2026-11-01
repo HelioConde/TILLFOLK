@@ -74,6 +74,9 @@ test("geração separa biomas com água real e conserva travessias em 12 mapas",
     const id=y*192+x;
     if(water.has(id))continue;
     for(const offset of [1,192]){
+      // A última linha/coluna é margem externa não jogável; só verificar
+      // vizinhos que também pertencem ao espaço interno do mapa.
+      if(offset===1&&x+1>=191||offset===192&&y+1>=119)continue;
       const other=id+offset;
       if(water.has(other))continue;
       assert.equal(world.biomeMap[id],world.biomeMap[other],
