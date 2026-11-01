@@ -144,3 +144,36 @@ test('Jornada da colônia apresenta seis capítulos e progresso persistente sem 
   expect(journey).toBe(6);
   expect(errors).toEqual([]);
 });
+
+test('Pontes curtas respeitam o tilemap e aparecem retas no lago',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.setViewportSize({width:1600,height:900});await newGame(page);
+ const world=await page.evaluate(()=>{
+   const saved=JSON.parse(localStorage.getItem('tillfolk-v01'));
+   const spans={};
+   for(const tile of saved.world.crossings||[])
+     (spans[tile.bridgeId]??=[]).push(tile);
+   return {width:saved.world.width,height:saved.world.height,
+     version:saved.world.crossingsVersion,spans:Object.values(spans),
+     water:saved.world.water.length,biomeCount:new Set(saved.world.biomeMap).size};
+ });
+ expect(world.version).toBe(2);
+ expect(world.biomeCount).toBe(6);
+ expect(world.spans.length).toBeGreaterThanOrEqual(5);
+ for(const span of world.spans){
+   expect(span.length).toBeLessThanOrEqual(4);
+   expect(new Set(span.map(t=>t.axis)).size).toBe(1);
+   const axis=span[0].axis;
+   expect(new Set(span.map(t=>axis==='horizontal'?t.y:t.x)).size).toBe(1);
+   for(let i=1;i<span.length;i++)
+     expect(Math.abs(span[i].x-span[i-1].x)+
+       Math.abs(span[i].y-span[i-1].y)).toBe(1);
+ }
+ const point=world.spans[0][Math.floor(world.spans[0].length/2)];
+ const minimap=page.locator('#minimap'),bounds=await minimap.boundingBox();
+ await minimap.click({position:{x:Math.min(bounds.width-2,Math.max(2,point.x/world.width*bounds.width)),
+   y:Math.min(bounds.height-2,Math.max(2,point.y/world.height*bounds.height))}});
+ await page.waitForTimeout(300);
+ await page.screenshot({path:'screenshots/pontes-retas-sem-escada-1600x900.png',animations:'disabled'});
+ expect(errors).toEqual([]);
+});
