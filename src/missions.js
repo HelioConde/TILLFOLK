@@ -293,15 +293,30 @@
     const label=document.querySelector("#mission-objective-label");
     if(label){
       const available=kind=>window.TillfolkLogistics?.available(state,kind)??state.inventory?.[kind]??0;
-      const recipe=["hoe","wateringCan","axe"].includes(step.key)&&
-        window.TillfolkCrafting?.recipe(step.key);
-      const missing=recipe&&window.TillfolkCrafting?.missing(state,recipe.cost);
-      label.textContent=step.key==="workstation"?
-        "Gravetos: "+Math.min(10,available("twigs"))+" / 10 · depois monte a bancada":
-        step.key==="home"?"Madeira para a cabana: "+Math.min(8,available("wood"))+" / 8":
-        step.key==="tree"?"Um colono equipado com machado deve cortar a árvore":
-        missing?.length?"Falta: "+window.TillfolkCrafting.formatCost(
-          Object.fromEntries(missing.map(([kind,need])=>[kind,Math.max(0,need-available(kind))]))):"Procure: "+artNames[step.key];
+      const orders=state.orders||[];
+      const station=orders.find(order=>order.type==="buildStation");
+      const home=orders.find(order=>order.type==="buildHome");
+      const recipe=["hoe","wateringCan","axe"].includes(step.key)&&window.TillfolkCrafting?.recipe(step.key);
+      if(step.key==="workstation"){
+        label.textContent=station?
+          "Bancada planejada: "+Math.min(10,station.delivered?.twigs||0)+" / 10 gravetos entregues · "+
+            available("twigs")+" disponíveis no chão e estoque":
+          "Gravetos: "+Math.min(10,available("twigs"))+" / 10 · depois monte a bancada";
+      }else if(step.key==="home"){
+        label.textContent=home?
+          "Cabana planejada: "+Math.min(8,home.delivered?.wood||0)+" / 8 madeiras entregues · "+
+            available("wood")+" disponíveis no chão e estoque":
+          "Madeira para a cabana: "+Math.min(8,available("wood"))+" / 8";
+      }else if(step.key==="tree"){
+        label.textContent="Um colono equipado com machado deve cortar a árvore";
+      }else if(recipe){
+        const queued=orders.some(order=>order.type==="craftTool"&&order.recipe===step.key);
+        const shortages=Object.entries(recipe.cost).map(([kind,qty])=>
+          [kind,Math.max(0,qty-available(kind))]).filter(([,qty])=>qty>0);
+        label.textContent=queued?"Ferramenta encomendada! Aguarde a equipe na Work Station":
+          shortages.length?"Ainda falta: "+window.TillfolkCrafting.formatCost(Object.fromEntries(shortages)):
+          "Materiais prontos! Abra a Work Station para fabricar "+recipe.name.toLowerCase()+".";
+      }else label.textContent="Procure: "+artNames[step.key];
     }
     const currentCount=Math.min(step.goal,progress.stats[step.key]);
     document.querySelector("#mission-progress").value=currentCount;
