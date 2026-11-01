@@ -25,7 +25,9 @@
  function normalize(state){
    if(!state||typeof state!=="object")return state;
    const base=state.colonyLife||{};
-   state.colonyLife={
+   // Preserve the state object identity: research() and cost() can call
+   // normalize() within the same operation without losing pending changes.
+   Object.assign(base,{
      version:1,autoFarm:base.autoFarm===true,
      foodSpoil:clamp(Number(base.foodSpoil)||0,0,1e6),
      researchPoints:Math.max(0,Math.floor(Number(base.researchPoints)||0)),
@@ -34,14 +36,15 @@
      lastAnimalBirthDay:Math.max(0,Math.floor(Number(base.lastAnimalBirthDay)||0)),
      lastAutoMinute:Number(base.lastAutoMinute)||0,
      wellProgress:Math.max(0,Number(base.wellProgress)||0)
-   };
+   });
+   state.colonyLife=base;
    for(const worker of state.workers||[]){
      if(!Number.isFinite(worker.energy))worker.energy=100;
      if(!Number.isFinite(worker.morale))worker.morale=75;
      worker.energy=clamp(worker.energy,0,100);
      worker.morale=clamp(worker.morale,0,100);
      worker.resting=worker.resting===true;
-     worker.carryBonus=state.colonyLife.researchLevel>=4?1:0;
+     worker.carryBonus=base.researchLevel>=4?1:0;
    }
    return state.colonyLife;
  }
