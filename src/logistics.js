@@ -5,7 +5,8 @@
   const COSTS=Object.freeze({
     buildStation:Object.freeze({twigs:10}),
     buildHome:Object.freeze({wood:8}),
-    buildChest:Object.freeze({twigs:8,grass:3})
+    buildChest:Object.freeze({twigs:8,grass:3}),
+    buildWell:Object.freeze({wood:4,stone:3})
   });
   const CHEST_SPRITE="./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/Building parts/Chest.png";
   const normalize=state=>{
