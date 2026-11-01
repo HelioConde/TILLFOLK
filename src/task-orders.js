@@ -2,9 +2,9 @@
 /* Um colono pode escolher uma ordem existente, mas nunca criar novas ordens.
    A lista pertence ao jogador e é salva em state.orders. Sem backend. */
 (() => {
-  const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry","collectWater","collectManure","buildHome","buildStation","craftTool"]);
-  const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina",craftTool:"Fabricar ferramenta"});
-  const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️",craftTool:"⚒️"});
+  const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry","collectWater","collectManure","buildHome","buildStation","buildChest","craftTool"]);
+  const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina",buildChest:"Construir baú",craftTool:"Fabricar ferramenta"});
+  const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️",buildChest:"🧰",craftTool:"⚒️"});
   let worldWidth=28,worldHeight=18;
   function setBounds(width,height){
     if(Number.isInteger(width)&&Number.isInteger(height)&&width>=28&&height>=18){
@@ -22,7 +22,7 @@
       const key=id(order.type,order.x,order.y,order.recipe);
       if(seen.has(key))continue;
       seen.add(key);result.push({id:key,type:order.type,x:order.x,y:order.y,
-        ...(order.type==="craftTool"?{recipe:order.recipe}:{}),...(order.type==="sow"&&typeof order.crop==="string"&&window.TillfolkCrops?.get(order.crop)?{crop:order.crop}:{}),...(Number.isInteger(order.priority)?{priority:Math.max(1,Math.min(9,order.priority))}:{})});
+        ...(order.delivered&&typeof order.delivered==="object"?{delivered:order.delivered}:{}),...(order.type==="craftTool"?{recipe:order.recipe}:{}),...(order.type==="sow"&&typeof order.crop==="string"&&window.TillfolkCrops?.get(order.crop)?{crop:order.crop}:{}),...(Number.isInteger(order.priority)?{priority:Math.max(1,Math.min(9,order.priority))}:{})});
       if(result.length>=1500)break;
     }
     return result;
@@ -41,6 +41,34 @@
       const animal=resources.animals.find(a=>Math.floor(a.x)===order.x&&Math.floor(a.y)===order.y);
       return animal?.manure>0?{state:"ready",reason:"Esterco disponível"}
         :{state:"blocked",reason:"Aguardando esterco do animal"};
+    }
+    const Logistics=window.TillfolkLogistics;
+    if(order.type==="buildChest"){
+      if(resources?.chests?.some(c=>c.x===order.x&&c.y===order.y))
+        return {state:"done",reason:"Baú já concluído"};
+      if(!resources?.crafting?.station)
+        return {state:"blocked",reason:"Construa uma Work Station para fabricar o baú"};
+    }
+    if(Logistics&&["buildStation","buildHome","buildChest","craftTool"].includes(order.type)){
+      if(order.type==="buildStation"&&(resources?.crafting?.station||resources?.workstations?.length))
+        return {state:"done",reason:"Work Station já montada"};
+      if(order.type==="buildHome"&&resources?.homes?.some(h=>h.x===order.x&&h.y===order.y))
+        return {state:"done",reason:"Cabana já construída"};
+      if(order.type==="craftTool"){
+        const recipe=window.TillfolkCrafting?.recipe(order.recipe);
+        if(!recipe)return {state:"blocked",reason:"Receita desconhecida"};
+        if(!resources?.crafting?.station)return {state:"blocked",reason:"Construa a Work Station"};
+        const lock=window.TillfolkCrafting.locked(resources,recipe.key);
+        if(lock)return {state:"blocked",reason:lock};
+        if(resources?.workers?.length&&resources.workers.every(w=>w.inventory?.tools?.[recipe.key]))
+          return {state:"done",reason:"Equipe equipada"};
+      }
+      const pending=Logistics.remaining(order);
+      const missing=Object.entries(pending).filter(([kind,qty])=>Logistics.available(resources,kind)<qty);
+      if(missing.length)return {state:"blocked",reason:"Aguardando materiais no chão ou baú: "+
+        missing.map(([kind,qty])=>qty+" "+kind).join(", ")};
+      return {state:"ready",reason:Logistics.complete(order)?"Materiais entregues: construir":
+        "Transportar recursos fisicamente até o destino"};
     }
     if(order.type==="craftTool"){
       const recipe=window.TillfolkCrafting?.recipe(order.recipe);
@@ -124,7 +152,7 @@
     }
   }
   function add(orders,type,x,y,plot,object,resources){
-    if(!TYPES.includes(type)||!validCell(x,y)||(!plot&&!["collectWater","collectManure","buildStation"].includes(type)))return {error:"Escolha um terreno válido."};
+    if(!TYPES.includes(type)||!validCell(x,y)||(!plot&&!["collectWater","collectManure","buildStation","buildChest"].includes(type)))return {error:"Escolha um terreno válido."};
     const key=id(type,x,y);
     if(orders.some(o=>o.id===key))return {error:"Esta ordem já está na lista."};
     if(orders.length>=1500)return {error:"Fila cheia. Cancele algumas ordens."};
