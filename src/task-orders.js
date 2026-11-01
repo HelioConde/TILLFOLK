@@ -112,14 +112,14 @@
       if(resources?.crafting?.station||resources?.workstations?.length)
         return {state:"done",reason:"Work Station já montada"};
       const amount=window.TillfolkCrafting?.STATION_COST||30;
-      return (resources?.inventory?.twigs||0)>=amount
+      return Logistics.available(resources,"twigs")>=amount
         ?{state:"ready",reason:"Gravetos reunidos"}
         :{state:"blocked",reason:"Aguardando "+amount+" gravetos para a Work Station"};
     }
     if(order.type==="buildHome"){
       const already=resources?.homes?.some(h=>h.x===order.x&&h.y===order.y);
       if(already)return {state:"done",reason:"Casa já concluída"};
-      return (resources?.inventory?.wood||0)>=8?{state:"ready",reason:"Madeira suficiente para construir"}
+      return Logistics.available(resources,"wood")>=8?{state:"ready",reason:"Madeira suficiente para construir"}
         :{state:"blocked",reason:"Aguardando 8 madeiras"};
     }
     if(!plot)return {state:"blocked",reason:"Terreno indisponível"};
