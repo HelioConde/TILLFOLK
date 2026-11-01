@@ -27,6 +27,7 @@ jobs:
           node --test tests/terrain-autotile.test.cjs
           node --test tests/terrain-editor.test.cjs
           node --check src/wild-world.js
+          node --test tests/biome-rivers.test.cjs
           node --check src/game.js
           node --check src/day-night.js
           node --check src/colony-life.js
@@ -80,7 +81,9 @@ jobs:
           CHEST_ROOT="Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/Building parts"
           mkdir -p "_site/public/assets/$CHEST_ROOT"
           cp "public/assets/$CHEST_ROOT/Chest.png" "_site/public/assets/$CHEST_ROOT/"
+          cp "public/assets/$CHEST_ROOT/Wooden_Bridge_v2.png" "_site/public/assets/$CHEST_ROOT/"
           test -f "_site/public/assets/$CHEST_ROOT/Chest.png"
+          test -f "_site/public/assets/$CHEST_ROOT/Wooden_Bridge_v2.png"
           node --check src/logistics.js
           node --test tests/logistics.test.cjs
           cp -a "public/assets/Sprout Lands - UI Pack - Basic pack" _site/public/assets/
