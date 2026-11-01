@@ -24,3 +24,11 @@ A jornada já apresenta o objetivo de longo prazo (colonizar os continentes e co
 `node --test tests/colony-contracts.test.cjs`
 
 Esta funcionalidade é complementar à jornada principal de `src/progression.js`, não substitui o GDD nem altera o contrato permanente do autotile.
+
+## Entrega adicional — Conselho do Vale (01/11/2026)
+- Depois do tutorial, o primeiro encontro acontece no dia seguinte; os próximos, a cada três dias após uma escolha. Não há prazo nem penalização por não responder.
+- O jogador escolhe entre uma ceia coletiva (2 comidas por colono, moral +12, energia +3), lanche de trabalho (1 comida por colono, moral +4, energia +12) e guardar mantimentos (sem custo e sem bônus).
+- O jogo bloqueia refeições quando não sobra uma comida por trabalhador. Não existem recursos criados, recompensas ao carregar saves antigos nem escolhas automáticas.
+- O painel Vida da colônia mostra previsão baseada no clima real do próximo dia. Aviso compacto aparece apenas quando há decisão disponível; nenhuma caixa modal abre sozinha.
+- A decisão persiste no save local, não altera skills, coleta física, ordens, construções, autotile nem tarefas do jogador.
+- Regressão: `node --test tests/colony-council.test.cjs`.
