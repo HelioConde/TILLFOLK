@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const TILE = 32, W = 80, H = 50, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
-  const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight;
+  const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
   if(!Crops)throw new Error("Carregue src/crop-catalog.js antes do motor TILLFOLK.");
   if(!Crafting)throw new Error("Carregue src/crafting.js antes do motor TILLFOLK.");
   if(!Missions)throw new Error("Carregue src/missions.js antes do motor TILLFOLK.");
@@ -632,6 +632,7 @@
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},buildPriority:5,
       survivalVersion:1,startingColonists:initialColonists,deaths:[],gameOver:false,
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
+    Life.normalize(state);
     tasks=[]; simSpeed=1; updateSpeed();
   }
   // "play" significa que a fazenda estava aberta na última visita.
@@ -651,6 +652,7 @@
       const s=JSON.parse(localStorage.getItem(SAVE_KEY));
       if(!s||!Array.isArray(s.plots)||!Array.isArray(s.workers))return false;
       state=s;
+      Life.normalize(state);
       state.survivalVersion=1;
       state.gameOver=Boolean(s.gameOver);
       state.deaths=Array.isArray(s.deaths)?s.deaths.filter(death=>
@@ -944,7 +946,7 @@
   }
   function bonus(w,type){
     const specialty=specialtyMultiplier(w,type);
-    return specialty*Survival.workMultiplier(w);
+    return specialty*Survival.workMultiplier(w)*Life.workMultiplier(w);
   }
   // Mesma regra para escolher trabalho e para explicar a ociosidade.
   // Traços negativos são proibições, não uma penalidade de velocidade.
@@ -997,7 +999,7 @@
     return "Procurando a próxima ordem";
   }
   function assign(w){
-    if(w.task)return;
+    if(w.task||w.resting)return;
     const available=tasks.filter(t=>t.status==="ready"&&!t.assigned&&!workerTaskBlocker(w,t));
     const priorityScore=t=>{
       const global=Number.isInteger(t.priority)?t.priority:state.priorities[t.type]||5;
@@ -1010,7 +1012,7 @@
     if(available.length){w.task=available[0].id;w.progress=0;w.routeTask=null;w.route=[];available[0].assigned=w.id;}
   }
   function assignIdleWorkers(){
-    const idle=state.workers.filter(w=>!w.task);
+    const idle=state.workers.filter(w=>!w.task&&!w.resting);
     if(!idle.length)return;
     // Trabalhadores especializados/restritos escolhem antes dos generalistas.
     // Evita o versátil ocupar a única ordem disponível para outro colono.
@@ -1179,8 +1181,11 @@
     }
     for(const p of state.plots)if(p.seeded&&p.watered&&p.growth<1){
       const fertility=World.terrainAt(state.world,p.x,p.y).fertility;
-      p.growth=Math.min(1,p.growth+scaled/180*fertility);
+      p.growth=Math.min(1,p.growth+
+        scaled/Life.cropDuration(p.crop||"potato")*fertility*Life.growthMultiplier(state,p.crop));
     }
+    const lifeEvents=Life.advance(state,scaled*1.25);
+    for(const event of lifeEvents)log("🌿 "+event);
     const survivalEvents=Survival.advance(state,scaled*1.25);
     for(const event of survivalEvents){
       if(event.type==="warning")log("⚠ "+event.worker.name+" precisa de comida em breve. Saciedade: "+Math.round(event.worker.satiety)+"%");
@@ -1191,6 +1196,17 @@
       else if(event.type==="critical")log("⚠ "+event.worker.name+" corre risco fatal por inanição. Saúde: "+Math.round(event.worker.health)+"%");
     }
     recalcTasks();
+    automateFarmIfEnabled();
+    for(const w of state.workers){
+      const mustSleep=Life.sleepRequired(w,state.minutes);
+      if(mustSleep&&!w.resting){
+        w.resting=true;w.atRest=false;
+        if(w.haul)refundHaul(w);
+        if(w.task){releaseSupply(w);w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;}
+      }else if(!mustSleep&&w.resting){
+        w.resting=false;w.atRest=false;w.route=[];w.routeTask=null;
+      }
+    }
     assignIdleWorkers();
     for(const w of state.workers){
       w.moving=false;
@@ -1205,6 +1221,7 @@
         save();
         continue;
       }
+      if(w.resting){processRest(w,scaled);continue;}
       if(w.haul){
         if(processHaul(w,scaled))continue;
       }
@@ -1937,7 +1954,7 @@
     const price=foodHireCost(c);
     if(state.food<price){notify("Comida insuficiente para a troca.");return;}
     state.food-=price;
-    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},inventory:{tools:{},items:{}},x:state.spawn.x,y:state.spawn.y,task:null,progress:0,facing:"down",moving:false,walkFrame:0,satiety:100,health:100,hungerState:"fed",starvationMinutes:0,lastMealDay:state.day});
+    state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},inventory:{tools:{},items:{}},x:state.spawn.x,y:state.spawn.y,task:null,progress:0,facing:"down",moving:false,walkFrame:0,satiety:100,health:100,hungerState:"fed",starvationMinutes:0,lastMealDay:state.day,energy:100,morale:75});
     assignHomes();
     state.candidates[i]=newCandidate();
     log(c.name+" entrou para a equipe.");
