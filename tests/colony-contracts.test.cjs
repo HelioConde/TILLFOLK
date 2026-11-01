@@ -48,20 +48,30 @@ test("mutirão em andamento não expira no amanhecer nem concede bônus antecipa
 test("save antigo sem contratos migra sem prêmios retroativos; save novo preserva progresso",()=>{
  const s=mock();delete s.contracts;
  assert.equal(Contracts.normalize(s).completedTotal,0);
- s.day=2;Contracts.select(s,"clareira");Contracts.record(s,{type:"clear"});
+ s.day=2;Contracts.select(s,"gravetos");Contracts.record(s,{type:"clear"},{kind:"twig"});
  const saved=JSON.parse(JSON.stringify(s));Contracts.normalize(saved);
  assert.equal(Contracts.view(saved).progress,1);
  assert.equal(saved.workers[0].morale,63);
- assert.equal(Contracts.record(saved,{type:"clear"}).progress,2);
- assert.equal(Contracts.record(saved,{type:"clear"}).completed,true);
+ assert.equal(Contracts.record(saved,{type:"clear"},{kind:"twig"}).progress,2);
+ assert.equal(Contracts.record(saved,{type:"clear"},{kind:"twig"}).completed,true);
  assert.equal(saved.workers[0].morale,70);
 });
 test("restrição vermelha e falta de ferramenta não oferecem trabalho impossível",()=>{
  const s=mock();s.workers[0].neg=["sow","till"];s.workers[0].inventory.tools.axe=false;
  const choices=Contracts.offers(s);
  assert.equal(choices.some(p=>["madeira","cabana","plantio","canteiros"].includes(p.id)),false);
- assert.ok(choices.some(p=>p.id==="clareira"));
+ assert.equal(choices.length,3);
+ assert.deepEqual(choices.map(p=>p.id),["gravetos","pedrinhas","clareira"]);
  assert.equal(Contracts.select(s,"madeira").ok,false);
+});
+test("no início sem ferramentas há três escolhas; cada recurso exige o objeto correto",()=>{
+ const s=mock();s.workers[0].inventory.tools={};
+ assert.deepEqual(Contracts.offers(s).map(p=>p.id),["gravetos","pedrinhas","clareira"]);
+ assert.equal(Contracts.select(s,"pedrinhas").ok,true);
+ assert.equal(Contracts.record(s,{type:"clear"},{kind:"twig"}),null);
+ assert.equal(Contracts.record(s,{type:"clear"},{kind:"pebble"}).progress,1);
+ assert.equal(Contracts.record(s,{type:"clear"},{kind:"pebble"}).completed,true);
+ assert.equal(s.workers[0].morale,70);
 });
 test("conclusão e opções ficam ocultas antes de terminar o tutorial",()=>{
  const s=mock(),el={dataset:{},hidden:true,innerHTML:""};
