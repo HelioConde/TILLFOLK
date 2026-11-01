@@ -76,7 +76,7 @@ test("lançamento requer cinco colonos, casas, abastecimento e equipe saudável"
   s.workers.push({id:5,name:"Colono 5",x:7,y:3,health:100,satiety:100});
   s.food=29;assert.match(Space.ready(s),/30 alimentos/);
   s.food=90;s.water=19;assert.match(Space.ready(s),/20 águas/);
-  s.water=45;s.workers[0].health=10;
+  s.water=45;s.workers[0].health=10;s.workers[1].health=10;
   assert.match(Space.ready(s),/quatro colonos saudáveis/);
 });
 test("lançamento consome suprimentos, embarca quatro e deixa um suporte em terra",()=>{
