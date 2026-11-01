@@ -151,7 +151,7 @@
       .map(o=>key(o.x,o.y)));
     const directions=[[1,0],[-1,0],[0,1],[0,-1]];
     const cell=(x,y)=>y*w+x,land=(x,y)=>
-      inMap(x,y,w,h)&&!water.has(key(x,y));
+      inMap(x,y,w,h)&&!water.has(key(x,y))&&!solid.has(key(x,y));
     // Descobrir as ilhas de terra FIRME, sem abrir cortes no rio original.
     const owner=new Int32Array(w*h).fill(-1),components=[];
     for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
@@ -374,6 +374,9 @@
         used.add(key(x,y));needed--;
       }
     }
+    // Recalcular com as árvores/rochas finais: as duas pontas precisam levar
+    // a um terreno realmente alcançável, não só a um tile sem água.
+    createCrossings(world,new Set());
     return world;
   }
   const indices=new WeakMap();
