@@ -1,0 +1,129 @@
+"use strict";
+/* Sistemas adicionais ONI adaptados ao Tillfolk: rotinas, moral, clima, safra,
+   alimento perecível, pesquisa experimental e automação expressamente opt-in. */
+(()=>{
+ const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+ const SEASONS=Object.freeze(["Primavera","Verão","Outono","Inverno"]);
+ const CROP_MINUTES=Object.freeze({
+   potato:150,carrot:130,beetroot:150,berry:175,broccoli:230,cauliflower:245,
+   celery:175,corn:270,eggplant:255,grape:300,leek:165,lettuce:115,
+   onion:160,pepper:250,pumpkin:310,radish:100,tomato:235,wheat:185,bamboo:380
+ });
+ const TECH=Object.freeze(["Agricultura eficiente","Conservação de alimentos",
+   "Rotina de descanso","Ferramentas de transporte"]);
+ function season(day){return SEASONS[Math.floor((Math.max(1,day)-1)/7)%4];}
+ function weather(day,seed=1){
+   const n=Math.abs(Math.sin((day+17)*(seed+37)*.137))%1;
+   const s=season(day);
+   if(s==="Inverno"&&n<.20)return "frio";
+   if(n<.26)return "chuva";
+   if(s==="Verão"&&n>.82)return "seca";
+   return "limpo";
+ }
+ const weatherLabels=Object.freeze({chuva:"🌧️ Chuva",frio:"❄️ Frio",
+   seca:"☀️ Seca",limpo:"🌤️ Limpo"});
+ function normalize(state){
+   if(!state||typeof state!=="object")return state;
+   const base=state.colonyLife||{};
+   state.colonyLife={
+     version:1,autoFarm:base.autoFarm===true,
+     foodSpoil:clamp(Number(base.foodSpoil)||0,0,1e6),
+     researchPoints:Math.max(0,Math.floor(Number(base.researchPoints)||0)),
+     researchLevel:clamp(Math.floor(Number(base.researchLevel)||0),0,4),
+     lastWeatherDay:Math.max(0,Math.floor(Number(base.lastWeatherDay)||0)),
+     lastAnimalBirthDay:Math.max(0,Math.floor(Number(base.lastAnimalBirthDay)||0)),
+     lastAutoMinute:Number(base.lastAutoMinute)||0
+   };
+   for(const worker of state.workers||[]){
+     if(!Number.isFinite(worker.energy))worker.energy=100;
+     if(!Number.isFinite(worker.morale))worker.morale=75;
+     worker.energy=clamp(worker.energy,0,100);
+     worker.morale=clamp(worker.morale,0,100);
+     worker.resting=worker.resting===true;
+   }
+   return state.colonyLife;
+ }
+ function workMultiplier(w){
+   return clamp(.72+(w.energy||0)/340+(w.morale||0)/400,.55,1.24);
+ }
+ function sleepRequired(worker,minute){
+   const hour=((minute||0)%1440+1440)%1440/60;
+   if(worker.resting)return !(worker.energy>=94||hour>=7&&worker.energy>=68);
+   return worker.energy<20||(hour>=21||hour<6)&&worker.energy<83;
+ }
+ function advance(state,elapsedMinutes){
+   const life=normalize(state),passed=clamp(Number(elapsedMinutes)||0,0,60);
+   const currentWeather=weather(state.day,state.world?.seed||1);
+   const events=[];
+   if(life.lastWeatherDay!==state.day){
+     life.lastWeatherDay=state.day;
+     events.push("Estação: "+season(state.day)+" · "+weatherLabels[currentWeather]+".");
+   }
+   for(const w of state.workers||[]){
+     // A recuperação só ocorre depois que o trabalhador chega ao repouso.
+     const sleeping=w.resting&&w.atRest===true;
+     if(sleeping)w.energy=clamp(w.energy+passed*(life.researchLevel>=3?.35:.29),0,100);
+     else w.energy=clamp(w.energy-passed*(w.task?.085:.065),0,100);
+     const sheltered=state.homes?.some(h=>h.residentId===w.id);
+     const target=clamp(65+(sheltered?12:-8)+(w.energy>60?10:-15)-
+       (w.satiety<30?28:0)-(currentWeather==="seca"?5:0),0,100);
+     w.morale=clamp(w.morale+(target-w.morale)*Math.min(1,passed/280),0,100);
+   }
+   // Alimentos sem conservação estragam gradualmente; sem valor negativo.
+   if(state.mode==="survival"&&(state.food||0)>0){
+     const spoilPerDay=life.researchLevel>=2?.025:.065;
+     life.foodSpoil+=(state.food||0)*spoilPerDay*passed/1440;
+     const lost=Math.min(state.food,Math.floor(life.foodSpoil));
+     if(lost>0){state.food-=lost;life.foodSpoil-=lost;events.push(lost+" alimento(s) estragaram no estoque.");}
+   }
+   // Chuva molha os canteiros; não inventa água em baldes.
+   if(currentWeather==="chuva")
+     for(const plot of state.plots||[])if(plot.seeded)plot.watered=true;
+   return events;
+ }
+ function growthMultiplier(state,crop){
+   const level=normalize(state).researchLevel;
+   const current=weather(state.day,state.world?.seed||1);
+   const weatherFactor=current==="seca"?.68:current==="frio"?.75:current==="chuva"?1.12:1;
+   const s=season(state.day);
+   return weatherFactor*(s==="Inverno"?.88:s==="Primavera"?1.08:1)*(1+Math.min(level,1)*.12);
+ }
+ function cropDuration(crop){return CROP_MINUTES[crop]||180;}
+ function discover(state,points=1){
+   const life=normalize(state);
+   life.researchPoints=Math.min(999,life.researchPoints+Math.max(0,points));
+ }
+ function cost(state){return 5*(normalize(state).researchLevel+1);}
+ function research(state){
+   const life=normalize(state);
+   if(!state.crafting?.station)return {error:"Construa a Work Station primeiro."};
+   if(life.researchLevel>=TECH.length)return {error:"Todas as pesquisas desta fase já foram concluídas."};
+   const needed=cost(state);
+   if(life.researchPoints<needed)return {error:"São necessários "+needed+" pontos de conhecimento."};
+   life.researchPoints-=needed;life.researchLevel++;
+   return {name:TECH[life.researchLevel-1],level:life.researchLevel};
+ }
+ function canAutomate(state,minute){
+   const life=normalize(state);
+   if(!life.autoFarm)return false;
+   if(minute-life.lastAutoMinute<10&&minute>=life.lastAutoMinute)return false;
+   life.lastAutoMinute=minute;
+   return true;
+ }
+ function animalBirths(state){
+   const life=normalize(state),animals=state.animals||[];
+   if(animals.length<2||animals.length>=8||state.day-life.lastAnimalBirthDay<9)return 0;
+   // Somente fazendas com dois animais adultos reproduzem; nenhum animal mágico surge.
+   const first=animals[0],second=animals[1];
+   if((first.age||0)<1||(second.age||0)<1)return 0;
+   if((state.food||0)<2)return 0;
+   state.food-=2;
+   animals.push({x:first.x+.35,y:first.y+.45,manure:0,timer:0,age:0});
+   life.lastAnimalBirthDay=state.day;
+   return 1;
+ }
+ window.TillfolkColonyLife=Object.freeze({
+   normalize,season,weather,weatherLabels,workMultiplier,sleepRequired,
+   advance,growthMultiplier,cropDuration,discover,cost,research,canAutomate,animalBirths,TECH
+ });
+})();
