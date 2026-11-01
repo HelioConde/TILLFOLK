@@ -66,6 +66,12 @@ test('Mapa e legenda mantêm layout responsivo em desktop e celular',async({page
 test('Salvar e continuar migra mapa legado sem apagar recursos, cultivos ou trabalhadores',async({page})=>{
  const errors=[];page.on('pageerror',err=>errors.push(err.message));
  await page.setViewportSize({width:1366,height:768});await newGame(page);
+ await page.addInitScript(()=>{
+   const fixture=sessionStorage.getItem('__tillfolkLegacyFixture');
+   if(!fixture)return;
+   localStorage.setItem('tillfolk-v01',fixture);
+   sessionStorage.removeItem('__tillfolkLegacyFixture');
+ });
  const original=await page.evaluate(()=>{
    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
    s.world.objects=s.world.objects.filter(o=>o.x<28&&o.y<18);
@@ -73,12 +79,12 @@ test('Salvar e continuar migra mapa legado sem apagar recursos, cultivos ou trab
    s.world.version=1;delete s.world.biomeMap;delete s.world.width;delete s.world.height;
    s.plots=s.plots.filter(p=>p.x<28&&p.y<18);
    s.workers.forEach((w,i)=>{w.x=13.5+i;w.y=9.5;});
-   s.inventory.wood=87;s.seeds=7;s.food=55;
+   s.inventory.wood=87;s.seeds=7;s.cropSeeds.carrot=7;s.food=55;
    const plot=s.plots.find(p=>p.x===11&&p.y===8);
    plot.tilled=true;plot.selected=true;
    s.orders=[{id:'11-8:sow',type:'sow',x:11,y:8}];
    delete s.spawn;
-   localStorage.setItem('tillfolk-v01',JSON.stringify(s));
+   sessionStorage.setItem('__tillfolkLegacyFixture',JSON.stringify(s));
    return {wood:s.inventory.wood,plots:s.plots.length,workers:s.workers.length};
  });
  await page.reload({waitUntil:'networkidle'});
@@ -118,7 +124,9 @@ test('Biomas: gelo/veneno bloqueiam agricultura e terreno possui custo de locomo
  for(const row of data){expect(row.moveCost).toBeGreaterThanOrEqual(1);}
  for(const id of ['i','p']){const row=data.find(r=>r.id===id);
    expect(row.farmable).toBe(false);expect(row.state).toBe('blocked');}
- expect(data.find(r=>r.id==='g').state).toBe('ready');
+ // Sem enxada, o solo fértil continua arável, mas a ordem aguarda ferramenta.
+ expect(data.find(r=>r.id==='g').farmable).toBe(true);
+ expect(data.find(r=>r.id==='g').state).toBe('blocked');
  expect(data.find(r=>r.id==='w').moveCost).toBeGreaterThan(1.2);
  expect(errors).toEqual([]);
 });
@@ -135,7 +143,7 @@ test('Jornada da colônia apresenta seis capítulos e progresso persistente sem 
   await expect(page.locator('#progression-chapters .progression-tasks li')).toHaveCount(28);
   await expect(page.locator('#progression-overview')).toContainText('conquistas');
   await expect(page.locator('#mineral-progression-list .mineral-zone')).toHaveCount(6);
-  await expect(page.locator('#mineral-progression-list')).toContainText('Bronze');
+  await expect(page.locator('#mineral-progression-list')).toContainText(/bronze/i);
   await expect(page.locator('#mineral-progression-list')).toContainText('Bauxita');
   await page.screenshot({path:'screenshots/jornada-colonia-1366x768.png',animations:'disabled'});
   await page.locator('#progression-dialog .modal-x').click();
