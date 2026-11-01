@@ -582,6 +582,7 @@
   // atravessar o mapa carregando e entregar no local de construção.
   function processHaul(w,scaled){
     const job=w.haul;if(!job)return false;
+    if(w.neg?.includes("carry")){refundHaul(w);return false;}
     const goal=job.phase==="fetch"?job.source:job.destination;
     const id="haul:"+job.phase+":"+goal.x+","+goal.y+":"+job.kind;
     if(w.routeTask!==id){
@@ -633,6 +634,7 @@
     return true;
   }
   function beginHaul(w,order){
+    if(w.neg?.includes("carry"))return false;
     const job=order?Logistics.plan(state,order,w):Logistics.planStorage(state,w);
     if(!job)return false;
     w.haul=job;w.route=[];w.routeTask=null;return true;
@@ -642,6 +644,15 @@
       Logistics.drop(state,Math.floor(w.x),Math.floor(w.y),w.haul.kind,w.haul.cargo);
     w.haul=null;
     if(w.inventory)w.inventory.carrying=null;
+  }
+  const deliveryTypes=new Set(["buildStation","buildHome","buildChest","buildWell","buildRocket","craftTool"]);
+  function pendingSupplyOrder(){
+    // Entregadores podem abastecer uma obra mesmo sem executar a atividade final.
+    const assigned=new Set(state.workers.map(w=>w.task).filter(Boolean));
+    return state.orders.find(order=>deliveryTypes.has(order.type)&&
+      !assigned.has(order.id)&&!Logistics.complete(order)&&
+      tasks.some(t=>t.id===order.id&&t.status==="ready")&&
+      Object.entries(Logistics.remaining(order)).every(([kind,qty])=>Logistics.available(state,kind)>=qty))||null;
   }
   let tutorialSpeedBeforeFinish=1;
   // Falas efêmeras: o ritmo do diálogo não altera saves nem tarefas.
@@ -740,6 +751,7 @@
         Crafting.normalizeWorker(w,!w.inventory?s.crafting?.equipment:null);
         Survival.normalizeWorker(w,state.day);
       });
+      Crafting.reconcileEquipment(state);
       // Migração não destrutiva: os saves continuam utilizáveis, mas não há moeda.
       delete state.coins;
       state.food=Survival.normalizeFood(state.food);
@@ -1037,6 +1049,10 @@
   function workerTaskBlocker(w,t){
     if(t.status!=="ready")return t.reason||"Aguardando pré-requisitos";
     if(w.neg.includes(t.type))return "Traço negativo: não pode "+labels[t.type].toLowerCase();
+    if(t.type==="craftTool"&&!Crafting.canEquip(w,t.recipe))
+      return "Traço negativo: não pode equipar esta ferramenta";
+    if(deliveryTypes.has(t.type)&&!Logistics.complete(t)&&w.neg.includes("carry"))
+      return "Traço negativo: não pode transportar materiais desta obra";
     if(t.type==="water"&&state.water<=0&&w.neg.includes("collectWater"))
       return "Traço negativo: não pode buscar água";
     if(t.type==="fertilize"&&state.inventory.manure<=0&&w.neg.includes("collectManure"))
@@ -1111,6 +1127,8 @@
     // Contagem leve: o teste de caminho continua centralizado em assign().
     const options=w=>tasks.reduce((count,t)=>{
       if(t.status!=="ready"||t.assigned||w.neg.includes(t.type))return count;
+      if(t.type==="craftTool"&&!Crafting.canEquip(w,t.recipe))return count;
+      if(deliveryTypes.has(t.type)&&!Logistics.complete(t)&&w.neg.includes("carry"))return count;
       if(t.type==="water"&&state.water<=0&&w.neg.includes("collectWater"))return count;
       if(t.type==="fertilize"&&state.inventory.manure<=0&&w.neg.includes("collectManure"))return count;
       return count+1;
@@ -1409,13 +1427,21 @@
         if(processHaul(w,scaled))continue;
       }
       if(!w.task){
-        if(state.chests.length&&beginHaul(w,null))processHaul(w,scaled);
+        if(!w.neg.includes("carry")){
+          const supply=pendingSupplyOrder();
+          if(supply&&beginHaul(w,supply)){processHaul(w,scaled);continue;}
+          if(state.chests.length&&beginHaul(w,null))processHaul(w,scaled);
+        }
         continue;
       }
       const t=tasks.find(t=>t.id===w.task);
       if(!t){refundHaul(w);releaseSupply(w);w.task=null;w.progress=0;w.route=[];continue;}
-      if(["buildStation","buildHome","buildChest","buildWell","buildRocket","craftTool"].includes(t.type)&&
+      if(deliveryTypes.has(t.type)&&
          !Logistics.complete(state.orders.find(o=>o.id===t.id)||t)){
+        if(w.neg.includes("carry")){
+          releaseSupply(w);w.task=null;w.progress=0;w.route=[];w.routeTask=null;
+          recalcTasks();continue;
+        }
         const original=state.orders.find(o=>o.id===t.id);
         if(original&&beginHaul(w,original))processHaul(w,scaled);
         continue;
