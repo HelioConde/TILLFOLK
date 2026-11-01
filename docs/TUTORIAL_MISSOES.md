@@ -11,7 +11,7 @@
 - **Continuar:** retoma a mesma colônia, tarefa e estado salvo, sem exibir o menu quando a sessão estava ativa.
 - **Voltar ao menu inicial:** oculta o painel de missões; ao retomar, exibe a missão atual.
 
-## Sequência atual do protótipo: 12 missões
+## Sequência atual do protótipo: 13 missões
 
 O código de referência é `src/missions.js`, não uma lista antiga neste documento.
 
@@ -28,9 +28,12 @@ O código de referência é `src/missions.js`, não uma lista antiga neste docum
 | 9 | `harvest` | Esperar a plantação amadurecer e colher |
 | 10 | `carry` | Transportar comida até o estoque |
 | 11 | `axe` | Fabricar um machado comum |
-| 12 | `exit` | Cortar o tronco que bloqueia a saída do vale |
+| 12 | `tree` | Derrubar a primeira árvore usando o machado |
+| 13 | `home` | Construir a primeira cabana usando madeira transportada fisicamente |
 
 **Atenção:** o machado de pedra foi removido. O tronco é cortado com o machado comum. O frame da enxada deve corresponder à enxada real do atlas. Esses itens não são intercambiáveis.
+
+Após o machado, os objetivos de madeira e primeira moradia criam uma conclusão tangível. A faixa de **Jornada** orienta os capítulos seguintes depois da cabana.
 
 As missões avançam pela **conclusão real do trabalho**, nunca ao clicar apenas em um botão ou enfileirar uma ordem. Eventos obtidos antecipadamente podem ser reconhecidos na progressão; verificar a lógica em `Missions.record`.
 
