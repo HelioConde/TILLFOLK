@@ -69,5 +69,7 @@
       queueMicrotask(sync);
     }
   });
+  // O botão de início do mapa reutiliza o reset da câmera do motor; não duplica a lógica.
+  $("#camera-home")?.addEventListener("click",()=>$("#zoom-reset")?.click());
   sync();
 })();
