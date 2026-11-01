@@ -2,9 +2,9 @@
 /* Um colono pode escolher uma ordem existente, mas nunca criar novas ordens.
    A lista pertence ao jogador e é salva em state.orders. Sem backend. */
 (() => {
-  const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry","collectWater","collectManure","buildHome","buildStation","buildChest","buildWell","craftTool"]);
-  const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina",buildChest:"Construir baú",buildWell:"Construir poço",craftTool:"Fabricar ferramenta"});
-  const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️",buildChest:"🧰",buildWell:"🚰",craftTool:"⚒️"});
+  const TYPES=Object.freeze(["clear","till","fertilize","sow","water","harvest","carry","collectWater","collectManure","buildHome","buildStation","buildChest","buildWell","buildRocket","craftTool"]);
+  const LABELS=Object.freeze({clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina",buildChest:"Construir baú",buildWell:"Construir poço",buildRocket:"Montar foguete",craftTool:"Fabricar ferramenta"});
+  const ICONS=Object.freeze({clear:"🪓",till:"⛏",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️",buildChest:"🧰",buildWell:"🚰",buildRocket:"🚀",craftTool:"⚒️"});
   let worldWidth=28,worldHeight=18;
   function setBounds(width,height){
     if(Number.isInteger(width)&&Number.isInteger(height)&&width>=28&&height>=18){
@@ -22,7 +22,7 @@
       const key=id(order.type,order.x,order.y,order.recipe);
       if(seen.has(key))continue;
       seen.add(key);result.push({id:key,type:order.type,x:order.x,y:order.y,
-        ...(order.delivered&&typeof order.delivered==="object"?{delivered:order.delivered}:{}),...(order.type==="craftTool"?{recipe:order.recipe}:{}),...(order.type==="sow"&&typeof order.crop==="string"&&window.TillfolkCrops?.get(order.crop)?{crop:order.crop}:{}),...(Number.isInteger(order.priority)?{priority:Math.max(1,Math.min(9,order.priority))}:{})});
+        ...(order.delivered&&typeof order.delivered==="object"?{delivered:order.delivered}:{}),...(order.type==="craftTool"?{recipe:order.recipe}:{}),...(order.type==="buildRocket"&&Number.isInteger(order.stage)?{stage:order.stage}:{}),...(order.type==="sow"&&typeof order.crop==="string"&&window.TillfolkCrops?.get(order.crop)?{crop:order.crop}:{}),...(Number.isInteger(order.priority)?{priority:Math.max(1,Math.min(9,order.priority))}:{})});
       if(result.length>=1500)break;
     }
     return result;
@@ -43,6 +43,22 @@
         :{state:"blocked",reason:"Aguardando esterco do animal"};
     }
     const Logistics=window.TillfolkLogistics;
+    if(order.type==="buildRocket"){
+      const Space=window.TillfolkSpace;
+      if(!Space)return {state:"blocked",reason:"Programa espacial indisponível"};
+      const stage=Number.isInteger(order.stage)?order.stage:0;
+      const done=Space.normalize(resources).stage>stage;
+      if(done)return {state:"done",reason:"Esta etapa do foguete já foi concluída"};
+      const gate=Space.canOrder(resources,order.x,order.y,stage);
+      if(gate)return {state:"blocked",reason:gate};
+      const pending=Logistics.remaining(order);
+      const missing=Object.entries(pending).filter(([kind,qty])=>Logistics.available(resources,kind)<qty);
+      return missing.length?{state:"blocked",reason:"Aguardando materiais para o foguete: "+
+        missing.map(([kind,qty])=>qty+" "+kind).join(", ")}:
+        {state:"ready",reason:Logistics.complete(order)?
+          "Todos os materiais chegaram: montar "+Space.STAGES[stage].name:
+          "Entregar os materiais no canteiro de obras do foguete"};
+    }
     if(order.type==="buildWell"){
       if(resources?.wells?.some(w=>w.x===order.x&&w.y===order.y))
         return {state:"done",reason:"Poço já concluído"};
@@ -158,13 +174,15 @@
     }
   }
   function add(orders,type,x,y,plot,object,resources){
-    if(!TYPES.includes(type)||!validCell(x,y)||(!plot&&!["collectWater","collectManure","buildStation","buildChest","buildWell"].includes(type)))return {error:"Escolha um terreno válido."};
+    if(!TYPES.includes(type)||!validCell(x,y)||(!plot&&!["collectWater","collectManure","buildStation","buildChest","buildWell","buildRocket"].includes(type)))return {error:"Escolha um terreno válido."};
     const key=id(type,x,y);
     if(orders.some(o=>o.id===key))return {error:"Esta ordem já está na lista."};
     if(orders.length>=1500)return {error:"Fila cheia. Cancele algumas ordens."};
-    const check=status({type},plot,object,resources);
+    const stage=type==="buildRocket"?window.TillfolkSpace?.normalize(resources)?.stage:null;
+    const check=status({type,x,y,...(type==="buildRocket"?{stage}:{})},plot,object,resources);
     if(check.state==="done")return {error:check.reason+"."};
-    return {order:{id:key,type,x,y},state:check.state,reason:check.reason};
+    return {order:{id:key,type,x,y,...(type==="buildRocket"?{stage}:{})},
+      state:check.state,reason:check.reason};
   }
   window.TillfolkOrders=Object.freeze({TYPES,LABELS,ICONS,id,normalize,status,add,setBounds});
 })();
