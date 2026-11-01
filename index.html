@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="./progression.css?v=20261101-minerais-v2">
   <link rel="stylesheet" href="./space-program.css?v=20261101-foguete-v1">
   <link rel="stylesheet" href="./colony-life.css?v=20261101-shifts-fixes-v4">
+  <link rel="stylesheet" href="./hud-clarity.css?v=20261101-hud-nav-v1">
   <script defer src="./src/menu.js?v=20261031-sync-preferencias"></script>
   <script defer src="./src/tutorial.js?v=20261031-fim-escolhas"></script>
   <script defer src="./src/house-renderer.js?v=20261031-fazenda-casa"></script>
@@ -112,9 +113,14 @@
         <section id="camera-ui" class="camera-ui" aria-label="Câmera e minimapa">
           <div class="camera-heading">
             <span class="camera-title">⌖ VISÃO DO VALE</span>
+            <div class="camera-header-actions">
+              <button id="camera-home" type="button" aria-label="Voltar ao centro da colônia" title="Voltar ao centro da colônia (H)">⌂</button>
             <button id="minimap-toggle" type="button" aria-controls="minimap" aria-expanded="true" title="Mostrar ou ocultar minimapa (M)">−</button>
+            </div>
           </div>
           <canvas id="minimap" width="224" height="144" tabindex="0" role="button" aria-label="Minimapa interativo: clique ou use as setas para deslocar a câmera" title="Clique para deslocar a câmera"></canvas>
+          <details id="biome-details" class="biome-details">
+            <summary>🌍 Regiões e recursos</summary>
           <div id="biome-legend" class="biome-legend" role="group" aria-label="Ir para um bioma">
             <button type="button" data-visit-biome="g" title="Ir para a pradaria"><i style="--swatch:#a4d17c"></i>Centro 🪨</button>
             <button type="button" data-visit-biome="f" title="Floresta: exige luvas resistentes"><i style="--swatch:#638b57"></i>Bosque 🥉</button>
@@ -124,6 +130,7 @@
             <button type="button" data-visit-biome="p" title="Cogumelos tóxicos: exige máscara filtrante"><i style="--swatch:#8b719e"></i>Cogumelos 🔶</button>
             <p class="biome-protection-note">⛏️ Picaretas: pedra → bronze → ferro → diamante · 🧤🧣🧥🥾😷 EPI individual <strong>O último continente fornece bauxita para fabricar a liga do foguete.</strong></p>
           </div>
+          </details>
           <div class="camera-controls" role="group" aria-label="Controle de zoom do mapa">
             <button id="zoom-out" type="button" aria-label="Diminuir zoom">−</button>
             <output id="zoom-value" aria-live="polite">100%</output>
