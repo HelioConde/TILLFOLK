@@ -17,7 +17,10 @@ function colony(){
     homes:team.map((w,i)=>({x:21,y:2+3*i,residentId:w.id})),
     chests:[],wells:[],workstations:[{x:2,y:2}],
     crafting:{station:{x:2,y:2},equipment:{}},
-    inventory:{wood:200,stone:200,grass:200,mushroom:80,herbs:80},
+    // Estoque de teste de fim de jogo: inclui os materiais processados
+    // realmente exigidos pelo casco, motor e suporte de vida.
+    inventory:{wood:200,stone:200,grass:200,mushroom:80,herbs:80,
+      bronze:150,iron:150,diamond:80,aluminumAlloy:150,goldCircuit:80},
     food:90,water:45,colonyLife:{researchLevel:4,researchPoints:50},
     progression:{discovered:{f:{day:2},s:{day:3},i:{day:4},
       w:{day:5},p:{day:6}},achievements:{},chapters:{}}};
