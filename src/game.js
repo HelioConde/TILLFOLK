@@ -1828,7 +1828,11 @@
       const reason=diagnostics.get(t.id);
       const status=reason?"waiting":w?"working":"ready";
       const statusText=reason?"Aguardando":w?"Em execução":"Pronta";
-      const statusDetail=reason|| (w?escapeHtml(w.name)+" · trabalhando":"Aguardando atribuição");
+      const delivered=Logistics.costFor(t);
+      const materialStatus=Object.keys(delivered).length?
+        " · Entregue: "+Object.entries(delivered).map(([kind,qty])=>
+          (t.delivered?.[kind]||0)+"/"+qty+" "+kind).join(", "):"";
+      const statusDetail=(reason|| (w?escapeHtml(w.name)+" · trabalhando":"Aguardando atribuição"))+materialStatus;
       const progress=w?Math.min(100,Math.max(0,Math.round(w.progress*100))):0;
       return '<div class="task order-task '+(reason?"order-blocked":"")+'" data-order-state="'+status+'">'+
         '<div class="order-task-main"><div class="order-task-title">'+
@@ -1837,7 +1841,7 @@
         '<small>Terreno '+(t.x+1)+', '+(t.y+1)+' · '+escapeHtml(statusDetail)+'</small>'+
         (w?'<div class="order-progress" role="progressbar" aria-label="Progresso da tarefa" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+progress+'"><i style="width:'+progress+'%"></i></div>':'')+
         '</div><div class="order-task-controls">'+
-        (["buildHome","buildStation"].includes(t.type)?
+        (["buildHome","buildStation","buildChest"].includes(t.type)?
           '<button class="order-priority-edit" data-order-priority="'+t.id+'" data-delta="-1" aria-label="Diminuir prioridade da construção">−</button>'+
           '<b title="Prioridade da construção, de 1 a 9">P'+(t.priority??5)+'</b>'+
           '<button class="order-priority-edit" data-order-priority="'+t.id+'" data-delta="1" aria-label="Aumentar prioridade da construção">+</button>':
@@ -2247,6 +2251,7 @@
         escapeHtml(recipe.name)+'</strong></div>').join(""):
       '<p>Nenhuma ferramenta. Fabrique equipamentos na Work Station para este colono.</p>';
     const items=Object.entries(worker.inventory.items).filter(([,amount])=>amount>0);
+    if(worker.inventory.carrying?.qty)items.unshift(["Em transporte: "+worker.inventory.carrying.kind,worker.inventory.carrying.qty]);
     $("#worker-inventory-items").innerHTML=items.length?
       items.map(([key,amount])=>'<span>'+escapeHtml(pickupTypes[key]?.name||key)+': '+amount+'</span>').join(""):
       '<p>Sem coletas registradas.</p>';
@@ -2700,7 +2705,8 @@
       const skills=person.skills.length
         ?person.skills.map(type=>{
           const seconds=Math.round(baseTime[type]/bonusForCandidate(person,type));
-          const description=labels[type]+': '+seconds+' segundos por ação (velocidade da especialidade, sem deslocamento). Bônus de +'+bonus+'% nesta especialidade.';
+          const description=labels[type]+': '+seconds+' segundos por ação (sem deslocamento). Bônus de +'+bonus+'% nesta especialidade.'+
+            (type==="carry"?" Capacidade de carregar "+Logistics.capacity(person)+" unidades por viagem.":"");
           return '<button type="button" class="starter-chip specialty" data-specialty-tooltip="'+escapeHtml(description)+'" aria-label="'+escapeHtml(description)+'" aria-expanded="false">'+icons[type]+' '+labels[type]+' <span aria-hidden="true" class="chip-info">ⓘ</span></button>';
         }).join("")
         :'<span class="starter-chip none">Sem especialidade · velocidade normal</span>';
