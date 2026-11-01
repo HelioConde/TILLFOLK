@@ -27,6 +27,8 @@ jobs:
           node --test tests/terrain-autotile.test.cjs
           # Regra obrigatória: impede alterar posições, cantos e grade dos 9 terrenos.
           node --test tests/terrain-contract.test.cjs
+          # Água deve separar ilhas, sem cobrir as bordas do autotile fixo.
+          node --test tests/coast-water.test.cjs
           node --test tests/terrain-editor.test.cjs
           node --check src/wild-world.js
           node --test tests/biome-rivers.test.cjs tests/bridge-geometry.test.cjs tests/continent-protection.test.cjs tests/wildlife-animations.test.cjs
