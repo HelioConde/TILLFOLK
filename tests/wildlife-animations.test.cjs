@@ -14,20 +14,39 @@ function pngDimensions(filename){
   assert.equal(bytes.toString("hex",0,8),"89504e470d0a1a0a",filename);
   return {naturalWidth:bytes.readUInt32BE(16),naturalHeight:bytes.readUInt32BE(20)};
 }
-test("catálogo de 8 espécies possui apenas animações do repositório, 4 direções quando disponíveis",()=>{
+test("catálogo de 8 espécies usa somente sprites finais do repositório",()=>{
   const species=Object.keys(Exploration.ANIMATIONS);
   assert.deepEqual(species.sort(),["bat","bird","chicken","cow","fox","frog","pig","rabbit"]);
   const files=Exploration.spriteSources();
-  assert.ok(files.length>=40,"catálogo não contém todas as direções");
+  assert.ok(files.length>=8,"catálogo não contém todas as espécies");
   for(const entry of files){
     assert.ok(entry.key.startsWith("wild_"));
     assert.ok(entry.url.startsWith("./public/assets/"));
-    assert.ok(!entry.url.includes("FREE%2064%20Tiny%20Animals"),"não reutilizar pack estático");
+    assert.ok(!entry.url.includes("assets_premium_preview"),"não usar sprites preview");
     const file=path.join(root,decodeURIComponent(entry.url.slice(2)));
     assert.ok(fs.existsSync(file),"ausente: "+file);
     const {naturalWidth,naturalHeight}=pngDimensions(file);
     assert.ok(naturalWidth>=16&&naturalHeight>=16,"PNG muito pequeno: "+file);
   }
+});
+test("vacas e galinhas usam animações originais e os demais bichos não usam previews",()=>{
+  const cow=Exploration.ANIMATIONS.cow.clips.idle;
+  const chicken=Exploration.ANIMATIONS.chicken.clips.idle;
+  assert.match(cow.path,/Sprout Lands.*Animals\/Cow\//);
+  assert.match(chicken.path,/Sprout Lands.*Animals\/Chicken\//);
+  assert.equal(cow.frames,3);
+  assert.equal(chicken.frames,4);
+  for(const kind of ["rabbit","fox","pig","bird"]){
+    const frame=Exploration.ANIMATIONS[kind].clips.idle;
+    assert.match(frame.path,/FREE 64 Tiny Animals/);
+    assert.equal(frame.frames,1,"não fingir animação de sprite estático");
+  }
+  const left=Exploration.spriteFrame({kind:"fox",biome:"f",facing:"left",moving:true},350);
+  const right=Exploration.spriteFrame({kind:"fox",biome:"f",facing:"right"},350);
+  assert.equal(left.flip,true);
+  assert.equal(right.flip,false);
+  assert.ok(left.lift>=0);
+  assert.equal(right.lift,0);
 });
 test("quadros de animação cabem nos atlas sem repetir a spritesheet inteira",()=>{
   const animals=["rabbit","fox","cow","pig","bird","chicken","frog","bat"];
@@ -41,8 +60,7 @@ test("quadros de animação cabem nos atlas sem repetir a spritesheet inteira",(
         const dims=pngDimensions(path.join(root,decodeURIComponent(file.url.slice(2))));
         const rect=Exploration.frameRect(frame,dims);
         assert.ok(rect,"frame inválido para "+frame.key);
-        const required=frame.frame.frames===4?4:
-          frame.frame.frames===6?6:
+        const required=Number.isInteger(frame.frame.frames)?frame.frame.frames:
           frame.frame.frames==="auto-square"||frame.frame.frames==="auto-16"?2:1;
         const detected=Math.floor(dims.naturalWidth/rect.sw);
         assert.ok(detected>=required,
