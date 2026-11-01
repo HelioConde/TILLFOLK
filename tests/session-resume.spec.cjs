@@ -22,7 +22,7 @@ test("sem save abre menu, mas atualizar uma partida aberta retorna ao jogo",asyn
   await page.locator('[data-speed="0"]').click();
   const before=await snapshot(page);
   expect(before.sessionSpeed).toBe(0);
-  await page.reload({waitUntil:"networkidle"});
+  await page.reload({waitUntil:"domcontentloaded"});
   await expect(page.locator("#menu")).toBeHidden();
   await expect(page.locator("body")).toHaveClass(/play-session/);
   await expect(page.locator("#world")).toBeVisible();
@@ -63,7 +63,7 @@ test("retornar ao menu é respeitado no reload; Continuar reativa retomada autom
   await expect(page.locator("#mission-card")).toHaveAttribute("hidden","");
   await page.screenshot({path:"screenshots/menu-sem-missao-sobreposta.png",animations:"disabled"});
   expect(await page.evaluate(()=>localStorage.getItem("tillfolk-session-mode"))).toBe("menu");
-  await page.reload({waitUntil:"networkidle"});
+  await page.reload({waitUntil:"domcontentloaded"});
   await expect(page.locator("#menu")).toBeVisible();
   await expect(page.locator("#mission-card")).toBeHidden();
   await expect(page.locator("#continue")).toBeEnabled();
@@ -72,7 +72,7 @@ test("retornar ao menu é respeitado no reload; Continuar reativa retomada autom
   await expect(page.locator("#mission-card")).toBeVisible();
   expect((await snapshot(page)).world.seed).toBe(before.world.seed);
   expect(await page.evaluate(()=>localStorage.getItem("tillfolk-session-mode"))).toBe("play");
-  await page.reload({waitUntil:"networkidle"});
+  await page.reload({waitUntil:"domcontentloaded"});
   await expect(page.locator("#menu")).toBeHidden();
 });
 
@@ -80,7 +80,7 @@ test("salvamento antigo sem indicador de sessão retoma automaticamente",async({
   await beginFarm(page);
   const initial=await snapshot(page);
   await page.evaluate(()=>localStorage.removeItem("tillfolk-session-mode"));
-  await page.reload({waitUntil:"networkidle"});
+  await page.reload({waitUntil:"domcontentloaded"});
   await expect(page.locator("#menu")).toBeHidden();
   expect((await snapshot(page)).world.seed).toBe(initial.world.seed);
 });
@@ -91,7 +91,7 @@ test("save corrompido não é substituído por um mundo novo",async({page})=>{
     localStorage.setItem("tillfolk-v01","{save-invalido");
     localStorage.setItem("tillfolk-session-mode","play");
   });
-  await page.reload({waitUntil:"networkidle"});
+  await page.reload({waitUntil:"domcontentloaded"});
   await expect(page.locator("#menu")).toBeVisible();
   expect(await page.evaluate(()=>localStorage.getItem("tillfolk-v01"))).toBe("{save-invalido");
   await page.locator("#continue").click();
