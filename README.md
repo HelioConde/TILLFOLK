@@ -5,6 +5,8 @@
 
 **Documentos centrais:** [GDD completo](./docs/GDD_TILLFOLK.md) · [Roadmap de sobrevivência](./docs/ROADMAP_SOBREVIVENCIA.md) · [Plano visual e QA](./docs/ROADMAP_VISUAL.md).
 
+**Novidade de jogabilidade (01/11):** após o tutorial, escolha um dos **Mutirões do Vale**. Os objetivos curtos acompanham ordens de trabalho reais, dão um bônus limitado de moral e renovam após o próximo dia, sem destruir o ritmo de sobrevivência. [Design e QA](./docs/ENGAJAMENTO_E_RETENCAO.md).
+
 **Regra visual permanente:** [autotile oficial 16×16, 11×7, 8 vizinhos — NÃO ALTERAR](./docs/AUTOTILE_PADRAO_IMUTAVEL.md). Os nove atlases de solo compartilham o mesmo mapeamento de bordas e cantos; melhorias de cenário não devem remapear o tilemap.
 
 ## Como o jogo deve funcionar
