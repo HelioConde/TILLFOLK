@@ -1889,7 +1889,8 @@
     const upgrade=$("#colony-research-upgrade");
     if(upgrade)upgrade.disabled=level>=4||life.researchPoints<required||!state.crafting?.station;
     const workers=$("#colony-life-workers");
-    if(workers)workers.innerHTML=state.workers.map(w=>
+    // Não reconstruir <select> enquanto o jogador escolhe um turno no mobile.
+    if(workers&&!workers.contains(document.activeElement))workers.innerHTML=state.workers.map(w=>
       '<div class="colony-life-worker"><strong>'+escapeHtml(w.name)+'</strong>'+
       '<small>'+(w.resting?"💤 Descansando":w.energy<25?"⚠️ Exausto":"Disponível")+'</small>'+
       '<span class="colony-worker-needs"><span>⚡ Energia '+Math.round(w.energy||0)+'%</span>'+
