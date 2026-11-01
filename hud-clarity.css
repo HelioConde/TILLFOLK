@@ -1,0 +1,283 @@
+/* TILLFOLK — HUD legível e navegação de mapa (01/11/2026).
+   Camada visual isolada: não interfere na IA, no relógio, nos saves nem no autotile.
+   Consulte AGENTS.md antes de modificar qualquer terreno. */
+
+/* Indicador de fase só ganha espaço no topo quando o dia muda de fato.
+   Dia e hora permanecem sempre acessíveis, assim como comida e população. */
+body.play-session .topbar #day-night-metric:has(#day-night-phase[data-phase="day"]){
+  display:none!important;
+}
+body.play-session .topbar .metrics{
+  gap:4px!important;
+}
+body.play-session .topbar .metrics .metric{
+  min-width:61px!important;
+  padding:3px 6px!important;
+  grid-template-columns:15px auto!important;
+  column-gap:4px!important;
+}
+body.play-session .topbar .metrics .metric span{
+  font-size:13px!important;
+}
+body.play-session .topbar .metrics .metric small{
+  font-size:8px!important;
+}
+body.play-session .topbar .metrics .metric b{
+  font-size:13px!important;
+}
+body.play-session .topbar #colony-life-open{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:38px!important;
+  min-height:36px!important;
+  height:36px!important;
+  padding:4px 7px!important;
+  font-size:17px!important;
+}
+body.play-session .topbar #colony-life-open span{
+  display:none!important;
+}
+body.play-session .topbar .hud-panels{
+  gap:4px!important;
+}
+body.play-session .topbar .hud-panels button{
+  padding-inline:7px!important;
+  font-size:11px!important;
+}
+/* Avisos de crise nunca são ocultados para ganhar espaço. */
+body.play-session .topbar #survival-alert:not([hidden]){
+  border-color:#f5b89a!important;
+  background:#512f29!important;
+}
+body.play-session .topbar #survival-alert:not([hidden]) b{
+  color:#fff0c8!important;
+}
+
+/* Minimapa: priorizar localizar a colônia e navegar.
+   Biomas e EPI continuam disponíveis por expansão voluntária. */
+body.play-session .camera-ui{
+  width:194px;
+  gap:5px;
+  padding:7px;
+  max-height:calc(100dvh - 155px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:#a69261 transparent;
+}
+body.play-session .camera-header-actions{
+  display:flex;
+  gap:4px;
+  align-items:center;
+  margin-left:auto;
+}
+body.play-session .camera-ui #camera-home{
+  display:grid;
+  place-items:center;
+  min-width:30px;
+  min-height:29px;
+  padding:0;
+  cursor:pointer;
+  border:6px solid transparent;
+  border-image-source:var(--sprout-sheet-button-cream,var(--sprout-square-sheet));
+  border-image-slice:9 fill;
+  border-image-width:6px;
+  border-image-repeat:stretch;
+  background:none;
+  color:#493922;
+  font:900 15px/1 system-ui,sans-serif;
+}
+body.play-session .camera-ui #camera-home:hover{
+  border-image-source:var(--sprout-sheet-button-light,var(--sprout-square-sheet));
+}
+body.play-session .camera-ui #camera-home:focus-visible,
+body.play-session .biome-details summary:focus-visible{
+  outline:3px solid #ffe7a6;
+  outline-offset:2px;
+}
+body.play-session .biome-details{
+  min-width:0;
+  margin:0;
+}
+body.play-session .biome-details summary{
+  list-style:none;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  min-height:33px;
+  padding:5px 8px;
+  border:1px solid #a99a6b;
+  border-radius:3px;
+  background:#304b37;
+  color:#f9edc7;
+  cursor:pointer;
+  font:800 11px/1.2 system-ui,sans-serif;
+}
+body.play-session .biome-details summary::-webkit-details-marker{
+  display:none;
+}
+body.play-session .biome-details summary::after{
+  content:"+";
+  color:#ffdc98;
+  font:900 16px/1 system-ui,sans-serif;
+}
+body.play-session .biome-details[open] summary::after{
+  content:"−";
+}
+body.play-session .biome-details[open] summary{
+  background:#486449;
+  border-color:#e4c989;
+}
+body.play-session .biome-details .biome-legend{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:5px;
+  margin-top:7px;
+}
+body.play-session .biome-details .biome-legend button{
+  min-height:30px;
+  padding:4px 5px;
+  font-size:10px;
+}
+body.play-session .biome-details .biome-protection-note{
+  border-top:1px solid #728163;
+  margin-top:5px;
+  padding-top:7px;
+  font:600 10px/1.4 system-ui,sans-serif;
+}
+body.play-session .camera-help{
+  font-size:9px;
+  line-height:1.3;
+}
+body.play-session .full-map-trigger{
+  min-height:34px;
+}
+body.play-session .camera-title{
+  line-height:1.25;
+}
+
+/* Ações: uma única faixa contextual discreta + 5 ferramentas bem alinhadas. */
+body.play-session .tooltray{
+  padding:4px 7px!important;
+  gap:4px!important;
+}
+body.play-session .tooltray .tool-list{
+  gap:3px!important;
+}
+body.play-session .tooltray .tool{
+  width:67px!important;
+  min-width:65px!important;
+  min-height:65px!important;
+  height:65px!important;
+  grid-template-rows:39px 17px!important;
+  padding:2px!important;
+}
+body.play-session .hud-selection{
+  bottom:91px!important;
+  min-height:29px!important;
+  max-width:min(670px,calc(100vw - 24px))!important;
+  padding:3px 9px!important;
+  gap:7px!important;
+  border:1px solid #aa9765!important;
+  border-image:none!important;
+  border-radius:4px!important;
+  background:#263b2ff0!important;
+  box-shadow:0 3px 0 #1a261c!important;
+  color:#f8e9c2!important;
+}
+body.play-session .hud-selection .hud-key{
+  color:#d5c69d!important;
+}
+body.play-session .hud-selection strong{
+  color:#ffdfa0!important;
+  text-shadow:none!important;
+  white-space:nowrap;
+}
+body.play-session .hud-selection small{
+  color:#e9ead0!important;
+  text-shadow:none!important;
+  min-width:0;
+}
+body.play-session .hud-selection #drag-mode{
+  min-height:28px;
+  flex:none;
+}
+body.play-session .world-tag{
+  display:none!important;
+}
+body.play-session .tool:focus-visible,
+body.play-session .camera-ui button:focus-visible,
+body.play-session .biome-details summary:focus-visible{
+  outline:3px solid #fff1c2!important;
+  outline-offset:2px!important;
+}
+@media(max-width:900px){
+  body.play-session .camera-ui{
+    width:170px;
+    max-height:calc(100dvh - 180px);
+  }
+  body.play-session .biome-details .biome-legend{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  body.play-session .topbar .hud-panels button{
+    padding-inline:5px!important;
+  }
+}
+@media(max-width:760px){
+  body.play-session .hud-selection{
+    bottom:88px!important;
+    max-width:calc(100vw - 20px)!important;
+  }
+  body.play-session .hud-selection small{
+    display:none!important;
+  }
+  body.play-session .camera-ui{
+    max-height:calc(100dvh - 260px);
+  }
+}
+@media(max-width:460px){
+  body.play-session .camera-ui{
+    width:145px;
+    max-height:calc(100dvh - 315px);
+  }
+  body.play-session .biome-details summary{
+    min-height:33px;
+    padding:4px 5px;
+    font-size:10px;
+  }
+  body.play-session .biome-details .biome-legend{
+    grid-template-columns:1fr;
+  }
+  body.play-session .tooltray{
+    padding:3px 4px!important;
+  }
+  body.play-session .tooltray .tool{
+    width:auto!important;
+    min-width:0!important;
+    height:62px!important;
+    min-height:62px!important;
+    grid-template-rows:39px 15px!important;
+  }
+  body.play-session .hud-selection{
+    bottom:87px!important;
+    gap:4px!important;
+    padding:2px 6px!important;
+  }
+  body.play-session .hud-selection .hud-key{
+    display:none!important;
+  }
+  body.play-session .hud-selection #drag-mode{
+    font-size:9px!important;
+  }
+  body.play-session .topbar .metrics .metric{
+    min-width:0!important;
+    padding:2px 4px!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  body.play-session .biome-details *,
+  body.play-session .hud-selection{
+    transition:none!important;
+    animation:none!important;
+  }
+}
