@@ -25,7 +25,11 @@ for(const size of [{width:1600,height:900},{width:1366,height:768},{width:390,he
     expect(coords.speed.right).toBeLessThanOrEqual(coords.width+1);
     expect(coords.panels.right).toBeLessThanOrEqual(coords.width+1);
     expect(coords.menu.right).toBeLessThanOrEqual(coords.width+1);
-    expect(coords.metrics.right).toBeLessThanOrEqual(coords.speed.left+2);
+    if(size.width<=560){
+      expect(coords.metrics.bottom).toBeLessThanOrEqual(coords.speed.top+2);
+    }else{
+      expect(coords.metrics.right).toBeLessThanOrEqual(coords.speed.left+2);
+    }
     await page.locator("#hud-stats-toggle").click();
     await expect(page.locator("#hud-extra-stats")).toBeVisible();
     await expect(page.locator("#hud-stats-toggle")).toHaveAttribute("aria-expanded","true");

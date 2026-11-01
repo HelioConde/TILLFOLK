@@ -263,7 +263,11 @@ test('Velocidade no topo: pausado, 1×, 3×, 6× e barra inferior sem controles'
       expect(geometry.speed.right).toBeLessThanOrEqual(geometry.panels.left+2);
     }else{
       expect(geometry.speed.top).toBeGreaterThan(geometry.panels.top+2);
-      expect(geometry.metrics.right).toBeLessThanOrEqual(geometry.speed.left+2);
+      if(viewport.width<=560){
+        expect(geometry.metrics.bottom).toBeLessThanOrEqual(geometry.speed.top+2);
+      }else{
+        expect(geometry.metrics.right).toBeLessThanOrEqual(geometry.speed.left+2);
+      }
     }
     await speed.locator('[data-speed="0"]').click();
     await expect(speed.locator('[data-speed="0"]')).toHaveClass(/chosen/);
