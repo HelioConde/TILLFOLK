@@ -36,7 +36,8 @@
     // Saves anteriores tinham acesso irrestrito a ferramentas: preservar seu progresso.
     const equipment={...equipped};
     for(const key of Object.keys(equipment))
-      equipment[key]=legacy||raw?.equipment?.[key]===true||
+      equipment[key]=(legacy&&["axe","shovel","pickaxe","hoe","wateringCan"].includes(key))||
+        raw?.equipment?.[key]===true||
         (key==="axe"&&raw?.equipment?.stoneAxe===true);
     const station=raw?.station&&Number.isInteger(raw.station.x)&&Number.isInteger(raw.station.y)
       ?{x:raw.station.x,y:raw.station.y}:null;
