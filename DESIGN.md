@@ -7,6 +7,7 @@
 - HUD compacto de sobrevivência: comida, dias restantes, colonos vivos, risco, prioridade, velocidade, moradias livres; deixar a fazenda protagonista.
 - Sem visual genérico SaaS, gradientes neon, glassmorphism ou ícones misturados sem regra.
 - Pixel art sem blur: `image-rendering: pixelated`; evitar desenhar sprites em escalas que distorçam pixels.
+- **Contrato obrigatório dos terrenos:** `docs/AUTOTILE_PADRAO_IMUTAVEL.md`. Nove atlas 176×112, células 16×16, 11×7, oito vizinhos, 20 papéis oficiais congelados no catálogo. Não substituir cantos, bordas ou camadas de terreno durante melhorias visuais. Teste: `node --test tests/terrain-contract.test.cjs`.
 
 ## Cores iniciais (conferir CSS real antes de alterar)
 | Papel | Cor | Uso |
