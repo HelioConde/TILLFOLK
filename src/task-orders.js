@@ -98,8 +98,12 @@
       if(!resources?.crafting?.station)return {state:"blocked",reason:"Construa a Work Station"};
       if(window.TillfolkCrafting.locked(resources,recipe.key))
         return {state:"blocked",reason:window.TillfolkCrafting.locked(resources,recipe.key)};
-      if(resources?.workers?.length&&resources.workers.every(w=>w.inventory?.tools?.[recipe.key]))
-        return {state:"done",reason:"Todos os colonos já possuem "+recipe.name};
+      if(recipe.type!=="material"&&resources?.workers?.length){
+        const eligible=resources.workers.filter(w=>window.TillfolkCrafting.canEquip(w,recipe.key));
+        if(!eligible.length)return {state:"blocked",reason:"Nenhum colono pode usar "+recipe.name};
+        if(eligible.every(w=>window.TillfolkCrafting.has(resources,recipe.key,w)))
+          return {state:"done",reason:"Todos os colonos habilitados já possuem "+recipe.name};
+      }
       const materials=window.TillfolkCrafting.missing(resources,recipe.cost);
       return materials.length?{state:"blocked",reason:"Materiais insuficientes para "+recipe.name}:
         {state:"ready",reason:"Ir até a Work Station e fabricar "+recipe.name};
