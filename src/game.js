@@ -52,6 +52,7 @@
     if(feedbackParticles.length>22)feedbackParticles.shift();
   }
   const pickupEffects=[],pickupHistory=[];
+  const chestImage=new Image();chestImage.src=Logistics.CHEST_SPRITE;
   const pickupTypes={
     twigs:{icon:"🌿",name:"Graveto"},grass:{icon:"🌾",name:"Fibra"},
     stone:{icon:"🪨",name:"Pedra"},wood:{icon:"🪵",name:"Madeira"},
@@ -440,6 +441,15 @@
   function tutorialTillSitePreferred(x,y){
     const station=state?.crafting?.station||state?.workstations?.[0];
     return !station||Math.hypot(x-station.x,y-station.y)>=TUTORIAL_TILL_STATION_GAP;
+  }
+  function chestSiteValid(x,y){
+    return x>=2&&y>=2&&x<W-2&&y<H-2&&Boolean(findPlot(x,y))&&
+      World.terrainAt(state.world,x,y).buildable&&
+      !World.at(state.world,x,y)&&!World.waterAt(state.world,x,y)&&
+      !occupiedByStation(x,y)&&!occupiedByHome(x,y)&&
+      !window.TillfolkHouseBuilder.occupied(state.house,x,y)&&
+      !state.chests?.some(c=>c.x===x&&c.y===y)&&
+      !state.orders.some(o=>o.x===x&&o.y===y&&o.type==="buildChest");
   }
   function homeSiteValid(x,y){
     if(x<2||y<2||x>=W-3||y>=H-3)return false;
@@ -1252,6 +1262,13 @@
       },position.x,position.y,{scale:1});
       if(home.residentId==null)write("LIVRE",x+TILE,y-21,"#e5f7ae",9);
     }
+    // Baús do pacote premium Sprout Lands, sem sprites improvisados.
+    if(valid(chestImage)){
+      for(const chest of state.chests||[])if(inView(chest.x,chest.y,2)){
+        ctx.imageSmoothingEnabled=false;
+        ctx.drawImage(chestImage,0,0,16,16,chest.x*TILE,chest.y*TILE-4,TILE,TILE);
+      }
+    }
     // Bancadas do atlas premium, colocadas somente após o colono concluir a obra.
     for(const ws of state.workstations||[]){
       if(!inView(ws.x,ws.y,2))continue;
@@ -1308,6 +1325,10 @@
         }
         ctx.fillStyle="#56aee280";ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
         ctx.strokeStyle="#a0e5ff";ctx.lineWidth=2;ctx.strokeRect(x+2,y+2,TILE-4,TILE-4);
+      }else if(order.type==="buildChest"&&inView(order.x,order.y,2)){
+        if(valid(chestImage))Blueprint.part(ctx,chestImage,0,0,16,16,
+          order.x*TILE,order.y*TILE-4,TILE,TILE,true,.7);
+        Blueprint.frame(ctx,order.x*TILE,order.y*TILE,TILE,TILE,true);
       }else if(order.type==="buildHome"&&inView(order.x,order.y,4))
         Blueprint.home(ctx,sprite,order.x,order.y,TILE,true);
       else if((order.type==="till"||order.type==="sow")&&inView(order.x,order.y,1)){
@@ -1426,6 +1447,11 @@
       if(x>=0&&y>=0&&x<W&&y<H){
         const valid=Boolean(getBuildEdit(x,y,eraseBuild).house);
         if(buildLayer==="home")Blueprint.home(ctx,sprite,x,y,TILE,valid);
+        else if(buildLayer==="chest"){
+          if(validImage(chestImage))Blueprint.part(ctx,chestImage,0,0,16,16,
+            x*TILE,y*TILE-4,TILE,TILE,valid,.72);
+          Blueprint.frame(ctx,x*TILE,y*TILE,TILE,TILE,valid);
+        }
         else if(buildLayer==="field")Blueprint.field(ctx,sprite,x,y,TILE,valid,true);
         else if(buildLayer==="station"){
           if(validImage(sprite.workstation)){
@@ -1961,6 +1987,7 @@
     if(!Number.isInteger(x)||!Number.isInteger(y)||x<1||y<1||x>=W-1||y>=H-1)
       return {error:"Escolha uma área dentro do vale."};
     if(buildLayer==="field")return canPlanField(x,y);
+    if(buildLayer==="chest")return chestSiteValid(x,y)?{house:true}:{error:"Baú precisa de solo livre."};
     if(buildLayer==="station")return stationSiteValid(x,y)?{house:true}:{error:"Oficina exige chão firme livre."};
     if(buildLayer==="station")return stationSiteValid(x,y)?
       {house:true}:{error:"Work Station precisa de um terreno livre."};
@@ -2075,6 +2102,14 @@
     if(!playing||selectedTool!=="construir")return;
     const result=getBuildEdit(x,y,erase);
     if(!result.house){$("#build-status").textContent=result.error;return;}
+    if(buildLayer==="chest"){
+      const test=Orders.add(state.orders,"buildChest",x,y,findPlot(x,y),World.at(state.world,x,y),state);
+      if(!test.order){$("#build-status").textContent=test.error;return;}
+      test.order.priority=state.buildPriority;pushBuildHistory();
+      state.orders.push(test.order);recalcTasks();refresh();save();
+      $("#build-status").textContent="🧰 Baú planejado: materiais precisam chegar fisicamente até aqui.";
+      return;
+    }
     if(buildLayer==="station"){
       const test=Orders.add(state.orders,"buildStation",x,y,findPlot(x,y),World.at(state.world,x,y),state);
       if(!test.order){$("#build-status").textContent=test.error;return;}
@@ -2106,6 +2141,8 @@
       "Cabana: prévia azul 2×2. Clique para atribuir à equipe; botão direito cancela.":
       buildLayer==="station"?
         "Work Station: junte 10 gravetos e planeje a bancada no chão livre. Clique direito cancela.":
+      buildLayer==="chest"?
+        "Baú: coloque uma blueprint e espere a equipe levar os recursos ao destino.":
         "Camada: "+btn.textContent.trim()+". Clique para construir ou use o botão direito para apagar.";
   }));
   function openWorkerInventory(worker){
