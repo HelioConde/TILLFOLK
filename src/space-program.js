@@ -24,11 +24,12 @@
     const stage=Math.min(STAGES.length,Math.max(0,Math.floor(Number(original.stage)||0)));
     const s=original.site&&Number.isInteger(original.site.x)&&Number.isInteger(original.site.y)?
       {x:original.site.x,y:original.site.y}:null;
-    state.rocket={version:1,stage:s?stage:0,site:s,
+    Object.assign(original,{version:1,stage:s?stage:0,site:s,
       launched:Boolean(original.launched&&s&&stage===STAGES.length),
       launchDay:original.launched&&s?Math.max(1,Math.floor(Number(original.launchDay)||1)):null,
-      crew:Array.isArray(original.crew)?original.crew.filter(n=>typeof n==="string").slice(0,LAUNCH.crew):[]};
-    return state.rocket;
+      crew:Array.isArray(original.crew)?original.crew.filter(n=>typeof n==="string").slice(0,LAUNCH.crew):[]});
+    state.rocket=original;
+    return original;
   }
   const stageCost=stage=>STAGES[stage]?.cost||{};
   const footprint=(x,y)=>Array.from({length:9},(_,i)=>({x:x+i%3,y:y+Math.floor(i/3)}));
