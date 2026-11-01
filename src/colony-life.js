@@ -44,6 +44,7 @@
      worker.energy=clamp(worker.energy,0,100);
      worker.morale=clamp(worker.morale,0,100);
      worker.resting=worker.resting===true;
+     worker.shift=['day','night','flex'].includes(worker.shift)?worker.shift:'day';
      worker.carryBonus=base.researchLevel>=4?1:0;
    }
    return state.colonyLife;
@@ -51,10 +52,23 @@
  function workMultiplier(w){
    return clamp(.72+(w.energy||0)/340+(w.morale||0)/400,.55,1.24);
  }
+ function sleepWindow(worker,minute){
+   const hour=((minute||0)%1440+1440)%1440/60;
+   if(worker?.shift==="night")return hour>=8&&hour<16;
+   if(worker?.shift==="flex")return false;
+   return hour>=21||hour<6;
+ }
  function sleepRequired(worker,minute){
    const hour=((minute||0)%1440+1440)%1440/60;
-   if(worker.resting)return !(worker.energy>=94||hour>=7&&worker.energy>=68);
-   return worker.energy<20||(hour>=21||hour<6)&&worker.energy<83;
+   const shift=worker.shift==="night"?"night":worker.shift==="flex"?"flex":"day";
+   const scheduled=sleepWindow(worker,minute);
+   if(worker.resting){
+     const wakeHour=shift==="night"?16:7;
+     if(worker.energy>=94)return false;
+     if(shift!=="flex"&&hour>=wakeHour&&hour<wakeHour+5&&worker.energy>=68)return false;
+     return true;
+   }
+   return worker.energy<20||(scheduled&&worker.energy<83);
  }
  function advance(state,elapsedMinutes){
    const life=normalize(state),passed=clamp(Number(elapsedMinutes)||0,0,60);
@@ -141,7 +155,7 @@
    return 1;
  }
  window.TillfolkColonyLife=Object.freeze({
-   normalize,season,weather,weatherLabels,workMultiplier,sleepRequired,
+   normalize,season,weather,weatherLabels,workMultiplier,sleepWindow,sleepRequired,
    advance,growthMultiplier,cropDuration,discover,cost,research,canAutomate,animalBirths,TECH
  });
 })();
