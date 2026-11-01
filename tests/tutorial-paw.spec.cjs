@@ -85,7 +85,7 @@ test("A patinha acompanha as etapas agrícolas, saída e a Oficina sobre o diál
    state.tutorial.active=true;state.tutorial.finished=false;state.tutorial.step=Number(requested);
    state.tutorial.version=5;
    // Controla os materiais para testar a indicação do botão da oficina.
-   state.inventory.twigs=100;state.inventory.grass=100;state.inventory.wood=100;
+   state.inventory.twigs=100;state.inventory.gravel=100;state.inventory.grass=100;state.inventory.wood=100;
    state.inventory.stone=100;
    state.firstHarvest=true;state.tutorial.stats.harvest=1;
    if(Number(requested)>=10){
@@ -201,7 +201,7 @@ test("A coleta de gravetos prioriza o spawn e não troca para o objeto visível 
   const craftingTwigTarget=paw.dataset.targetCell;
   const mapPoint=cell=>{
    const rect=canvas.getBoundingClientRect();
-   return {x:rect.left+rect.width*(cell.x+.5)/80,y:rect.top+rect.height*(cell.y+.5)/50};
+   return {x:rect.left+rect.width*(cell.x+.5)/(canvas.width/32),y:rect.top+rect.height*(cell.y+.5)/(canvas.height/32)};
   };
   const farPoint=mapPoint(farTwig),previousPan=parseFloat(canvas.style.getPropertyValue("--pan-x"))||0;
   canvas.style.setProperty("--pan-x",`${previousPan+viewport.left+viewport.width/2-farPoint.x}px`);
@@ -216,11 +216,11 @@ test("A coleta de gravetos prioriza o spawn e não troca para o objeto visível 
    farVisible:(()=>{const p=mapPoint(farTwig);return p.x>=viewport.left&&p.x<=viewport.right&&p.y>=viewport.top&&p.y<=viewport.bottom})()};
  });
  expect(result.initialTarget).toBe(`${result.nearTwig.x},${result.nearTwig.y}`);
- expect(result.craftingTwigTarget).toBeUndefined();
+ expect(result.craftingTwigTarget).toBe(`${result.nearTwig.x},${result.nearTwig.y}`);
  expect(result.farVisible).toBe(true);
  expect(result.afterPanTarget).toBeNull();
  expect(result.afterPanCraftingTarget).toBeNull();
- expect(result.label).toBe("Construa a Work Station primeiro");
+ expect(result.label).toMatch(/Mostrar o graveto perto do início|Mostrar objetivo no mapa/);
 });
 
 test("A Work Station sugere o espaço central válido, mesmo com o colono longe",async({page})=>{
@@ -246,15 +246,15 @@ test("A Work Station sugere o espaço central válido, mesmo com o colono longe"
   const paw=document.querySelector("#tillfolk-tutorial-paw");
   const suggested=paw.dataset.targetCell;
   const rect=canvas.getBoundingClientRect();
-  const farX=rect.left+rect.width*(nearWorker.x+.5)/80;
+  const farX=rect.left+rect.width*(nearWorker.x+.5)/(canvas.width/32);
   const previousPan=parseFloat(canvas.style.getPropertyValue("--pan-x"))||0;
   canvas.style.setProperty("--pan-x",`${previousPan+viewport.left+viewport.width/2-farX}px`);
   guide();
   // O deslocamento da câmera altera o bounding rect do canvas.
   // Medir novamente depois do pan, como o guia faz.
   const shiftedRect=canvas.getBoundingClientRect();
-  const point={x:shiftedRect.left+shiftedRect.width*(nearCenter.x+.5)/80,
-   y:shiftedRect.top+shiftedRect.height*(nearCenter.y+.5)/50};
+  const point={x:shiftedRect.left+shiftedRect.width*(nearCenter.x+.5)/(canvas.width/32),
+   y:shiftedRect.top+shiftedRect.height*(nearCenter.y+.5)/(canvas.height/32)};
   const stillVisible=point.x>=viewport.left+24&&point.x<=viewport.right-24&&
    point.y>=viewport.top+24&&point.y<=viewport.bottom-25;
   return {nearCenter,nearWorker,suggested,afterPan:paw.dataset.targetCell||null,
@@ -271,43 +271,53 @@ test("A Work Station sugere o espaço central válido, mesmo com o colono longe"
  }
 });
 
-test("A missão da enxada aponta primeiro para a Work Station antes dos materiais",async({page},testInfo)=>{
+test("A missão da enxada aponta cascalho e Mostrar no mapa localiza a pedrinha",async({page},testInfo)=>{
  await page.setViewportSize({width:1600,height:900});
  await page.goto("http://127.0.0.1:4173/",{waitUntil:"networkidle"});
  await page.locator("#new-game").click();
  await page.locator('[data-game-mode="relaxed"]').click();
  await page.locator("#starter-confirm").click();
  await page.addInitScript(()=>{
-  const raw=localStorage.getItem("tillfolk-v01");
-  if(!raw)return;
-  const state=JSON.parse(raw);
-  state.tutorial.active=true;state.tutorial.finished=false;state.tutorial.step=1;state.tutorial.version=5;
-  state.crafting.station={x:40,y:25};state.workstations=[{x:40,y:25}];
-  state.inventory.twigs=10;state.inventory.grass=0;
-  localStorage.setItem("tillfolk-v01",JSON.stringify(state));
+   const raw=localStorage.getItem("tillfolk-v01");if(!raw)return;
+   const state=JSON.parse(raw);
+   state.tutorial.active=true;state.tutorial.finished=false;state.tutorial.step=1;
+   state.tutorial.version=5;state.inventory.twigs=10;
+   state.inventory.gravel=Number(sessionStorage.getItem("pointer-gravel-ready")||0);
+   const origin=state.spawn||{x:96,y:60};
+   const pebble=state.world.objects.find(o=>o.kind==="pebble"&&
+     Math.hypot(o.x-origin.x,o.y-origin.y)<12);
+   if(!pebble)throw new Error("O mapa inicial precisa conter cascalho para o tutorial");
+   state.crafting.station={x:origin.x+2,y:origin.y+2};
+   state.workstations=[{x:origin.x+2,y:origin.y+2}];
+   localStorage.setItem("tillfolk-v01",JSON.stringify(state));
  });
  await page.reload({waitUntil:"networkidle"});
  const paw=page.locator("#tillfolk-tutorial-paw");
- await page.screenshot({path:testInfo.outputPath("hoe-workstation-after-desktop.png"),animations:"disabled"});
  await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 2 / 11");
- await expect(paw).toContainText(/Clique na Work Station para fabricar a enxada/);
- await expect(paw).toHaveClass(/over-map/);
- await expect(paw).toHaveAttribute("data-target-cell","40,25");
- await page.setViewportSize({width:390,height:844});
  await expect(paw).toBeVisible();
- await expect(paw).toContainText(/Clique na Work Station para fabricar a enxada|Abra a Oficina para fabricar/);
- await page.screenshot({path:testInfo.outputPath("hoe-workstation-after-mobile.png"),animations:"disabled"});
- await page.setViewportSize({width:1600,height:900});
- const stationPoint=await page.locator("#world").evaluate(canvas=>{
-  const rect=canvas.getBoundingClientRect();
-  return {x:rect.left+rect.width*(40.5/80),y:rect.top+rect.height*(25.5/50)};
- });
- await page.mouse.click(stationPoint.x,stationPoint.y);
+ await expect(paw).toContainText(/Recolha este cascalho|Mostrar a pedrinha mais próxima/);
+ const cell=await paw.getAttribute("data-target-cell");
+ expect(cell).toBeTruthy();
+ const mapTarget=await page.evaluate(cell=>{
+   const [x,y]=cell.split(",").map(Number),canvas=document.querySelector("#world");
+   const rect=canvas.getBoundingClientRect();
+   return {x:rect.left+rect.width*(x+.5)/(canvas.width/32),
+     y:rect.top+rect.height*(y+.5)/(canvas.height/32)};
+ },cell);
+ const aim=await paw.evaluate(el=>({x:Number(el.dataset.aimX),y:Number(el.dataset.aimY)}));
+ expect(aim.x).toBeCloseTo(mapTarget.x,0);
+ expect(aim.y).toBeCloseTo(mapTarget.y,0);
+ await page.screenshot({path:testInfo.outputPath("hoe-gravel-pointer-desktop.png"),animations:"disabled"});
+ await page.locator("#mission-locate").click();
+ await expect(paw).toContainText("Recolha este cascalho");
+ await expect(paw).toHaveAttribute("data-target-cell",cell);
+ await page.evaluate(()=>sessionStorage.setItem("pointer-gravel-ready","3"));
+ await page.reload({waitUntil:"networkidle"});
+ await expect(paw).toContainText("Abra a Oficina para fabricar");
+ await page.locator("#open-workshop").click();
  await expect(page.locator("#workshop-dialog")).toBeVisible();
- await expect(paw).toContainText("Feche a Oficina e recolha fibras da grama");
- await page.locator("#workshop-dialog .modal-x").click();
- await expect(paw).toContainText("Recolha fibras da grama");
- await expect(paw).toHaveClass(/over-map/);
+ await expect(paw).toContainText("Fabrique esta ferramenta");
+ await expectPawTargetsElement(paw,'[data-craft-tool="hoe"]');
 });
 
 test("A primeira área arada fica afastada da Work Station quando há solo livre",async({page},testInfo)=>{
