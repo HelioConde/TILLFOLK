@@ -46,8 +46,12 @@
     for(const worker of workers)for(const key of Object.keys(worker.inventory?.tools||{})){
       if(!worker.inventory.tools[key]||canEquip(worker,key))continue;
       const receiver=workers.find(other=>other!==worker&&canEquip(other,key)&&!other.inventory?.tools?.[key]);
-      worker.inventory.tools[key]=false;
-      if(receiver)normalizeWorker(receiver).tools[key]=true;
+      // Sem um destinatário compatível, preserve o item no save legado sem
+      // permitir seu uso. Uma contratação futura poderá recebê-lo.
+      if(receiver){
+        worker.inventory.tools[key]=false;
+        normalizeWorker(receiver).tools[key]=true;
+      }
     }
   }
   function normalize(raw,legacy=false){

@@ -178,3 +178,8 @@ Estes rótulos descrevem o design e o código inspecionado, não certificam a au
 - Teremos futuramente calor, gases, poluição e doenças com complexidade similar à inspiração, ou versões simplificadas adaptadas à perspectiva 2D?
 
 Registrar escolhas neste documento **antes** de alterar a mecânica correspondente. Não confundir visão futura com status de implementação.
+
+
+### Integridade de equipamentos em salvamentos antigos (01/11/2026)
+
+Se um trabalhador antigo carrega ferramenta incompatível com um traço vermelho e não houver outro colono apto, a ferramenta **não é apagada do salvamento** nem pode ser usada por ele. Assim que um trabalhador apto for contratado, o equipamento pode ser transferido uma única vez, sem duplicação ou consumo de recursos. A regra vale para ferramentas de plantio e mineração, inclusive picaretas avançadas.
