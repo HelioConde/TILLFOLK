@@ -37,7 +37,10 @@
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
       const center=(x+.5)/w,ny=(y+.5)/h;
       const distanceStart=Math.hypot((x-w/2)/1.25,(y-h/2)/1.1);
-      if(distanceStart<14||legacyRect&&x<legacyRect.width&&y<legacyRect.height){
+      // Novo arquipélago: ilha central maior, com ~60×52 tiles de pradaria segura.
+      // O atlas 16×16 e todas as máscaras de autotile permanecem inalterados.
+      const islandRadius=w>=160&&h>=100?28:14;
+      if(distanceStart<islandRadius||legacyRect&&x<legacyRect.width&&y<legacyRect.height){
         result.push("g");continue;
       }
       const warpX=(smooth(seed+31,x/18,y/18)-.5)*.11,
