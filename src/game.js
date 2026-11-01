@@ -1243,6 +1243,7 @@
       }
       assignHomes();
       showPickup(t.x,t.y,"home");
+      recordTutorial("home");
       Life.discover(state,2);
       log(w.name+" concluiu uma cabana. "+housingVacancy()+" vaga(s) livres.");return true;
     }
@@ -1285,10 +1286,13 @@
             Life.discover(state,2);
           }
           showPickup(t.x,t.y,resource,amount);
+          if(kind==="tree")recordTutorial("tree");
           // Grama alta tem chance de soltar uma semente. Não existe semente infinita.
           if(kind==="grass"){
             recordTutorial("grass");
-            if(Math.random()<.25){
+            // Primeira semente da missão não depende da sorte.
+            const firstSeedTutorial=Missions.current(state)?.key==="seed"&&state.seeds===0;
+            if(firstSeedTutorial||Math.random()<.25){
               const region=World.terrainAt(state.world,t.x,t.y)?.id||"g";
               // A primeira semente do jogador sempre é batata, própria do vale inicial.
               const variety=state.tutorial?.active&&!state.tutorial.stats?.seed?
@@ -1984,12 +1988,15 @@
         return;
       }
       // Checar se o jogador já marcou o serviço. Nunca criar tarefas pelo diálogo.
-      const desired=quest.key==="workstation"?"buildStation":["hoe","wateringCan","axe"].includes(quest.key)?null:step<=3?"clear":({till:"till",sow:"sow",water:"water",
-        harvest:"harvest",carry:"carry",plan:"buildHome"})[quest.key];
+      const desired=quest.key==="workstation"?"buildStation":
+        ["hoe","wateringCan","axe"].includes(quest.key)?null:
+        ["grass","seed","tree"].includes(quest.key)?"clear":
+        ({till:"till",sow:"sow",water:"water",
+          harvest:"harvest",carry:"carry",home:"buildHome",plan:"buildHome"})[quest.key];
       const relevantOrders=state.orders.filter(order=>order.type===desired);
       const assigned=visible.filter(w=>relevantOrders.some(order=>order.id===w.task));
       const hasWork=relevantOrders.length>0||
-        (quest.key==="plan"&&state.orders.some(order=>["till","sow","buildHome"].includes(order.type)));
+        (["plan","home"].includes(quest.key)&&state.orders.some(order=>["till","sow","buildHome"].includes(order.type)));
       const mode=speechScene.sequence===0?"intro":hasWork?"working":"waiting";
       // Alternar falantes de maneira estável. Se um estiver trabalhando, pode responder.
       const speaker=assigned.length&&mode==="working"?
@@ -3573,8 +3580,13 @@
     const distance=p=>(p.x-(state.spawn?.x??W/2))**2+(p.y-(state.spawn?.y??H/2))**2;
     const nearest=items=>items.sort((a,b)=>distance(a)-distance(b))[0];
     const objects=state.world.objects||[];
+    const needsHomeWood=step.key==="home"&&Logistics.available(state,"wood")<HOME_WOOD_COST;
     let candidates=[];
     if(step.target==="grass")candidates=objects.filter(item=>item.kind==="grass");
+    else if(step.target==="tree")candidates=objects.filter(item=>item.kind==="tree");
+    else if(step.target==="home")candidates=needsHomeWood?
+      objects.filter(item=>["tree","stump","log"].includes(item.kind)):
+      state.plots.filter(p=>homeSiteValid(p.x,p.y));
     else if(step.target==="workstation")candidates=Logistics.available(state,"twigs")<Crafting.STATION_COST?
       objects.filter(item=>item.kind==="twig"):
       state.plots.filter(p=>stationSiteValid(p.x,p.y));
@@ -3605,7 +3617,8 @@
       setTool("universal");
     }
     const target=nearest(candidates);
-    if(step.target==="workstation"&&Logistics.available(state,"twigs")<Crafting.STATION_COST){setTool("universal");}
+    if((step.target==="workstation"&&Logistics.available(state,"twigs")<Crafting.STATION_COST)||
+      needsHomeWood){setTool("universal");}
     else if(step.tool==="construir"){
       setTool("construir");
       $(step.target==="workstation"?'[data-build-layer="station"]':'[data-build-layer="home"]').click();
@@ -3616,6 +3629,9 @@
       notify(step.target==="workstation"&&Logistics.available(state,"twigs")<Crafting.STATION_COST?"Graveto encontrado! Use Universal para recolhê-lo.":
         ["axe","hoe","wateringCan"].includes(step.target)?"Material encontrado! Clique com Universal para recolher.":
         step.target==="grass"?"Tufo de grama encontrado! Marque a ordem de Limpar.":
+        step.target==="tree"?"Árvore encontrada! Ordene o corte com o machado equipado.":
+        needsHomeWood?"Busque madeira! Derrube árvores e remova tocos até reunir 8 madeiras.":
+        step.target==="home"?"Local válido! Escolha onde construir a cabana 2×2.":
         "Local sugerido destacado. Clique no terreno para dar a ordem.");
     }else{
       notify(step.target==="harvest"?"A cultura ainda está crescendo. Use 3× ou 6× para esperar.":"Não encontrei alvo pronto. Explore o mapa ou use Ordens.");
@@ -3778,7 +3794,7 @@
       pawNextUpdate=now+130;
       window.TillfolkTutorialPointer?.guide({playing,state,
         quest:state?Missions.current(state):null,selectedTool,buildLayer,canvas,cameraZoom,
-        stationSiteValid,tutorialTillSitePreferred});
+        stationSiteValid,homeSiteValid,tutorialTillSitePreferred});
     }
     if(playing&&now-lastMinimapFrame>350){paintMinimap();lastMinimapFrame=now;}
     requestAnimationFrame(loop);
