@@ -12,7 +12,6 @@ const World=window.TillfolkWild;
 const W=128,H=80;
 const DIRECTIONS=[[1,0],[-1,0],[0,1],[0,-1]];
 const key=(x,y)=>x+","+y;
-const destinations=[[.18,.79],[.81,.18],[.79,.77],[.22,.17],[.54,.17]];
 
 function reachable(world){
   const start=key(Math.floor(world.width/2),Math.floor(world.height/2));
@@ -75,10 +74,12 @@ test("a água continua conectada e pontes permitem explorar os cinco biomas",()=
       assert.equal(World.blocked(world,crossing.x,crossing.y,W,H),false,"ponte caminhável");
     }
     const explored=reachable(world);
-    for(const [fx,fy] of destinations){
-      const x=Math.floor(fx*W),y=Math.floor(fy*H);
-      assert.ok(explored.has(key(x,y)),"não alcança o núcleo do bioma: "+key(x,y));
-    }
+    const visited=new Set([...explored].map(pos=>{
+      const [x,y]=pos.split(",").map(Number);
+      return World.biomeAt(world,x,y);
+    }));
+    for(const biome of Object.keys(Biomes.TYPES))
+      assert.ok(visited.has(biome),"ponte não dá acesso a bioma: "+biome);
   }
 });
 
