@@ -70,6 +70,9 @@ test("A patinha Sprout Lands conduz coleta, Objetos, Work Station e colocação"
 });
 
 test("A patinha acompanha as etapas agrícolas, saída e a Oficina sobre o diálogo",async({page})=>{
+ // Onze recargas reais do jogo: o tempo total do teste não pode ficar no
+ // padrão de 30 s, especialmente no runner sem cache de imagens.
+ test.setTimeout(150000);
  const errors=[];page.on("pageerror",e=>errors.push(e.message));
  await page.setViewportSize({width:1600,height:900});
  await page.goto("http://127.0.0.1:4173/",{waitUntil:"networkidle"});
@@ -95,7 +98,7 @@ test("A patinha acompanha as etapas agrícolas, saída e a Oficina sobre o diál
  });
  for(const index of Array.from({length:11},(_,index)=>index)){
    await page.evaluate(step=>sessionStorage.setItem("tillfolk-paw-test-step",String(step)),index);
-   await page.reload({waitUntil:"networkidle"});
+   await page.reload({waitUntil:"domcontentloaded"});
    await expect(page.locator("#mission-card")).toBeVisible();
    await expect(paw).toBeVisible();
    await expect(paw).not.toBeEmpty();
@@ -103,7 +106,7 @@ test("A patinha acompanha as etapas agrícolas, saída e a Oficina sobre o diál
    await expectPawAimsAtGuidePoint(paw);
  }
  await page.evaluate(()=>sessionStorage.setItem("tillfolk-paw-test-step","10"));
- await page.reload({waitUntil:"networkidle"});
+ await page.reload({waitUntil:"domcontentloaded"});
  await page.locator("#open-workshop").click();
  await expect(page.locator("#workshop-dialog")).toBeVisible();
  await expect(paw).toBeVisible();
