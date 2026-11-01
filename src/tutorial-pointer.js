@@ -71,7 +71,7 @@
       y:box.top+box.height*(cell.y+.5)/height};
   }
   function guide({playing,state,quest,selectedTool,buildLayer,canvas,cameraZoom=1,
-    stationSiteValid,tutorialTillSitePreferred}){
+    stationSiteValid,homeSiteValid,tutorialTillSitePreferred}){
     if(!playing||!state||!quest||!document.body.classList.contains("play-session")){hide();return;}
     const modal=document.querySelector("dialog[open]");
     // Dialogs are drawn in the browser top layer: a fixed div outside them
@@ -180,6 +180,33 @@
         targetButton("#mission-locate","Encontre os materiais da receita");return;
       }
       targetButton("#open-workshop","Abra a Oficina para fabricar");return;
+    }
+    if(quest.key==="tree"){
+      if(!["universal","clear"].includes(selectedTool)){
+        targetButton('.tool[data-tool="universal"]',"Selecione Universal para cortar");return;
+      }
+      targetCell(state.world.objects.filter(o=>o.kind==="tree"),
+        "Derrube esta árvore com o machado",true,true,"Mostrar árvore no mapa");return;
+    }
+    if(quest.key==="home"){
+      const building=state.orders.find(o=>o.type==="buildHome");
+      if(building){targetCell([building],"A equipe está construindo o abrigo");return;}
+      const wood=window.TillfolkLogistics?.available(state,"wood")??0;
+      if(wood<8){
+        if(!["universal","clear"].includes(selectedTool)){
+          targetButton('.tool[data-tool="universal"]',"Selecione Universal para buscar madeira");return;
+        }
+        targetCell(state.world.objects.filter(o=>["tree","stump","log"].includes(o.kind)),
+          "Reúna 8 madeiras para a cabana",true,true,"Encontrar madeira para a casa");return;
+      }
+      if(selectedTool!=="construir"){
+        targetButton('.tool[data-tool="construir"]',"Abra Objetos para construir a cabana");return;
+      }
+      if(buildLayer!=="home"){
+        targetButton('[data-build-layer="home"]',"Selecione Cabana");return;
+      }
+      targetCell((state.plots||[]).filter(p=>!homeSiteValid||homeSiteValid(p.x,p.y)),
+        "Posicione a cabana 2×2",false,true,"Encontre um espaço livre para a casa");return;
     }
     if(["grass","seed"].includes(quest.key)){
       if(!["universal","clear"].includes(selectedTool)){
