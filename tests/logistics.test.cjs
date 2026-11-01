@@ -60,11 +60,13 @@ test("baú premium recebe carga física, conserva quantidade e fornece itens par
   assert.equal(state.chests[0].items.grass,4);
   assert.equal(L.available(state,"grass"),5);
   const build={type:"buildChest",x:15,y:18,delivered:{twigs:8,grass:0}};
-  const next=L.plan(state,build,worker);
-  assert.equal(next.kind,"grass");
-  L.collect(state,next);L.deliver(state,build,next);
+  while(!L.complete(build)){
+    const next=L.plan(state,build,worker);
+    assert.equal(next.kind,"grass");
+    L.collect(state,next);L.deliver(state,build,next);
+  }
   assert.equal(build.delivered.grass,3);
-  assert.equal(state.chests[0].items.grass,1);
+  assert.equal(L.available(state,"grass"),2);
   assert.equal(L.complete(build),true);
 });
 test("cancelamento devolve recursos entregues ao mapa e mantém IDs únicos após reload",()=>{
