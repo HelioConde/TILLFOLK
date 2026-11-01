@@ -2777,7 +2777,7 @@
     if(state&&$("#workshop-dialog")?.open)paintWorkshopTools();
   });
   function paintWorkshopTools(){
-    document.querySelectorAll(".workstation-tool-sprite").forEach(canvas=>{
+    document.querySelectorAll("canvas.workstation-tool-sprite").forEach(canvas=>{
       const ctx=canvas.getContext("2d");
       if(!ctx)return;
       ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,canvas.width,canvas.height);
