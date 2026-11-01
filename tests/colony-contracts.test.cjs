@@ -48,7 +48,7 @@ test("mutirão em andamento não expira no amanhecer nem concede bônus antecipa
 test("save antigo sem contratos migra sem prêmios retroativos; save novo preserva progresso",()=>{
  const s=mock();delete s.contracts;
  assert.equal(Contracts.normalize(s).completedTotal,0);
- Contracts.select(s,"clareira");Contracts.record(s,{type:"clear"});
+ s.day=2;Contracts.select(s,"clareira");Contracts.record(s,{type:"clear"});
  const saved=JSON.parse(JSON.stringify(s));Contracts.normalize(saved);
  assert.equal(Contracts.view(saved).progress,1);
  assert.equal(saved.workers[0].morale,63);
