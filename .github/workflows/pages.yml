@@ -30,6 +30,8 @@ jobs:
           node --test tests/biome-rivers.test.cjs tests/continent-protection.test.cjs tests/wildlife-animations.test.cjs
           node --check src/game.js
           node --check src/day-night.js
+          node --check src/progression.js
+          node --test tests/progression.test.cjs
           node --check src/colony-life.js
           node --test tests/day-night.test.cjs tests/colony-life.test.cjs
           node --test tests/specialization.test.cjs
@@ -162,6 +164,10 @@ jobs:
           test -f _site/public/assets/tillfolk/menu-landscape.svg
           test -f _site/src/biomes.js
           test -f _site/src/day-night.js
+          test -f _site/src/progression.js
+          test -f _site/progression.css
+          grep -q 'src/progression.js' _site/index.html
+          grep -q 'progression-dialog' _site/index.html
           test -f _site/src/colony-life.js
           test -f _site/colony-life.css
           grep -q 'src/day-night.js' _site/index.html
