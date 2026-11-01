@@ -69,5 +69,7 @@
       queueMicrotask(sync);
     }
   });
+  // Retornar à colônia aproveita o reset de câmera do motor existente.
+  $("#camera-home")?.addEventListener("click",()=>$("#zoom-reset")?.click());
   sync();
 })();
