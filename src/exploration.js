@@ -65,13 +65,11 @@
     frog:{mode:"strip",clips:{idle:{
       path:ROOT+"Sprout Sorry pack/Early Access/Plant update 2/frog/frog_spritesheet.png",
       frames:"auto-16",w:16,h:16}},drawW:34,drawH:34},
-    bat:{mode:"six-directional",clips:Object.fromEntries(
-      [["down","Bat_down_idle-and-run-Sheet6.png"],
-       ["up","Bat_up_idle-and-run-Sheet6.png"],
-       ["left","Bat_side-left_idle-and-run-Sheet6.png"],
-       ["right","Bat_side_idle-and-run-Sheet6.png"]].map(([dir,file])=>
-        ["move_"+dir,{path:ROOT+"Character/Bat/"+file,frames:6,w:"auto-six",h:"auto-height"}])
-    ),drawW:43,drawH:40}
+    // Esta spritesheet do Little Dreamyland tem quadros maiores que o
+    // pequeno bat de 6 frames do outro pacote, que ficava estourado no jogo.
+    bat:{mode:"strip",clips:{idle:{
+      path:ROOT+"Little Dreamyland - Free Pack/Sprites/Enemies/BAT/Bat idle.png",
+      frames:"auto-square",w:32,h:32}},drawW:37,drawH:37}
   });
   const spriteKey=(kind,clip)=>"wild_"+kind+"_"+clip;
   const spriteSources=()=>Object.entries(ANIMATIONS).flatMap(([kind,profile])=>
