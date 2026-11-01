@@ -47,6 +47,7 @@
     if(!document.body.classList.contains("play-session")||event.repeat||event.altKey||event.ctrlKey||event.metaKey)return;
     if(document.querySelector("dialog[open]"))return;
 
+    const key=event.key.toLowerCase();
     if(key==="escape"){
       if($("#orders-btn").getAttribute("aria-expanded")==="true")$("#orders-btn").click();
       else if(!$("#construction-panel").hidden)$('.tool[data-tool="universal"]')?.click();
