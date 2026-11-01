@@ -530,6 +530,57 @@
     if(!path.length){const [x,y]=reached.split(",").map(Number);path.push({x:x+.5,y:y+.5});}
     return path;
   }
+  // Transporte físico: ir à pilha ou ao baú, recolher até a capacidade,
+  // atravessar o mapa carregando e entregar no local de construção.
+  function processHaul(w,scaled){
+    const job=w.haul;if(!job)return false;
+    const goal=job.phase==="fetch"?job.source:job.destination;
+    const id="haul:"+job.phase+":"+goal.x+","+goal.y+":"+job.kind;
+    if(w.routeTask!==id){
+      w.route=routeBetween(w.x,w.y,goal.x,goal.y);
+      if(!w.route.length){w.haul=null;w.route=[];w.routeTask=null;return true;}
+      w.routeTask=id;
+    }
+    const target=w.route[0]||{x:goal.x+.5,y:goal.y+.5};
+    const dx=target.x-w.x,dy=target.y-w.y,d=Math.hypot(dx,dy);
+    if(d>.055){
+      w.facing=Math.abs(dx)>Math.abs(dy)?(dx>0?"right":"left"):(dy>0?"down":"up");
+      const terrain=World.terrainAt(state.world,Math.floor(w.x),Math.floor(w.y));
+      const move=Math.min(d,scaled*2.65/terrain.moveCost);
+      w.x+=dx/d*move;w.y+=dy/d*move;
+      w.moving=true;w.walkFrame=(w.walkFrame||0)+move*4.5;
+      return true;
+    }
+    w.x=target.x;w.y=target.y;w.route.shift();
+    if(w.route.length)return true;
+    w.routeTask=null;w.route=[];
+    if(job.phase==="fetch"){
+      const grabbed=Logistics.collect(state,job);
+      if(!grabbed){w.haul=null;return true;}
+      job.phase="deliver";w.inventory=w.inventory||{tools:{},items:{}};
+      w.inventory.carrying={kind:job.kind,qty:grabbed};
+      log(w.name+" pegou "+grabbed+" "+job.kind+" do chão ou baú.");
+    }else{
+      const order=job.orderId?state.orders.find(o=>o.id===job.orderId):null;
+      if(job.orderId&&!order)Logistics.drop(state,goal.x,goal.y,job.kind,job.qty);
+      else Logistics.deliver(state,order,job);
+      if(w.inventory)w.inventory.carrying=null;
+      log(w.name+" entregou "+job.qty+" "+job.kind+" no "+(order?"projeto":"baú")+".");
+      w.haul=null;recalcTasks();save();
+    }
+    return true;
+  }
+  function beginHaul(w,order){
+    const job=order?Logistics.plan(state,order,w):Logistics.planStorage(state,w);
+    if(!job)return false;
+    w.haul=job;w.route=[];w.routeTask=null;return true;
+  }
+  function refundHaul(w){
+    if(w.haul?.phase==="deliver"&&w.haul.qty>0)
+      Logistics.drop(state,Math.floor(w.x),Math.floor(w.y),w.haul.kind,w.haul.qty);
+    w.haul=null;
+    if(w.inventory)w.inventory.carrying=null;
+  }
   let tutorialSpeedBeforeFinish=1;
   // Falas efêmeras: o ritmo do diálogo não altera saves nem tarefas.
   const speechScene={step:-1,sequence:0,text:"",workerId:null,until:0,next:0};
