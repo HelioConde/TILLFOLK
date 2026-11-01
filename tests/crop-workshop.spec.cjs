@@ -79,7 +79,7 @@ test("receitas da Work Station produzem machado e sementes com consumo real",asy
   const s=JSON.parse(localStorage.getItem("tillfolk-v01"));
   if(!s)return;
   s.crafting.station={x:38,y:24};s.workstations=[{x:38,y:24}];s.firstHarvest=true; // cenário avançado após a colheita
-  s.inventory.twigs=50;s.inventory.grass=20;s.inventory.wood=20;s.inventory.stone=10;
+  s.inventory.twigs=50;s.inventory.gravel=20;s.inventory.grass=20;s.inventory.wood=20;s.inventory.stone=10;
   s.cropProduce.tomato=4;s.food=10;
   localStorage.setItem("tillfolk-v01",JSON.stringify(s));
   sessionStorage.setItem("workshop-fixture-loaded","1");
@@ -111,8 +111,9 @@ test("receitas da Work Station produzem machado e sementes com consumo real",asy
  const save=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
  expect(save.crafting.equipment.axe).toBe(true);
  expect(save.workers.some(w=>w.inventory?.tools?.axe)).toBe(true);
- expect(save.inventory.twigs).toBe(42);
- expect(save.inventory.grass).toBe(17);
+ expect(save.inventory.twigs).toBe(46);
+ expect(save.inventory.gravel).toBe(18);
+  expect(save.inventory.grass).toBe(20);
  expect(save.cropProduce.tomato).toBe(2);
  expect(save.cropSeeds.tomato).toBe(3);
  expect(save.food).toBe(8);
