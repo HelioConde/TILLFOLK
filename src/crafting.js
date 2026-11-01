@@ -109,7 +109,7 @@
     return tool&&!has(state,tool,worker)?"Precisa de "+name.toLowerCase()+" no inventário do colono":null;
   }
   function formatCost(cost){
-    const labels={twigs:"gravetos",grass:"fibras",wood:"madeiras",stone:"pedras"};
+    const labels={twigs:"gravetos",grass:"fibras",wood:"madeiras",stone:"pedras",mushroom:"cogumelos",herbs:"ervas"};
     return Object.entries(cost).map(([key,n])=>n+" "+(labels[key]||key)).join(" · ");
   }
   window.TillfolkCrafting=Object.freeze({
