@@ -122,3 +122,22 @@ test('Biomas: gelo/veneno bloqueiam agricultura e terreno possui custo de locomo
  expect(data.find(r=>r.id==='w').moveCost).toBeGreaterThan(1.2);
  expect(errors).toEqual([]);
 });
+
+test('Jornada da colônia apresenta cinco capítulos e progresso persistente sem invadir tutorial',async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.setViewportSize({width:1366,height:768});
+  await newGame(page);
+  await expect(page.locator('#progression-open')).toBeVisible();
+  await expect(page.locator('#progression-focus')).toBeHidden();
+  await page.locator('#progression-open').click();
+  await expect(page.locator('#progression-dialog')).toBeVisible();
+  await expect(page.locator('#progression-chapters .progression-chapter')).toHaveCount(5);
+  await expect(page.locator('#progression-chapters .progression-tasks li')).toHaveCount(17);
+  await expect(page.locator('#progression-overview')).toContainText('conquistas');
+  await page.screenshot({path:'screenshots/jornada-colonia-1366x768.png',animations:'disabled'});
+  await page.locator('#progression-dialog .modal-x').click();
+  await expect(page.locator('#progression-dialog')).toBeHidden();
+  const journey=await page.evaluate(()=>window.TillfolkProgression?.CHAPTERS?.length);
+  expect(journey).toBe(5);
+  expect(errors).toEqual([]);
+});
