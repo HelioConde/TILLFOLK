@@ -35,6 +35,8 @@ jobs:
           node --check src/game.js
           node --check src/day-night.js
           node --check src/progression.js
+          node --check src/colony-contracts.js
+          node --test tests/colony-contracts.test.cjs
           node --test tests/progression.test.cjs
           node --check src/space-program.js
           node --test tests/space-program.test.cjs
