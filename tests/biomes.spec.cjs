@@ -131,13 +131,13 @@ test('Jornada da colônia apresenta cinco capítulos e progresso persistente sem
   await expect(page.locator('#progression-focus')).toBeHidden();
   await page.locator('#progression-open').click();
   await expect(page.locator('#progression-dialog')).toBeVisible();
-  await expect(page.locator('#progression-chapters .progression-chapter')).toHaveCount(5);
-  await expect(page.locator('#progression-chapters .progression-tasks li')).toHaveCount(17);
+  await expect(page.locator('#progression-chapters .progression-chapter')).toHaveCount(6);
+  await expect(page.locator('#progression-chapters .progression-tasks li')).toHaveCount(23);
   await expect(page.locator('#progression-overview')).toContainText('conquistas');
   await page.screenshot({path:'screenshots/jornada-colonia-1366x768.png',animations:'disabled'});
   await page.locator('#progression-dialog .modal-x').click();
   await expect(page.locator('#progression-dialog')).toBeHidden();
   const journey=await page.evaluate(()=>window.TillfolkProgression?.CHAPTERS?.length);
-  expect(journey).toBe(5);
+  expect(journey).toBe(6);
   expect(errors).toEqual([]);
 });
