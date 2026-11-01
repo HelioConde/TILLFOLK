@@ -99,3 +99,11 @@ body.play-session .biome-legend i{
   body.play-session .biome-legend{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}
   body.play-session .biome-legend button{font-size:9px;min-height:22px}
 }
+
+/* Equipamentos exigidos pelos biomas no minimapa. */
+body.play-session .biome-legend .biome-protection-note{
+  grid-column:1/-1;margin:3px 1px 1px;
+  color:#ead7ac;font:600 10px/1.4 system-ui,sans-serif;
+  overflow-wrap:anywhere;
+}
+body.play-session .biome-legend .biome-protection-note strong{color:#fff1c9}
