@@ -9,6 +9,8 @@
   {id:"madeira",icon:"🪓",title:"Lenha para o abrigo",desc:"Corte duas árvores de verdade.",help:"Use Universal sobre árvores. É necessário um colono com machado que possa executar Limpar.",type:"clear",kind:"tree",goal:2,reward:10,requires:"axe",action:"universal"},
   {id:"cabana",icon:"🏡",title:"Um teto para a equipe",desc:"Conclua uma cabana e ganhe uma nova vaga.",help:"Abra Objetos → Cabana, posicione o blueprint e aguarde a entrega física de madeira.",type:"buildHome",goal:1,reward:12,requires:"axe",action:"construir"},
   {id:"plantio",icon:"🌱",title:"Reforço da horta",desc:"Plante duas sementes para a próxima safra.",help:"Colete sementes, are dois canteiros e depois use Universal para semear em cada um.",type:"sow",goal:2,reward:8,requires:"hoe",action:"universal"},
+  {id:"gravetos",icon:"🌾",title:"Os primeiros materiais",desc:"Recolha três gravetos caídos no vale.",help:"Use Universal nos gravetos soltos do chão. Não precisa de ferramenta.",type:"clear",kind:"twig",goal:3,reward:7,action:"universal"},
+  {id:"pedrinhas",icon:"🪨",title:"Pedras para ferramentas",desc:"Recolha duas pedras pequenas.",help:"Use Universal nas pequenas pedrinhas do mapa. Elas podem ser coletadas à mão.",type:"clear",kind:"pebble",goal:2,reward:7,action:"universal"},
   {id:"clareira",icon:"🌿",title:"Clareira da vila",desc:"Limpe três obstáculos do terreno.",help:"Use Universal em gravetos, grama alta ou pedras; conte apenas as ordens concluídas.",type:"clear",goal:3,reward:7,action:"universal"},
   {id:"canteiros",icon:"⛏️",title:"Terra preparada",desc:"Are três canteiros novos.",help:"Escolha solo livre com Universal. Quem executar precisa poder arar e possuir enxada.",type:"till",goal:3,reward:8,requires:"hoe",action:"universal"},
   {id:"irrigar",icon:"💧",title:"Dia de irrigação",desc:"Regue duas plantações.",help:"Use Universal num canteiro plantado. O colono com regador buscará água se necessário.",type:"water",goal:2,reward:8,requires:"wateringCan",action:"universal"},
@@ -24,7 +26,7 @@
   const prior=old.active&&byId[old.active.id]?old.active:null;
   state.contracts={version:1,active:prior?{id:prior.id,progress:num(prior.progress,byId[prior.id].goal),startedDay:Math.max(1,num(prior.startedDay))}:null,
    completedDay:num(old.completedDay),completedTotal:num(old.completedTotal),
-   lastTitle:typeof old.lastTitle==="string"?old.lastTitle.slice(0,100):""};
+   lastTitle:PLANS.some(p=>p.title===old.lastTitle)?old.lastTitle:"Mutirão concluído"};
   return state.contracts;
  }
  const permitted=(s,type)=>Boolean(s.workers?.some(w=>!w.neg?.includes(type)));
