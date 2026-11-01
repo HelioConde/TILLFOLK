@@ -59,7 +59,7 @@ test("pesquisas têm requisitos reais e ficam disponíveis na ordem correta",()=
   s.workers[0].x=4.5;s.workers[0].y=1.5;P.advance(s);
   s.workers[0].x=6.5;s.workers[0].y=2.5;P.advance(s);
   assert.match(Life.research(s).error,/terceiro colono/i);
-  s.workers.push(worker("Mone"));
+  s.workers.push(worker("Mone"),worker("Luna"));
   assert.equal(Life.research(s).level,4);
 });
 test("visitar novos biomas em terra firme dá descoberta e conhecimento uma única vez",()=>{
