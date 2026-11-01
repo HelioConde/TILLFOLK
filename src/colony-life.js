@@ -126,10 +126,16 @@
    life.researchPoints=Math.min(999,life.researchPoints+Math.max(0,points));
  }
  function cost(state){return 5*(normalize(state).researchLevel+1);}
+ function researchLock(state){
+   const life=normalize(state);
+   if(!state.crafting?.station)return "Construa a Work Station primeiro.";
+   if(life.researchLevel>=TECH.length)return "Todas as pesquisas já foram concluídas.";
+   return window.TillfolkProgression?.researchLock(state,life.researchLevel+1)||null;
+ }
  function research(state){
    const life=normalize(state);
-   if(!state.crafting?.station)return {error:"Construa a Work Station primeiro."};
-   if(life.researchLevel>=TECH.length)return {error:"Todas as pesquisas desta fase já foram concluídas."};
+   const blocked=researchLock(state);
+   if(blocked)return {error:blocked};
    const needed=cost(state);
    if(life.researchPoints<needed)return {error:"São necessários "+needed+" pontos de conhecimento."};
    life.researchPoints-=needed;life.researchLevel++;
@@ -157,6 +163,6 @@
  }
  window.TillfolkColonyLife=Object.freeze({
    normalize,season,weather,weatherLabels,workMultiplier,sleepWindow,sleepRequired,
-   advance,growthMultiplier,cropDuration,discover,cost,research,canAutomate,animalBirths,TECH
+   advance,growthMultiplier,cropDuration,discover,cost,research,researchLock,canAutomate,animalBirths,TECH
  });
 })();
