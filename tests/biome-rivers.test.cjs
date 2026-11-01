@@ -82,7 +82,7 @@ test("a água continua conectada e pontes permitem explorar os cinco biomas",()=
   }
 });
 
-test("expandir saves 80x50 conserva biomas, recursos, lagoas e pontes antigas",()=>{
+test("expandir saves 80x50 preserva biomas, recursos e água; moderniza as pontes",()=>{
   const legacy=World.create(2170,80,50);
   const originalObjects=legacy.objects.map(p=>key(p.x,p.y));
   const originalWater=new Set(legacy.water.map(p=>key(p.x,p.y)));
@@ -96,6 +96,10 @@ test("expandir saves 80x50 conserva biomas, recursos, lagoas e pontes antigas",(
   for(const id of originalObjects)assert.ok(newObjects.has(id),"recurso antigo desapareceu: "+id);
   for(const id of originalWater)assert.ok(World.waterAt(expanded,...id.split(",").map(Number)),
     "água antiga desapareceu: "+id);
-  for(const crossing of legacy.crossings)
-    assert.ok(World.bridgeAt(expanded,crossing.x,crossing.y),"ponte antiga perdida");
+  assert.equal(expanded.crossingsVersion,2,"pontes precisam ser recalculadas");
+  assert.ok(expanded.crossings.length>=5,"expansão mantém os biomas conectados");
+  for(const crossing of expanded.crossings){
+    assert.ok(World.waterAt(expanded,crossing.x,crossing.y),"ponte somente sobre água");
+    assert.ok(["vertical","horizontal"].includes(crossing.axis));
+  }
 });
