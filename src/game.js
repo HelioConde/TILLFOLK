@@ -1008,8 +1008,9 @@
   function finish(w,t){
     const p=findPlot(t.x,t.y);
     if(t.type==="craftTool"){
+      if(!Logistics.complete(t))return false;
       if(!state.crafting.station||state.crafting.station.x!==t.x||state.crafting.station.y!==t.y)return false;
-      const result=Crafting.craft(state,t.recipe,w);
+      const result=Crafting.craft(state,t.recipe,w,true);
       if(result.error){log("Fabricação aguardando: "+result.error);return false;}
       const item=result.item;
       showPickup(t.x,t.y,item.key,1);
@@ -1030,8 +1031,7 @@
       log(w.name+" recolheu esterco de "+(animal.kind==="cow"?"vaca":"animal")+".");return true;
     }
     if(t.type==="buildStation"){
-      if(!Crafting.canBuild(state)||!stationSiteValid(t.x,t.y))return false;
-      state.inventory.twigs-=Crafting.STATION_COST;
+      if(!Logistics.complete(t)||!stationSiteValid(t.x,t.y))return false;
       state.workstations.push({x:t.x,y:t.y});
       state.crafting.station={x:t.x,y:t.y};
       state.plots=state.plots.filter(plot=>plot.x!==t.x||plot.y!==t.y);
@@ -1041,8 +1041,7 @@
       return true;
     }
     if(t.type==="buildHome"){
-      if(state.inventory.wood<HOME_WOOD_COST||!homeSiteValid(t.x,t.y))return false;
-      state.inventory.wood-=HOME_WOOD_COST;
+      if(!Logistics.complete(t)||!homeSiteValid(t.x,t.y))return false;
       state.homes.push({x:t.x,y:t.y,residentId:null,legacy:false});
       for(const [hx,hy] of homeTiles(t.x,t.y)){
         state.plots=state.plots.filter(plot=>plot.x!==hx||plot.y!==hy);
@@ -1050,6 +1049,14 @@
       assignHomes();
       showPickup(t.x,t.y,"home");
       log(w.name+" concluiu uma cabana. "+housingVacancy()+" vaga(s) livres.");return true;
+    }
+    if(t.type==="buildChest"){
+      if(!Logistics.complete(t)||!chestSiteValid(t.x,t.y))return false;
+      state.chests.push({x:t.x,y:t.y,items:{}});
+      state.plots=state.plots.filter(plot=>plot.x!==t.x||plot.y!==t.y);
+      showPickup(t.x,t.y,"chest");
+      log(w.name+" terminou o baú. A equipe agora pode guardar materiais.");
+      return true;
     }
     if(!p)return false;
     let complete=true;
@@ -1064,10 +1071,8 @@
             mushroom:"mushroom",flowers:"flower",herbs:"herbs",grass:"grass",thicket:"wood",twig:"twigs"};
           const amount={tree:3,stump:2,log:2,boulder:3,twig:1}[kind]||1;
           const resource=types[kind]||"grass";
-          state.inventory[resource]=(state.inventory[resource]||0)+amount;
+          Logistics.drop(state,t.x,t.y,resource,amount);
           showPickup(t.x,t.y,resource,amount);
-          const carried=Crafting.normalizeWorker(w).items;
-          carried[resource]=(carried[resource]||0)+amount;
           // Grama alta tem chance de soltar uma semente. Não existe semente infinita.
           if(kind==="grass"){
             recordTutorial("grass");
@@ -1180,9 +1185,21 @@
         save();
         continue;
       }
-      if(!w.task)continue;
+      if(w.haul){
+        if(processHaul(w,scaled))continue;
+      }
+      if(!w.task){
+        if(state.chests.length&&beginHaul(w,null))processHaul(w,scaled);
+        continue;
+      }
       const t=tasks.find(t=>t.id===w.task);
-      if(!t){releaseSupply(w);w.task=null;w.progress=0;w.route=[];continue;}
+      if(!t){refundHaul(w);releaseSupply(w);w.task=null;w.progress=0;w.route=[];continue;}
+      if(["buildStation","buildHome","buildChest","craftTool"].includes(t.type)&&
+         !Logistics.complete(state.orders.find(o=>o.id===t.id)||t)){
+        const original=state.orders.find(o=>o.id===t.id);
+        if(original&&beginHaul(w,original))processHaul(w,scaled);
+        continue;
+      }
       // Uma ordem de irrigação já autoriza buscar água; fertilizar autoriza
       // buscar esterco. Não cria ordens extras nem tira decisões do jogador.
       const fetchWater=t.type==="water"&&state.water<=0&&!w.carryingWater;
@@ -1241,7 +1258,8 @@
       }
       w.progress+=scaled*bonus(w,t.type)/taskDuration(t);
       if(w.progress>=1){
-        const complete=finish(w,t);
+        const order=state.orders.find(o=>o.id===t.id)||t;
+        const complete=finish(w,order);
         if(complete)showMapFeedback(t.x,t.y,"#ddf2a2");
         if(complete)state.orders=state.orders.filter(order=>order.id!==t.id);
         w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;
