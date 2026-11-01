@@ -1,6 +1,8 @@
 "use strict";
 (() => {
-  const TILE = 32, W = 128, H = 80, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
+  const TILE = 32, W = 192, H = 120, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
+  const Exploration=window.TillfolkExploration;
+  if(!Exploration)throw new Error("Carregue src/exploration.js antes do motor TILLFOLK.");
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
   if(!Crops)throw new Error("Carregue src/crop-catalog.js antes do motor TILLFOLK.");
   if(!Crafting)throw new Error("Carregue src/crafting.js antes do motor TILLFOLK.");
@@ -215,6 +217,10 @@
     for(const tile of state.world.crossings||[])miniCtx.fillRect(
       Math.floor(tile.x*pixelWidth),Math.floor(tile.y*pixelHeight),
       Math.max(1,Math.ceil(pixelWidth)),Math.max(1,Math.ceil(pixelHeight)));
+    miniCtx.fillStyle="#f3ddb2";
+    for(const animal of state.animals||[])if(animal.wild)miniCtx.fillRect(
+      Math.floor(animal.x*pixelWidth),Math.floor(animal.y*pixelHeight),
+      Math.max(1,Math.ceil(pixelWidth)),Math.max(1,Math.ceil(pixelHeight)));
     miniCtx.fillStyle="#2d5532";
     for(const obj of state.world.objects)if(obj.kind==="tree"||obj.kind==="thicket"){
       miniCtx.fillRect(Math.floor(obj.x*pixelWidth),Math.floor(obj.y*pixelHeight),
@@ -339,6 +345,8 @@
   const TerrainCatalog=window.TillfolkTerrainCatalog;
   for(const key of Object.keys(TerrainCatalog?.ATLAS||{}))
     spriteUrls["terrain_"+key]=TerrainCatalog.url(key);
+  for(const kind of Object.keys(Exploration.FILES))
+    spriteUrls["wild_"+kind]=Exploration.speciesUrl(kind);
   for (const [key,url] of Object.entries(spriteUrls)) {
     const img = new Image(); img.src = url; sprite[key] = img;
   }
@@ -515,10 +523,11 @@
   // Caminhos em grade impedem que colonos atravessem a casa, árvores e objetos.
   // Só a navegação usa esta malha; o cultivo continua seguindo as regras existentes.
   const directions=[[1,0],[-1,0],[0,1],[0,-1]];
-  function routeBetween(fromX,fromY,toX,toY){
+  function routeBetween(fromX,fromY,toX,toY,worker=null){
     // O lenhador fica ao LADO da árvore/pedra; nunca pisa dentro do obstáculo.
     const start=[Math.floor(fromX),Math.floor(fromY)],id=(x,y)=>x+","+y;
     const origin=id(...start);
+    const cannotEnter=(x,y)=>blocked(x,y)||Boolean(worker&&Exploration.blocker(worker,state.world,x,y));
     // Ao clicar num ponto interno da lagoa, qualquer margem da MESMA lagoa
     // é válida: um trabalhador nunca precisa pisar na água.
     // Rios maiores não devem gerar milhares de destinos de BFS a cada busca.
@@ -529,7 +538,8 @@
       [{x:toX,y:toY}];
     const goals=blocked(toX,toY)?sourceTiles.flatMap(tile=>
       directions.map(([dx,dy])=>[tile.x+dx,tile.y+dy])
-        .filter(([x,y])=>!blocked(x,y))):[[toX,toY]];
+        .filter(([x,y])=>!cannotEnter(x,y))):[[toX,toY]];
+    if(!blocked(toX,toY)&&cannotEnter(toX,toY))return [];
     if(!goals.length)return [];
     const destinations=new Set(goals.map(([x,y])=>id(x,y)));
     const queue=[start],previous=new Map([[origin,null]]);
@@ -538,7 +548,7 @@
       const [x,y]=queue[head];
       for(const [dx,dy] of directions){
         const nx=x+dx,ny=y+dy,key=id(nx,ny);
-        if(previous.has(key)||blocked(nx,ny))continue;
+        if(previous.has(key)||cannotEnter(nx,ny))continue;
         previous.set(key,id(x,y));queue.push([nx,ny]);
         if(destinations.has(key)){reached=key;break;}
       }
@@ -559,7 +569,7 @@
     const goal=job.phase==="fetch"?job.source:job.destination;
     const id="haul:"+job.phase+":"+goal.x+","+goal.y+":"+job.kind;
     if(w.routeTask!==id){
-      w.route=routeBetween(w.x,w.y,goal.x,goal.y);
+      w.route=routeBetween(w.x,w.y,goal.x,goal.y,w);
       if(!w.route.length){refundHaul(w);w.route=[];w.routeTask=null;return true;}
       w.routeTask=id;
     }
@@ -588,7 +598,7 @@
       const next=remainder>0?[...Logistics.sources(state,job.kind)]
         .sort((a,b)=>Math.abs(w.x-a.x)+Math.abs(w.y-a.y)-
           Math.abs(w.x-b.x)-Math.abs(w.y-b.y))
-        .find(source=>source.qty>0&&routeBetween(w.x,w.y,source.x,source.y).length>0):null;
+        .find(source=>source.qty>0&&routeBetween(w.x,w.y,source.x,source.y,w).length>0):null;
       if(next){
         job.source=next;job.qty=Math.min(remainder,next.qty);
         job.phase="fetch";w.routeTask=null;w.route=[];
@@ -624,6 +634,7 @@
     speechScene.step=-1;speechScene.sequence=0;speechScene.text="";
     speechScene.workerId=null;speechScene.until=0;speechScene.next=0;
   }
+  let wildlifeAccumulator=0;
   let state = null, tasks = [], selectedTool = "universal", buildLayer = "home", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
@@ -648,7 +659,8 @@
     state = {day:1,minutes:8*60,seeds:0,water:0,food:8,firstHarvest:false,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",tutorial:Missions.create(),
       plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),
       cropSeeds:Crops.normalizeStock({}),cropProduce:Crops.normalizeStock({}),selectedCrop:"potato",workstations:[],crafting:Crafting.normalize(null),
-      groundItems:[],chests:[],wells:[],nextDropId:1,homes:[],animals:[],inventory:{wood:0,twigs:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
+      groundItems:[],chests:[],wells:[],nextDropId:1,homes:[],
+      animals:Exploration.spawn(world,world.objects),inventory:{wood:0,twigs:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},buildPriority:5,
       survivalVersion:1,startingColonists:initialColonists,deaths:[],gameOver:false,
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
@@ -762,7 +774,16 @@
         a.x===16.5&&a.y===9.5&&!a.placedByPlayer;
       state.animals=(Array.isArray(s.animals)?s.animals:[])
         .filter(a=>a&&Number.isFinite(a.x)&&Number.isFinite(a.y)&&!isLegacyStarterCow(a))
-        .map(a=>({...a,manure:Math.max(0,Number(a.manure)||0),timer:Number(a.timer)||0}));
+        .map(a=>({...a,manure:a.wild?0:Math.max(0,Number(a.manure)||0),
+          timer:Number(a.timer)||0}));
+      // Saves antigos recebem fauna sem apagar animais e construções existentes.
+      if(!state.animals.some(a=>a.wild)){
+        const occupied=[...state.world.objects,
+          ...state.workers.map(w=>({x:w.x,y:w.y})),
+          ...state.plots.filter(p=>p.tilled||p.seeded||p.selected||p.produce),
+          ...state.homes,...state.workstations];
+        state.animals.push(...Exploration.spawn(state.world,occupied));
+      }
       // Ordens da vaca removida não ficam bloqueadas para sempre.
       state.orders=state.orders.filter(o=>o.type!=="collectManure"||
         state.animals.some(a=>Math.floor(a.x)===o.x&&Math.floor(a.y)===o.y));
@@ -980,6 +1001,8 @@
       return "Traço negativo: não pode recolher esterco";
     if(t.type==="craftTool"&&w.inventory?.tools?.[t.recipe])
       return "Este colono já possui esta ferramenta";
+    const missingProtection=Exploration.blocker(w,state.world,t.x,t.y);
+    if(missingProtection)return missingProtection;
     const personalBlock=Crafting.blocked(state,t.type,World.at(state.world,t.x,t.y),w);
     if(personalBlock)return personalBlock;
     if(t.type==="buildChest"&&!chestSiteValid(t.x,t.y))return "Baú exige terreno livre";
@@ -992,7 +1015,7 @@
       if(Logistics.available(state,"wood")<HOME_WOOD_COST*(alreadyAssigned+1))
         return "Madeira reservada para outras construções";
     }
-    if(!routeBetween(w.x,w.y,t.x,t.y).length)
+    if(!routeBetween(w.x,w.y,t.x,t.y,w).length)
       return "Sem caminho acessível até o trabalho";
     return null;
   }
@@ -1057,7 +1080,7 @@
     const goal=assigned?{x:Math.max(1,assigned.x-1),y:assigned.y}:{x:Math.floor(state.spawn.x),y:Math.floor(state.spawn.y)};
     const key="rest:"+goal.x+","+goal.y;
     if(w.routeTask!==key){
-      w.route=routeBetween(w.x,w.y,goal.x,goal.y);
+      w.route=routeBetween(w.x,w.y,goal.x,goal.y,w);
       w.routeTask=key;
     }
     const target=w.route?.[0]||{x:goal.x+.5,y:goal.y+.5};
@@ -1259,11 +1282,19 @@
       }else log("Um novo dia começou na fazenda tranquila. Dia "+state.day+".");
     }
     for(const animal of state.animals){
+      if(animal.wild)continue;
       animal.timer=(animal.timer||0)+scaled;
       while(animal.timer>=120){
         animal.timer-=120;
         animal.manure=Math.min(3,(animal.manure||0)+1);
       }
+    }
+    wildlifeAccumulator+=scaled;
+    if(wildlifeAccumulator>=8){
+      Exploration.step(state.animals,state.world,wildlifeAccumulator,
+        (x,y)=>Boolean(World.at(state.world,x,y))||
+          state.homes.some(home=>homeTiles(home.x,home.y).some(([hx,hy])=>hx===x&&hy===y)));
+      wildlifeAccumulator=0;
     }
     for(const p of state.plots)if(p.seeded&&p.watered&&p.growth<1){
       const fertility=World.terrainAt(state.world,p.x,p.y).fertility;
@@ -1337,7 +1368,7 @@
             state.animals.filter(animal=>animal.manure>0).map(a=>({
               x:Math.floor(a.x),y:Math.floor(a.y)
             }));
-          const reachable=sources.map(source=>({...source,route:routeBetween(w.x,w.y,source.x,source.y)}))
+          const reachable=sources.map(source=>({...source,route:routeBetween(w.x,w.y,source.x,source.y,w)}))
             .filter(source=>source.route.length>0).sort((a,b)=>a.route.length-b.route.length);
           w.supplyTarget=reachable[0]?{x:reachable[0].x,y:reachable[0].y}:null;
           w.supplyStage=stage;w.routeTask=null;w.route=[];
@@ -1347,7 +1378,7 @@
       const goal=w.supplyTarget||t;
       const pathKey=w.task+":"+(w.supplyStage||"work")+":"+goal.x+","+goal.y;
       if(w.routeTask!==pathKey){
-        w.route=routeBetween(w.x,w.y,goal.x,goal.y);
+        w.route=routeBetween(w.x,w.y,goal.x,goal.y,w);
         w.workGoal=w.route[w.route.length-1]||null;
         w.routeTask=pathKey;
       }
@@ -1610,8 +1641,11 @@
         World.drawObject(ctx,item.object,sprite,TILE,part);
       }else if(type==="animal"){
         const a=item.animal,x=a.x*TILE,y=a.y*TILE;
-        part(sprite.cow,0,0,32,32,x-20,y-32,40,38);
-        if(a.manure>0)write("💩 "+a.manure,x+5,y-33,"#f3dcb0",10);
+        const picture=a.wild?sprite["wild_"+a.kind]:sprite.cow;
+        if(valid(picture))part(picture,0,0,Math.min(32,picture.naturalWidth),
+          Math.min(32,picture.naturalHeight),x-20,y-35,40,40);
+        else write("🐾",x,y-15,"#ffedb8",22);
+        if(!a.wild&&a.manure>0)write("💩 "+a.manure,x+5,y-33,"#f3dcb0",10);
       }else{
         const w=item.worker,px=w.x*TILE,py=w.y*TILE;
         if(w.carryingWater)write("💧",px+18,py-32,"#b6f3fe",13);
@@ -1963,7 +1997,9 @@
     for(const key of ["seeds","water","food"])set("#"+key,state[key]);
     set("#worker-count",state.workers.length);set("#task-count",tasks.length);
     const manureOrderButton=$('[data-order-type="collectManure"]');
-    if(manureOrderButton)manureOrderButton.hidden=state.animals.length===0;
+    if(manureOrderButton)manureOrderButton.hidden=!state.animals.some(a=>!a.wild);
+    const wildCounter=$("#wildlife-count");
+    if(wildCounter)wildCounter.textContent=String(state.animals.filter(a=>a.wild).length);
     if($("#homes-count"))$("#homes-count").textContent=state.homes.length+"/"+state.workers.length;
     set("#hud-workers",state.workers.length);set("#hud-tasks",tasks.length);
     $("#order-count").textContent=String(tasks.length);
@@ -2011,6 +2047,9 @@
         t?labels[t.type]+" em ("+(t.x+1)+", "+(t.y+1)+")":idleReason(w);
       const positive=w.skills.length?w.skills.map(s=>'<span class="tag">✦ '+labels[s]+'</span>').join(""):'<span class="tag">Generalista</span>';
       const neg=w.neg.map(s=>'<span class="tag negative">✕ '+labels[s]+'</span>').join("");
+      const gear=Object.entries(Exploration.GEAR)
+        .filter(([id])=>w.inventory?.tools?.[id])
+        .map(([,item])=>'<span class="tag" title="Proteção: '+escapeHtml(item.name)+'">'+item.icon+' '+escapeHtml(item.name)+'</span>').join("");
       const factor=w.skills.length?"+"+Math.round((specialtyMultiplier(w,w.skills[0])-1)*100)+"%":"sem bônus";
       // S1+S2: Indicadores de saciedade e saúde
       const satiety = Number.isFinite(w.satiety) ? Math.round(w.satiety) : 100;
@@ -2022,7 +2061,7 @@
       const healthColor = health <= 20 ? "#f4b0a7" : health <= 50 ? "#f4d18b" : "#b6de81";
       const healthBar = '<div class="worker-bar health-bar" role="progressbar" aria-label="Saúde de '+escapeHtml(w.name)+': '+health+'%" aria-valuenow="'+health+'" aria-valuemin="0" aria-valuemax="100" style="background:'+healthColor+'"><i style="width:'+health+'%"></i></div>';
       const healthLabel = '<div class="worker-health" style="color:'+healthColor+'" title="Saúde: '+health+'%">❤ '+health+'%</div>';
-      return '<div class="worker" data-worker-state="'+(w.moving?"moving":t?"working":"idle")+'"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div class="worker-identity"><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+escapeHtml(title)+'</div><span class="worker-status">'+(w.moving?"➤ Caminhando":t?"● Em atividade":tasks.length?"⏳ Aguardando ordens compatíveis":"● Disponível")+'</span></div></div><div class="tags">'+positive+neg+'</div><div class="worker-hunger" style="color:'+hungerColor+'" title="Saciedade: '+satiety+'%">'+hungerIcon+' '+satiety+'%</div>'+satietyBar+healthLabel+healthBar+'<div class="worker-role">Especialização: '+factor+'</div>'+
+      return '<div class="worker" data-worker-state="'+(w.moving?"moving":t?"working":"idle")+'"><div class="worker-head"><canvas class="portrait worker-avatar" data-worker-avatar="'+w.id+'" width="40" height="42"></canvas><div class="worker-identity"><div class="worker-name">'+escapeHtml(w.name)+'</div><div class="worker-job">'+escapeHtml(title)+'</div><span class="worker-status">'+(w.moving?"➤ Caminhando":t?"● Em atividade":tasks.length?"⏳ Aguardando ordens compatíveis":"● Disponível")+'</span></div></div><div class="tags">'+positive+neg+gear+'</div><div class="worker-hunger" style="color:'+hungerColor+'" title="Saciedade: '+satiety+'%">'+hungerIcon+' '+satiety+'%</div>'+satietyBar+healthLabel+healthBar+'<div class="worker-role">Especialização: '+factor+'</div>'+
         '<div class="worker-role">⚡ Energia '+Math.round(w.energy||0)+'% · ♥ Moral '+Math.round(w.morale||0)+'%</div></div>';
     }).join("");
     // Ordens ativas/prontas ficam em destaque; dependências aguardando são
@@ -3276,6 +3315,10 @@
     mapCtx.fillStyle="#d6ad75";
     for(const tile of state.world.crossings||[])mapCtx.fillRect(
       tile.x*tileW,tile.y*tileH,Math.max(1,tileW),Math.max(1,tileH));
+    mapCtx.fillStyle="#f3ddb2";
+    for(const animal of state.animals||[])if(animal.wild)
+      mapCtx.fillRect(animal.x*tileW,animal.y*tileH,
+        Math.max(1,tileW*1.3),Math.max(1,tileH*1.3));
     mapCtx.fillStyle="#305c34";
     for(const tree of state.world.objects||[])if(["tree","thicket"].includes(tree.kind))
       mapCtx.fillRect(tree.x*tileW,tree.y*tileH,Math.max(2,tileW*.75),Math.max(2,tileH*.75));
