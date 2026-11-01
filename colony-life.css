@@ -30,3 +30,12 @@
  .colony-life-trigger span{display:none}
 }
 @media(prefers-reduced-motion:reduce){.colony-life-dialog *{transition:none!important;animation:none!important}}
+
+/* Turnos individuais: seletor compacto sem deslocar o painel */
+.colony-shift-label{grid-column:1/-1;display:flex;gap:8px;align-items:center;justify-content:space-between;
+ font:700 11px/1.4 system-ui;color:#dfe8b5}
+.colony-shift-label select{max-width:72%;min-width:0;min-height:30px;
+ font:700 11px system-ui;color:#f6f0ce;background:#345440;border:1px solid #a9bd85;
+ border-radius:5px;padding:5px 7px}
+.colony-shift-label select:focus-visible{outline:2px solid #dceaa4;outline-offset:2px}
+@media(max-width:470px){.colony-shift-label{flex-wrap:wrap}.colony-shift-label select{max-width:100%;width:100%}}
