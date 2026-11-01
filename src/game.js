@@ -2012,6 +2012,18 @@
         ' · +'+goal.reward+' conhecimento</small></div></li>').join('')+'</ul>'+
       '<div class="progression-prize">✦ '+escapeHtml(chapter.unlock)+'</div></section>'
     ).join('');
+    const continents=$("#progression-continents");
+    if(continents)continents.innerHTML=Object.entries(Progression.BIOMES).map(([id,area])=>{
+      const visited=state.progression?.discovered?.[id],protection=Exploration.PROTECTION[id],
+        gear=Exploration.GEAR[protection.gear];
+      return '<div class="progression-continent" data-discovered="'+Boolean(visited)+'">'+
+        '<span class="progression-continent-icon">'+area.icon+'</span><div>'+
+        '<strong>'+escapeHtml(area.name)+'</strong>'+
+        '<small>'+(visited?'✓ '+escapeHtml(visited.colonist||'Explorador')+
+          ' · Dia '+Math.max(1,Number(visited.day)||1):
+          '🔒 Necessário: '+gear.icon+' '+escapeHtml(gear.name))+
+        '</small></div></div>';
+    }).join('');
   }
   function openProgressionDialog(){
     if(!playing||!state)return;
