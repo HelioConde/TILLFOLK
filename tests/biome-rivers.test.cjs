@@ -98,7 +98,14 @@ test("expandir saves 80x50 preserva biomas, recursos e água; moderniza as ponte
   for(const id of originalWater)assert.ok(World.waterAt(expanded,...id.split(",").map(Number)),
     "água antiga desapareceu: "+id);
   assert.equal(expanded.crossingsVersion,2,"pontes precisam ser recalculadas");
-  assert.ok(expanded.crossings.length>=5,"expansão mantém os biomas conectados");
+  // Num mapa legado expandido pode existir acesso por terra entre regiões:
+  // exigir conectividade, não uma quantidade arbitrária de pontes.
+  const visited=new Set([...reachable(expanded)].map(pos=>{
+    const [x,y]=pos.split(",").map(Number);
+    return World.biomeAt(expanded,x,y);
+  }));
+  for(const biome of Object.keys(Biomes.TYPES))
+    assert.ok(visited.has(biome),"save expandido não alcança o bioma "+biome);
   for(const crossing of expanded.crossings){
     assert.ok(World.waterAt(expanded,crossing.x,crossing.y),"ponte somente sobre água");
     assert.ok(["vertical","horizontal"].includes(crossing.axis));
