@@ -3222,22 +3222,24 @@
       "A Work Station ainda não está pronta. Colete 10 gravetos e use Objetos → Work Station.";
     $("#workshop-tools").innerHTML=Crafting.RECIPES.map((recipe,index)=>{
       const material=recipe.type==="material";
-      const holders=material?0:state.workers.filter(w=>Crafting.has(state,recipe.key,w)).length;
-      const made=!material&&holders===state.workers.length&&state.workers.length>0;
+      const eligible=material?[]:state.workers.filter(w=>Crafting.canEquip(w,recipe.key));
+      const holders=material?0:eligible.filter(w=>Crafting.has(state,recipe.key,w)).length;
+      const made=!material&&eligible.length>0&&holders===eligible.length;
+      const nobodyEligible=!material&&eligible.length===0;
       const pending=state.orders.some(o=>o.type==="craftTool"&&o.recipe===recipe.key);
       const lacking=Crafting.missing(state,recipe.cost).length>0;
       const locked=Crafting.locked(state,recipe.key);
-      const label=made?"✓ Todos equipados":pending?"⏳ Fabricando":locked?
+      const label=nobodyEligible?"🚫 Nenhum colono pode usar":made?"✓ Todos habilitados equipados":pending?"⏳ Fabricando":locked?
         "🔒 "+locked:Crafting.formatCost(recipe.cost);
       return '<button type="button" data-craft-tool="'+recipe.key+'" '+
-        ((!ready||made||pending||lacking||locked)?'disabled':'')+'>'+
+        ((!ready||made||nobodyEligible||pending||lacking||locked)?'disabled':'')+'>'+
         '<canvas class="workstation-tool-sprite" data-tool-index="'+index+'" width="48" height="48" role="img" aria-label="Ilustração de '+recipe.name+'"></canvas>'+
         '<span class="workstation-tool-text"><strong>'+recipe.icon+' '+recipe.name+'</strong>'+
         '<small>'+recipe.help+'</small><small>'+label+'</small>'+
         (material?'<small>Produção: '+recipe.output.qty+' '+escapeHtml(
           Minerals.RESOURCES[recipe.output.kind]?.name||recipe.output.kind)+
           ' · vai ao chão da oficina</small>':
-          '<small>Equipados: '+holders+' / '+state.workers.length+'</small>')+
+          '<small>Equipados: '+holders+' / '+eligible.length+' habilitados</small>')+
         (Crafting.itemFrame(recipe.key)?'':'<small class="workstation-art-note">Ícone provisório · sem sprite identificado</small>')+
         '</span></button>';
     }).join("")+
@@ -3272,8 +3274,9 @@
     const button=event.target.closest("[data-craft-tool]");
     if(!button||button.disabled)return;
     const key=button.dataset.craftTool,item=Crafting.recipe(key),station=state.crafting.station;
-    if(!station||!item||Crafting.locked(state,key)||Crafting.missing(state,item.cost).length){
-      notify("Receita indisponível.");return;
+    if(!station||!item||Crafting.locked(state,key)||Crafting.missing(state,item.cost).length||
+      (item.type!=="material"&&!state.workers.some(w=>Crafting.canEquip(w,key)))){
+      notify("Receita indisponível para os trabalhadores atuais.");return;
     }
     const id=Orders.id("craftTool",station.x,station.y,key);
     if(state.orders.some(o=>o.id===id)){notify("Esta receita já está na fila.");return;}
@@ -3294,15 +3297,29 @@
   });
 
   // Tela obrigatória antes da nova partida: dois espaços de recrutamento gratuitos.
-  function randomStarter(excludeNames = [], excludeAppearances = []){
-    let candidate;
-    do {candidate=newCandidate();}
-    while(excludeNames.includes(candidate.name)||excludeAppearances.includes(candidate.appearance));
+  function sharedNegativeTraits(a,b){
+    return (a?.neg||[]).filter(type=>(b?.neg||[]).includes(type));
+  }
+  function randomStarter(excludeNames = [], excludeAppearances = [], forbiddenNeg = []){
+    for(let attempt=0;attempt<200;attempt++){
+      const candidate=newCandidate();
+      if(!excludeNames.includes(candidate.name)&&
+        !excludeAppearances.includes(candidate.appearance)&&
+        !candidate.neg.some(type=>forbiddenNeg.includes(type)))return candidate;
+    }
+    // Se a combinação for muito rara, preservar a jogabilidade em vez de travar.
+    const candidate=newCandidate();
+    candidate.neg=candidate.neg.filter(type=>!forbiddenNeg.includes(type));
+    for(let attempt=0;attempt<200&&(excludeNames.includes(candidate.name)||
+      excludeAppearances.includes(candidate.appearance));attempt++){
+      const retry=newCandidate();
+      candidate.name=retry.name;candidate.appearance=retry.appearance;
+    }
     return candidate;
   }
   function createStarterTeam(){
     const first=randomStarter();
-    starters=[first,randomStarter([first.name],[first.appearance])];
+    starters=[first,randomStarter([first.name],[first.appearance],first.neg)];
     renderStarters();
     $("#starter-dialog").showModal();
   }
@@ -3457,7 +3474,8 @@
   $("#starter-slots").addEventListener("click",event=>{
     const btn=event.target.closest("[data-reroll]");if(!btn)return;
     const i=Number(btn.dataset.reroll);
-    starters[i]=randomStarter(starters.filter((_,idx)=>idx!==i).map(c=>c.name),starters.filter((_,idx)=>idx!==i).map(c=>c.appearance));
+    const other=starters[1-i];
+    starters[i]=randomStarter([other.name],[other.appearance],other.neg);
     renderStarters();
   });
   $("#starter-slots").addEventListener("change",event=>{
@@ -3475,10 +3493,15 @@
     starters[index].name=validName;field.value=validName;
   });
   $("#starter-reroll-all").addEventListener("click",()=>{
-    const first=randomStarter();starters=[first,randomStarter([first.name],[first.appearance])];renderStarters();
+    const first=randomStarter();starters=[first,randomStarter([first.name],[first.appearance],first.neg)];renderStarters();
   });
   $("#starter-confirm").addEventListener("click",()=>{
     if(starters.length!==2||starters[0].name===starters[1].name)return;
+    const repeated=sharedNegativeTraits(starters[0],starters[1]);
+    if(repeated.length){
+      notify("Equipe inválida: os colonos iniciais não podem compartilhar restrições vermelhas.");
+      return;
+    }
     const selected=starters.map(c=>({name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance}));
     const farmName=$("#farm-name").value.trim().slice(0,32)||"Vale do Amanhecer";
     $("#starter-dialog").close();start(false,selected,{mode:pendingMode,farmName});renderPriorityControls();
