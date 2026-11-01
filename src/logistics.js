@@ -15,7 +15,7 @@
       i&&Number.isInteger(i.x)&&Number.isInteger(i.y)).map(c=>({
         x:c.x,y:c.y,items:c.items&&typeof c.items==="object"?c.items:{}
       })):[];
-    state.nextDropId=Math.max(1,Number(state.nextDropId)||1);
+    state.nextDropId=Math.max(1,Number(state.nextDropId)||1,...state.groundItems.map(i=>(Number(i.id)||0)+1));
     return state;
   };
   const drop=(state,x,y,kind,qty=1)=>{
