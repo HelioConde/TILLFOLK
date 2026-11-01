@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const TILE = 32, W = 80, H = 50, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
-  const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics;
+  const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight;
   if(!Crops)throw new Error("Carregue src/crop-catalog.js antes do motor TILLFOLK.");
   if(!Crafting)throw new Error("Carregue src/crafting.js antes do motor TILLFOLK.");
   if(!Missions)throw new Error("Carregue src/missions.js antes do motor TILLFOLK.");
@@ -1540,6 +1540,8 @@
       }
     }
     World.drawAmbient(ctx,state.world,animationsEnabled()?performance.now():0,TILE);
+    // Iluminação somente no mundo; HUD, menus, missão e prévias continuam legíveis.
+    Night.paint(ctx,state.minutes,visibleBounds,TILE,state.workers,state.homes,state.workstations);
     drawTutorialSpeech(visibleBounds);
     // Prévia ANTES de construir: azul transparente para posição válida,
     // vermelho transparente se a regra de terreno/ocupação impedir a obra.
@@ -1754,6 +1756,8 @@
     const set=(id,value)=>{$(id).textContent=value;};
     set("#day",String(state.day).padStart(2,"0"));
     const m=Math.floor(state.minutes);set("#clock",String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
+    const phase=Night.phase(state.minutes),label=$("#day-night-phase");
+    if(label){label.textContent=Night.labels[phase];label.dataset.phase=phase;}
     for(const key of ["seeds","water","food"])set("#"+key,state[key]);
     set("#worker-count",state.workers.length);set("#task-count",tasks.length);
     const manureOrderButton=$('[data-order-type="collectManure"]');
