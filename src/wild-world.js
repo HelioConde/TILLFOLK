@@ -121,9 +121,53 @@
     }
     return added;
   }
+
+  // Os seis biomas mantêm o autotile original. Água ocupa os dois lados das
+  // transições, criando rios de pelo menos duas células entre ecossistemas.
+  function separateBiomes(world,used,reserved){
+    const {width:w,height:h,biomeMap:map}=world;
+    const add=(x,y)=>{
+      const id=key(x,y);
+      if(!inMap(x,y,w,h)||reserved.has(id)||nearStart(x,y,w,h)||used.has(id))return;
+      world.water.push({x,y});used.add(id);
+    };
+    for(let y=2;y<h-2;y++)for(let x=2;x<w-2;x++){
+      const current=map[y*w+x];
+      for(const [dx,dy] of [[1,0],[0,1]]){
+        const nx=x+dx,ny=y+dy;
+        if(map[ny*w+nx]!==current){
+          add(x,y);add(nx,ny);
+        }
+      }
+    }
+  }
+  // Pontes são travessias transitáveis SOBRE a água, não buracos nos rios.
+  // Rotas 4-conectadas partem da clareira rumo ao núcleo de cada bioma.
+  function createCrossings(world,used){
+    const {width:w,height:h}=world,water=new Set(world.water.map(p=>key(p.x,p.y)));
+    const crossings=new Map(),cx=Math.floor(w/2),cy=Math.floor(h/2);
+    const destinations=[[.18,.79],[.81,.18],[.79,.77],[.22,.17],[.54,.17]];
+    for(const [tx,ty] of destinations){
+      let x=cx,y=cy;
+      const endX=Math.max(2,Math.min(w-3,Math.floor(tx*w)));
+      const endY=Math.max(2,Math.min(h-3,Math.floor(ty*h)));
+      // O corredor de navegação permanece livre de árvores que prendam o colono.
+      used.add(key(x,y));
+      while(x!==endX||y!==endY){
+        const dx=endX-x,dy=endY-y;
+        const horizontal=dx!==0&&(dy===0||Math.abs(dx/w)>=Math.abs(dy/h));
+        if(horizontal)x+=Math.sign(dx);
+        else y+=Math.sign(dy);
+        const id=key(x,y);
+        used.add(id);
+        if(water.has(id))crossings.set(id,{x,y,axis:horizontal?"horizontal":"vertical"});
+      }
+    }
+    world.crossings=Array.from(crossings.values());
+  }
   function create(seed,w,h,exclude=[]){
     const random=randSeed(seed), reserved=new Set(exclude.map(p=>key(p.x,p.y)));
-    const world={version:2,seed,width:w,height:h,objects:[],water:[],lastRegrownDay:1};
+    const world={version:3,seed,width:w,height:h,objects:[],water:[],crossings:[],lastRegrownDay:1};
     world.biomeMap=Biomes.generate(seed,w,h);
     const used=new Set(reserved);
     // Lagoa natural orgânica com margens naturais, em um canto variável, sem cortar a clareira.
@@ -179,8 +223,20 @@
         }
       }
     }
+    separateBiomes(world,used,reserved);
     connectWater(world);
     world.water.forEach(tile=>used.add(key(tile.x,tile.y)));
+    createCrossings(world,used);
+    // Distância à água calculada UMA vez (evita O(terreno × rios)).
+    const wetDistance=new Uint8Array(w*h).fill(5);
+    for(const tile of world.water){
+      for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){
+        const nx=tile.x+dx,ny=tile.y+dy,d=Math.abs(dx)+Math.abs(dy);
+        if(nx<0||ny<0||nx>=w||ny>=h||d>4)continue;
+        const index=ny*w+nx;
+        if(d<wetDistance[index])wetDistance[index]=d;
+      }
+    }
     const clusters=Array.from({length:6},()=>({x:2+random()*(w-4),y:2+random()*(h-4),r:2+random()*2.3}));
     for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
       if(used.has(key(x,y))||nearStart(x,y,w,h))continue;
@@ -189,7 +245,7 @@
         biome==="w"?.045:biome==="p"?-.11:0;
       // O ruído e os bosques criam manchas de vegetação, evitando linhas regulares.
       const woody=clusters.reduce((value,c)=>Math.max(value,Math.exp(-(((x-c.x)**2+(y-c.y)**2)/(2*c.r*c.r)))),0);
-      const moisture=world.water.reduce((d,p)=>Math.min(d,Math.abs(x-p.x)+Math.abs(y-p.y)),99);
+      const moisture=wetDistance[y*w+x];
       const roll=random();
       let kind=null;
       if(roll < Math.max(.006,.055+woody*.16+modifier))kind="tree";
@@ -237,6 +293,7 @@
     if(!current||current.length!==world.objects.length||current.waterLength!==world.water.length){
       current={objects:new Map(world.objects.map(o=>[key(o.x,o.y),o])),
         waters:new Set(world.water.map(o=>key(o.x,o.y))),
+        bridges:new Set((world.crossings||[]).map(o=>key(o.x,o.y))),
         length:world.objects.length,waterLength:world.water.length};
       indices.set(world,current);
     }
@@ -244,8 +301,9 @@
   }
   function at(world,x,y){return index(world)?.objects.get(key(x,y))||null;}
   function waterAt(world,x,y){return Boolean(index(world)?.waters.has(key(x,y)));}
+  function bridgeAt(world,x,y){return Boolean(index(world)?.bridges.has(key(x,y)));}
   function blocked(world,x,y,w,h){
-    return !inMap(x,y,w,h)||waterAt(world,x,y)||solidKinds.has(at(world,x,y)?.kind);
+    return !inMap(x,y,w,h)||(waterAt(world,x,y)&&!bridgeAt(world,x,y))||solidKinds.has(at(world,x,y)?.kind);
   }
   function clear(world,x,y){
     const obj=at(world,x,y);
@@ -344,6 +402,22 @@
         ctx.fillStyle="#84b963";ctx.fillRect(x+8,y+16,10,3);
       }
     }
+    // Pontes Sprout Lands preservam o canal de água e fornecem acesso a biomas.
+    const bridge=sprites.bridge;
+    for(const crossing of world?.crossings||[]){
+      if(bounds&&(crossing.x<bounds.x0||crossing.x>bounds.x1||
+         crossing.y<bounds.y0||crossing.y>bounds.y1))continue;
+      const x=crossing.x*size,y=crossing.y*size;
+      if(bridge?.complete&&bridge.naturalWidth>=16&&bridge.naturalHeight>=16)
+        part(bridge,0,0,16,16,x,y,size,size);
+      else{
+        ctx.fillStyle="#795738";ctx.fillRect(x+2,y+2,size-4,size-4);
+        ctx.fillStyle="#c7a879";
+        for(let n=5;n<size-3;n+=8)
+          if(crossing.axis==="vertical")ctx.fillRect(x+3,y+n,size-6,3);
+          else ctx.fillRect(x+n,y+3,3,size-6);
+      }
+    }
   }
   function drawObject(ctx,obj,sprites,size,part){
     const x=obj.x*size,y=obj.y*size,v=obj.variant||0,kind=obj.kind;
@@ -428,16 +502,20 @@
       .concat((legacy?.objects||[]).filter(o=>o&&Number.isFinite(o.x)&&Number.isFinite(o.y)));
     enlarged.water=enlarged.water.filter(o=>!withinOld(o))
       .concat((legacy?.water||[]).filter(o=>o&&Number.isFinite(o.x)&&Number.isFinite(o.y)));
+    enlarged.crossings=enlarged.crossings.filter(o=>!withinOld(o))
+      .concat((legacy?.crossings||[]).filter(o=>o&&Number.isFinite(o.x)&&Number.isFinite(o.y)));
     const cells=enlarged.biomeMap.split("");
-    for(let y=0;y<oldHeight;y++)for(let x=0;x<oldWidth;x++)
-      cells[y*width+x]="g";
+    const previousMap=typeof legacy?.biomeMap==="string"&&
+      legacy.biomeMap.length===oldWidth*oldHeight?legacy.biomeMap:null;
+    for(let y=0;y<Math.min(oldHeight,height);y++)for(let x=0;x<Math.min(oldWidth,width);x++)
+      cells[y*width+x]=previousMap?.[y*oldWidth+x]||"g";
     enlarged.biomeMap=cells.join("");
     enlarged.lastRegrownDay=legacy?.lastRegrownDay||1;
     stripFruitTrees(enlarged);
     removeValleyEnclosure(enlarged);
     return enlarged;
   }
-  window.TillfolkWild=Object.freeze({create,expand,valleyBounds,ringTile,removeValleyEnclosure,connectWater,at,waterAt,blocked,clear,regrow,
+  window.TillfolkWild=Object.freeze({create,expand,valleyBounds,ringTile,removeValleyEnclosure,connectWater,at,waterAt,bridgeAt,blocked,clear,regrow,
     drawGround,drawObject,drawAmbient,spriteFrame,atlasFrames,
     stripFruitTrees,nonFruitTreeVariants,
     terrainAt:Biomes.at,biomeAt:Biomes.kind});
