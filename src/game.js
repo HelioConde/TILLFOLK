@@ -61,7 +61,11 @@
   const chestImage=new Image();chestImage.src=Logistics.CHEST_SPRITE;
   const pickupTypes={
     chest:{icon:"🧰",name:"Baú"},twigs:{icon:"🌿",name:"Graveto"},grass:{icon:"🌾",name:"Fibra"},
-    stone:{icon:"🪨",name:"Pedra"},wood:{icon:"🪵",name:"Madeira"},
+    stone:{icon:"🪨",name:"Pedra"},gravel:{icon:"🪨",name:"Cascalho"},
+    bronze:{icon:"🥉",name:"Bronze"},iron:{icon:"⚙️",name:"Ferro"},
+    gold:{icon:"🟨",name:"Ouro"},diamond:{icon:"💎",name:"Diamante"},
+    bauxite:{icon:"🔶",name:"Bauxita"},aluminumAlloy:{icon:"🔩",name:"Liga de alumínio"},
+    goldCircuit:{icon:"🔌",name:"Circuito condutor"},wood:{icon:"🪵",name:"Madeira"},
     seed:{icon:"🌱",name:"Semente"},food:{icon:"🥕",name:"Comida"},
     water:{icon:"💧",name:"Água"},manure:{icon:"💩",name:"Esterco"},
     mushroom:{icon:"🍄",name:"Cogumelo"},flower:{icon:"🌸",name:"Flor"},
@@ -2968,7 +2972,9 @@
         type&&type!=="inspecionar"?Crafting.blocked(state,type,object):null;
       const tip=$("#tile-tooltip");
       if(needed){
-        const typeNames={boulder:"Pedra grande",tree:"Árvore",stump:"Toco",log:"Tronco",thicket:"Arbusto"};
+        const typeNames={boulder:object?.mineral?
+          (Minerals.RESOURCES[object.mineral]?.name||"Minério"):"Pedra grande",
+          tree:"Árvore",stump:"Toco",log:"Tronco",thicket:"Arbusto"};
         // O solo livre nao possui objeto: bloqueios de enxada/regador ainda sao validos.
         // Nunca acessar .kind sem conferir, ou cada pointermove quebra o mapa.
         const targetName=object?.kind?(typeNames[object.kind]||"Recurso"):"Terreno";
@@ -3178,19 +3184,23 @@
       "Work Station pronta! Faça ferramentas e transforme colheitas em sementes.":
       "A Work Station ainda não está pronta. Colete 10 gravetos e use Objetos → Work Station.";
     $("#workshop-tools").innerHTML=Crafting.RECIPES.map((recipe,index)=>{
-      const holders=state.workers.filter(w=>Crafting.has(state,recipe.key,w)).length;
-      const made=holders===state.workers.length&&state.workers.length>0;
+      const material=recipe.type==="material";
+      const holders=material?0:state.workers.filter(w=>Crafting.has(state,recipe.key,w)).length;
+      const made=!material&&holders===state.workers.length&&state.workers.length>0;
       const pending=state.orders.some(o=>o.type==="craftTool"&&o.recipe===recipe.key);
       const lacking=Crafting.missing(state,recipe.cost).length>0;
       const locked=Crafting.locked(state,recipe.key);
       const label=made?"✓ Todos equipados":pending?"⏳ Fabricando":locked?
-        "🔒 Colha primeiro sua horta":Crafting.formatCost(recipe.cost);
+        "🔒 "+locked:Crafting.formatCost(recipe.cost);
       return '<button type="button" data-craft-tool="'+recipe.key+'" '+
         ((!ready||made||pending||lacking||locked)?'disabled':'')+'>'+
         '<canvas class="workstation-tool-sprite" data-tool-index="'+index+'" width="48" height="48" role="img" aria-label="Ilustração de '+recipe.name+'"></canvas>'+
         '<span class="workstation-tool-text"><strong>'+recipe.icon+' '+recipe.name+'</strong>'+
         '<small>'+recipe.help+'</small><small>'+label+'</small>'+
-        '<small>Equipados: '+holders+' / '+state.workers.length+'</small>'+
+        (material?'<small>Produção: '+recipe.output.qty+' '+escapeHtml(
+          Minerals.RESOURCES[recipe.output.kind]?.name||recipe.output.kind)+
+          ' · vai ao chão da oficina</small>':
+          '<small>Equipados: '+holders+' / '+state.workers.length+'</small>')+
         (Crafting.itemFrame(recipe.key)?'':'<small class="workstation-art-note">Ícone provisório · sem sprite identificado</small>')+
         '</span></button>';
     }).join("")+
@@ -3229,7 +3239,7 @@
       notify("Receita indisponível.");return;
     }
     const id=Orders.id("craftTool",station.x,station.y,key);
-    if(state.orders.some(o=>o.id===id)){notify("Esta ferramenta já está na fila.");return;}
+    if(state.orders.some(o=>o.id===id)){notify("Esta receita já está na fila.");return;}
     state.orders.push({id,type:"craftTool",recipe:key,x:station.x,y:station.y,priority:8});
     log("Fabricação de "+item.name+" encomendada. Um colono irá à Work Station.");
     notify("🛠️ "+item.name+" na fila: um trabalhador irá até a bancada.");
