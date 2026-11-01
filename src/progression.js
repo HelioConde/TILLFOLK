@@ -29,6 +29,11 @@
     {id:"research3",chapter:4,title:"Pesquisar rotina de descanso",hint:"Visite um continente e construa um poço.",reward:2},
     {id:"research4",chapter:4,title:"Pesquisar transporte avançado",hint:"Explore três continentes e organize ao menos três colonos.",reward:3},
     {id:"exploreAll",chapter:4,title:"Conhecer os cinco continentes",hint:"Visite bosque, deserto, gelo, pântano e cogumelos.",reward:5},
+    {id:"bronzeOre",chapter:4,title:"Recuperar bronze no bosque",hint:"Minere sucata de bronze usando uma picareta de pedra.",reward:2},
+    {id:"ironOre",chapter:4,title:"Extrair ferro no deserto",hint:"Construa a picareta de bronze e extraia minério de ferro.",reward:2},
+    {id:"goldOre",chapter:4,title:"Extrair ouro no gelo",hint:"Uma picareta de ferro pode extrair veios de ouro.",reward:2},
+    {id:"diamondOre",chapter:4,title:"Extrair diamante no pântano",hint:"Busque cristais para fabricar a picareta de diamante.",reward:3},
+    {id:"aluminumRefining",chapter:5,title:"Produzir a primeira liga de alumínio",hint:"No sexto continente extraia bauxita com picareta de diamante e refine-a na oficina.",reward:4},
     {id:"rocketPad",chapter:5,title:"Fundar a plataforma espacial",hint:"Construa uma pista 3×3 segura na ilha; recursos são transportados até a obra.",reward:3},
     {id:"rocketHull",chapter:5,title:"Montar casco e cabine",hint:"Planeje a segunda etapa, entregando madeira, pedra e fibra.",reward:3},
     {id:"rocketEngine",chapter:5,title:"Construir o motor",hint:"Recolha minerais, cogumelos e ervas para equipar a propulsão.",reward:4},
@@ -41,7 +46,7 @@
     {title:"Uma fazenda de verdade",icon:"🏡",description:"Criar estrutura, preservar recursos e manter comida guardada.",unlock:"Base para pesquisar conservação e construir o poço."},
     {title:"Colônia organizada",icon:"💧",description:"Garantir água e descanso antes de sair da ilha central.",unlock:"Estrutura para expedições duradouras."},
     {title:"Além dos rios",icon:"🧭",description:"Preparar proteção e enviar colonos aos novos continentes.",unlock:"Descobertas dão conhecimento para pesquisas avançadas."},
-    {title:"Domínio dos continentes",icon:"🌍",description:"Explorar os cinco biomas e dominar as tecnologias.",unlock:"Projeto espacial desbloqueado: reunir materiais e preparar a partida."},
+    {title:"Domínio dos continentes",icon:"🌍",description:"Explorar os cinco biomas, minerar metais e reunir minerais raros.",unlock:"Projeto espacial desbloqueado: reunir materiais e preparar a partida."},
     {title:"Última esperança: abandonar o planeta",icon:"🚀",description:"Construir, abastecer e lançar uma nave para escapar do mundo superpovoado.",unlock:"Vitória narrativa: a tripulação deixa o planeta, e a colônia pode continuar livre."}
   ]);
   const count=(array)=>Array.isArray(array)?array.length:0;
@@ -95,6 +100,11 @@
       case "research3":return research>=3;
       case "research4":return research>=4;
       case "exploreAll":return discovered>=5;
+      case "bronzeOre":return Boolean(state?.minerals?.discovered?.bronze);
+      case "ironOre":return Boolean(state?.minerals?.discovered?.iron);
+      case "goldOre":return Boolean(state?.minerals?.discovered?.gold);
+      case "diamondOre":return Boolean(state?.minerals?.discovered?.diamond);
+      case "aluminumRefining":return Boolean(state?.minerals?.discovered?.aluminumAlloy);
       case "rocketPad":return (state?.rocket?.stage||0)>=1;
       case "rocketHull":return (state?.rocket?.stage||0)>=2;
       case "rocketEngine":return (state?.rocket?.stage||0)>=3;
