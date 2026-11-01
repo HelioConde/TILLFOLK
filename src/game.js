@@ -54,7 +54,7 @@
   const pickupEffects=[],pickupHistory=[];
   const chestImage=new Image();chestImage.src=Logistics.CHEST_SPRITE;
   const pickupTypes={
-    twigs:{icon:"🌿",name:"Graveto"},grass:{icon:"🌾",name:"Fibra"},
+    chest:{icon:"🧰",name:"Baú"},twigs:{icon:"🌿",name:"Graveto"},grass:{icon:"🌾",name:"Fibra"},
     stone:{icon:"🪨",name:"Pedra"},wood:{icon:"🪵",name:"Madeira"},
     seed:{icon:"🌱",name:"Semente"},food:{icon:"🥕",name:"Comida"},
     water:{icon:"💧",name:"Água"},manure:{icon:"💩",name:"Esterco"},
@@ -448,7 +448,10 @@
       !World.at(state.world,x,y)&&!World.waterAt(state.world,x,y)&&
       !occupiedByStation(x,y)&&!occupiedByHome(x,y)&&
       !window.TillfolkHouseBuilder.occupied(state.house,x,y)&&
-      !state.chests?.some(c=>c.x===x&&c.y===y);
+      !state.chests?.some(c=>c.x===x&&c.y===y)&&
+      !state.orders.some(o=>o.type!=="buildChest"&&
+        (o.type==="buildHome"?homeTiles(o.x,o.y).some(([hx,hy])=>hx===x&&hy===y):
+         o.x===x&&o.y===y&&o.type==="buildStation"));
   }
   function homeSiteValid(x,y){
     if(x<2||y<2||x>=W-3||y>=H-3)return false;
@@ -1633,6 +1636,9 @@
       const kind=naturalKinds[p.key];
       if(kind){
         World.drawObject(ctx,{x:p.x,y:p.y,kind,variant:0},sprite,TILE,part);
+        rendered=true;
+      }else if(p.key==="chest"&&valid(chestImage)){
+        part(chestImage,0,0,16,16,p.x*TILE,p.y*TILE-4,TILE,TILE);
         rendered=true;
       }else if(p.key==="station"&&valid(sprite.workstation)){
         ctx.drawImage(sprite.workstation,p.x*TILE-4,p.y*TILE-20,40,49);rendered=true;
