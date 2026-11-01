@@ -3564,9 +3564,22 @@
     }
     else if(step.target==="carry")candidates=state.plots.filter(p=>p.produce);
     else if(step.target==="plan")candidates=state.plots.filter(p=>homeSiteValid(p.x,p.y));
+    else if(["axe","hoe","wateringCan"].includes(step.target)){
+      const recipe=Crafting.recipe(step.target);
+      const missing=recipe?Crafting.missing(state,recipe.cost):[];
+      if(!missing.length){openWorkshop();return;}
+      const resource=missing[0][0];
+      const kind={twigs:"twig",gravel:"pebble",grass:"grass"}[resource];
+      candidates=kind?objects.filter(item=>item.kind===kind):[];
+      if(!candidates.length){
+        notify("Não há "+(Crafting.formatCost({[resource]:1})||resource)+
+          " disponível perto da fazenda. Explore e recolha recursos.");
+        return;
+      }
+      setTool("universal");
+    }
     const target=nearest(candidates);
-    if(["axe","hoe","wateringCan"].includes(step.target)){openWorkshop();return;}
-    if(step.target==="workstation"&&Logistics.available(state,"twigs")<Crafting.STATION_COST){setTool("clear");}
+    if(step.target==="workstation"&&Logistics.available(state,"twigs")<Crafting.STATION_COST){setTool("universal");}
     else if(step.tool==="construir"){
       setTool("construir");
       $(step.target==="workstation"?'[data-build-layer="station"]':'[data-build-layer="home"]').click();
@@ -3574,7 +3587,8 @@
     if(target){
       focusCameraAt(target.x+.5,target.y+.5);
       showMapFeedback(target.x,target.y,"#ecf8a8");
-      notify(step.target==="workstation"&&Logistics.available(state,"twigs")<Crafting.STATION_COST?"Graveto encontrado! Marque Limpar para recolhê-lo.":
+      notify(step.target==="workstation"&&Logistics.available(state,"twigs")<Crafting.STATION_COST?"Graveto encontrado! Use Universal para recolhê-lo.":
+        ["axe","hoe","wateringCan"].includes(step.target)?"Material encontrado! Clique com Universal para recolher.":
         step.target==="grass"?"Tufo de grama encontrado! Marque a ordem de Limpar.":
         "Local sugerido destacado. Clique no terreno para dar a ordem.");
     }else{
