@@ -22,3 +22,13 @@ Risco: o workflow visual requer download do Chromium no runner; se falhar por re
 14. Correção do mapa que ultrapassava a viewport no desktop — implementado.
 15. Teste de canvas e ferramentas 1600x900 e 1366x768 e capturas de regressão — automatizado.
 16. Manter GitHub Pages estático, sem banco de dados — preservado.
+
+
+## Rodada 01/11/2026 — auditoria visual e melhoria da abertura
+
+- Evidência de entrada: captura 1600×811 fornecida pelo criador. A tela original tinha sete botões com peso semelhante e uma horta em grade muito repetitiva.
+- "Nova Fazenda" continua como ação principal. O "Tutorial" ganha identificação **Recomendado** sem mudar ID, evento de clique ou nome acessível.
+- Configurações, Créditos e Sair recebem tratamento de utilidades, separados pelo espaçamento; mantidos tocáveis, com foco visível e suporte a movimento reduzido.
+- A cena ilustrativa preserva seus arquivos de sprites e animações, substituindo a horta única por dois canteiros com corredor de grama. Não muda tilemap real, regras de terreno, saves, progressão ou gameplay.
+- Asserção Playwright da frase inicial sincronizada com a história escrita no HTML; teste adicional cobre selo do tutorial, geometria das ações e screenshots em 1600×900, 1366×600 e 390×844.
+- **Verificação final:** consultar o workflow de QA e screenshots reais após o push; não marcar um teste ainda não executado como aprovado.
