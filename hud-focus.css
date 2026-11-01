@@ -167,3 +167,31 @@ body.play-session .hud-extra-stats .colony-life-trigger{
 @media(prefers-reduced-motion:reduce){
   body.play-session .topbar #hud-extra-stats{transition:none!important;animation:none!important}
 }
+
+/* No celular estreito, a prioridade é enxergar TODAS as estatísticas vitais.
+   Velocidade recebe sua própria linha, sem exigir rolagem horizontal de comida. */
+@media(max-width:560px){
+  body.play-session .topbar{
+    grid-template-rows:37px 35px 31px!important;
+    height:126px!important;min-height:126px!important;max-height:126px!important;
+    row-gap:4px!important;
+  }
+  body.play-session .topbar .metrics{
+    grid-column:1/-1!important;grid-row:2!important;
+    width:100%!important;overflow-x:auto!important;justify-content:flex-start!important;
+  }
+  body.play-session .topbar #day-night-metric{
+    display:grid!important;min-width:60px!important;min-height:32px!important;
+  }
+  body.play-session .topbar #day-night-phase{font-size:11px!important}
+  body.play-session .topbar .speed-wrap{
+    grid-column:1/-1!important;grid-row:3!important;
+    justify-self:center!important;min-height:30px!important;
+    border-left:none!important;padding:0!important;margin:0!important;
+  }
+  body.play-session .topbar .speed-wrap button{
+    height:30px!important;min-height:30px!important;width:35px!important;min-width:35px!important;
+  }
+  body.play-session .topbar #hud-extra-stats{top:134px!important}
+  body.play-session .scene-head{top:137px!important}
+}
