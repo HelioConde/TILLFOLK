@@ -23,8 +23,8 @@
     swampBoots:Object.freeze({name:"Botas impermeáveis",icon:"🥾",help:"Travessia segura das terras pantanosas.",cost:{wood:7,grass:6}}),
     filterMask:Object.freeze({name:"Máscara filtrante",icon:"😷",help:"Filtra os esporos do continente dos cogumelos.",cost:{grass:8,twigs:8,stone:3}})
   });
-  // Somente animações verificáveis pelas nomenclaturas dos arquivos do projeto:
-  // os animais deixam de usar o pacote de ícones estáticos 32x32.
+  // Preferir os PNGs transparentes licenciados já disponíveis no projeto.
+  // Os arquivos 'assets_premium_preview' continham caixas cinzas/desfocadas.
   const SPECIES=Object.freeze({
     g:Object.freeze(["rabbit","chicken","cow","pig"]),
     f:Object.freeze(["fox","rabbit","bird"]),
@@ -34,42 +34,33 @@
     p:Object.freeze(["bat"])
   });
   const ROOT="./public/assets/";
-  const preview=ROOT+"assets_premium_preview/animals/";
-  const animated=(kind,folder,prefix,w,h,dirs=["down","left","right","up"])=>{
-    const clips={};
-    for(const direction of dirs){
-      clips["idle_"+direction]={path:folder+"/idle/"+prefix+"_idle_"+direction+"_"+w+"x"+h+".png",frames:1,w,h};
-      clips["move_"+direction]={path:folder+"/move/"+prefix+"_move_"+direction+"_"+w+"x"+h+"_4frames.png",frames:4,w,h};
-    }
-    return {kind,mode:"directional",clips,drawW:w===32?44:36,drawH:h===32?43:42};
-  };
+  const tiny=ROOT+"FREE 64 Tiny Animals – 32x32 Pixel Art Pack/";
+  const sprout=ROOT+"Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Animals/";
+  // Não inventar quadros: espécies com sprite único ganham micro-salto.
+  const single=(folder,filename,motion=2)=>({
+    mode:"single",mirror:true,drawW:32,drawH:32,motion,
+    clips:{idle:{path:tiny+folder+"/"+filename+".png",frames:1,w:32,h:32}}
+  });
   const ANIMATIONS=Object.freeze({
-    rabbit:animated("rabbit",preview+"bunnies/bunny_01","PREMIUM_bunny_01",16,20),
-    fox:animated("fox",preview+"foxes/fox_01","PREMIUM_fox_01",16,20),
-    cow:animated("cow",preview+"cows/cow_01/brown","PREMIUM_cow_01_brown",32,32),
-    pig:animated("pig",preview+"pigs/pig_01/pink","PREMIUM_pig_01_pink",32,32),
-    bird:(()=>{
-      const folder=preview+"birds/bird_01/",prefix="PREMIUM_bird_01";
-      const clips={};
-      for(const dir of ["down","left","right","up"])
-        clips["move_"+dir]={path:folder+"fly/"+prefix+"_fly_"+dir+"_16x20_4frames.png",frames:4,w:16,h:20};
-      for(const dir of ["left","right"])
-        clips["idle_"+dir]={path:folder+"idle/"+prefix+"_idle_"+dir+"_16x20.png",frames:1,w:16,h:20};
-      return {mode:"directional",clips,drawW:35,drawH:39};
-    })(),
-    // Animação idle horizontal do pack Little Dreamyland: número de quadros
-    // é deduzido da imagem carregada, sem esticar a spritesheet completa.
-    chicken:{mode:"strip",clips:{idle:{
-      path:ROOT+"Little Dreamyland - Free Pack/Sprites/Animals/CHICKEN/Chicken_Idle.png",
-      frames:"auto-square",w:32,h:32}},drawW:39,drawH:39},
-    frog:{mode:"strip",clips:{idle:{
-      path:ROOT+"Sprout Sorry pack/Early Access/Plant update 2/frog/frog_spritesheet.png",
-      frames:"auto-16",w:16,h:16}},drawW:34,drawH:34},
-    // Esta spritesheet do Little Dreamyland tem quadros maiores que o
-    // pequeno bat de 6 frames do outro pacote, que ficava estourado no jogo.
-    bat:{mode:"strip",clips:{idle:{
-      path:ROOT+"Little Dreamyland - Free Pack/Sprites/Enemies/BAT/Bat idle.png",
-      frames:"auto-square",w:32,h:32}},drawW:37,drawH:37}
+    rabbit:single("Pets","rabbit",4),
+    fox:single("Forest Animals","fox",2),
+    cow:{mode:"strip",mirror:true,drawW:42,drawH:42,motion:1,clips:{
+      idle:{path:sprout+"Cow/Light cow animations.png",frames:3,w:32,h:32}
+    }},
+    pig:single("Farm Animals","pig",1),
+    bird:single("Birds","sparrow",3),
+    // Animados: mesmos atlas Sprout Lands já utilizados no menu principal.
+    chicken:{mode:"strip",mirror:true,drawW:30,drawH:30,motion:1,clips:{
+      idle:{path:sprout+"Chicken/chicken default.png",frames:4,w:16,h:16}
+    }},
+    frog:{mode:"strip",mirror:true,drawW:30,drawH:30,motion:2,clips:{
+      idle:{path:ROOT+"Sprout Sorry pack/Early Access/Plant update 2/frog/frog_spritesheet.png",
+        frames:"auto-16",w:16,h:16}
+    }},
+    bat:{mode:"strip",mirror:true,drawW:32,drawH:32,motion:2,clips:{
+      idle:{path:ROOT+"Little Dreamyland - Free Pack/Sprites/Enemies/BAT/Bat idle.png",
+        frames:"auto-square",w:32,h:32}
+    }}
   });
   const spriteKey=(kind,clip)=>"wild_"+kind+"_"+clip;
   const spriteSources=()=>Object.entries(ANIMATIONS).flatMap(([kind,profile])=>
@@ -104,11 +95,13 @@
       else clip="idle";
     }
     const frame=profile.clips[clip]||Object.values(profile.clips)[0];
+    const phase=(Math.abs(Math.floor(Number(animal?.homeX)||0))*13)%7;
+    const frames=Number.isInteger(frame.frames)?frame.frames:99;
+    const time=Math.max(0,Number(clockMs)||0);
     return {key:spriteKey(kind,clip),frame,drawW:profile.drawW,drawH:profile.drawH,
-      index:active?Math.floor(Math.max(0,clockMs)/155+
-        (Math.abs(Number(animal?.homeX)||0)*13)%7)%(frame.frames==="auto-square"||
-        frame.frames==="auto-16"?99:frame.frames):0,
-      flip:false};
+      index:active?Math.floor(time/230+phase)%frames:0,
+      flip:Boolean(profile.mirror&&facing==="left"),
+      lift:active&&moving?Math.round(Math.max(0,Math.sin(time/150+phase))*(profile.motion||0)):0};
   }
   function frameRect(sprite,image){
     if(!image?.naturalWidth||!image.naturalHeight)return null;
