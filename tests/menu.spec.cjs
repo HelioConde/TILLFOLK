@@ -1183,7 +1183,7 @@ test('Subtítulo do menu: contraste, legibilidade e seleção de texto',async({p
     await page.setViewportSize(view);
     const tagline=page.locator('#menu .title-navigation > .title-tagline');
     await expect(tagline).toBeVisible();
-    await expect(tagline).toHaveText('Uma fazenda cresce melhor quando cada pessoa encontra seu talento.');
+    await expect(tagline).toHaveText('Num planeta superpovoado, sua colônia é a esperança de alcançar as estrelas.');
     const design=await tagline.evaluate(el=>{
       const css=getComputedStyle(el);
       const r=el.getBoundingClientRect();
@@ -1268,4 +1268,33 @@ test('Homenagem a Simone: migrar só apelidos automáticos em saves antigos',asy
   await continueIfMenuVisible(page);
   const again=await page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
   expect(again.workers.map(w=>w.name)).toEqual(changed.workers.map(w=>w.name));
+});
+
+test('Abertura 2026-11: tutorial destacado, controles acessíveis e canteiros orgânicos',async({page})=>{
+  const errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+  const tutorial=page.locator('#tutorial-start');
+  await expect(tutorial.locator('.title-menu-chip')).toHaveText('Recomendado');
+  await expect(tutorial).toHaveAttribute('aria-label','Iniciar tutorial interativo com missões');
+  for(const view of [{width:1600,height:900},{width:1366,height:600},{width:390,height:844}]){
+    await page.setViewportSize(view);
+    const layout=await page.evaluate(()=>{
+      const r=selector=>document.querySelector(selector).getBoundingClientRect();
+      const primary=r('#new-game'),guide=r('#tutorial-start'),utilities=r('#title-settings');
+      const chip=r('#tutorial-start .title-menu-chip');
+      return {primary:primary.toJSON(),guide:guide.toJSON(),utilities:utilities.toJSON(),
+        chip:chip.toJSON(),documentWidth:document.documentElement.scrollWidth,viewport:innerWidth};
+    });
+    expect(layout.primary.height).toBeGreaterThanOrEqual(44);
+    expect(layout.guide.height).toBeGreaterThanOrEqual(44);
+    expect(layout.guide.bottom).toBeLessThanOrEqual(layout.utilities.top);
+    expect(layout.chip.right).toBeLessThanOrEqual(layout.guide.right);
+    expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewport+1);
+    await page.screenshot({path:'screenshots/menu-polimento-'+view.width+'x'+view.height+'.png',animations:'disabled'});
+  }
+  const scene=await page.evaluate(()=>window.TillfolkMenuScene?.assetHealth());
+  expect(scene).toBeTruthy();
+  expect(scene.failed).toEqual([]);
+  expect(errors).toEqual([]);
 });
