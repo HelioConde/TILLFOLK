@@ -13,11 +13,11 @@
       },tool:"construir",target:"workstation"},
     {key:"hoe",goal:1,icon:"🌱",title:"A primeira enxada",
   subtitle:"Fabrique uma enxada na Work Station",
-  help:"Junte 4 gravetos e 2 fibras recolhendo capim. Clique na Work Station ou em Fabricar ferramentas e escolha Enxada. Assim a equipe poderá arar a primeira horta.",
+  help:"Junte 3 gravetos e 1 cascalho. Cascalho é coletado à mão nas pedrinhas da ilha central: Ordens → Limpar (ou Universal). Depois clique na Work Station e fabrique uma Enxada.",
   complete:"Com essa enxada, finalmente podemos começar a plantação!",
   dialogue:{
     intro:["Primeiro precisamos plantar. Bora fabricar uma enxada!","Antes do machado, vamos preparar uma horta pra ter o que comer."],
-    waiting:["A bancada já está pronta. Faltam gravetos ou fibras pra enxada?","Separamos os materiais e fazemos a enxada. O resto vem depois!"],
+    waiting:["A bancada está pronta. Juntamos gravetos e cascalho para a enxada?","As pedrinhas estão no chão e podem ser coletadas com a mão!"],
     working:["Já imagino nosso primeiro canteiro aqui perto.","Uma enxada muda tudo: agora dá pra preparar a terra."]
   },tool:"construir",target:"hoe"},
     {key:"grass",goal:1,icon:"🌾",title:"Um cantinho para chamar de nosso",subtitle:"Limpe um tufo de grama alta",
@@ -54,11 +54,11 @@
       },tool:"sow",target:"sow"},
     {key:"wateringCan",goal:1,icon:"💧",title:"Um regador para a horta",
   subtitle:"Fabrique um regador na Work Station",
-  help:"Depois de semear, volte à Work Station e fabrique o regador com 4 gravetos e 2 fibras. Assim a equipe poderá buscar água e regar o canteiro.",
+  help:"Depois de semear, volte à Work Station e fabrique o regador com 3 gravetos, 2 cascalhos e 1 fibra de capim. A equipe poderá buscar água e regar.",
   complete:"Regador prontinho! Nossa plantinha já pode receber água.",
   dialogue:{
     intro:["A terra tá plantada, mas precisamos de um regador.","Agora a planta precisa beber água. Bora fazer um regador!"],
-    waiting:["É só juntar 4 gravetos e 2 fibras para o regador.","A receita do regador está na bancada. Vamos conferir?"],
+    waiting:["O regador agora exige gravetos, duas pedrinhas e fibra.","A receita do regador está na bancada. Vamos conferir?"],
     working:["Tá quase! Depois disso a gente rega tudo.","Agora sim, vamos cuidar dessa mudinha!"]
   },tool:"construir",target:"wateringCan"},
     {key:"water",goal:1,icon:"💧",title:"Um gole de esperança",subtitle:"Regue sua primeira plantação",
@@ -87,11 +87,11 @@
       },tool:"carry",target:"carry"},
     {key:"axe",goal:1,icon:"🪓",title:"Prepare ferramentas para explorar",
       subtitle:"Fabrique um machado na Work Station",
-      help:"Abra a Work Station depois de colher sua primeira plantação. Separe 8 gravetos e 3 fibras de grama, escolha Machado e espere o colono terminar a fabricação. O machado permite derrubar árvores e coletar mais madeira.",
+      help:"O machado inicial usa 4 gravetos e 2 cascalhos, encontrados na ilha central. Pode ser fabricado antes de colher, se você quiser. Abra a Work Station, escolha Machado e espere um trabalhador concluir.",
       complete:"Finalmente um machado! Agora podemos derrubar árvores e coletar madeira.",
       dialogue:{
         intro:["Nossa primeira colheita já está guardada! Que tal preparar um machado para explorar?","Já temos comida! Agora a gente pode fabricar um machado para coletar madeira."],
-        waiting:["A receita do machado tá na bancada. Confere os gravetos e as fibras.","Se estiver faltando material, ainda tem mato pra limpar por aí."],
+        waiting:["A receita do machado tá na bancada. Confere os gravetos e as pedrinhas.","Se estiver faltando material, podemos recolher cascalho no chão."],
         working:["Pronto, vou separar os materiais. Cuidado com a lâmina!","Com o machado feito, nosso trabalho vai render muito mais."]
       },tool:"construir",target:"axe"}
   ]);
