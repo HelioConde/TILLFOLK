@@ -315,9 +315,13 @@
       obj.kind="stump";obj.variant=0;resource="3 madeiras";
       return {resource,remaining:true};
     }
-    if(obj.kind==="pebble")resource="1 pedra";
+    if(obj.kind==="pebble")resource="1 cascalho";
     else if(obj.kind==="twig")resource="1 graveto";
     else if(obj.kind==="stump")resource="2 madeiras";
+    else if(obj.kind==="boulder"&&obj.mineral){
+      const ore=window.TillfolkMinerals?.RESOURCES[obj.mineral];
+      resource=(obj.amount||3)+" "+(ore?.name||obj.mineral);
+    }
     else if(obj.kind==="boulder")resource="3 pedras";
     else if(obj.kind==="log")resource="2 madeiras";
     else if(obj.kind==="mushroom")resource="cogumelos";
@@ -444,6 +448,7 @@
       const width=large?46:27,height=large?43:27;
       part(sprites.rocks,sx,sy,sw,sh,x+Math.round((size-width)/2),
         y+size-height,width,height);
+      if(obj.mineral)window.TillfolkMinerals?.draw(ctx,obj,size);
       return;
     }
     if((kind==="log"||kind==="stump")&&frame){
