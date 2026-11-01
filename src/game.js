@@ -1756,19 +1756,34 @@
         World.drawObject(ctx,item.object,sprite,TILE,part);
       }else if(type==="animal"){
         const a=item.animal,x=a.x*TILE,y=a.y*TILE;
-        if(a.wild){
-          const clip=Exploration.spriteFrame(a,performance.now(),
-            animationsEnabled()&&simSpeed>0);
-          const picture=sprite[clip.key];
-          if(valid(picture)){
-            const src=Exploration.frameRect(clip,picture);
-            if(src)part(picture,src.sx,src.sy,src.sw,src.sh,
-              x-clip.drawW/2,y-clip.drawH+6,clip.drawW,clip.drawH);
-          }
-        }else{
+        // A fauna e as vacas domesticadas usam arte final transparente.
+        const clip=Exploration.spriteFrame(a,performance.now(),
+          animationsEnabled()&&simSpeed>0);
+        const picture=sprite[clip.key];
+        const src=valid(picture)?Exploration.frameRect(clip,picture):null;
+        if(src){
+          const left=Math.round(x-clip.drawW/2);
+          const top=Math.round(y-clip.drawH+6-(clip.lift||0));
+          ctx.save();
+          ctx.fillStyle="rgba(24,48,36,.19)";
+          ctx.beginPath();
+          ctx.ellipse(Math.round(x),Math.round(y+4),
+            Math.max(5,Math.round(clip.drawW*.31)),3,0,0,Math.PI*2);
+          ctx.fill();
+          ctx.restore();
+          if(clip.flip){
+            ctx.save();
+            ctx.translate(left+clip.drawW,0);
+            ctx.scale(-1,1);
+            part(picture,src.sx,src.sy,src.sw,src.sh,0,top,clip.drawW,clip.drawH);
+            ctx.restore();
+          }else part(picture,src.sx,src.sy,src.sw,src.sh,
+            left,top,clip.drawW,clip.drawH);
+        }else if(!a.wild){
           part(sprite.cow,0,0,32,32,x-20,y-32,40,38);
-          if(a.manure>0)write("💩 "+a.manure,x+5,y-33,"#f3dcb0",10);
         }
+        if(!a.wild&&a.manure>0)
+          write("💩 "+a.manure,x+5,y-33,"#f3dcb0",10);
       }else{
         const w=item.worker,px=w.x*TILE,py=w.y*TILE;
         if(w.carryingWater)write("💧",px+18,py-32,"#b6f3fe",13);
