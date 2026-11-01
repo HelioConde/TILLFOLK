@@ -51,6 +51,9 @@ Nenhuma duração ou população-alvo é fixa até o balanceamento.
 - Fadiga, fome, estado de saúde e perigos devem eventualmente afetar disponibilidade, rendimento e decisões; trabalhador sem condições não deve executar tarefas como se estivesse saudável.
 - Hábitos e conversas naturais reforçam a personalidade, mas não substituem feedback de jogo.
 - Ferramentas são fabricadas numa estação, carregadas/atribuídas por trabalhador; bloqueios devem explicar **quem** precisa de **qual** ferramenta.
+- **Regra permanente de equipamento e traços vermelhos (01/11/2026):** restrição vermelha de *arar* proíbe equipar/fabricar para si a enxada; de *regar*, o regador; de *limpar*, machado/pá/picareta usados para limpeza. Equipamentos de proteção não são bloqueados por essa regra. Nenhum personagem deve receber automaticamente uma ferramenta que não consegue usar; saves antigos transferem ferramentas incompatíveis a colonos aptos quando possível.
+- **Regra permanente dos dois colonos iniciais:** não podem compartilhar qualquer habilidade vermelha, incluindo *transportar/coletar pilhas*. Sorteio inicial, re-sorteio individual, re-sorteio da dupla e confirmação devem validar o mesmo requisito; isso mantém ao menos um colono habilitado para cada atividade. A proibição de *transportar* também se aplica a coleta de pilhas do solo, armazenamento e entregas de materiais. Um colono autorizado pode entregar os recursos da construção, mesmo quando outro será responsável por concluí-la, evitando impasses na fabricação e nas obras.
+
 - **A definir:** aprendizado de habilidade, traços avançados, conflitos, humor, profissões visuais e pesos da IA.
 
 ## 5. Sobrevivência e mortalidade [S0–S3 IMPLEMENTADOS; S4 PENDENTE]
