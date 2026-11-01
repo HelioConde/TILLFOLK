@@ -5,6 +5,8 @@
 
 **Documentos centrais:** [GDD completo](./docs/GDD_TILLFOLK.md) · [Roadmap de sobrevivência](./docs/ROADMAP_SOBREVIVENCIA.md) · [Plano visual e QA](./docs/ROADMAP_VISUAL.md).
 
+**Regra visual permanente:** [autotile oficial 16×16, 11×7, 8 vizinhos — NÃO ALTERAR](./docs/AUTOTILE_PADRAO_IMUTAVEL.md). Os nove atlases de solo compartilham o mesmo mapeamento de bordas e cantos; melhorias de cenário não devem remapear o tilemap.
+
 ## Como o jogo deve funcionar
 
 1. **Começar vulnerável:** uma pequena equipe chega ao vale selvagem com poucos recursos, sem casas ou plantações prontas.
