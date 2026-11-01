@@ -1,0 +1,32 @@
+/* Gestão visual da colônia: use a mesma identidade Sprout Lands do HUD. */
+.colony-life-trigger{display:flex;align-items:center;gap:5px;align-self:center;
+ background:#355b44;color:#f5eac1;border:2px solid #95aa78;border-radius:8px;
+ font:800 11px/1.4 system-ui,sans-serif;padding:6px 10px;white-space:nowrap;
+ box-shadow:0 3px 0 #20382a;cursor:pointer}
+.colony-life-trigger:hover,.colony-life-trigger:focus-visible{background:#496d4d;outline:2px solid #e2eca0;outline-offset:2px}
+#day-night-phase{font-size:11px;white-space:nowrap}
+#day-night-phase[data-phase="night"]{color:#c5d5fc}
+#day-night-phase[data-phase="dawn"]{color:#f9d8aa}
+#day-night-phase[data-phase="dusk"]{color:#ffc38a}
+.colony-life-dialog{width:min(760px,calc(100vw - 24px));max-height:88dvh;overflow:auto}
+.colony-life-dialog h2{margin:5px 0 10px}
+.colony-life-dialog h3{margin:0 0 8px;color:#e7edb9;font-size:15px}
+.colony-life-dialog p{font-size:12px;line-height:1.6}
+.colony-life-dialog .colony-life-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.colony-life-grid>section{min-width:0;background:#2b4536;border:2px solid #729170;border-radius:9px;padding:13px}
+.colony-life-grid button{font-size:12px;min-height:35px;width:100%}
+.colony-life-note{color:#b9d3a5}
+.colony-life-worker-list{display:grid;gap:7px}
+.colony-life-worker{display:grid;grid-template-columns:1fr auto;gap:4px 8px;
+ background:#1d362a;border:1px solid #67866a;border-radius:6px;padding:8px}
+.colony-life-worker>strong{font:800 12px system-ui;color:#f8f0cc}
+.colony-life-worker>small{font:700 11px system-ui;color:#dceac4;text-align:right}
+.colony-life-worker meter{grid-column:1/-1;display:block;width:100%;height:9px}
+.colony-worker-needs{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.colony-worker-needs span{font:700 10px system-ui;background:#47664b;color:#f0e6c1;padding:3px 6px;border-radius:4px}
+@media(max-width:680px){
+ .colony-life-dialog .colony-life-grid{grid-template-columns:1fr}
+ .colony-life-trigger{padding:5px 6px;font-size:10px}
+ .colony-life-trigger span{display:none}
+}
+@media(prefers-reduced-motion:reduce){.colony-life-dialog *{transition:none!important;animation:none!important}}
