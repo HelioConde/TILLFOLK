@@ -93,3 +93,17 @@ body.play-session .progression-focus[hidden]{display:none!important}
 .progression-continent strong{display:block;color:#fff1c6;font-size:12px}
 .progression-continent small{display:block;color:#d6e1d0;font-size:11px;line-height:1.4}
 @media(max-width:490px){#progression-continents{grid-template-columns:1fr}}
+
+/* Continentes com recursos exclusivos: progresso geológico da colônia. */
+.mineral-progression{margin:15px 0;padding:13px;border-radius:11px;
+  border:1px solid #779578;background:#253b32}
+.mineral-progression h3{color:#f6dfb5;margin:0 0 6px;font-size:15px}
+.mineral-progression p{color:#ced9c7;font-size:12px;line-height:1.5;margin:0 0 10px}
+#mineral-progression-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:7px}
+.mineral-zone{border:1px solid #657c68;background:#1e332a;border-radius:7px;
+  padding:9px;display:grid;gap:3px}
+.mineral-zone span{color:#c7dcb9;font-size:11px}
+.mineral-zone strong{font-size:12px;color:#f5e6bd}
+.mineral-zone small{font-size:10px;color:#bacfbd}
+.mineral-zone[data-discovered="true"]{border-color:#a4c279;background:#2f4d35}
+@media(max-width:480px){#mineral-progression-list{grid-template-columns:1fr}}
