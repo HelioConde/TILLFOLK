@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const TILE = 32, W = 80, H = 50, BASE_W=28, BASE_H=18, SAVE_KEY = "tillfolk-v01", SESSION_KEY = "tillfolk-session-mode";
-  const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival;
+  const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics;
   if(!Crops)throw new Error("Carregue src/crop-catalog.js antes do motor TILLFOLK.");
   if(!Crafting)throw new Error("Carregue src/crafting.js antes do motor TILLFOLK.");
   if(!Missions)throw new Error("Carregue src/missions.js antes do motor TILLFOLK.");
@@ -387,10 +387,10 @@
   sprite.premium.addEventListener("load",()=>{workerPaletted.clear();redrawStarterAvatars();});
   sprite.worker.addEventListener("load",()=>{workerPaletted.clear();redrawStarterAvatars();});
   sprite.actions.addEventListener("load",()=>workerPaletted.clear());
-  const labels = {clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina"};
-  const icons = {clear:"🪓",till:"⛏️",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️"};
-  const baseTime = {clear:120,till:90,fertilize:60,sow:60,water:90,harvest:120,carry:60,collectWater:65,collectManure:45,buildHome:180,buildStation:150};
-  const startPriorities = {clear:7,till:6,fertilize:5,sow:6,water:8,harvest:9,carry:8,collectWater:7,collectManure:5,buildHome:7,buildStation:6};
+  const labels = {buildChest:"Construir baú",craftTool:"Fabricar",clear:"Limpar",till:"Arar",fertilize:"Fertilizar",sow:"Semear",water:"Regar",harvest:"Colher",carry:"Transportar",collectWater:"Buscar água",collectManure:"Recolher esterco",buildHome:"Construir casa",buildStation:"Montar oficina"};
+  const icons = {buildChest:"🧰",craftTool:"⚒️",clear:"🪓",till:"⛏️",fertilize:"🌿",sow:"🌱",water:"💧",harvest:"🥕",carry:"📦",collectWater:"🪣",collectManure:"🐄",buildHome:"🏠",buildStation:"🛠️"};
+  const baseTime = {buildChest:120,craftTool:45,clear:120,till:90,fertilize:60,sow:60,water:90,harvest:120,carry:60,collectWater:65,collectManure:45,buildHome:180,buildStation:150};
+  const startPriorities = {buildChest:6,craftTool:7,clear:7,till:6,fertilize:5,sow:6,water:8,harvest:9,carry:8,collectWater:7,collectManure:5,buildHome:7,buildStation:6};
   // Homenagem à Simone misturada a nomes brasileiros e apelidos divertidos.
   // Nomes novos são sorteados; não renomeamos saves com nomes personalizados.
   const names=[
@@ -484,7 +484,7 @@
     return Math.max(0,state.homes.length-state.workers.length);
   }
   const keyOf=(x,y)=>x+"-"+y;
-  const blocked=(x,y)=>World.blocked(state?.world,x,y,W,H)||Boolean(state?.house&&window.TillfolkHouseBuilder.occupied(state.house,x,y))||occupiedByHome(x,y)||occupiedByStation(x,y);
+  const blocked=(x,y)=>Boolean(state?.chests?.some(c=>c.x===x&&c.y===y))||World.blocked(state?.world,x,y,W,H)||Boolean(state?.house&&window.TillfolkHouseBuilder.occupied(state.house,x,y))||occupiedByHome(x,y)||occupiedByStation(x,y);
   // Caminhos em grade impedem que colonos atravessem a casa, árvores e objetos.
   // Só a navegação usa esta malha; o cultivo continua seguindo as regras existentes.
   const directions=[[1,0],[-1,0],[0,1],[0,-1]];
@@ -551,7 +551,7 @@
     state = {day:1,minutes:8*60,seeds:0,water:0,food:8,firstHarvest:false,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",tutorial:Missions.create(),
       plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),
       cropSeeds:Crops.normalizeStock({}),cropProduce:Crops.normalizeStock({}),selectedCrop:"potato",workstations:[],crafting:Crafting.normalize(null),
-      homes:[],animals:[],inventory:{wood:0,twigs:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
+      groundItems:[],chests:[],nextDropId:1,homes:[],animals:[],inventory:{wood:0,twigs:0,stone:0,mushroom:0,flower:0,herbs:0,grass:0,manure:0}, workers:team,
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},buildPriority:5,
       survivalVersion:1,startingColonists:initialColonists,deaths:[],gameOver:false,
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
@@ -595,6 +595,7 @@
       state.workstations=Array.isArray(s.workstations)?s.workstations.filter(ws=>
         Number.isInteger(ws.x)&&Number.isInteger(ws.y)&&ws.x>0&&ws.y>0&&ws.x<W-1&&ws.y<H-1):[];
       state.crafting=Crafting.normalize(s.crafting,!s.crafting);
+      Logistics.normalize(state);
       if(!state.crafting.station&&state.workstations.length)
         state.crafting.station={x:state.workstations[0].x,y:state.workstations[0].y};
       if(state.crafting.station&&!state.workstations.some(ws=>ws.x===state.crafting.station.x&&ws.y===state.crafting.station.y))
@@ -853,8 +854,15 @@
     }
     syncOrderSelections();
   }
+  function specialtyMultiplier(w,type){
+    if(!w.skills.includes(type))return 1;
+    const reds=Math.min(3,w.neg?.length||0);
+    if(w.skills.length===1)return 2+reds/3; // 3 restrições e 1 habilidade: 3×
+    if(w.skills.length===2)return 1.6+reds*.23;
+    return 1.3+reds*.1;
+  }
   function bonus(w,type){
-    const specialty=w.skills.includes(type)?(w.skills.length===1?2:w.skills.length===2?1.6:1.3):1;
+    const specialty=specialtyMultiplier(w,type);
     return specialty*Survival.workMultiplier(w);
   }
   // Mesma regra para escolher trabalho e para explicar a ociosidade.
@@ -870,6 +878,7 @@
       return "Este colono já possui esta ferramenta";
     const personalBlock=Crafting.blocked(state,t.type,World.at(state.world,t.x,t.y),w);
     if(personalBlock)return personalBlock;
+    if(t.type==="buildChest"&&!chestSiteValid(t.x,t.y))return "Baú exige terreno livre";
     if(t.type==="buildStation"&&!stationSiteValid(t.x,t.y))
       return "Escolha um terreno livre para a bancada";
     if(t.type==="buildHome"){
@@ -2580,7 +2589,7 @@
   }
   function bonusForCandidate(person,type){
     if(!person.skills.includes(type))return 1;
-    return person.skills.length===1?2:person.skills.length===2?1.6:1.3;
+    return specialtyMultiplier(person,type);
   }
   // Tooltip único fora do conteúdo rolável. Mouse, teclado e toque compartilham
   // o mesmo texto; não exige biblioteca nem usa sprites externos.
