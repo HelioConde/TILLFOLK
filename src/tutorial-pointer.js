@@ -60,8 +60,15 @@
     present({x:box.left+box.width*.48,y:box.top+box.height*.48},label);
   }
   function onScreen(canvas,cell){
+    // O tamanho é determinado pelo canvas real (192x120 atualmente).
+    // Não voltar a usar 80x50: era a resolução do mundo antigo e fazia
+    // a patinha apontar fora dos objetos após a expansão do continente.
     const box=canvas.getBoundingClientRect();
-    return {x:box.left+box.width*(cell.x+.5)/80,y:box.top+box.height*(cell.y+.5)/50};
+    const tileSize=32; // Mesmo TILE do motor; canvas.width = colunas * TILE.
+    const width=Math.max(1,canvas.width/tileSize);
+    const height=Math.max(1,canvas.height/tileSize);
+    return {x:box.left+box.width*(cell.x+.5)/width,
+      y:box.top+box.height*(cell.y+.5)/height};
   }
   function guide({playing,state,quest,selectedTool,buildLayer,canvas,cameraZoom=1,
     stationSiteValid,tutorialTillSitePreferred}){
@@ -80,6 +87,7 @@
       const prompt=button?.disabled?
         missingResource==="grass"?"Feche a Oficina e recolha fibras da grama":
         missingResource==="twigs"?"Feche a Oficina e recolha gravetos":
+        missingResource==="gravel"?"Feche a Oficina e recolha cascalho nas pedrinhas":
         "Reúna os materiais para fabricar":
         "Fabrique esta ferramenta";
       targetButton('[data-craft-tool="'+tool+'"]',prompt);
@@ -143,14 +151,9 @@
     if(["hoe","wateringCan","axe"].includes(quest.key)){
       const recipe=window.TillfolkCrafting?.recipe(quest.key);
       const missing=recipe?window.TillfolkCrafting.missing(state,recipe.cost):[];
-      if(missing.length&&paw.dataset.stationVisitedFor!==quest.key){
-        const station=state.crafting?.station||state.workstations?.[0];
-        if(station){
-          targetCell([station],"Clique na Work Station para fabricar a "+
-            (recipe?.name||"ferramenta").toLowerCase());
-        }else targetButton("#mission-locate","Construa a Work Station primeiro");
-        return;
-      }
+      // As receitas de machado/enxada/regador agora usam cascalho.
+      // Apontar para o material ausente PRIMEIRO; não mandar o jogador
+      // voltar à oficina se ainda não pode fabricar.
       if(missing.length){
         const resource=missing[0][0];
         if(resource==="twigs"){
@@ -164,8 +167,17 @@
           if(!["universal","clear"].includes(selectedTool)){
             targetButton('.tool[data-tool="universal"]',"Selecione Universal");return;
           }
-          targetCell(state.world.objects.filter(p=>p.kind==="grass"),"Recolha fibras da grama",true);return;
+          targetCell(state.world.objects.filter(p=>p.kind==="grass"),
+            "Recolha fibras da grama",true,true,"Mostrar grama perto do início");return;
         }
+        if(resource==="gravel"){
+          if(!["universal","clear"].includes(selectedTool)){
+            targetButton('.tool[data-tool="universal"]',"Selecione Universal");return;
+          }
+          targetCell(state.world.objects.filter(p=>p.kind==="pebble"),
+            "Recolha este cascalho",true,true,"Mostrar a pedrinha mais próxima");return;
+        }
+        targetButton("#mission-locate","Encontre os materiais da receita");return;
       }
       targetButton("#open-workshop","Abra a Oficina para fabricar");return;
     }
