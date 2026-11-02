@@ -55,6 +55,9 @@ jobs:
           node --check src/live-update.js
           node --test tests/hunger.test.cjs tests/survival-death.test.cjs tests/survival-hud.test.cjs
           node --check src/crop-catalog.js
+          node --check src/crop-care.js
+          node --check src/farm-planning.js
+          node --test tests/crop-care.test.cjs
           node --check src/crafting.js
           node --test tests/crafting.test.cjs
           node --test tests/crops.test.cjs tests/crop-strategy.test.cjs

@@ -43,6 +43,10 @@ on:
       - 'tests/food-outlook.spec.cjs'
       - 'tests/crop-workshop.spec.cjs'
       - 'src/crop-catalog.js'
+      - 'src/crop-care.js'
+      - 'src/farm-planning.js'
+      - 'tests/crop-care.test.cjs'
+      - 'tests/crop-care.spec.cjs'
       - 'src/colony-life.js'
       - 'tests/crop-choice.spec.cjs'
       - 'tests/crop-strategy.test.cjs'
@@ -85,10 +89,13 @@ jobs:
           node --check src/colony-life.js
           node --check src/game.js
           node --test tests/crop-strategy.test.cjs
+          node --check src/crop-care.js
+          node --check src/farm-planning.js
+          node --test tests/crop-care.test.cjs
           node --check src/food-ledger.js
           node --test tests/food-ledger.test.cjs
       - name: Capturar screenshots e validar cortes
-        run: npx playwright test tests/menu.spec.cjs tests/game-options.spec.cjs tests/house.spec.cjs tests/orders.spec.cjs tests/colony.spec.cjs tests/visual-refinement.spec.cjs tests/biomes.spec.cjs tests/tutorial-flow.spec.cjs tests/hud-clarity.spec.cjs tests/crop-choice.spec.cjs tests/food-outlook.spec.cjs tests/crop-workshop.spec.cjs --browser chromium --reporter=line
+        run: npx playwright test tests/menu.spec.cjs tests/game-options.spec.cjs tests/house.spec.cjs tests/orders.spec.cjs tests/colony.spec.cjs tests/visual-refinement.spec.cjs tests/biomes.spec.cjs tests/tutorial-flow.spec.cjs tests/hud-clarity.spec.cjs tests/crop-choice.spec.cjs tests/food-outlook.spec.cjs tests/crop-workshop.spec.cjs tests/crop-care.spec.cjs --browser chromium --reporter=line
       - name: Anexar screenshots
         if: always()
         uses: actions/upload-artifact@v4

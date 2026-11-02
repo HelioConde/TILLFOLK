@@ -13,6 +13,9 @@
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
   const Food=window.TillfolkFoodLedger;
   if(!Food)throw new Error("Carregue src/food-ledger.js antes do motor TILLFOLK.");
+  const Care=window.TillfolkCropCare,Planning=window.TillfolkFarmPlanning;
+  if(!Care)throw new Error("Carregue src/crop-care.js antes do motor TILLFOLK.");
+  if(!Planning)throw new Error("Carregue src/farm-planning.js antes do motor TILLFOLK.");
   if(!Crops)throw new Error("Carregue src/crop-catalog.js antes do motor TILLFOLK.");
   if(!Crafting)throw new Error("Carregue src/crafting.js antes do motor TILLFOLK.");
   if(!Missions)throw new Error("Carregue src/missions.js antes do motor TILLFOLK.");
@@ -670,7 +673,7 @@
   let state = null, tasks = [], selectedTool = "universal", buildLayer = "home", eraseBuild = false, buildHover = null, houseHistory = [], playing = false, simSpeed = 1, last = 0, frameAccumulator = 0, uiAccumulator = 0, saveAccumulator=0, toastTimer, starters = [], pendingMode = "survival", managementTab = "priorities", managementWorker = null, speedBeforeManagement = 1;
   const random = (a) => a[Math.floor(Math.random()*a.length)];
   function makePlot(x,y,selected=false){
-    return {x,y,selected,dirty:false,tilled:false,fertilized:false,seeded:false,watered:false,growth:0,produce:false};
+    return {x,y,selected,dirty:false,tilled:false,fertilized:false,seeded:false,watered:false,waterings:0,growth:0,produce:false};
   }
   function reset(chosenStarters = [], config = {}){
     // O jogador recebe uma clareira e recursos naturais, não uma fazenda pronta.
@@ -752,7 +755,10 @@
       if(state.crafting.station&&!state.workstations.some(ws=>ws.x===state.crafting.station.x&&ws.y===state.crafting.station.y))
         state.workstations.push({...state.crafting.station});
       state.seeds=Object.values(state.cropSeeds).reduce((sum,n)=>sum+n,0);
-      state.plots.forEach(p=>{if((p.seeded||p.produce)&&!Crops.get(p.crop))p.crop="carrot";});
+      state.plots.forEach(p=>{
+        if((p.seeded||p.produce)&&!Crops.get(p.crop))p.crop="carrot";
+        Care.normalize(p); // Plantações antigas irrigadas continuam crescendo.
+      });
       state.workers.forEach(w=>{
         homageSavedName(w);
         Crafting.normalizeWorker(w,!w.inventory?s.crafting?.equipment:null);
@@ -1331,16 +1337,17 @@
       case "sow":{
         const variety=Crops.get(t.crop)?t.crop:Crops.get(state.selectedCrop)?state.selectedCrop:"carrot";
         if(state.seeds<=0||!(state.cropSeeds[variety]>0))return false;
-        state.cropSeeds[variety]--;state.seeds--;p.crop=variety;
-        p.seeded=true;p.produce=false;p.growth=0;
+        state.cropSeeds[variety]--;state.seeds--;
+        Care.sow(p,variety);
         recordTutorial("sow");break;
       }
       case "water":
         if(Crafting.blocked(state,"water",null,w))return false;
         if(!w.carryingWater&&state.water<=0)return false;
+        if(!Care.irrigate(p))return false;
         if(w.carryingWater)w.carryingWater=false;else state.water--;
-        p.watered=true;recordTutorial("water");break;
-      case "harvest":Life.discover(state,2);showPickup(t.x,t.y,"crop");state.firstHarvest=true;p.produce=true;p.seeded=false;p.watered=false;p.growth=0;recordTutorial("harvest");break;
+        recordTutorial("water");break;
+      case "harvest":Life.discover(state,2);showPickup(t.x,t.y,"crop");state.firstHarvest=true;p.produce=true;p.seeded=false;Care.finish(p);p.growth=0;recordTutorial("harvest");break;
       case "carry":{
         const variety=Crops.get(p.crop)?p.crop:"carrot";
         const crop=Crops.get(variety),amount=crop.food,seedReturn=crop.seedYield||1;
@@ -1400,8 +1407,8 @@
         state.homes.some(home=>homeTiles(home.x,home.y).some(([hx,hy])=>hx===x&&hy===y)));
     for(const p of state.plots)if(p.seeded&&p.watered&&p.growth<1){
       const fertility=World.terrainAt(state.world,p.x,p.y).fertility;
-      p.growth=Math.min(1,p.growth+
-        scaled/Life.cropDuration(p.crop||"potato")*fertility*Life.growthMultiplier(state,p.crop));
+      Care.advance(p,scaled/Life.cropDuration(p.crop||"potato")*
+        fertility*Life.growthMultiplier(state,p.crop));
     }
     const lifeEvents=Life.advance(state,scaled*1.25);
     for(const event of lifeEvents)log("🌿 "+event);
@@ -2581,7 +2588,7 @@
       (Exploration.requirement(state.world,p.x,p.y).gear?
         " · EPI: "+Exploration.GEAR[Exploration.requirement(state.world,p.x,p.y).gear].name:
         " · Área segura")+
-      " · "+(p.produce?"Colheita pronta":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"%":p.tilled?"Solo arado":"Solo natural")+
+      " · "+(p.produce?"Colheita pronta":p.seeded?"Crescimento "+Math.floor(p.growth*100)+"% · Regas "+p.waterings+"/"+Care.need(p.crop)+(Care.needsWater(p)?" · Precisa regar":""):p.tilled?"Solo arado":"Solo natural")+
       " · Ordens: "+(planned.length?planned.map(o=>labels[o.type]).join(" → "):"nenhuma");
   }
   function removeOrders(ids){
@@ -3284,17 +3291,21 @@
       const stats=Survival.getStats(state);
       const growing=state.plots.filter(plot=>plot.seeded&&plot.growth<1).length;
       const ripe=state.plots.filter(plot=>plot.seeded&&plot.growth>=1||plot.produce).length;
+      const thirsty=state.plots.filter(plot=>Care.needsWater(plot)).length;
+      const target=Planning.forecast(state,state.selectedCrop);
+      const goal=target?" Meta orientativa: "+target.harvestsPerDay+" colheita(s) de "+target.cropName+
+        "/dia e até "+target.wateringsPerDay+" rega(s), se não chover. Depende de ordens e transporte.":"";
       if(state.mode==="survival"){
         const days=stats.daysRemaining===null?"—":stats.daysRemaining.toFixed(1);
         outlook.dataset.risk=stats.alert;
         outlook.textContent=(stats.alert==="critical"?"⚠️ Estoque crítico":stats.alert==="warning"?"⚠️ Planeje novas colheitas":"🥕 Abastecimento")+
           " · "+state.food+" alimentos · cerca de "+days+" dia(s) de consumo normal."+
-          " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte."+
-          " Safras futuras não entram nesta reserva até serem levadas ao estoque.";
+          " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte, "+thirsty+" aguardando rega."+
+          " Safras futuras não entram nesta reserva até serem levadas ao estoque."+goal;
       }else{
         outlook.dataset.risk="ok";
         outlook.textContent="🌱 Fazenda tranquila · "+state.food+" alimentos disponíveis."+
-          " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte.";
+          " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte, "+thirsty+" aguardando rega."+goal;
       }
     }
     const help=$("#crop-choice-hint");
@@ -3306,7 +3317,7 @@
       const details=stock+" sementes · "+Food.available(state,crop.id)+" alimentos disponíveis · "+
         (state.cropProduce[crop.id]||0)+" colhidos no histórico"+
         " · +" +crop.food+" comida / +"+crop.seedYield+" sementes por safra"+
-        " · "+cropCycleLabel(crop)+" · Melhor: "+crop.favoredSeason;
+        " · "+cropCycleLabel(crop)+" · "+crop.waterNeed+" rega(s) por safra · Melhor: "+crop.favoredSeason;
       return cropTile(crop,details,"select-crop",stock<=0,state.selectedCrop===crop.id);
     }).join("");
     Crops.drawIcons(grid);
