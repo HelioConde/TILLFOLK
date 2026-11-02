@@ -118,7 +118,12 @@
    const current=weather(state.day,state.world?.seed||1);
    const weatherFactor=current==="seca"?.68:current==="frio"?.75:current==="chuva"?1.12:1;
    const s=season(state.day);
-   return weatherFactor*(s==="Inverno"?.88:s==="Primavera"?1.08:1)*(1+Math.min(level,1)*.12);
+   // A estação favorável dá um bônus moderado à cultura escolhida; o clima,
+   // a fertilidade do solo e a pesquisa continuam influenciando o crescimento.
+   const favored=window.TillfolkCrops?.get?.(crop)?.favoredSeason;
+   const seasonalMatch=favored===s?1.15:1;
+   return weatherFactor*(s==="Inverno"?.88:s==="Primavera"?1.08:1)*
+     seasonalMatch*(1+Math.min(level,1)*.12);
  }
  function cropDuration(crop){return CROP_MINUTES[crop]||180;}
  function discover(state,points=1){

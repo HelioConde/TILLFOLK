@@ -1338,11 +1338,14 @@
       case "harvest":Life.discover(state,2);showPickup(t.x,t.y,"crop");state.firstHarvest=true;p.produce=true;p.seeded=false;p.watered=false;p.growth=0;recordTutorial("harvest");break;
       case "carry":{
         const variety=Crops.get(p.crop)?p.crop:"carrot";
-        const amount=Crops.get(variety).food;
+        const crop=Crops.get(variety),amount=crop.food,seedReturn=crop.seedYield||1;
         p.produce=false;p.fertilized=false;
         state.food+=amount;state.cropProduce[variety]+=amount;showPickup(t.x,t.y,"food",amount);
-        state.cropSeeds[variety]++;state.seeds++;showPickup(t.x,t.y,"seed");
-        log(w.name+" guardou "+Crops.get(variety).name+" (+"+amount+" comida, +1 semente).");
+        // Somente a colheita transportada ao estoque devolve sementes.
+        // Nenhuma semente aparece ao semear ou colher no terreno.
+        state.cropSeeds[variety]+=seedReturn;state.seeds+=seedReturn;
+        showPickup(t.x,t.y,"seed",seedReturn);
+        log(w.name+" guardou "+crop.name+" (+"+amount+" comida, +"+seedReturn+" sementes).");
         recordTutorial("carry");break;
       }
     }
@@ -3260,14 +3263,41 @@
       '<canvas data-crop-icon="'+crop.id+'" width="40" height="40" aria-hidden="true"></canvas>'+
       '<span><strong>'+escapeHtml(crop.name)+'</strong><small>'+extra+'</small></span></button>';
   }
+  function cropCycleLabel(crop){
+    const duration=Life.cropDuration(crop.id);
+    return duration<=150?"ciclo rápido":duration<=235?"ciclo médio":"ciclo longo";
+  }
   function renderCropStock(){
     const grid=$("#crop-stock-grid");
-    if(!grid)return;
-    grid.innerHTML=Crops.ALL.map(crop=>cropTile(crop,
-      (state.cropSeeds[crop.id]||0)+" sementes · "+(state.cropProduce[crop.id]||0)+" alimentos",
-      "stock-crop",true)).join("");
+    if(!grid||!state)return;
+    const current=Crops.get(state.selectedCrop);
+    const label=$("#crop-choice-current");
+    if(label)label.textContent="Plantio selecionado: "+(current?.name||"Batata")+
+      " · "+(state.cropSeeds[state.selectedCrop]||0)+" sementes disponíveis";
+    const help=$("#crop-choice-hint");
+    if(help)help.textContent=state.seeds>0?
+      "Selecione uma cultura com sementes. Universal e Semear usarão essa escolha nas próximas ordens. Ordens já criadas não mudam.":
+      "Sem sementes: limpe a grama alta para encontrá-las. A primeira semente do tutorial é garantida.";
+    grid.innerHTML=Crops.ALL.map(crop=>{
+      const stock=state.cropSeeds[crop.id]||0;
+      const details=stock+" sementes · "+(state.cropProduce[crop.id]||0)+" alimentos registrados"+
+        " · +" +crop.food+" comida / +"+crop.seedYield+" sementes por safra"+
+        " · "+cropCycleLabel(crop)+" · Melhor: "+crop.favoredSeason;
+      return cropTile(crop,details,"select-crop",stock<=0,state.selectedCrop===crop.id);
+    }).join("");
     Crops.drawIcons(grid);
   }
+  // O inventário vira também seletor real da próxima semente usada no mapa.
+  // Uma ordem já designada conserva sua cultura; saves antigos seguem válidos.
+  $("#crop-stock-grid")?.addEventListener("click",event=>{
+    const button=event.target.closest("[data-select-crop]");
+    if(!button||button.disabled||!state)return;
+    const crop=Crops.get(button.dataset.selectCrop);
+    if(!crop||(state.cropSeeds[crop.id]||0)<1)return;
+    state.selectedCrop=crop.id;
+    renderCropStock();refresh();save();
+    notify("🌱 Próximo plantio: "+crop.name+". Selecione Universal ou Semear no mapa.");
+  });
   // A oficina reutiliza o atlas Sprout Lands. A remoção da janela de
   // seleção de culturas não deve afetar o desenho das ferramentas.
   const workshopAtlas=new Image();

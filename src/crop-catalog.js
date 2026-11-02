@@ -24,11 +24,23 @@
     ["radish","Rabanete",16,16,7,2,3,4],["tomato","Tomate",16,32,23,4,4,3],
     ["wheat","Trigo",18,32,8,9,3,4]
   ];
+  // Agronomia v1: cada cultura tem uma estação favorável e uma reposição de sementes.
+  // Mantém ao menos 1 semente por colheita entregue, sem sementes grátis ao plantar.
+  const farmingTraits=Object.freeze({
+    bamboo:["Primavera",1],beetroot:["Outono",1],berry:["Primavera",2],
+    broccoli:["Inverno",1],carrot:["Outono",2],cauliflower:["Inverno",1],
+    celery:["Outono",1],corn:["Verão",2],eggplant:["Verão",1],
+    grape:["Verão",2],leek:["Outono",1],lettuce:["Primavera",2],
+    onion:["Outono",1],pepper:["Verão",1],potato:["Inverno",1],
+    pumpkin:["Outono",2],radish:["Primavera",1],tomato:["Verão",2],
+    wheat:["Verão",3]
+  });
   const records=specs.map(([id,name,w,h,frames,iconFrames,food,weight])=>{
     const folder=base+id+"/";
     const growth=folder+"growth_basic/"+id+"_"+w+"x"+h+"_"+frames+"frames.png";
     const icon=folder+"icon/"+id+"_icon_16x16"+(iconFrames>1?"_"+iconFrames+"frames":"")+".png";
-    return Object.freeze({id,name,w,h,frames,iconFrames,food,weight,growth,icon});
+    const [favoredSeason,seedYield]=farmingTraits[id]||["Primavera",1];
+    return Object.freeze({id,name,w,h,frames,iconFrames,food,weight,seedYield,favoredSeason,growth,icon});
   });
   const ALL=Object.freeze(records);
   const byId=new Map(ALL.map(item=>[item.id,item]));
