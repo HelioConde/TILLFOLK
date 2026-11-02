@@ -88,7 +88,7 @@ Nenhuma duração ou população-alvo é fixa até o balanceamento.
 
 ## 6. Alimentação, agricultura e cadeia produtiva [PARCIAL HOJE]
 
-- Cultivar depende de limpar, arar, semear, regar, esperar o crescimento, colher e **transportar a comida**. A execução dessas etapas requer ordens do jogador; a ação Universal só decide a próxima etapa, não enfileira a cadeia inteira.
+- Cultivar depende de limpar, arar, semear, regar, esperar o crescimento, colher e **transportar a comida**. Durante o aprendizado, a execução dessas etapas exige ordens manuais; a ação Universal só decide a próxima etapa. **Depois de transportar a primeira colheita ao estoque**, os canteiros que o jogador já arou ou plantou passam a ter autorização permanente para manutenção agrícola (semeadura → rega → colheita → transporte → replantio), como em uma fazenda gerenciada. A autorização **não** se estende a abrir novos canteiros, limpar vegetação, fabricar ferramentas, construir ou explorar. O jogador pode desativar a rotina em Gestão ou cancelar uma tarefa automática para pausar apenas o canteiro correspondente. Sementes, água, ferramentas, mão de obra e transporte continuam reais, finitos e sujeitos a proibições dos colonos.
 - `src/crop-catalog.js` já identifica 19 culturas e suas imagens; cada variedade deve ganhar identidade mecânica: **tempo de crescimento, rendimento, necessidades de água, fertilidade, segurança alimentar e valor nutricional** [PLANEJADO].
 - Comer e cultivar competem por recursos. Guardar sementes para a próxima safra versus consumir a produção deve ser decisão estratégica.
 - Cadeia futura: comida bruta → armazenamento → preparo/conservação → distribuição e refeição. Produção animal e fertilização entram **depois** de uma agricultura básica equilibrada.
