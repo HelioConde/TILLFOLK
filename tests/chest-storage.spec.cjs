@@ -85,6 +85,13 @@ test("baú concluído é visível, pede autorização e salva a opção sem move
     s.groundItems=[{id:999,x:tile.x+2,y:tile.y+2,kind:"twigs",qty:7}];
     s.nextDropId=1000;
   });
+  await expect(page.locator("body")).toHaveClass(/play-session/);
+  const canvasRect=await page.locator("#world").evaluate(el=>{
+    const r=el.getBoundingClientRect();
+    return {w:r.width,h:r.height,canvasW:el.width,canvasH:el.height};
+  });
+  expect(canvasRect.w).toBeGreaterThan(0);
+  expect(canvasRect.h).toBeGreaterThan(0);
   const recovered=await save(page);
   expect(recovered.chests).toHaveLength(1);
   expect(recovered.chests[0].x).toBe(tile.x);
