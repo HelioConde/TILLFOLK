@@ -130,7 +130,8 @@ test("Fertilização continua bloqueada pela fauna selvagem e funciona com reban
   });
   const saved=await snap(page);
   expect(saved.animals.filter(a=>!a.wild)).toHaveLength(1);
-  await expect(page.locator('[data-order-type="collectManure"]')).toBeVisible();
+  // O painel de ordens pode estar fechado, mas o comando deve estar habilitado.
+  await expect(page.locator('[data-order-type="collectManure"]')).toHaveJSProperty("hidden",false);
   await selectOrder(page,"collectManure");
   await tile(page,place.x,place.y);
   expect((await snap(page)).orders.some(o=>o.type==="collectManure")).toBe(true);
