@@ -113,7 +113,10 @@
     const rocket=state.rocket;
     const team=state.workers.filter(w=>(w.health??100)>=50&&(w.satiety??100)>=35&&
       !w.task&&!w.haul&&state.homes.some(h=>h.residentId===w.id)).slice(0,LAUNCH.crew);
-    state.food-=LAUNCH.food;state.water-=LAUNCH.water;
+    const ledger=typeof window!=="undefined"?window.TillfolkFoodLedger:null;
+    if(ledger){if(!ledger.spend(state,LAUNCH.food))return {error:"Alimentos insuficientes."};}
+    else state.food-=LAUNCH.food;
+    state.water-=LAUNCH.water;
     rocket.launched=true;rocket.launchDay=Math.max(1,state.day||1);
     rocket.crew=team.map(w=>w.name);
     const travelers=new Set(team.map(w=>w.id));
