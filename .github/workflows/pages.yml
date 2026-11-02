@@ -66,6 +66,8 @@ jobs:
           node --check src/crafting.js
           node --test tests/crafting.test.cjs
           node --test tests/crops.test.cjs tests/crop-strategy.test.cjs
+          node --check src/first-village-guide.js
+          node --test tests/first-village-guide.test.cjs
           node --check src/missions.js
           node --test tests/tutorial-missions.test.cjs
           node --check src/game-hud.js
