@@ -27,7 +27,7 @@
 
 1. **Começar vulnerável:** uma pequena equipe chega ao vale selvagem com poucos recursos, sem casas ou plantações prontas.
 2. **Coletar e fabricar:** dar ordens para recolher gravetos, fibras, madeira e pedras; fabricar ferramentas na Work Station.
-3. **Produzir alimento:** arar, plantar, regar, colher, transportar e guardar comida. Sem reposição suficiente, os habitantes passam fome e podem morrer — **mortalidade ainda precisa ser implementada**.
+3. **Produzir alimento:** arar, plantar, regar, colher, transportar e guardar comida. Sem reposição suficiente, os habitantes passam fome, perdem saúde e podem morrer — o sistema de mortalidade já existe e deve continuar sendo validado em testes.
 4. **Organizar a equipe:** escolher prioridades e especialidades, acompanhar riscos e tarefas bloqueadas. Cada pessoa deve contribuir com o trabalho que executa melhor.
 5. **Construir e crescer:** novas cabanas abrem vagas para recrutamento; cada habitante adicional aumenta as necessidades da colônia.
 6. **Explorar:** abrir barreiras, alcançar biomas diferentes, buscar recursos exclusivos e construir cadeias produtivas mais eficientes.
@@ -43,19 +43,19 @@
 - Perfis úteis: coletor, agricultor, construtor, minerador, transportador e fabricante. Futuramente: cozinheiro, cuidador, pesquisador e outras funções **sem classes rígidas**.
 - As tarefas são demoradas de propósito: mais trabalhadores, boas especialidades e planejamento economizam tempo.
 
-## Estado atual do protótipo (31/10/2026)
+## Estado atual do protótipo (revisado em 02/11/2026)
 
 | Área | Existe no protótipo | Falta / objetivo de design |
 | --- | --- | --- |
 | Mundo | Geração procedural, seis biomas, obstáculos e passagem do vale | Exploração economicamente relevante, perigos e recursos únicos |
 | Trabalho | Ordens explícitas, IA de atribuição, especialidades e traços negativos | Melhor IA sob fome, risco, distância, saúde e urgência |
-| Comida | Plantações, 19 espécies gráficas, estoque e desconto diário por habitante no modo sobrevivência | Refeições pessoais, saciedade, fome, saúde, morte e derrota |
+| Comida | 19 culturas, safras, estoque por espécie, refeições pessoais, saciedade, saúde, morte e derrota | Balanceamento prolongado, logística e novos riscos de saúde |
 | Construções | Blueprint, cabanas, Work Station e ferramentas | Depósitos físicos, cozinha, camas, proteção, cadeia produtiva |
-| População | Dois colonos iniciais, candidatos, contratação condicionada à moradia | Necessidades individuais, rotinas, bem-estar e impacto de perdas |
-| Interface | HUD, menus, minimapa, zoom, velocidade/pausa, tutorial | HUD de risco de fome, dias de estoque, alertas antecipados |
+| População | Dois colonos iniciais, contratação por vaga, traços, turnos e recuperação de energia | IA de tarefas mais eficiente, bem-estar e impactos de perdas duradouras |
+| Interface | HUD, minimapa, zoom, velocidades, tutorial, risco de fome e projeção de estoque | Melhorar legibilidade mobile, bloqueios, atalhos e acessibilidade |
 | Salvamento | `localStorage`, autosave e retomada de partida | Exportar/importar backups e múltiplos slots |
 
-**O protótipo ainda NÃO é uma simulação completa de sobrevivência.** Em `src/game.js`, comida zero apenas provoca aviso: nenhuma pessoa morre por isso atualmente. O primeiro grande marco de implementação é tornar a fome e suas consequências reais, sem sacrificar compatibilidade de saves.
+**A sobrevivência básica já está implementada, mas o balanceamento está em evolução.** `src/survival.js` controla fome, dano gradual e refeições, e o motor registra mortes e derrota da colônia. A prioridade atual é validar sustentabilidade real, distribuição de trabalho, segurança de saves e as jornadas completas no Playwright. Isto não significa que todos os testes visuais estejam aprovados.
 
 ## Como executar
 

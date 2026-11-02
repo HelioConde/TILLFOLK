@@ -1,0 +1,65 @@
+name: TILLFOLK — smoke P0 fauna, IA e descanso
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/game.js'
+      - 'src/task-assignment.js'
+      - 'src/rest-routing.js'
+      - 'src/colony-life.js'
+      - 'index.html'
+      - 'tests/qa-p0-smoke.spec.cjs'
+      - 'tests/task-assignment.test.cjs'
+      - 'tests/rest-routing.test.cjs'
+      - '.github/workflows/qa-p0-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/game.js'
+      - 'src/task-assignment.js'
+      - 'src/rest-routing.js'
+      - 'src/colony-life.js'
+      - 'index.html'
+      - 'tests/qa-p0-smoke.spec.cjs'
+      - 'tests/task-assignment.test.cjs'
+      - 'tests/rest-routing.test.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Testar regras reais de IA, descanso e terreno
+        run: |
+          node --check src/game.js
+          node --check src/task-assignment.js
+          node --check src/rest-routing.js
+          node --check src/colony-life.js
+          node --test tests/task-assignment.test.cjs tests/rest-routing.test.cjs
+          node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
+      - name: Preparar Chromium
+        run: |
+          npm install --no-save @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Servir jogo estático
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-smoke-http.log 2>&1 &
+          sleep 2
+      - name: Smoke visual no desktop e celular
+        run: npx playwright test tests/qa-p0-smoke.spec.cjs --browser chromium --workers=1 --reporter=line
+      - name: Guardar capturas e relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-qa-p0-smoke
+          path: |
+            screenshots/qa-p0-*.png
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14

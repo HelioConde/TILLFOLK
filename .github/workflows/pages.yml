@@ -68,6 +68,10 @@ jobs:
           node --check src/sprout-ui-skin.js
           node --check src/irrigation-orders.js
           node --test tests/irrigation-orders.test.cjs
+          node --check src/task-assignment.js
+          node --test tests/task-assignment.test.cjs
+          node --check src/rest-routing.js
+          node --test tests/rest-routing.test.cjs
           node --check src/task-orders.js
           node --check src/house-building.js
           node --check src/blueprints.js

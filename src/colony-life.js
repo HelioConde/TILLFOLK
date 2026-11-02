@@ -44,6 +44,7 @@
      worker.energy=clamp(worker.energy,0,100);
      worker.morale=clamp(worker.morale,0,100);
      worker.resting=worker.resting===true;
+     worker.restingAtFallback=worker.restingAtFallback===true;
      // Todos os turnos disponíveis dormem 8h fixas. Saves antigos com
      // "flex" migram para o turno diurno padrão, sem apagar o trabalhador.
      worker.shift=worker.shift==="night"?"night":"day";
@@ -78,7 +79,7 @@
      const sleeping=w.resting&&w.atRest===true;
      if(sleeping)w.energy=clamp(w.energy+passed*(life.researchLevel>=3?.35:.29),0,100);
      else w.energy=clamp(w.energy-passed*(w.task?.085:.065),0,100);
-     const sheltered=state.homes?.some(h=>h.residentId===w.id);
+     const sheltered=!w.restingAtFallback&&state.homes?.some(h=>h.residentId===w.id);
      const target=clamp(65+(sheltered?12:-8)+(w.energy>60?10:-15)-
        (w.satiety<30?28:0)-(currentWeather==="seca"?5:0),0,100);
      w.morale=clamp(w.morale+(target-w.morale)*Math.min(1,passed/280),0,100);

@@ -33,7 +33,7 @@ test('A colônia começa sem animais, com lagoa e recursos não mágicos',async(
   expect(s.water).toBe(0);
   expect(s.inventory.manure).toBe(0);
   expect(s.world.water.length).toBeGreaterThan(0);
-  expect(s.animals).toEqual([]);
+  expect(s.animals.filter(a=>!a.wild)).toEqual([]); // Nenhum animal domesticado inicial
   await expect(page.locator('[data-order-type="collectManure"]')).toBeHidden();
   expect(s.homes).toEqual([]);
   await expect(page.locator('[data-order-type="collectWater"]')).toHaveCount(1);
@@ -62,7 +62,7 @@ test('Água só entra no estoque após trabalho na margem da lagoa',async({page}
 test('Fertilização fica bloqueada sem esterco e funciona quando animais forem introduzidos',async({page})=>{
   await start(page);
   const empty=await snap(page);
-  expect(empty.animals).toEqual([]);
+  expect(empty.animals.filter(a=>!a.wild)).toEqual([]); // A fauna selvagem já habita os biomas
   const noAnimal=await page.evaluate(()=>{
     const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
     return window.TillfolkOrders.status(

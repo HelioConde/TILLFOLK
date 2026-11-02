@@ -11,6 +11,9 @@
   if(!Progression)throw new Error("Carregue src/progression.js antes do motor TILLFOLK.");
   if(!Exploration)throw new Error("Carregue src/exploration.js antes do motor TILLFOLK.");
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
+  const TaskAI=window.TillfolkTaskAssignment,RestRouting=window.TillfolkRestRouting;
+  if(!TaskAI)throw new Error("Carregue src/task-assignment.js antes do motor TILLFOLK.");
+  if(!RestRouting)throw new Error("Carregue src/rest-routing.js antes do motor TILLFOLK.");
   const Food=window.TillfolkFoodLedger;
   if(!Food)throw new Error("Carregue src/food-ledger.js antes do motor TILLFOLK.");
   const Care=window.TillfolkCropCare,Planning=window.TillfolkFarmPlanning,
@@ -1128,15 +1131,10 @@
   function assign(w){
     if(w.task||w.resting)return;
     const available=tasks.filter(t=>t.status==="ready"&&!t.assigned&&!workerTaskBlocker(w,t));
-    const priorityScore=t=>{
-      const global=Number.isInteger(t.priority)?t.priority:state.priorities[t.type]||5;
-      const individual=w.personalPriority?.[t.type]??5;
-      const expertise=bonus(w,t.type);
-      const distance=Math.abs(w.x-(t.x+.5))+Math.abs(w.y-(t.y+.5));
-      return global*100+individual*14+expertise*9-distance*.3;
-    };
-    available.sort((a,b)=>priorityScore(b)-priorityScore(a));
-    if(available.length){w.task=available[0].id;w.progress=0;w.routeTask=null;w.route=[];available[0].assigned=w.id;}
+    // A urgência alimentar apenas favorece ordens já autorizadas: a regra
+    // de prioridade manual, habilidades e restrições permanece soberana.
+    const ranked=TaskAI.rank(w,available,state,(worker,type)=>bonus(worker,type));
+    if(ranked.length){w.task=ranked[0].id;w.progress=0;w.routeTask=null;w.route=[];ranked[0].assigned=w.id;}
   }
   function assignIdleWorkers(){
     const idle=state.workers.filter(w=>!w.task&&!w.resting);
@@ -1159,13 +1157,17 @@
   // Rotina real: o trabalhador caminha até o abrigo antes de descansar.
   // Sem casa ele descansa na clareira, mas perde moral e recupera-se mais devagar.
   function processRest(w,scaled){
-    const assigned=state.homes.find(h=>h.residentId===w.id);
-    const goal=assigned?{x:Math.max(1,assigned.x-1),y:assigned.y}:{x:Math.floor(state.spawn.x),y:Math.floor(state.spawn.y)};
-    const key="rest:"+goal.x+","+goal.y;
-    if(w.routeTask!==key){
-      w.route=routeBetween(w.x,w.y,goal.x,goal.y,w);
-      w.routeTask=key;
+    // Escolher o abrigo uma vez ao iniciar a rotina, sem BFS a cada frame.
+    // Se não há caminho seguro até a casa, tentar clareira; por último, chão.
+    if(!String(w.routeTask||"").startsWith("rest:")||!w.restTarget){
+      const assigned=state.homes.find(h=>h.residentId===w.id);
+      const plan=RestRouting.choose(w,assigned,state.spawn,routeBetween);
+      w.route=plan.route;
+      w.restTarget=plan.goal;
+      w.restingAtFallback=plan.fallback;
+      w.routeTask="rest:"+plan.kind+":"+plan.goal.x+","+plan.goal.y;
     }
+    const goal=w.restTarget;
     const target=w.route?.[0]||{x:goal.x+.5,y:goal.y+.5};
     const dx=target.x-w.x,dy=target.y-w.y,d=Math.hypot(dx,dy);
     if(d>.07&&w.route?.length){
@@ -1179,7 +1181,7 @@
     }
     if(w.route?.length){w.x=target.x;w.y=target.y;w.route.shift();}
     w.atRest=true;w.moving=false;
-    if(!assigned)w.morale=Math.max(0,w.morale-scaled*.009);
+    if(w.restingAtFallback)w.morale=Math.max(0,w.morale-scaled*.009);
   }
   function automateFarmIfEnabled(){
     if(!Life.canAutomate(state,state.day*1440+state.minutes)||state.orders.length>=350)return;
@@ -1432,11 +1434,13 @@
     for(const w of state.workers){
       const mustSleep=Life.sleepRequired(w,state.minutes);
       if(mustSleep&&!w.resting){
-        w.resting=true;w.atRest=false;
+        w.resting=true;w.atRest=false;w.restTarget=null;w.restingAtFallback=false;
+        w.routeTask=null;w.route=[];
         if(w.haul)refundHaul(w);
         if(w.task){releaseSupply(w);w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;}
       }else if(!mustSleep&&w.resting){
         w.resting=false;w.atRest=false;w.route=[];w.routeTask=null;
+        w.restingAtFallback=false;w.restTarget=null;
       }
     }
     assignIdleWorkers();
@@ -2121,7 +2125,7 @@
     // Não reconstruir <select> enquanto o jogador escolhe um turno no mobile.
     if(workers&&!workers.contains(document.activeElement))workers.innerHTML=state.workers.map(w=>
       '<div class="colony-life-worker"><strong>'+escapeHtml(w.name)+'</strong>'+
-      '<small>'+(w.resting?"💤 Descansando":w.energy<25?"⚠️ Exausto":"Disponível")+'</small>'+
+      '<small>'+(w.resting?(w.restingAtFallback?"💤 Repouso ao relento":"💤 Descansando"):w.energy<25?"⚠️ Exausto":"Disponível")+'</small>'+
       '<span class="colony-worker-needs"><span>⚡ Energia '+Math.round(w.energy||0)+'%</span>'+
       '<span>♥ Moral '+Math.round(w.morale||0)+'%</span></span>'+
       '<meter min="0" max="100" value="'+Math.round(w.energy||0)+'" aria-label="Energia"></meter>'+
@@ -2310,6 +2314,7 @@
     if(!worker||!["day","night"].includes(selector.value))return;
     worker.shift=selector.value;
     worker.resting=false;worker.atRest=false;
+    worker.restTarget=null;worker.restingAtFallback=false;worker.routeTask=null;worker.route=[];
     log("🛏️ Turno de "+worker.name+" alterado para "+
       (selector.value==="night"?"noturno":"diurno")+".");
     notify("Novo turno de "+worker.name+" salvo.");
