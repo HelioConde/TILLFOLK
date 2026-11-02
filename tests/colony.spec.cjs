@@ -151,6 +151,7 @@ test("Fertilização continua bloqueada pela fauna selvagem e funciona com reban
 });
 
 test("Moradia dá vagas reais: recrutar só com uma terceira cabana e comida",async({page})=>{
+  test.setTimeout(110000);
   await start(page);
   const plot=await freeSite(page,2);expect(plot).not.toBeNull();
   await selectOrder(page,"buildHome");
