@@ -3,6 +3,7 @@ async function continueIfMenuVisible(page){
   await expect(page.locator('#menu')).toBeHidden();
 }
 const {test,expect}=require('@playwright/test');
+const {reloadWithSave}=require('./helpers/save-fixture.cjs');
 const BASE='http://127.0.0.1:4173/';
 const snap=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
 async function start(page){
@@ -26,19 +27,23 @@ async function tile(page,x,y){
     }));
   },{x,y});
 }
-test('A colônia começa sem animais, com lagoa e recursos não mágicos',async({page})=>{
+test('A colônia começa sem animais domésticos, com fauna selvagem e recursos não mágicos',async({page})=>{
   await start(page);
   const s=await snap(page);
   expect(s.seeds).toBe(0);
   expect(s.water).toBe(0);
   expect(s.inventory.manure).toBe(0);
   expect(s.world.water.length).toBeGreaterThan(0);
-  expect(s.animals).toEqual([]);
+  expect(s.animals.filter(a=>!a.wild)).toEqual([]);
+  expect(s.animals.filter(a=>a.wild).length).toBeGreaterThan(0);
   await expect(page.locator('[data-order-type="collectManure"]')).toBeHidden();
   expect(s.homes).toEqual([]);
-  await expect(page.locator('[data-order-type="collectWater"]')).toHaveCount(1);
+  // Coleta de água é uma etapa da ordem Regar, não um botão separado.
+  await expect(page.locator('[data-order-type="collectWater"]')).toHaveCount(0);
+  await expect(page.locator('[data-order-type="water"]')).toHaveCount(1);
   await expect(page.locator('[data-order-type="collectManure"]')).toHaveCount(1);
-  await expect(page.locator('[data-order-type="buildHome"]')).toHaveCount(1);
+  // Cabana foi movida para a paleta Objetos.
+  await expect(page.locator('[data-build-layer="home"]')).toHaveCount(1);
   await page.screenshot({path:'screenshots/colonia-recursos-1600x900.png',animations:'disabled'});
 });
 test('Água só entra no estoque após trabalho na margem da lagoa',async({page})=>{
@@ -62,7 +67,7 @@ test('Água só entra no estoque após trabalho na margem da lagoa',async({page}
 test('Fertilização fica bloqueada sem esterco e funciona quando animais forem introduzidos',async({page})=>{
   await start(page);
   const empty=await snap(page);
-  expect(empty.animals).toEqual([]);
+  expect(empty.animals.filter(a=>!a.wild)).toEqual([]);
   const noAnimal=await page.evaluate(()=>{
     const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
     return window.TillfolkOrders.status(
@@ -72,17 +77,14 @@ test('Fertilização fica bloqueada sem esterco e funciona quando animais forem 
   });
   expect(noAnimal.state).toBe('blocked');
   // Um animal só pode surgir em uma fase posterior; simular esse desbloqueio no teste.
-  await page.evaluate(()=>{
-    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+  await reloadWithSave(page,s=>{
     s.animals=[{id:2,kind:'cow',x:16.5,y:9.5,manure:1,timer:0,placedByPlayer:true}];
-    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
-  await page.reload({waitUntil:'networkidle'});
   await continueIfMenuVisible(page);
   const initial=await snap(page);
-  expect(initial.animals).toHaveLength(1);
+  expect(initial.animals.filter(a=>!a.wild)).toHaveLength(1);
   await expect(page.locator('[data-order-type="collectManure"]')).toBeAttached();
-  const cow=initial.animals[0];
+  const cow=initial.animals.find(a=>!a.wild&&a.kind==='cow');
   await selectOrder(page,'collectManure');
   await tile(page,Math.floor(cow.x),Math.floor(cow.y));
   const s=await snap(page);
@@ -136,22 +138,16 @@ test('Casas de madeira são ordens e contratação exige três casas para dois c
   await expect(page.locator('#housing-status')).toContainText('Construa mais 3 casa');
   await expect(page.locator('[data-hire="0"]')).toBeDisabled();
   await page.locator('#hire-dialog .modal-x').click();
-  await page.evaluate(()=>{
-    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+  await reloadWithSave(page,s=>{
     s.homes=[{x:4,y:4,residentId:null,legacy:false},{x:7,y:4,residentId:null,legacy:false}];
-    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
-  });
-  await page.reload({waitUntil:'networkidle'});await continueIfMenuVisible(page);
+  });await continueIfMenuVisible(page);
   await page.locator('#open-workers').click();await page.locator('#hire-btn').click();
   await expect(page.locator('#housing-status')).toContainText('Construa mais 1 casa');
   await expect(page.locator('[data-hire="0"]')).toBeDisabled();
   await page.locator('#hire-dialog .modal-x').click();
-  await page.evaluate(()=>{
-    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+  await reloadWithSave(page,s=>{
     s.homes.push({x:10,y:4,residentId:null,legacy:false});
-    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
-  });
-  await page.reload({waitUntil:'networkidle'});await continueIfMenuVisible(page);
+  });await continueIfMenuVisible(page);
   await page.locator('#open-workers').click();await page.locator('#hire-btn').click();
   await expect(page.locator('#housing-status')).toContainText('1 vaga(s) livre(s)');
   await expect(page.locator('[data-hire="0"]')).toBeEnabled();
@@ -165,17 +161,14 @@ test('Casas de madeira são ordens e contratação exige três casas para dois c
 test('Irrigação viaja à lagoa automaticamente e retorna ao canteiro',async({page})=>{
   test.setTimeout(60000);
   await start(page);
-  await page.evaluate(()=>{
-    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+  await reloadWithSave(page,s=>{
     const p=s.plots.find(p=>p.x===13&&p.y===11);
     p.tilled=true;p.seeded=true;p.watered=false;
     s.workers[0].neg=[];
     s.water=0;
     s.crafting.equipment.wateringCan=true; // cenário com equipamento já fabricado
     s.orders=[{id:'13-11:water',type:'water',x:13,y:11}];
-    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
-  await page.reload({waitUntil:'networkidle'});
   await continueIfMenuVisible(page);
   await page.locator('[data-speed="6"]').click();
   await expect.poll(async()=>{
@@ -192,8 +185,7 @@ test('Irrigação viaja à lagoa automaticamente e retorna ao canteiro',async({p
 test('Fertilização busca esterco da vaca e entrega na plantação',async({page})=>{
   test.setTimeout(55000);
   await start(page);
-  await page.evaluate(()=>{
-    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+  await reloadWithSave(page,s=>{
     const p=s.plots.find(p=>p.x===13&&p.y===11);
     p.tilled=true;p.fertilized=false;
     s.workers[0].neg=[];
@@ -201,9 +193,7 @@ test('Fertilização busca esterco da vaca e entrega na plantação',async({page
     // Animal é introduzido apenas neste cenário de fase posterior.
     s.animals=[{id:2,kind:'cow',x:16.5,y:9.5,manure:1,timer:0,placedByPlayer:true}];
     s.orders=[{id:'13-11:fertilize',type:'fertilize',x:13,y:11}];
-    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
-  await page.reload({waitUntil:'networkidle'});
   await continueIfMenuVisible(page);
   await page.locator('[data-speed="6"]').click();
   await expect.poll(async()=> (await snap(page)).plots.find(p=>p.x===13&&p.y===11).fertilized,
@@ -216,8 +206,7 @@ test('Fertilização busca esterco da vaca e entrega na plantação',async({page
 test('Cabana é concluída por trabalhador com madeira, não ao clicar',async({page})=>{
   test.setTimeout(70000);
   await start(page);
-  await page.evaluate(()=>{
-    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+  await reloadWithSave(page,s=>{
     s.workers[0].neg=[];s.inventory.wood=15;localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
   await page.reload({waitUntil:'networkidle'});
@@ -244,12 +233,10 @@ test('Carregar save anterior remove vaca inicial automática, sem apagar animais
       {id:3,kind:'cow',x:20.5,y:11.5,manure:1,timer:0,placedByPlayer:true}
     ];
     s.orders.push({id:'16-9:collectManure',type:'collectManure',x:16,y:9});
-    localStorage.setItem('tillfolk-v01',JSON.stringify(s));
   });
-  await page.reload({waitUntil:'networkidle'});
   await continueIfMenuVisible(page);
   const migrated=await snap(page);
-  expect(migrated.animals).toHaveLength(1);
-  expect(migrated.animals[0].id).toBe(3);
+  expect(migrated.animals.filter(a=>!a.wild)).toHaveLength(1);
+  expect(migrated.animals.find(a=>!a.wild).id).toBe(3);
   expect(migrated.orders.some(o=>o.type==='collectManure'&&o.x===16&&o.y===9)).toBe(false);
 });
