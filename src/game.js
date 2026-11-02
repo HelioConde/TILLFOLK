@@ -1758,26 +1758,52 @@
       if(soil&&!soil.seeded&&!soil.produce)
         Blueprint.field(ctx,sprite,plan.x,plan.y,TILE,true,plan.grown||soil.tilled);
     }
-    // Marcadores discretos: ordens prontas (creme) ou aguardando (marrom).
+    // LOD das ordens: no zoom 50%-75%, letras por tile se sobrepõem a
+    // árvores, pedras e caminhos. Agrupar por regiões, sem afetar tarefas.
     const markers={clear:"L",till:"A",fertilize:"F",sow:"S",water:"R",harvest:"C",carry:"T",collectWater:"💧",collectManure:"E",buildHome:"⌂",buildStation:"W"};
     const byTile=new Map();
     for(const job of tasks){
+      if(!inView(job.x,job.y,1))continue;
       const id=keyOf(job.x,job.y),entry=byTile.get(id)||[];
       entry.push(job);byTile.set(id,entry);
     }
-    for(const [tile,jobs] of byTile){
-      const [x,y]=tile.split("-").map(Number);
-      if(!inView(x,y,1))continue;
-      // Contorno leve apenas enquanto existe ordem ativa nessa célula.
-      ctx.strokeStyle="#f4e9a3";ctx.lineWidth=1;ctx.setLineDash([4,3]);
-      ctx.strokeRect(x*TILE+3,y*TILE+3,TILE-6,TILE-6);
-      ctx.setLineDash([]);
-      const next=jobs.find(j=>j.status==="ready")||jobs[0];
-      ctx.fillStyle=next.status==="ready"?"#ecdc9b":"#ad8d68";
-      ctx.fillRect(x*TILE+2,y*TILE+2,19,13);
-      ctx.fillStyle="#23382b";ctx.font="bold 10px sans-serif";ctx.textAlign="left";
-      ctx.fillText(markers[next.type]||"?",x*TILE+5,y*TILE+12);
-      if(jobs.length>1){ctx.fillStyle="#273a2d";ctx.fillText(String(jobs.length),x*TILE+23,y*TILE+12);}
+    if(cameraZoom<=.8){
+      // Um número representa QUANTAS ordens há na região, não um recurso
+      // retirado do solo. A informação detalhada permanece no painel Ordens.
+      const groups=new Map(),span=6;
+      for(const jobs of byTile.values()){
+        const {x,y}=jobs[0];
+        const id=Math.floor(x/span)+","+Math.floor(y/span);
+        const group=groups.get(id)||{count:0,x:0,y:0,ready:false};
+        group.count+=jobs.length;group.x+=(x+.5)*jobs.length;group.y+=(y+.5)*jobs.length;
+        group.ready ||= jobs.some(j=>j.status==="ready");
+        groups.set(id,group);
+      }
+      for(const group of groups.values()){
+        const px=group.x/group.count*TILE,py=group.y/group.count*TILE;
+        const label=String(group.count),width=Math.max(20,11+label.length*8);
+        ctx.fillStyle=group.ready?"#f5df9c":"#ad8d68";
+        ctx.fillRect(Math.round(px-width/2),Math.round(py-11),width,17);
+        ctx.strokeStyle="#4b5b36";ctx.lineWidth=1;
+        ctx.strokeRect(Math.round(px-width/2)+.5,Math.round(py-11)+.5,width-1,16);
+        ctx.fillStyle="#263c2a";ctx.font="bold 11px sans-serif";
+        ctx.textAlign="center";ctx.fillText(label,px,py+1);
+      }
+    }else{
+      for(const jobs of byTile.values()){
+        const {x,y}=jobs[0];
+        // Contorno leve apenas enquanto existe ordem ativa nessa célula.
+        ctx.strokeStyle="#f4e9a3";ctx.lineWidth=1;ctx.setLineDash([4,3]);
+        ctx.strokeRect(x*TILE+3,y*TILE+3,TILE-6,TILE-6);
+        ctx.setLineDash([]);
+        const next=jobs.find(j=>j.status==="ready")||jobs[0];
+        ctx.fillStyle=next.status==="ready"?"#ecdc9b":"#ad8d68";
+        ctx.fillRect(x*TILE+2,y*TILE+2,19,13);
+        ctx.fillStyle="#23382b";ctx.font="bold 10px sans-serif";
+        ctx.textAlign="left";
+        ctx.fillText(markers[next.type]||"?",x*TILE+5,y*TILE+12);
+        if(jobs.length>1){ctx.fillStyle="#273a2d";ctx.fillText(String(jobs.length),x*TILE+23,y*TILE+12);}
+      }
     }
     // Drops não somem após o efeito visual; ficam no solo até uma entrega real.
     const layers=[
@@ -2653,9 +2679,11 @@
     if(plot.tilled)return "sow";
     return "till";
   }
-  function queueAt(type,x,y){
+  function queueAt(type,x,y,{quiet=false}={}){
     const toolProblem=Crafting.blocked(state,type,World.at(state.world,x,y));
-    if(toolProblem){markBlocked(x,y,toolProblem);return {error:toolProblem};}
+    // Seleções em área verificam centenas de terrenos. Um bloqueio individual
+    // não deve acionar centenas de notificações vermelhas sobre o mapa.
+    if(toolProblem){if(!quiet)markBlocked(x,y,toolProblem);return {error:toolProblem};}
     if(window.TillfolkHouseBuilder.occupied(state.house,x,y)||occupiedByHome(x,y)||occupiedByStation(x,y)||occupiedByStation(x,y)||
        (World.waterAt(state.world,x,y)&&type!=="collectWater"))return {error:"Terreno indisponível"};
     if(type==="buildStation"&&!stationSiteValid(x,y))return {error:"Oficina exige terreno livre."};
@@ -2677,6 +2705,16 @@
   function applyToArea(from,to,forceCancel=false){
     const x0=Math.max(0,Math.min(from.x,to.x)),x1=Math.min(W-1,Math.max(from.x,to.x));
     const y0=Math.max(0,Math.min(from.y,to.y)),y1=Math.min(H-1,Math.max(from.y,to.y));
+    const area=(x1-x0+1)*(y1-y0+1);
+    // A missão inicial possui somente dois colonos e nenhuma ferramenta.
+    // Um gesto acidental não pode gerar centenas de ordens impossíveis.
+    const maxArea=state.workstations?.length?120:24;
+    if(!forceCancel&&selectedTool!=="remover"&&area>maxArea){
+      $("#tile-tooltip").hidden=true;
+      notify("Área de "+area+" terrenos é grande demais. Limite atual: "+
+        maxArea+" por seleção. Arraste uma área menor.");
+      return;
+    }
     let added=0,cancelled=0,skipped=0;
     const removals=[];
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
@@ -2686,7 +2724,7 @@
       }
       const type=selectedTool==="universal"?nextUniversalOrder(x,y):selectedTool;
       if(!type||!Orders.TYPES.includes(type)){skipped++;continue;}
-      const result=queueAt(type,x,y);
+      const result=queueAt(type,x,y,{quiet:true});
       if(result.error)skipped++;else added++;
     }
     // Reutilizar a mesma transação de cancelamento para seleção por área:
@@ -3122,7 +3160,11 @@
       const attempted=blockedAttempt&&blockedAttempt.x===x&&blockedAttempt.y===y&&
         performance.now()<blockedAttempt.until;
       const type=selectedTool==="universal"?nextUniversalOrder(x,y):selectedTool;
+      // Universal não exibe erro de enxada só porque o cursor passou
+      // pelo chão enquanto o tutorial pede gravetos. Erros reais continuam
+      // visíveis após um clique inválido ou com ferramenta específica.
       const needed=attempted?blockedAttempt.reason:
+        selectedTool==="universal"?null:
         type&&type!=="inspecionar"?Crafting.blocked(state,type,object):null;
       const tip=$("#tile-tooltip");
       if(needed){
