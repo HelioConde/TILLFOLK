@@ -598,6 +598,11 @@
   // atravessar o mapa carregando e entregar no local de construção.
   function processHaul(w,scaled){
     const job=w.haul;if(!job)return false;
+    // Cancelar coleta quando o jogador desliga o baú (ou o baú deixa de
+    // existir). A carga em trânsito é devolvida FISICAMENTE ao mapa.
+    if(job.orderId==null&&!Logistics.storageEnabled(state,job.destination)){
+      refundHaul(w);return true;
+    }
     if(w.neg?.includes("carry")){refundHaul(w);return false;}
     const goal=job.phase==="fetch"?job.source:job.destination;
     const id="haul:"+job.phase+":"+goal.x+","+goal.y+":"+job.kind;
@@ -1275,7 +1280,7 @@
     }
     if(t.type==="buildChest"){
       if(!Logistics.complete(t)||!chestSiteValid(t.x,t.y))return false;
-      state.chests.push({x:t.x,y:t.y,items:{}});
+      state.chests.push({x:t.x,y:t.y,items:{},autoCollect:false});
       state.plots=state.plots.filter(plot=>plot.x!==t.x||plot.y!==t.y);
       showPickup(t.x,t.y,"chest");
       Life.discover(state,1);
@@ -1459,7 +1464,9 @@
         if(!w.neg.includes("carry")){
           const supply=pendingSupplyOrder();
           if(supply&&beginHaul(w,supply)){processHaul(w,scaled);continue;}
-          if(state.chests.length&&beginHaul(w,null))processHaul(w,scaled);
+          // Sem autorização explícita, colonos não varrem todo o mapa.
+          if(state.chests.some(c=>c.autoCollect===true)&&beginHaul(w,null))
+            processHaul(w,scaled);
         }
         continue;
       }
@@ -1649,10 +1656,20 @@
       for(const well of state.wells||[])if(inView(well.x,well.y,2))
         ctx.drawImage(sprite.well,well.x*TILE-2,well.y*TILE-8,TILE+4,TILE+8);
     // Baús do pacote premium Sprout Lands, sem sprites improvisados.
-    if(valid(chestImage)){
-      for(const chest of state.chests||[])if(inView(chest.x,chest.y,2)){
-        ctx.imageSmoothingEnabled=false;
+    for(const chest of state.chests||[])if(inView(chest.x,chest.y,2)){
+      ctx.imageSmoothingEnabled=false;
+      if(valid(chestImage))
         ctx.drawImage(chestImage,0,0,16,16,chest.x*TILE,chest.y*TILE-4,TILE,TILE);
+      else{
+        // A estrutura concluída nunca pode sumir por atraso/erro de imagem:
+        // marcador de UI temporário, não sprite inventado ou baú fantasma.
+        ctx.save();ctx.fillStyle="#543c29";
+        ctx.fillRect(chest.x*TILE+3,chest.y*TILE+6,TILE-6,TILE-10);
+        ctx.strokeStyle="#e6bd6c";ctx.lineWidth=2;
+        ctx.strokeRect(chest.x*TILE+3,chest.y*TILE+6,TILE-6,TILE-10);
+        ctx.fillStyle="#ffe3a1";ctx.font="bold 11px sans-serif";
+        ctx.fillText("BAÚ",chest.x*TILE+4,chest.y*TILE+19);
+        ctx.restore();
       }
     }
     // Bancadas do atlas premium, colocadas somente após o colono concluir a obra.
@@ -3182,11 +3199,10 @@
     }
     const clickedChest=state.chests.find(c=>c.x===x&&c.y===y);
     if(clickedChest){
-      const items=Object.entries(clickedChest.items).filter(([,qty])=>qty>0);
-      const tip=$("#tile-tooltip");
-      tip.classList.remove("locked");tip.hidden=false;
-      tip.textContent="🧰 Baú ("+(x+1)+","+(y+1)+"): "+
-        (items.length?items.map(([kind,qty])=>qty+" "+kind).join(" · "):"vazio — equipe vai guardar as coletas");
+      // O baú é uma estrutura real, já concluída. Blueprint é apenas uma
+      // ordem e jamais apresenta inventário nem coleta automática.
+      renderChestDialog(clickedChest);
+      $("#chest-dialog").showModal();
       return;
     }
     if(occupiedByStation(x,y)){openWorkshop();return;}
@@ -3207,6 +3223,39 @@
       return;
     }
     if(Orders.TYPES.includes(selectedTool))placeOrder(selectedTool,x,y);
+  });
+  function renderChestDialog(chest){
+    const stocked=Object.entries(chest.items||{}).filter(([,qty])=>qty>0);
+    const label=(chest.x+1)+", "+(chest.y+1);
+    $("#chest-location").textContent="Baú concluído · terreno "+label;
+    $("#chest-items").textContent=stocked.length?
+      stocked.map(([kind,qty])=>qty+" "+kind).join(" · "):"Nenhum item guardado.";
+    const toggle=$("#chest-auto-toggle");
+    toggle.dataset.x=chest.x;toggle.dataset.y=chest.y;
+    toggle.textContent=chest.autoCollect?
+      "Desativar coleta automática":"Ativar coleta automática (raio de "+Logistics.STORAGE_RADIUS+" tiles)";
+    toggle.setAttribute("aria-pressed",String(chest.autoCollect===true));
+    $("#chest-collect-status").textContent=chest.autoCollect?
+      "Ligada: colonos livres transportam pilhas próximas até este baú.":
+      "Desligada: os itens permanecem no mapa até você autorizar a coleta.";
+  }
+  $("#chest-auto-toggle").addEventListener("click",()=>{
+    const button=$("#chest-auto-toggle");
+    const x=Number(button.dataset.x),y=Number(button.dataset.y);
+    const chest=state?.chests?.find(c=>c.x===x&&c.y===y);
+    if(!chest)return;
+    chest.autoCollect=!chest.autoCollect;
+    if(!chest.autoCollect){
+      // Devolver o que estava sendo transportado ao desativar a coleta.
+      for(const worker of state.workers){
+        const haul=worker.haul;
+        if(haul?.orderId==null&&haul?.destination?.x===x&&haul?.destination?.y===y)
+          refundHaul(worker);
+      }
+    }
+    renderChestDialog(chest);
+    save();
+    notify(chest.autoCollect?"Coleta local autorizada para este baú.":"Coleta automática desativada.");
   });
   // A mesma tecla do HUD alterna Objetos; nenhum painel exige botão Fechar.
   document.querySelectorAll("[data-tool]").forEach(b=>b.addEventListener("click",()=>{
