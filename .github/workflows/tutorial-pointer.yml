@@ -1,5 +1,15 @@
 name: TILLFOLK — diagnóstico da mãozinha do tutorial
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/tutorial-pointer.js'
+      - 'src/game.js'
+      - 'index.html'
+      - 'tutorial-pointer.css'
+      - 'tests/tutorial-paw.spec.cjs'
+      - 'tests/tutorial-pointer-diagnostics.spec.cjs'
+      - '.github/workflows/tutorial-pointer.yml'
   push:
     branches: [main]
     paths:
