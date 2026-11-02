@@ -425,6 +425,19 @@
     <div id="management-body" class="management-body" role="tabpanel"></div>
     <p class="management-foot">As decisões são salvas automaticamente. Trabalhos proibidos nunca serão atribuídos.</p>
   </dialog>
+  <dialog id="chest-dialog" class="modal" aria-labelledby="chest-dialog-title">
+    <form method="dialog"><button class="modal-x" aria-label="Fechar baú">✕</button></form>
+    <span class="overline">ARMAZENAMENTO DA COLÔNIA</span>
+    <h2 id="chest-dialog-title">🧰 Baú de materiais</h2>
+    <p id="chest-location"></p>
+    <p id="chest-items">Nenhum item guardado.</p>
+    <p id="chest-collect-status" role="status" aria-live="polite"></p>
+    <button type="button" class="large-primary" id="chest-auto-toggle" aria-pressed="false">
+      Ativar coleta automática
+    </button>
+    <p><small>Apenas baús já construídos podem receber recursos.
+      A blueprint não recolhe itens do mapa. Cada transporte usa um colono de verdade.</small></p>
+  </dialog>
   <dialog id="hire-dialog" class="modal">
     <form method="dialog"><button class="modal-x" aria-label="Fechar">✕</button></form>
     <span class="overline">CASA DE RECRUTAMENTO</span><h2>Encontre sua próxima ajuda</h2>
