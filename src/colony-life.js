@@ -93,7 +93,12 @@
      const spoilPerDay=life.researchLevel>=2?.025:.065;
      life.foodSpoil+=(state.food||0)*spoilPerDay*passed/1440;
      const lost=Math.min(state.food,Math.floor(life.foodSpoil));
-     if(lost>0){state.food-=lost;life.foodSpoil-=lost;events.push(lost+" alimento(s) estragaram no estoque.");}
+     if(lost>0){
+     const ledger=typeof window!=="undefined"?window.TillfolkFoodLedger:null;
+     if(ledger){if(!ledger.spend(state,lost))return events;}
+     else state.food-=lost;
+     life.foodSpoil-=lost;events.push(lost+" alimento(s) estragaram no estoque.");
+   }
    }
    // Poços construídos produzem água de forma gradual e limitada,
    // sem teletransportar água da lagoa.
@@ -160,7 +165,9 @@
    const first=animals[0],second=animals[1];
    if((first.age||0)<1||(second.age||0)<1)return 0;
    if((state.food||0)<2)return 0;
-   state.food-=2;
+   const ledger=typeof window!=="undefined"?window.TillfolkFoodLedger:null;
+   if(ledger){if(!ledger.spend(state,2))return 0;}
+   else state.food-=2;
    state.animals.push({x:first.x+.35,y:first.y+.45,kind:first.kind||"cow",
      wild:false,manure:0,timer:0,age:0});
    life.lastAnimalBirthDay=state.day;
