@@ -1,0 +1,49 @@
+name: TILLFOLK — QA de projetos de construção
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/house.spec.cjs'
+      - '.github/workflows/qa-building-blueprints.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tests/house.spec.cjs'
+      - '.github/workflows/qa-building-blueprints.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    name: Oficina, construções e salvamento desktop/mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar regras de terreno
+        run: |
+          node --check tests/house.spec.cjs
+          node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
+      - name: Instalar navegador
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Servir jogo real
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-build-qa.log 2>&1 &
+          sleep 2
+      - name: Validar objetos e blueprints
+        run: npx playwright test tests/house.spec.cjs --workers=1 --browser chromium --reporter=line
+      - name: Guardar capturas e falhas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-qa-construcoes
+          path: |
+            screenshots/objetos-*.png
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
