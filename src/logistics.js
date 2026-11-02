@@ -8,13 +8,19 @@
     buildChest:Object.freeze({twigs:8,grass:3}),
     buildWell:Object.freeze({wood:4,stone:3})
   });
-  const CHEST_SPRITE="./public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/Building parts/Chest.png";
+  // Frame único 16x16 do pacote já incluído. O arquivo anterior era um atlas
+  // e o recorte 0,0 nem sempre correspondia ao baú fechado visível.
+  const CHEST_SPRITE="./public/assets/assets_premium_preview/objects/chests/chest_01/PREMIUM_chest_01_closed_16x16.png";
+  const STORAGE_RADIUS=10; // raio de coleta local; nunca varrer os seis biomas automaticamente
   const normalize=state=>{
     state.groundItems=Array.isArray(state.groundItems)?state.groundItems.filter(i=>
       i&&Number.isFinite(i.x)&&Number.isFinite(i.y)&&typeof i.kind==="string"&&i.qty>0):[];
     state.chests=Array.isArray(state.chests)?state.chests.filter(i=>
       i&&Number.isInteger(i.x)&&Number.isInteger(i.y)).map(c=>({
-        x:c.x,y:c.y,items:c.items&&typeof c.items==="object"?c.items:{}
+        x:c.x,y:c.y,items:c.items&&typeof c.items==="object"?c.items:{},
+        // Saves antigos sem este campo permanecem com o depósito acessível,
+        // mas SEM coleta automática inesperada.
+        autoCollect:c.autoCollect===true
       })):[];
     state.nextDropId=Math.max(1,Number(state.nextDropId)||1,...state.groundItems.map(i=>(Number(i.id)||0)+1));
     return state;
@@ -99,19 +105,32 @@
     }
     return job.qty;
   }
+  // Só baús CONCLUÍDOS que o jogador ativou explicitamente aceitam coleta.
+  // Blueprints existem em orders, não em chests, e nunca viram depósitos.
+  const storageEnabled=(state,destination)=>Boolean(
+    (state?.chests||[]).some(c=>c.x===destination?.x&&c.y===destination?.y&&c.autoCollect===true));
   function planStorage(state,worker){
     normalize(state);
-    if(!state.chests.length)return null;
-    const source=state.groundItems.filter(i=>i.qty>0)
-      .sort((a,b)=>(Math.abs(worker.x-a.x)+Math.abs(worker.y-a.y))-
-        (Math.abs(worker.x-b.x)+Math.abs(worker.y-b.y)))[0];
-    if(!source)return null;
-    const chest=[...state.chests].sort((a,b)=>
-      Math.abs(a.x-source.x)+Math.abs(a.y-source.y)-
-      Math.abs(b.x-source.x)-Math.abs(b.y-source.y))[0];
-    return {orderId:null,phase:"fetch",kind:source.kind,
-      qty:Math.min(capacity(worker),source.qty),limit:capacity(worker),cargo:0,
-      source:{type:"ground",id:source.id,x:source.x,y:source.y},
+    const enabled=state.chests.filter(c=>c.autoCollect===true);
+    if(!enabled.length)return null;
+    // Seleciona um par fonte->baú dentro do raio. Fora desse limite os
+    // materiais permanecem no chão até o jogador montar outro depósito.
+    const options=[];
+    for(const chest of enabled)for(const item of state.groundItems){
+      if(item.qty<=0)continue;
+      const distanceToChest=Math.abs(item.x-chest.x)+Math.abs(item.y-chest.y);
+      if(distanceToChest>STORAGE_RADIUS)continue;
+      const distanceToWorker=Math.abs(worker.x-item.x)+Math.abs(worker.y-item.y);
+      options.push({chest,item,distanceToWorker,distanceToChest});
+    }
+    options.sort((a,b)=>a.distanceToWorker-b.distanceToWorker||
+      a.distanceToChest-b.distanceToChest);
+    const picked=options[0];
+    if(!picked)return null;
+    const {chest,item}=picked;
+    return {orderId:null,phase:"fetch",kind:item.kind,
+      qty:Math.min(capacity(worker),item.qty),limit:capacity(worker),cargo:0,
+      source:{type:"ground",id:item.id,x:item.x,y:item.y},
       destination:{x:chest.x,y:chest.y}};
   }
   function refund(state,order){
@@ -120,7 +139,7 @@
     if(order)order.delivered={};
   }
   window.TillfolkLogistics=Object.freeze({
-    COSTS,CHEST_SPRITE,normalize,drop,capacity,costFor,available,remaining,complete,
-    sources,plan,collect,deliver,planStorage,refund
+    COSTS,CHEST_SPRITE,STORAGE_RADIUS,normalize,drop,capacity,costFor,available,remaining,complete,
+    sources,plan,collect,deliver,planStorage,storageEnabled,refund
   });
 })();
