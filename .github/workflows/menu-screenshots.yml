@@ -21,6 +21,8 @@ on:
       - 'src/game.js'
       - 'src/task-assignment.js'
       - 'tests/task-assignment.test.cjs'
+      - 'src/rest-routing.js'
+      - 'tests/rest-routing.test.cjs'
       - 'src/house-building.js'
       - 'tests/orders.spec.cjs'
       - 'tests/colony.spec.cjs'
@@ -101,6 +103,8 @@ jobs:
           node --check src/game.js
           node --check src/task-assignment.js
           node --test tests/task-assignment.test.cjs
+          node --check src/rest-routing.js
+          node --test tests/rest-routing.test.cjs
           node --test tests/crop-strategy.test.cjs
           node --check src/crop-care.js
           node --check src/farm-planning.js
