@@ -55,7 +55,7 @@ test("zoom 50% agrupa ordens e mantém sua quantidade e saves",async({page})=>{
   if(await page.locator("#menu").isVisible())await page.locator("#continue").click();
   const before=await snap(page);
   expect(before.orders.length).toBeGreaterThanOrEqual(12);
-  await page.locator("#zoom-out").click();
+  // 100% -> 75% -> 50%. O terceiro clique seria inválido (mínimo 50%).
   await page.locator("#zoom-out").click();
   await page.locator("#zoom-out").click();
   await expect(page.locator("#zoom-value")).toContainText("50%");
