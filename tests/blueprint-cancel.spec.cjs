@@ -74,13 +74,11 @@ test("poço bloqueado por pesquisa pode ser cancelado sem criar obra nova",async
  await page.screenshot({path:"screenshots/blueprint-cancel-poco-mobile.png",animations:"disabled"});
  expect(errors).toEqual([]);
 });
-test("foguete cancela pelo canto da área 3x3; cabana pelo canto 2x2",async({page})=>{
- test.setTimeout(75000); // Dois footprints em uma partida grande + boot no Chromium CI.
+test("foguete cancela pelo canto 3x3 sem remover uma cabana no mesmo terreno",async({page})=>{
  await start(page,1366,768);
  const staged=await reloadWithSave(page,s=>{
-   // A versão atual descarta corretamente projetos que caem na água após
-   // normalizar o mapa. Usar o spawn protegido e compartilhar o anchor
-   // permite testar que a camada escolhida cancela só seu tipo de projeto.
+   // Salvar o anchor no spawn protegido: a migração elimina ordens na água.
+   // A sobreposição intencional testa o filtro de camada sem construir nada.
    const x=Math.floor(s.spawn.x),y=Math.floor(s.spawn.y);
    s.orders=[
      {id:x+"-"+y+":buildHome",type:"buildHome",x,y},
@@ -89,12 +87,21 @@ test("foguete cancela pelo canto da área 3x3; cabana pelo canto 2x2",async({pag
    s.sessionSpeed=0;
  });
  const x=Math.floor(staged.spawn.x),y=Math.floor(staged.spawn.y);
- const initial=(await save(page)).orders.map(o=>o.type);
- expect(initial).toEqual(["buildHome","buildRocket"]);
+ expect((await save(page)).orders.map(o=>o.type)).toEqual(["buildHome","buildRocket"]);
  await select(page,"rocket");
  await rightClickCell(page,x+2,y+2);
  expect((await save(page)).orders.map(o=>o.type)).toEqual(["buildHome"]);
- await page.locator('[data-build-layer="home"]').click();
+});
+test("cabana pode ser cancelada pelo canto do footprint 2x2",async({page})=>{
+ await start(page,1366,768);
+ const staged=await reloadWithSave(page,s=>{
+   const x=Math.floor(s.spawn.x),y=Math.floor(s.spawn.y);
+   s.orders=[{id:x+"-"+y+":buildHome",type:"buildHome",x,y}];
+   s.sessionSpeed=0;
+ });
+ const x=Math.floor(staged.spawn.x),y=Math.floor(staged.spawn.y);
+ expect((await save(page)).orders.map(o=>o.type)).toEqual(["buildHome"]);
+ await select(page,"home");
  await rightClickCell(page,x+1,y+1);
  expect((await save(page)).orders).toHaveLength(0);
 });
