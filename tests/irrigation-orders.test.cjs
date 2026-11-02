@@ -42,6 +42,19 @@ test("ordem não oferece rega em cultivo maduro, mesmo se estiver seco",()=>{
  assert.equal(p.needing,0);
  assert.equal(p.ready.length,0);
 });
+test("ferramenta equipada em colono proibido não libera o lote",()=>{
+ const p=fresh(12,12),s=state([p],4);
+ s.workers=[{id:1,neg:["water"],inventory:{tools:{wateringCan:true}}},
+            {id:2,neg:[],inventory:{tools:{wateringCan:false}}}];
+ W.TillfolkCrafting={blocked:(_state,_type,_object,worker)=>
+   worker?.inventory?.tools?.wateringCan?null:"Falta regador"};
+ try{
+   assert.equal(Batch.queue(s).added,0);
+   assert.equal(s.orders.length,0);
+   s.workers[1].inventory.tools.wateringCan=true;
+   assert.equal(Batch.queue(s).added,1);
+ }finally{delete W.TillfolkCrafting;}
+});
 test("limites reais: sem ferramenta, água, trabalhador ou fonte não gera ordem",()=>{
  const p=fresh(12,12),s=state([p],0);
  assert.equal(Batch.queue(s).added,0);
