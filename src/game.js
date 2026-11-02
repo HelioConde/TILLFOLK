@@ -1052,6 +1052,8 @@
     }
     syncOrderSelections();
   }
+  const TaskScoring=window.TillfolkTaskScoring;
+  if(!TaskScoring)throw new Error("Carregue src/worker-task-scoring.js antes do motor TILLFOLK.");
   function specialtyMultiplier(w,type){
     if(!w.skills.includes(type))return 1;
     const reds=Math.min(3,w.neg?.length||0);
@@ -1127,16 +1129,14 @@
   }
   function assign(w){
     if(w.task||w.resting)return;
+    // Elegibilidade continua sob controle do motor: proibidos, equipamentos,
+    // recursos reservados e caminhos inacessíveis nunca entram no ranking.
     const available=tasks.filter(t=>t.status==="ready"&&!t.assigned&&!workerTaskBlocker(w,t));
-    const priorityScore=t=>{
-      const global=Number.isInteger(t.priority)?t.priority:state.priorities[t.type]||5;
-      const individual=w.personalPriority?.[t.type]??5;
-      const expertise=bonus(w,t.type);
-      const distance=Math.abs(w.x-(t.x+.5))+Math.abs(w.y-(t.y+.5));
-      return global*100+individual*14+expertise*9-distance*.3;
-    };
-    available.sort((a,b)=>priorityScore(b)-priorityScore(a));
-    if(available.length){w.task=available[0].id;w.progress=0;w.routeTask=null;w.route=[];available[0].assigned=w.id;}
+    const ranked=TaskScoring.sort(available,w,state,bonus);
+    if(ranked.length){
+      w.task=ranked[0].id;w.progress=0;w.routeTask=null;w.route=[];
+      ranked[0].assigned=w.id;
+    }
   }
   function assignIdleWorkers(){
     const idle=state.workers.filter(w=>!w.task&&!w.resting);

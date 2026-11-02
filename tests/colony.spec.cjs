@@ -26,14 +26,15 @@ async function tile(page,x,y){
     }));
   },{x,y});
 }
-test('A colônia começa sem animais, com lagoa e recursos não mágicos',async({page})=>{
+test('A colônia começa com fauna selvagem mas sem animais de criação, com lagoa e recursos não mágicos',async({page})=>{
   await start(page);
   const s=await snap(page);
   expect(s.seeds).toBe(0);
   expect(s.water).toBe(0);
   expect(s.inventory.manure).toBe(0);
   expect(s.world.water.length).toBeGreaterThan(0);
-  expect(s.animals).toEqual([]);
+  expect(s.animals.filter(a=>!a.wild)).toEqual([]);
+  expect(s.animals.some(a=>a.wild)).toBe(true);
   await expect(page.locator('[data-order-type="collectManure"]')).toBeHidden();
   expect(s.homes).toEqual([]);
   await expect(page.locator('[data-order-type="collectWater"]')).toHaveCount(1);
@@ -62,7 +63,7 @@ test('Água só entra no estoque após trabalho na margem da lagoa',async({page}
 test('Fertilização fica bloqueada sem esterco e funciona quando animais forem introduzidos',async({page})=>{
   await start(page);
   const empty=await snap(page);
-  expect(empty.animals).toEqual([]);
+  expect(empty.animals.filter(a=>!a.wild)).toEqual([]);
   const noAnimal=await page.evaluate(()=>{
     const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
     return window.TillfolkOrders.status(
@@ -80,9 +81,9 @@ test('Fertilização fica bloqueada sem esterco e funciona quando animais forem 
   await page.reload({waitUntil:'networkidle'});
   await continueIfMenuVisible(page);
   const initial=await snap(page);
-  expect(initial.animals).toHaveLength(1);
+  expect(initial.animals.filter(a=>!a.wild)).toHaveLength(1);
   await expect(page.locator('[data-order-type="collectManure"]')).toBeAttached();
-  const cow=initial.animals[0];
+  const cow=initial.animals.find(a=>!a.wild);
   await selectOrder(page,'collectManure');
   await tile(page,Math.floor(cow.x),Math.floor(cow.y));
   const s=await snap(page);
@@ -209,7 +210,7 @@ test('Fertilização busca esterco da vaca e entrega na plantação',async({page
   await expect.poll(async()=> (await snap(page)).plots.find(p=>p.x===13&&p.y===11).fertilized,
     {timeout:35000,intervals:[300,600]}).toBe(true);
   const result=await snap(page);
-  expect(result.animals[0].manure).toBe(0);
+  expect(result.animals.find(a=>a.placedByPlayer).manure).toBe(0);
   expect(result.orders).toEqual([]);
 });
 
@@ -249,7 +250,7 @@ test('Carregar save anterior remove vaca inicial automática, sem apagar animais
   await page.reload({waitUntil:'networkidle'});
   await continueIfMenuVisible(page);
   const migrated=await snap(page);
-  expect(migrated.animals).toHaveLength(1);
-  expect(migrated.animals[0].id).toBe(3);
+  expect(migrated.animals.filter(a=>!a.wild)).toHaveLength(1);
+  expect(migrated.animals.find(a=>!a.wild).id).toBe(3);
   expect(migrated.orders.some(o=>o.type==='collectManure'&&o.x===16&&o.y===9)).toBe(false);
 });

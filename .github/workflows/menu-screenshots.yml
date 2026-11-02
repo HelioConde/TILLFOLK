@@ -26,6 +26,10 @@ on:
       - 'tests/biomes.spec.cjs'
       - 'task-orders.css'
       - 'src/task-orders.js'
+      - 'src/worker-task-scoring.js'
+      - 'tests/worker-task-scoring.test.cjs'
+      - 'tests/worker-task-ranking.spec.cjs'
+      - 'tests/wildlife-manure.test.cjs'
       - 'src/irrigation-orders.js'
       - 'tests/irrigation-orders.test.cjs'
       - 'tests/irrigation-orders.spec.cjs'
@@ -77,6 +81,10 @@ jobs:
   screenshots:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -103,16 +111,18 @@ jobs:
           node --test tests/crop-care.test.cjs
           node --check src/irrigation-orders.js
           node --check src/task-orders.js
+          node --check src/worker-task-scoring.js
+          node --test tests/worker-task-scoring.test.cjs tests/wildlife-manure.test.cjs
           node --test tests/irrigation-orders.test.cjs
           node --check src/food-ledger.js
           node --test tests/food-ledger.test.cjs
       - name: Capturar screenshots e validar cortes
-        run: npx playwright test tests/menu.spec.cjs tests/game-options.spec.cjs tests/house.spec.cjs tests/orders.spec.cjs tests/colony.spec.cjs tests/visual-refinement.spec.cjs tests/biomes.spec.cjs tests/tutorial-flow.spec.cjs tests/hud-clarity.spec.cjs tests/crop-choice.spec.cjs tests/food-outlook.spec.cjs tests/crop-workshop.spec.cjs tests/crop-care.spec.cjs tests/irrigation-orders.spec.cjs tests/day-routine.spec.cjs --browser chromium --reporter=line
+        run: npx playwright test tests/menu.spec.cjs tests/game-options.spec.cjs tests/house.spec.cjs tests/orders.spec.cjs tests/colony.spec.cjs tests/visual-refinement.spec.cjs tests/biomes.spec.cjs tests/tutorial-flow.spec.cjs tests/hud-clarity.spec.cjs tests/crop-choice.spec.cjs tests/food-outlook.spec.cjs tests/crop-workshop.spec.cjs tests/crop-care.spec.cjs tests/irrigation-orders.spec.cjs tests/day-routine.spec.cjs tests/worker-task-ranking.spec.cjs --browser chromium --reporter=line --workers=2 --shard=${{ matrix.shard }}/3
       - name: Anexar screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tillfolk-screenshots-completas
+          name: tillfolk-screenshots-shard-${{ matrix.shard }}
           path: screenshots/
           if-no-files-found: warn
           retention-days: 14

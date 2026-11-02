@@ -36,9 +36,9 @@
         ?{state:"ready",reason:"Buscar água na margem da lagoa"}
         :{state:"blocked",reason:"Escolha um ponto da lagoa"};
     if(order.type==="collectManure"){
-      if(!resources?.animals?.length)
-        return {state:"blocked",reason:"Não há animais na fase inicial"};
-      const animal=resources.animals.find(a=>Math.floor(a.x)===order.x&&Math.floor(a.y)===order.y);
+      if(!resources?.animals?.some(a=>!a.wild))
+        return {state:"blocked",reason:"Sem animais de criação disponíveis"};
+      const animal=resources.animals.find(a=>!a.wild&&Math.floor(a.x)===order.x&&Math.floor(a.y)===order.y);
       return animal?.manure>0?{state:"ready",reason:"Esterco disponível"}
         :{state:"blocked",reason:"Aguardando esterco do animal"};
     }
@@ -151,11 +151,11 @@
         if(dirty)return {state:"blocked",reason:"Aguardando limpeza"};
         if(!plot.tilled)return {state:"blocked",reason:"Aguardando arar o solo"};
         const stock=Number(resources?.inventory?.manure)||0;
-        const animalReady=resources?.animals?.some(a=>a.manure>0);
+        const animalReady=resources?.animals?.some(a=>!a.wild&&a.manure>0);
         return stock>0?{state:"ready",reason:"Esterco no depósito"}:
           animalReady?{state:"ready",reason:"Buscar esterco no animal"}:
-          {state:"blocked",reason:resources?.animals?.length?
-            "Aguardando o animal produzir esterco":"Sem animais nem esterco na fase inicial"};
+          {state:"blocked",reason:resources?.animals?.some(a=>!a.wild)?
+            "Aguardando animal de criação produzir esterco":"Sem animais de criação nem esterco"};
       case "sow":
         if(plot.seeded)return {state:"done",reason:"Já semeado"};
         if(plot.produce)return {state:"blocked",reason:"Retire a colheita anterior"};
