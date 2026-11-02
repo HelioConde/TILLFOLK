@@ -15,6 +15,8 @@
 
 **Irrigação e metas S4 (02/11):** cada cultura exige de 1 a 3 regas ao longo da safra; a chuva pode ajudar e o Estoque apresenta uma meta orientativa de colheitas para a equipe. [Regras e QA](./docs/IRRIGACAO_E_SAFRAS.md).
 
+**Ordens de rega em lote (02/11):** no Estoque, o jogador pode autorizar explicitamente a rega de vários canteiros, sem duplicar ordens e sem receber água grátis. A chuva também libera ordens que se tornaram desnecessárias. [Detalhes e testes](./docs/ORDENS_IRRIGACAO.md).
+
 **Regra visual permanente:** [autotile oficial 16×16, 11×7, 8 vizinhos — NÃO ALTERAR](./docs/AUTOTILE_PADRAO_IMUTAVEL.md). Os nove atlases de solo compartilham o mesmo mapeamento de bordas e cantos; melhorias de cenário não devem remapear o tilemap.
 
 ## Como o jogo deve funcionar
