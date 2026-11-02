@@ -11,28 +11,32 @@ async function clickTile(page,x,y){
  await page.locator("#world").evaluate((canvas,cell)=>{
   const b=canvas.getBoundingClientRect();
   canvas.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true,
-    clientX:b.left+(cell.x+.5)*b.width/80,clientY:b.top+(cell.y+.5)*b.height/50}));
+    clientX:b.left+(cell.x+.5)*b.width/(canvas.width/32),
+    clientY:b.top+(cell.y+.5)*b.height/(canvas.height/32)}));
  },{x,y});
 }
-test("Objetos mostra somente Cabana e Work Station e permite planejar bancada",async({page})=>{
+test("Objetos mostra cabana e Work Station e permite planejar bancada",async({page})=>{
  const errors=[];page.on("pageerror",error=>errors.push(error.message));
  await page.setViewportSize({width:1600,height:900});await newGame(page);
  await page.locator('[data-tool="construir"]').click();
  await expect(page.locator("#construction-panel")).toBeVisible();
  await expect(page.locator("#build-exit")).toHaveCount(0);
- await expect(page.locator('#construction-panel [data-build-layer]')).toHaveCount(2);
+ await expect(page.locator('#construction-panel [data-build-layer]')).toHaveCount(6);
  await expect(page.locator('[data-build-layer="home"]')).toBeVisible();
  await expect(page.locator('[data-build-layer="station"]')).toBeVisible();
- for(const key of ["floor","walls","roof","field"])
+ for(const key of ["field","chest","well","rocket"])
+  await expect(page.locator('[data-build-layer="'+key+'"]')).toBeAttached();
+ for(const key of ["floor","walls","roof"])
   await expect(page.locator('[data-build-layer="'+key+'"]')).toHaveCount(0);
  await expect(page.locator("#build-undo")).toHaveCount(0);
  await page.locator('[data-build-layer="station"]').click();
  const cell=await page.evaluate(()=>{
   const s=JSON.parse(localStorage.getItem("tillfolk-v01")),w=window.TillfolkWild;
-  return s.plots.filter(p=>p.x>=34&&p.x<=46&&p.y>=20&&p.y<=31&&
+  const near=s.spawn;
+  return s.plots.filter(p=>Math.abs(p.x-near.x)<=7&&Math.abs(p.y-near.y)<=7&&
    w.terrainAt(s.world,p.x,p.y).buildable&&!w.waterAt(s.world,p.x,p.y)&&
    !w.at(s.world,p.x,p.y)&&!p.dirty&&!p.tilled&&!p.seeded&&!p.produce)
-   .sort((a,b)=>Math.hypot(a.x-40,a.y-25)-Math.hypot(b.x-40,b.y-25))[0];
+   .sort((a,b)=>Math.hypot(a.x-near.x,a.y-near.y)-Math.hypot(b.x-near.x,b.y-near.y))[0];
  });
  expect(cell).toBeTruthy();
  await clickTile(page,cell.x,cell.y);
