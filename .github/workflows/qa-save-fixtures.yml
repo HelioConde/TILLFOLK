@@ -1,0 +1,53 @@
+name: TILLFOLK — QA de fixtures agrícolas e autosave
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/helpers/save-fixture.cjs'
+      - 'tests/save-fixture.test.cjs'
+      - 'tests/crop-choice.spec.cjs'
+      - '.github/workflows/qa-save-fixtures.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tests/helpers/save-fixture.cjs'
+      - 'tests/save-fixture.test.cjs'
+      - 'tests/crop-choice.spec.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    name: Autosave, seeds, desktop e celular
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar fixture de navegação
+        run: |
+          node --check tests/helpers/save-fixture.cjs
+          node --test tests/save-fixture.test.cjs
+          node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
+      - name: Instalar Chromium
+        run: |
+          npm install --no-save @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Servir HTML5
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-qa-fixtures.log 2>&1 &
+          sleep 2
+      - name: Executar regressão agrícola
+        run: npx playwright test tests/crop-choice.spec.cjs --browser chromium --workers=1 --reporter=line
+      - name: Registrar screenshots e falhas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-fixtures-sementes
+          path: |
+            screenshots/agricultura-*.png
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
