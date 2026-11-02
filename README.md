@@ -17,6 +17,8 @@
 
 **Ordens de rega em lote (02/11):** no Estoque, o jogador pode autorizar explicitamente a rega de vários canteiros, sem duplicar ordens e sem receber água grátis. A chuva também libera ordens que se tornaram desnecessárias. [Detalhes e testes](./docs/ORDENS_IRRIGACAO.md).
 
+**Ritmo do dia e sono (02/11):** dia claro 06h–22h, noite 22h–06h, relógio mais lento (32 minutos reais por ciclo em 1×). Colonos do turno padrão dormem 8 horas e acordam às 06h. [Regras de horário e testes](./docs/RITMO_DIA_SONO.md).
+
 **Regra visual permanente:** [autotile oficial 16×16, 11×7, 8 vizinhos — NÃO ALTERAR](./docs/AUTOTILE_PADRAO_IMUTAVEL.md). Os nove atlases de solo compartilham o mesmo mapeamento de bordas e cantos; melhorias de cenário não devem remapear o tilemap.
 
 ## Como o jogo deve funcionar
