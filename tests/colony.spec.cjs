@@ -14,6 +14,11 @@ async function start(page){
   await expect(page.locator('#world')).toBeVisible();
 }
 async function selectOrder(page,type){
+  if(type==='buildHome'){
+    await page.locator('[data-tool="construir"]').click();
+    await page.locator('[data-build-layer="home"]').click();
+    return;
+  }
   await page.locator('#orders-btn').click();
   await page.locator('[data-order-type="'+type+'"]').click();
 }
@@ -121,7 +126,8 @@ test('Casas de madeira são ordens e contratação exige três casas para dois c
   const water=new Set(state.world.water.map(o=>o.x+','+o.y));
   const tiles=[[0,0],[0,1],[1,0],[1,1]];
   let site;
-  for(let y=2;y<14&&!site;y++)for(let x=2;x<24&&!site;x++){
+  for(let y=Math.max(2,Math.floor(state.spawn.y)-6);y<Math.min(state.world.height-3,state.spawn.y+6)&&!site;y++)
+    for(let x=Math.max(2,Math.floor(state.spawn.x)-6);x<Math.min(state.world.width-3,state.spawn.x+6)&&!site;x++){
     if(tiles.every(([dx,dy])=>!obstacle.has((x+dx)+','+(y+dy))&&
       !water.has((x+dx)+','+(y+dy))&&
       !state.animals.some(a=>Math.floor(a.x)===x+dx&&Math.floor(a.y)===y+dy)))site={x,y};
@@ -207,9 +213,8 @@ test('Cabana é concluída por trabalhador com madeira, não ao clicar',async({p
   test.setTimeout(70000);
   await start(page);
   await reloadWithSave(page,s=>{
-    s.workers[0].neg=[];s.inventory.wood=15;localStorage.setItem('tillfolk-v01',JSON.stringify(s));
+    s.workers[0].neg=[];s.inventory.wood=15;
   });
-  await page.reload({waitUntil:'networkidle'});
   await continueIfMenuVisible(page);
   await selectOrder(page,'buildHome');
   await tile(page,12,11);
