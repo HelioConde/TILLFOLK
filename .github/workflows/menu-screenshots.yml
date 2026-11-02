@@ -56,6 +56,8 @@ on:
       - 'tests/colony-life.test.cjs'
       - 'tests/day-routine.spec.cjs'
       - 'tests/crop-choice.spec.cjs'
+      - 'tests/save-fixture.test.cjs'
+      - 'tests/helpers/save-fixture.cjs'
       - 'tests/crop-strategy.test.cjs'
       - 'hud-clarity.css'
       - 'tests/hud-clarity.spec.cjs'
@@ -106,6 +108,7 @@ jobs:
           node --test tests/irrigation-orders.test.cjs
           node --check src/food-ledger.js
           node --test tests/food-ledger.test.cjs
+          node --test tests/save-fixture.test.cjs
       - name: Capturar screenshots e validar cortes
         run: npx playwright test tests/menu.spec.cjs tests/game-options.spec.cjs tests/house.spec.cjs tests/orders.spec.cjs tests/colony.spec.cjs tests/visual-refinement.spec.cjs tests/biomes.spec.cjs tests/tutorial-flow.spec.cjs tests/hud-clarity.spec.cjs tests/crop-choice.spec.cjs tests/food-outlook.spec.cjs tests/crop-workshop.spec.cjs tests/crop-care.spec.cjs tests/irrigation-orders.spec.cjs tests/day-routine.spec.cjs --browser chromium --reporter=line
       - name: Anexar screenshots
