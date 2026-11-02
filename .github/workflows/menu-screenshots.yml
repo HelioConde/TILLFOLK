@@ -19,6 +19,8 @@ on:
       - 'src/menu-scene.js'
       - 'src/house-renderer.js'
       - 'src/game.js'
+      - 'src/task-assignment.js'
+      - 'tests/task-assignment.test.cjs'
       - 'src/house-building.js'
       - 'tests/orders.spec.cjs'
       - 'tests/colony.spec.cjs'
@@ -97,6 +99,8 @@ jobs:
           node --check src/day-night.js
           node --test tests/day-night.test.cjs tests/colony-life.test.cjs
           node --check src/game.js
+          node --check src/task-assignment.js
+          node --test tests/task-assignment.test.cjs
           node --test tests/crop-strategy.test.cjs
           node --check src/crop-care.js
           node --check src/farm-planning.js
