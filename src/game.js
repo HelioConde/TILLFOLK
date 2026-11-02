@@ -3190,19 +3190,19 @@
     if(suppressMapClick){suppressMapClick=false;return;}
     if(!playing||!state)return;
     const rect=canvas.getBoundingClientRect(),x=Math.floor((event.clientX-rect.left)/rect.width*W),y=Math.floor((event.clientY-rect.top)/rect.height*H);
+    // Estruturas concluidas precisam receber o clique ANTES de verificar
+    // ferramentas agricolas. Caso contrário, sem enxada o menu do baú não abre.
+    const clickedChest=state.chests.find(c=>c.x===x&&c.y===y);
+    if(clickedChest){
+      renderChestDialog(clickedChest);
+      $("#chest-dialog").showModal();
+      return;
+    }
     const clickType=selectedTool==="universal"?nextUniversalOrder(x,y):selectedTool;
     const restriction=clickType&&Crafting.blocked(state,clickType,World.at(state.world,x,y));
     if(restriction){markBlocked(x,y,restriction);return;}
     if(state.wells.some(w=>w.x===x&&w.y===y)){
       notify("🚰 Poço: "+Math.floor(state.water||0)+" unidades de água disponíveis.");
-      return;
-    }
-    const clickedChest=state.chests.find(c=>c.x===x&&c.y===y);
-    if(clickedChest){
-      // O baú é uma estrutura real, já concluída. Blueprint é apenas uma
-      // ordem e jamais apresenta inventário nem coleta automática.
-      renderChestDialog(clickedChest);
-      $("#chest-dialog").showModal();
       return;
     }
     if(occupiedByStation(x,y)){openWorkshop();return;}
