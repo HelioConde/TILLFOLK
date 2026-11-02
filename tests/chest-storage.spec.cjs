@@ -77,7 +77,7 @@ test("blueprint de baú não recolhe pilhas nem cria depósito invisível",async
 test("baú concluído é visível, pede autorização e salva a opção sem mover recursos",async({page})=>{
   test.setTimeout(60000);
   const errors=[];page.on("pageerror",e=>errors.push(e.message));
-  await start(page,{width:390,height:844});
+  await start(page,{width:1366,height:768});
   const tile=await freeTile(page);expect(tile).toBeTruthy();
   await reloadScenario(page,s=>{
     // Um baú concluído de save antigo não possuía a flag autoCollect.
@@ -103,6 +103,8 @@ test("baú concluído é visível, pede autorização e salva a opção sem move
   await expect(toggle).toHaveAttribute("aria-pressed","false");
   expect((await save(page)).chests[0].autoCollect).toBe(false);
   expect((await save(page)).groundItems.find(i=>i.id===999)?.qty).toBe(7);
+  await page.setViewportSize({width:390,height:844});
+  await expect(page.locator("#chest-dialog")).toBeVisible();
   await page.screenshot({path:"screenshots/chest-storage-opt-in-mobile.png",animations:"disabled"});
   await page.locator("#chest-dialog .modal-x").click();
   await page.reload({waitUntil:"load"});
