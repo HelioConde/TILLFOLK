@@ -1,0 +1,21 @@
+/* Abastecimento: leitura de risco sem cobrir o mapa. */
+body.play-session #food-outlook {
+  margin:12px 0 17px;
+  padding:12px 14px;
+  border:1px solid #8ca879;
+  border-radius:7px;
+  background:#2f503c;
+  color:#f4e9c8;
+  font:700 12px/1.55 system-ui,sans-serif;
+}
+body.play-session #food-outlook[data-risk="warning"] {
+  border-color:#d9c184;
+  background:#4e4931;
+}
+body.play-session #food-outlook[data-risk="critical"] {
+  border-color:#efaa87;
+  background:#603d30;
+}
+@media(max-width:520px){
+  body.play-session #food-outlook{font-size:11px;padding:10px 11px}
+}
