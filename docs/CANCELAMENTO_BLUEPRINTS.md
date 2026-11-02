@@ -14,7 +14,7 @@ O botão direito no modo **Objetos** não incluía `chest` nem `well` na verific
 - Se não houver ordem pendente na célula, o clique direito encerra o modo Objetos e não cria um projeto novo.
 
 ## Materiais e trabalhadores
-O código existente `removeOrders` permanece responsável pela transação: `Logistics.refund` devolve materiais já entregues ao chão no local da obra, atribuições são liberadas, rotas são descartadas, a fila é recalculada e a partida é salva. Não são gerados recursos novos nem ficam blueprints fantasmas.
+O código existente `removeOrders` permanece responsável pela transação: `Logistics.refund` devolve materiais já entregues ao chão no local da obra, atribuições são liberadas, rotas são descartadas, a fila é recalculada e a partida é salva. Entregadores que ainda transportavam materiais para a obra cancelada também interrompem o percurso e devolvem a carga ao chão onde estão, mesmo sem estarem responsáveis pela tarefa final. O cancelamento por seleção de área usa a mesma rotina. Não são gerados recursos novos nem ficam blueprints fantasmas.
 
 ## QA obrigatório
 - `node --test tests/blueprint-cancel.test.cjs`: todas as seis camadas, footprint 2×2 e 3×3, IDs e funções puras.
