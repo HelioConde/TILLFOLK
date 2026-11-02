@@ -36,11 +36,13 @@
         ?{state:"ready",reason:"Buscar água na margem da lagoa"}
         :{state:"blocked",reason:"Escolha um ponto da lagoa"};
     if(order.type==="collectManure"){
-      if(!resources?.animals?.length)
-        return {state:"blocked",reason:"Não há animais na fase inicial"};
-      const animal=resources.animals.find(a=>Math.floor(a.x)===order.x&&Math.floor(a.y)===order.y);
-      return animal?.manure>0?{state:"ready",reason:"Esterco disponível"}
-        :{state:"blocked",reason:"Aguardando esterco do animal"};
+      const livestock=(resources?.animals||[]).filter(a=>a&&!a.wild);
+      if(!livestock.length)
+        return {state:"blocked",reason:"Não há animais domésticos que produzam esterco"};
+      const animal=livestock.find(a=>Math.floor(a.x)===order.x&&Math.floor(a.y)===order.y);
+      return animal?.manure>0?{state:"ready",reason:"Esterco disponível no animal doméstico"}
+        :{state:"blocked",reason:animal?"Aguardando o animal doméstico produzir esterco":
+          "Escolha um animal doméstico que tenha esterco disponível"};
     }
     const Logistics=window.TillfolkLogistics;
     if(order.type==="buildRocket"){
@@ -151,11 +153,13 @@
         if(dirty)return {state:"blocked",reason:"Aguardando limpeza"};
         if(!plot.tilled)return {state:"blocked",reason:"Aguardando arar o solo"};
         const stock=Number(resources?.inventory?.manure)||0;
-        const animalReady=resources?.animals?.some(a=>a.manure>0);
+        const livestock=(resources?.animals||[]).filter(a=>a&&!a.wild);
+        const animalReady=livestock.some(a=>a.manure>0);
         return stock>0?{state:"ready",reason:"Esterco no depósito"}:
-          animalReady?{state:"ready",reason:"Buscar esterco no animal"}:
-          {state:"blocked",reason:resources?.animals?.length?
-            "Aguardando o animal produzir esterco":"Sem animais nem esterco na fase inicial"};
+          animalReady?{state:"ready",reason:"Buscar esterco do animal doméstico"}:
+          {state:"blocked",reason:livestock.length?
+            "Aguardando animal doméstico produzir esterco":
+            "Sem animal doméstico e sem esterco no estoque; fauna selvagem não produz esterco coletável"};
       case "sow":
         if(plot.seeded)return {state:"done",reason:"Já semeado"};
         if(plot.produce)return {state:"blocked",reason:"Retire a colheita anterior"};

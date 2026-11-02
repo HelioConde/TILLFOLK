@@ -1228,7 +1228,7 @@
       state.water+=4;showPickup(t.x,t.y,"water",4);log(w.name+" buscou 4 baldes de água na lagoa.");return true;
     }
     if(t.type==="collectManure"){
-      const animal=state.animals.find(a=>Math.floor(a.x)===t.x&&Math.floor(a.y)===t.y&&a.manure>0);
+      const animal=state.animals.find(a=>!a.wild&&Math.floor(a.x)===t.x&&Math.floor(a.y)===t.y&&a.manure>0);
       if(!animal)return false;
       animal.manure--;state.inventory.manure++;showPickup(t.x,t.y,"manure");
       log(w.name+" recolheu esterco de "+(animal.kind==="cow"?"vaca":"animal")+".");return true;
@@ -1488,7 +1488,7 @@
       if(stage){
         if(w.supplyStage!==stage||!w.supplyTarget){
           const sources=stage==="water"?state.world.water:
-            state.animals.filter(animal=>animal.manure>0).map(a=>({
+            state.animals.filter(animal=>!animal.wild&&animal.manure>0).map(a=>({
               x:Math.floor(a.x),y:Math.floor(a.y)
             }));
           const reachable=sources.map(source=>({...source,route:routeBetween(w.x,w.y,source.x,source.y,w)}))
