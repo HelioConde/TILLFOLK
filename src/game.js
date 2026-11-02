@@ -12,6 +12,8 @@
   if(!Exploration)throw new Error("Carregue src/exploration.js antes do motor TILLFOLK.");
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
   const Food=window.TillfolkFoodLedger;
+  const WorkerAllocation=window.TillfolkWorkerAllocation;
+  if(!WorkerAllocation)throw new Error("Carregue src/worker-allocation.js antes de src/game.js.");
   if(!Food)throw new Error("Carregue src/food-ledger.js antes do motor TILLFOLK.");
   const Care=window.TillfolkCropCare,Planning=window.TillfolkFarmPlanning,
     IrrigationOrders=window.TillfolkIrrigationOrders;
