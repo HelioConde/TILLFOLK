@@ -3,6 +3,8 @@
 
 > **Visão oficial (31/10/2026):** o objetivo não é só ter uma fazenda bonita. O jogador deve **manter seus colonos vivos**, produzir comida, trabalhar com recursos limitados, construir abrigo para recrutar moradores e abrir caminhos para regiões com novos materiais. Cada habitante tem talentos, traços e uma função importante na dinâmica da colônia.
 
+**Plano unificado para agentes de código:** [Prompt único de evolução — jogabilidade, IA, HUD, QA, saves e GitHub Pages](./docs/PROMPT_UNICO_EVOLUCAO_TILLFOLK.md). É um roteiro de implementação, não um registro de mecânicas já concluídas.
+
 **Documentos centrais:** [GDD completo](./docs/GDD_TILLFOLK.md) · [Roadmap de sobrevivência](./docs/ROADMAP_SOBREVIVENCIA.md) · [Plano visual e QA](./docs/ROADMAP_VISUAL.md).
 
 **Novidade de jogabilidade (01/11):** após o tutorial, escolha um dos **Mutirões do Vale**. Objetivos curtos acompanham trabalho real, dão bônus limitado de moral e renovam no próximo dia. [Design e QA](./docs/ENGAJAMENTO_E_RETENCAO.md).
