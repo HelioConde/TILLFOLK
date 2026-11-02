@@ -22,12 +22,24 @@ async function freeCells(page){
   const plots=new Set(s.plots.map(p=>p.x+','+p.y));
   const occupied=new Set(s.world.objects.map(o=>o.x+','+o.y));
   const waters=new Set(s.world.water.map(o=>o.x+','+o.y));
-  for(let y=22;y<=28;y++)for(let x=36;x<=45;x++){
-   const area=[[x,y],[x+1,y],[x,y+1],[x+1,y+1]];
-   if(area.every(([a,b])=>plots.has(a+','+b)&&!occupied.has(a+','+b)&&!waters.has(a+','+b)&&
-     window.TillfolkWild.terrainAt(s.world,a,b).farmable)&&
-     !s.workers.some(w=>Math.floor(w.x)>=x&&Math.floor(w.x)<=x+1&&
-       Math.floor(w.y)>=y&&Math.floor(w.y)<=y+1))return {x,y};
+  // O mapa atual é 192x120; selecionar terreno real ao redor do spawn.
+  const cx=Math.floor(s.spawn.x),cy=Math.floor(s.spawn.y);
+  for(let radius=3;radius<=16;radius++){
+   for(let y=cy-radius;y<=cy+radius;y++)for(let x=cx-radius;x<=cx+radius;x++){
+    const area=[[x,y],[x+1,y],[x,y+1],[x+1,y+1]];
+    const canvas=document.querySelector('#world'),rect=canvas.getBoundingClientRect();
+    const hit=(a,b)=>{
+      const px=rect.left+rect.width*(a+.5)/(canvas.width/32);
+      const py=rect.top+rect.height*(b+.5)/(canvas.height/32);
+      return px>=0&&px<innerWidth&&py>=0&&py<innerHeight&&
+        document.elementFromPoint(px,py)===canvas;
+    };
+    if(area.every(([a,b])=>plots.has(a+','+b)&&!occupied.has(a+','+b)&&!waters.has(a+','+b)&&
+      window.TillfolkWild.terrainAt(s.world,a,b)?.farmable&&
+      !s.orders.some(o=>o.x===a&&o.y===b)&&
+      !s.workers.some(w=>Math.floor(w.x)===a&&Math.floor(w.y)===b))&&
+      hit(x,y)&&hit(x+1,y+1))return {x,y};
+   }
   }
   return null;
  });
@@ -105,11 +117,16 @@ test('Cabana 2x2: prévia azul, fila dos trabalhadores, salvar e desfazer',async
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(true);
  expect(s.homes.some(h=>h.x===cell.x&&h.y===cell.y)).toBe(false);
  await page.screenshot({path:'screenshots/blueprint-cabana-pendente-1600x900.png',animations:'disabled'});
- await page.locator('#build-undo').click();
+ // O botão antigo de Undo foi removido: desfazer via clique direito no blueprint.
+ await mouseTile(page,cell.x,cell.y,'contextmenu');
  s=await save(page);
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(false);
+ // O clique no mapa fecha o menu Objetos e restaura Universal.
+ // Para planejar uma nova cabana, o jogador precisa selecionar Objetos novamente.
+ await page.locator('[data-tool="construir"]').click();
+ await page.locator('[data-build-layer="home"]').click();
  await mouseTile(page,cell.x,cell.y);
- await page.reload({waitUntil:'networkidle'});
+ await page.reload({waitUntil:'load'});
  await continueIfMenuVisible(page);
  s=await save(page);
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(true);
@@ -136,7 +153,10 @@ test('Plantação por arrasto no celular: várias células e desfazer sem danifi
  let s=await save(page);
  expect(s.orders.filter(o=>['till','sow'].includes(o.type)).length).toBeGreaterThanOrEqual(4);
  await page.screenshot({path:'screenshots/blueprint-canteiros-mobile-390x844.png',animations:'disabled'});
- await page.locator('#build-undo').click();
+ // A seleção em área é desfeita usando o comando de cancelamento oficial.
+ const pending=s.orders.filter(o=>['till','sow'].includes(o.type));
+ for(const point of new Map(pending.map(o=>[o.x+','+o.y,o])).values())
+   await mouseTile(page,point.x,point.y,'contextmenu');
  s=await save(page);
  expect(s.orders.filter(o=>['till','sow'].includes(o.type))).toHaveLength(0);
  expect(errors).toEqual([]);
@@ -166,9 +186,15 @@ test('HUD com blueprint: velocidade, gestão e menu não se sobrepõem',async({p
       expect(geometry.speed.right).toBeLessThanOrEqual(geometry.panels.left+2);
     }else{
       expect(geometry.speed.top).toBeGreaterThanOrEqual(geometry.panels.bottom-2);
-      expect(geometry.metrics.right).toBeLessThanOrEqual(geometry.speed.left+2);
-      expect(geometry.clock.right).toBeLessThanOrEqual(geometry.metrics.right+1);
-      expect(geometry.brand.right).toBeLessThanOrEqual(geometry.panels.left+1);
+      // A HUD mobile tem múltiplas linhas: comparar X somente se duas
+      // regiões estiverem na mesma faixa vertical.
+      const sameRow=(a,b)=>a.top<b.bottom-2&&b.top<a.bottom-2;
+      if(sameRow(geometry.metrics,geometry.speed))
+        expect(geometry.metrics.right).toBeLessThanOrEqual(geometry.speed.left+2);
+      if(sameRow(geometry.clock,geometry.metrics))
+        expect(geometry.clock.right).toBeLessThanOrEqual(geometry.metrics.right+1);
+      if(sameRow(geometry.brand,geometry.panels))
+        expect(geometry.brand.right).toBeLessThanOrEqual(geometry.panels.left+1);
     }
     await page.screenshot({path:'screenshots/blueprint-hud-'+size.width+'x'+size.height+'.png',animations:'disabled'});
   }
