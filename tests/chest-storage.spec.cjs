@@ -85,7 +85,12 @@ test("baú concluído é visível, pede autorização e salva a opção sem move
     s.groundItems=[{id:999,x:tile.x+2,y:tile.y+2,kind:"twigs",qty:7}];
     s.nextDropId=1000;
   });
+  const recovered=await save(page);
+  expect(recovered.chests).toHaveLength(1);
+  expect(recovered.chests[0].x).toBe(tile.x);
+  expect(recovered.chests[0].y).toBe(tile.y);
   await clickTile(page,tile.x,tile.y);
+  expect(errors).toEqual([]);
   await expect(page.locator("#chest-dialog")).toBeVisible();
   await expect(page.locator("#chest-items")).toContainText("4 wood");
   await expect(page.locator("#chest-collect-status")).toContainText("Desligada");
