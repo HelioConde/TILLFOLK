@@ -388,12 +388,24 @@ body.play-session .hud-selection #drag-mode{
   font:800 10px system-ui,sans-serif;padding:4px 7px;
   border:1px solid #bbaa7a;border-radius:4px;background:#284e3b;color:#f9e8b9;
 }
+body.play-session .hud-selection #undo-area-orders{
+  pointer-events:auto;cursor:pointer;white-space:nowrap;
+  font:800 10px system-ui,sans-serif;padding:4px 7px;
+  border:1px solid #bbaa7a;border-radius:4px;background:#324d39;color:#ffe6ad;
+}
+body.play-session .hud-selection #undo-area-orders:disabled{
+  opacity:.52;cursor:default;border-color:#65715e;background:#263b2e;
+}
+body.play-session .hud-selection #undo-area-orders:focus-visible{
+  outline:2px solid #fff3bb;outline-offset:2px;
+}
 body.play-session .hud-selection #drag-mode[aria-pressed="true"]{
   background:#e3e9aa;color:#273d2e;border-color:#eff7d1;
 }
 body.play-session #world{touch-action:none}
 @media(max-width:460px){
   body.play-session .hud-selection{gap:5px!important;padding:3px 6px!important}
-  body.play-session .hud-selection #drag-mode{font-size:9px;padding:4px 5px}
+  body.play-session .hud-selection #drag-mode,
+  body.play-session .hud-selection #undo-area-orders{font-size:9px;padding:4px 5px}
   body.play-session .hud-selection strong{font-size:10px}
 }
