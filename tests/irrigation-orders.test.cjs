@@ -46,8 +46,10 @@ test("ferramenta equipada em colono proibido não libera o lote",()=>{
  const p=fresh(12,12),s=state([p],4);
  s.workers=[{id:1,neg:["water"],inventory:{tools:{wateringCan:true}}},
             {id:2,neg:[],inventory:{tools:{wateringCan:false}}}];
- W.TillfolkCrafting={blocked:(_state,_type,_object,worker)=>
-   worker?.inventory?.tools?.wateringCan?null:"Falta regador"};
+ W.TillfolkCrafting={blocked:(_state,_type,_object,worker)=>{
+   const has=person=>Boolean(person?.inventory?.tools?.wateringCan);
+   return (worker?has(worker):_state.workers.some(has))?null:"Falta regador";
+ }};
  try{
    assert.equal(Batch.queue(s).added,0);
    assert.equal(s.orders.length,0);
