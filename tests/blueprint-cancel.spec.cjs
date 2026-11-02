@@ -77,20 +77,25 @@ test("poço bloqueado por pesquisa pode ser cancelado sem criar obra nova",async
 test("foguete cancela pelo canto da área 3x3; cabana pelo canto 2x2",async({page})=>{
  test.setTimeout(75000); // Dois footprints em uma partida grande + boot no Chromium CI.
  await start(page,1366,768);
- await reloadWithSave(page,s=>{
+ const staged=await reloadWithSave(page,s=>{
+   // A versão atual descarta corretamente projetos que caem na água após
+   // normalizar o mapa. Usar o spawn protegido e compartilhar o anchor
+   // permite testar que a camada escolhida cancela só seu tipo de projeto.
+   const x=Math.floor(s.spawn.x),y=Math.floor(s.spawn.y);
    s.orders=[
-     {id:"90-55:buildHome",type:"buildHome",x:90,y:55},
-     {id:"100-65:buildRocket",type:"buildRocket",x:100,y:65,stage:0}
+     {id:x+"-"+y+":buildHome",type:"buildHome",x,y},
+     {id:x+"-"+y+":buildRocket",type:"buildRocket",x,y,stage:0}
    ];
    s.sessionSpeed=0;
  });
+ const x=Math.floor(staged.spawn.x),y=Math.floor(staged.spawn.y);
  const initial=(await save(page)).orders.map(o=>o.type);
  expect(initial).toEqual(["buildHome","buildRocket"]);
  await select(page,"rocket");
- await rightClickCell(page,102,67);
+ await rightClickCell(page,x+2,y+2);
  expect((await save(page)).orders.map(o=>o.type)).toEqual(["buildHome"]);
  await page.locator('[data-build-layer="home"]').click();
- await rightClickCell(page,91,56);
+ await rightClickCell(page,x+1,y+1);
  expect((await save(page)).orders).toHaveLength(0);
 });
 test("botão direito em terreno sem blueprint não cria construção",async({page})=>{
