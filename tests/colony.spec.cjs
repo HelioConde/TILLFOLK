@@ -193,6 +193,9 @@ test("Regar sem água exige deslocamento real à lagoa e retorna à plantação"
     const p=s.plots.find(p=>p.x===site.x&&p.y===site.y);
     p.tilled=true;p.seeded=true;p.watered=false;
     s.water=0;
+    // Evitar que a chuva conclua a rega sem o deslocamento do trabalhador.
+    s.day=Array.from({length:20},(_,i)=>i+1).find(day=>
+      Math.abs(Math.sin((day+17)*(s.world.seed+37)*.137))%1>=.26)||1;
     s.crafting.equipment.wateringCan=true;
     s.workers[0].inventory.tools.wateringCan=true;
     s.orders=[{id:site.x+"-"+site.y+":water",type:"water",x:site.x,y:site.y}];
@@ -220,7 +223,7 @@ test("Fertilização busca esterco do animal doméstico, sem inventar recursos",
     const p=s.plots.find(p=>p.x===plot.x&&p.y===plot.y);
     p.tilled=true;p.fertilized=false;
     s.inventory.manure=0;
-    s.animals.push({id:3002,kind:"cow",x:plot.x+1.5,y:plot.y+1.5,manure:1,
+    s.animals.push({id:3002,kind:"cow",x:plot.x+.5,y:plot.y+.5,manure:1,
       timer:0,placedByPlayer:true,wild:false});
     s.orders=[{id:plot.x+"-"+plot.y+":fertilize",type:"fertilize",x:plot.x,y:plot.y}];
   });
