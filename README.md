@@ -11,6 +11,8 @@
 
 **Agricultura estratégica (02/11):** escolha o próximo plantio no Estoque e compare estação favorável, rendimento e sementes devolvidas por espécie. [Mecânicas e testes](./docs/AGRICULTURA_ESTRATEGICA.md).
 
+**Economia de comida (02/11):** o estoque por cultura agora desconta refeições, estrago, trocas e outros gastos, impedindo fabricar sementes a partir de safras já consumidas. O Estoque mostra uma previsão de abastecimento. [Regras e migração de saves](./docs/ECONOMIA_COMIDA.md).
+
 **Regra visual permanente:** [autotile oficial 16×16, 11×7, 8 vizinhos — NÃO ALTERAR](./docs/AUTOTILE_PADRAO_IMUTAVEL.md). Os nove atlases de solo compartilham o mesmo mapeamento de bordas e cantos; melhorias de cenário não devem remapear o tilemap.
 
 ## Como o jogo deve funcionar
