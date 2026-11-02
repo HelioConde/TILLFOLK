@@ -78,7 +78,9 @@
     normalizeWorker(worker, state.day);
     if (worker.hungerState === "fed") return false;
 
-    state.food = normalizeFood(state.food) - 1;
+    const ledger=typeof window!=="undefined"?window.TillfolkFoodLedger:null;
+    if(ledger){if(!ledger.spend(state,1))return false;}
+    else state.food=normalizeFood(state.food)-1;
     worker.satiety = clampMeter(worker.satiety + MEAL_SATIETY);
     worker.starvationMinutes=0;
     worker.lastMealDay = Math.max(1, Number.isInteger(state.day) ? state.day : 1);
