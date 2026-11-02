@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="./hud-focus.css?v=20261101-v1">
   <link rel="stylesheet" href="./hud-clarity.css?v=20261101-hud-nav-v2">
   <link rel="stylesheet" href="./farming-strategy.css?v=20261102-v1">
+  <link rel="stylesheet" href="./save-backup.css?v=20261102-v1">
   <script defer src="./src/menu.js?v=20261031-sync-preferencias"></script>
   <script defer src="./src/tutorial.js?v=20261031-fim-escolhas"></script>
   <script defer src="./src/house-renderer.js?v=20261031-fazenda-casa"></script>
@@ -70,6 +71,7 @@
   <link rel="stylesheet" href="./food-outlook.css?v=20261102-lote-v1">
   <script defer src="./src/food-ledger.js?v=20261102-ledger-v1"></script>
   <script defer src="./src/survival.js?v=20261031-sobrevivencia-s1"></script>
+  <script defer src="./src/save-backup.js?v=20261102-backup-v1"></script>
   <script defer src="./src/game.js?v=20261102-dia-longo-8h-v1"></script>
   <script defer src="./src/game-hud.js?v=20261101-shifts-fixes-v4"></script>
   <script defer src="./src/hud-focus.js?v=20261101-v1"></script>
@@ -271,6 +273,17 @@
         <button type="button" id="game-sound-test" class="large-secondary">♫ Testar som</button>
         <button type="button" id="game-fullscreen-setting" class="large-secondary">⛶ Alternar tela cheia</button>
       </div>
+      <section class="game-backup-panel" aria-labelledby="game-backup-title">
+        <h4 id="game-backup-title">💾 Backup da partida</h4>
+        <p>Baixe uma cópia JSON para guardar sua colônia. Antes de importar outra partida, exporte a atual. Não é necessário criar conta.</p>
+        <div class="game-backup-actions">
+          <button id="game-backup-download" type="button" class="large-secondary">↓ Exportar partida em JSON</button>
+          <label for="game-backup-import">Importar um arquivo JSON
+            <input id="game-backup-import" type="file" accept=".json,application/json">
+          </label>
+        </div>
+        <p id="game-backup-status" role="status" aria-live="polite">O arquivo contém o progresso completo desta partida.</p>
+      </section>
       <button type="button" id="game-settings-back" class="large-primary">← Voltar às opções do jogo</button>
     </section>
   </dialog>
