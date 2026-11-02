@@ -1,4 +1,5 @@
 const {test,expect}=require("@playwright/test");
+const {reloadWithSave}=require("./helpers/save-fixture.cjs");
 
 async function startFarm(page){
   await page.goto("http://127.0.0.1:4173/",{waitUntil:"networkidle"});
@@ -25,14 +26,11 @@ test("jogador escolhe cultura existente e a seleção persiste no save",async({p
   const errors=[];page.on("pageerror",e=>errors.push(e.message));
   await page.setViewportSize({width:1366,height:768});
   await startFarm(page);
-  await page.evaluate(()=>{
-    const raw=localStorage.getItem("tillfolk-v01");
-    if(!raw)throw new Error("Save inicial ausente");
-    const saved=JSON.parse(raw);
+  // pagehide salva o estado da partida em andamento: aplicar fixture
+  // no próximo boot, não antes do unload.
+  await reloadWithSave(page,saved=>{
     saved.cropSeeds.potato=2;saved.cropSeeds.wheat=1;saved.seeds=3;
-    localStorage.setItem("tillfolk-v01",JSON.stringify(saved));
   });
-  await page.reload({waitUntil:"networkidle"});
   await expect(page.locator("body")).toHaveClass(/play-session/);
   await page.locator("#open-stock").click();
   await expect(page.locator('[data-select-crop="wheat"]')).toBeEnabled();
