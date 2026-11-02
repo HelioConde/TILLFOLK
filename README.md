@@ -21,6 +21,8 @@
 
 **Ritmo do dia e sono (02/11):** dia claro 06h–22h, noite 22h–06h, relógio mais lento (32 minutos reais por ciclo em 1×). Colonos do turno padrão dormem 8 horas e acordam às 06h. [Regras de horário e testes](./docs/RITMO_DIA_SONO.md).
 
+**Backups de partidas (02/11):** em Opções → Configurações, exporte e importe um arquivo JSON com a colônia inteira. Uma exportação prévia protege contra substituição acidental. [Instruções e QA](./docs/BACKUP_PARTIDAS.md).
+
 **Regra visual permanente:** [autotile oficial 16×16, 11×7, 8 vizinhos — NÃO ALTERAR](./docs/AUTOTILE_PADRAO_IMUTAVEL.md). Os nove atlases de solo compartilham o mesmo mapeamento de bordas e cantos; melhorias de cenário não devem remapear o tilemap.
 
 ## Como o jogo deve funcionar

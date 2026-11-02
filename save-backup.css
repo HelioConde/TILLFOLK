@@ -1,0 +1,28 @@
+/* Backup local: cabe no painel existente sem alterar a identidade visual. */
+.game-backup-panel{
+  display:grid;gap:9px;
+  margin:16px 0;padding:14px;
+  background:#243c31;color:#f8efd8;
+  border:1px solid #55735b;border-radius:8px;
+}
+.game-backup-panel h4{margin:0;font-size:15px;}
+.game-backup-panel p{margin:0;font:500 12px/1.5 system-ui,sans-serif;color:#f0e8cf;}
+.game-backup-actions{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));align-items:stretch;}
+.game-backup-actions button{min-height:44px;white-space:normal;}
+.game-backup-actions label{
+  display:grid;gap:5px;font:700 12px/1.4 system-ui,sans-serif;
+  min-width:0;
+}
+.game-backup-actions input[type=file]{
+  display:block;width:100%;min-width:0;
+  padding:8px;border:1px dashed #83a17e;
+  color:#f8efd8;background:#172c23;border-radius:5px;
+}
+.game-backup-actions input[type=file]::file-selector-button{
+  padding:6px;border-radius:4px;background:#b6de81;
+  border:0;color:#152721;font-weight:700;cursor:pointer;
+}
+.game-backup-panel #game-backup-status{font-weight:600;color:#bde1a2;}
+.game-backup-panel #game-backup-status[data-error=true]{color:#f4b0a7;}
+.game-backup-panel :is(button,input):focus-visible{outline:3px solid #f4d18b;outline-offset:2px;}
+@media(max-width:520px){.game-backup-panel{padding:10px}.game-backup-actions{grid-template-columns:1fr;}}
