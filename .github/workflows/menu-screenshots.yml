@@ -26,6 +26,9 @@ on:
       - 'tests/biomes.spec.cjs'
       - 'task-orders.css'
       - 'src/task-orders.js'
+      - 'src/worker-task-scoring.js'
+      - 'tests/worker-task-scoring.test.cjs'
+      - 'tests/wildlife-manure.test.cjs'
       - 'src/irrigation-orders.js'
       - 'tests/irrigation-orders.test.cjs'
       - 'tests/irrigation-orders.spec.cjs'
@@ -103,6 +106,8 @@ jobs:
           node --test tests/crop-care.test.cjs
           node --check src/irrigation-orders.js
           node --check src/task-orders.js
+          node --check src/worker-task-scoring.js
+          node --test tests/worker-task-scoring.test.cjs tests/wildlife-manure.test.cjs
           node --test tests/irrigation-orders.test.cjs
           node --check src/food-ledger.js
           node --test tests/food-ledger.test.cjs
