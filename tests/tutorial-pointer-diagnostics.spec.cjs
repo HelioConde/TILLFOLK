@@ -63,11 +63,14 @@ test("Tooltip de ferramenta ausente não quebra ao passar sobre terreno vazio",a
     }));
   },empty);
 
-  await hover(); // ferramenta Universal: próxima etapa é arar
-  await expect(page.locator("#tile-tooltip")).toContainText(/Terreno.*enxada/i);
+  await hover(); // Universal não interrompe o tutorial com aviso ao passar o mouse.
+  await expect(page.locator("#tile-tooltip")).not.toContainText(/Terreno.*enxada/i);
+  await expect(page.locator("#tile-tooltip")).toBeHidden();
   await page.locator("#orders-btn").click();
   await page.locator('[data-order-type="till"]').click();
   await hover(); // Ordem explícita: também não pode gerar TypeError
   await expect(page.locator("#tile-tooltip")).toContainText(/Terreno.*enxada/i);
+  await expect(page.locator("#tile-tooltip")).toBeVisible();
+  await page.screenshot({path:"screenshots/tutorial-pointer-tooltip-explicito.png",animations:"disabled"});
   expect(errors).toEqual([]);
 });
