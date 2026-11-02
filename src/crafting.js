@@ -113,8 +113,13 @@
       return {error:item.name+" já foi fabricado"+(worker?" para este colono":"")+"."};
     const unavailableStage=locked(state,key);if(unavailableStage)return {error:unavailableStage};
     if(!prepaid){
-      const unavailable=missing(state,item.cost);
-      if(unavailable.length)return {error:"Faltam materiais para "+item.name.toLowerCase()+"."};
+      // A fabricação imediata só pode gastar estoque realmente presente.
+      // Itens soltos/baús entram apenas por entrega física de uma ordem.
+      // Sem esse cheque, `missing()` inclui pilhas e pode criar saldo negativo.
+      const unavailable=Object.entries(item.cost).filter(([resource,amount])=>
+        (Number(state.inventory?.[resource])||0)<amount);
+      if(unavailable.length)return {error:"Faltam materiais no estoque para "+item.name.toLowerCase()+
+        ". Utilize a ordem de fabricação para transportar recursos do chão ou dos baús."};
       for(const [resource,amount] of Object.entries(item.cost))state.inventory[resource]-=amount;
     }
     if(item.type==="material")return {item,material:{...item.output},workerId:worker?.id??null};
