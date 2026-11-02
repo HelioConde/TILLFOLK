@@ -49,11 +49,18 @@ async function freeCells(page,count=3){
         !s.workers.some(w=>Math.floor(w.x)===x&&Math.floor(w.y)===y)&&
         !s.orders.some(o=>o.x===x&&o.y===y))cells.push({x,y});
    }
+   // Preferir a linha mais próxima do spawn: o arrasto do mouse precisa
+   // acontecer dentro do viewport visível, não 12 tiles além da câmera.
+   const rows=[];
    for(let i=0;i<cells.length-count+1;i++){
      const row=cells.slice(i,i+count);
-     if(row.every((p,j)=>p.y===row[0].y&&p.x===row[0].x+j))return row;
+     if(row.every((p,j)=>p.y===row[0].y&&p.x===row[0].x+j))rows.push(row);
    }
-   return cells.slice(0,count);
+   rows.sort((a,b)=>{
+     const distance=row=>Math.abs(row[0].x+count/2-cx)+Math.abs(row[0].y-cy);
+     return distance(a)-distance(b);
+   });
+   return rows[0]||[];
  },count);
 }
 test('Clique direito cancela ordem e remove o destaque persistente, sem remover o cultivo',async({page})=>{
