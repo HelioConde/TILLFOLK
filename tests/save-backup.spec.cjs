@@ -25,10 +25,15 @@ test("backup baixado pode ser importado sem perder progresso",async({page})=>{
  const imported={...before,farmName:"Vale Importado QA",day:14,minutes:8*60};
  const payload={format:"tillfolk-save-backup/v1",game:"TILLFOLK",state:imported};
  page.on("dialog",dialog=>dialog.accept());
+ // A importação faz reload voluntário. Aguardar navegação antes de acessar
+ // localStorage evita o erro transitório "Execution context was destroyed".
+ const navigated=page.waitForEvent("framenavigated",frame=>frame===page.mainFrame());
  await page.locator("#game-backup-import").setInputFiles({
   name:"tillfolk-qa.json",mimeType:"application/json",
   buffer:Buffer.from(JSON.stringify(payload),"utf8")
  });
+ await navigated;
+ await page.waitForLoadState("networkidle");
  await expect.poll(async()=>page.evaluate(()=>
    JSON.parse(localStorage.getItem("tillfolk-v01"))?.farmName),
   {timeout:30000}).toBe("Vale Importado QA");
