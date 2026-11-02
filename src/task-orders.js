@@ -22,7 +22,7 @@
       const key=id(order.type,order.x,order.y,order.recipe);
       if(seen.has(key))continue;
       seen.add(key);result.push({id:key,type:order.type,x:order.x,y:order.y,
-        ...(order.delivered&&typeof order.delivered==="object"?{delivered:order.delivered}:{}),...(order.type==="craftTool"?{recipe:order.recipe}:{}),...(order.type==="buildRocket"&&Number.isInteger(order.stage)?{stage:order.stage}:{}),...(order.type==="sow"&&typeof order.crop==="string"&&window.TillfolkCrops?.get(order.crop)?{crop:order.crop}:{}),...(Number.isInteger(order.priority)?{priority:Math.max(1,Math.min(9,order.priority))}:{})});
+        ...(order.delivered&&typeof order.delivered==="object"?{delivered:order.delivered}:{}),...(order.type==="craftTool"?{recipe:order.recipe}:{}),...(order.type==="buildRocket"&&Number.isInteger(order.stage)?{stage:order.stage}:{}),...(order.type==="sow"&&typeof order.crop==="string"&&window.TillfolkCrops?.get(order.crop)?{crop:order.crop}:{}),...(order.autoFarm===true&&["sow","water","harvest","carry"].includes(order.type)?{autoFarm:true}:{}),...(Number.isInteger(order.priority)?{priority:Math.max(1,Math.min(9,order.priority))}:{})});
       if(result.length>=1500)break;
     }
     return result;
