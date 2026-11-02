@@ -27,7 +27,7 @@
 
 1. **Começar vulnerável:** uma pequena equipe chega ao vale selvagem com poucos recursos, sem casas ou plantações prontas.
 2. **Coletar e fabricar:** dar ordens para recolher gravetos, fibras, madeira e pedras; fabricar ferramentas na Work Station.
-3. **Produzir alimento:** arar, plantar, regar, colher, transportar e guardar comida. Sem reposição suficiente, os habitantes passam fome e podem morrer — **mortalidade ainda precisa ser implementada**.
+3. **Produzir alimento:** arar, plantar, regar, colher, transportar e guardar comida. Sem reposição suficiente, os habitantes passam fome, perdem saúde e podem morrer; a simulação de fome e morte já existe.
 4. **Organizar a equipe:** escolher prioridades e especialidades, acompanhar riscos e tarefas bloqueadas. Cada pessoa deve contribuir com o trabalho que executa melhor.
 5. **Construir e crescer:** novas cabanas abrem vagas para recrutamento; cada habitante adicional aumenta as necessidades da colônia.
 6. **Explorar:** abrir barreiras, alcançar biomas diferentes, buscar recursos exclusivos e construir cadeias produtivas mais eficientes.
@@ -49,13 +49,13 @@
 | --- | --- | --- |
 | Mundo | Geração procedural, seis biomas, obstáculos e passagem do vale | Exploração economicamente relevante, perigos e recursos únicos |
 | Trabalho | Ordens explícitas, IA de atribuição, especialidades e traços negativos | Melhor IA sob fome, risco, distância, saúde e urgência |
-| Comida | Plantações, 19 espécies gráficas, estoque e desconto diário por habitante no modo sobrevivência | Refeições pessoais, saciedade, fome, saúde, morte e derrota |
+| Comida | 19 culturas, estoque físico, refeições individuais, saciedade, fraqueza, dano, morte e derrota persistente | Balanceamento para sustentabilidade com 2, 3 e 5 colonos em vários dias |
 | Construções | Blueprint, cabanas, Work Station e ferramentas | Depósitos físicos, cozinha, camas, proteção, cadeia produtiva |
 | População | Dois colonos iniciais, candidatos, contratação condicionada à moradia | Necessidades individuais, rotinas, bem-estar e impacto de perdas |
 | Interface | HUD, menus, minimapa, zoom, velocidade/pausa, tutorial | HUD de risco de fome, dias de estoque, alertas antecipados |
 | Salvamento | `localStorage`, autosave e retomada de partida | Exportar/importar backups e múltiplos slots |
 
-**O protótipo ainda NÃO é uma simulação completa de sobrevivência.** Em `src/game.js`, comida zero apenas provoca aviso: nenhuma pessoa morre por isso atualmente. O primeiro grande marco de implementação é tornar a fome e suas consequências reais, sem sacrificar compatibilidade de saves.
+**Estado revisado (02/11/2026):** fome individual, dano por inanição, morte e derrota persistente estão implementados e possuem testes. O próximo desafio é validar a **sustentabilidade real** das culturas e da logística em partidas longas, além da estabilidade das jornadas completas no Playwright. A presença de testes unitários aprovados não significa que toda a experiência esteja validada.
 
 ## Como executar
 
