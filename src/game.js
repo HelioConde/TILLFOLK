@@ -3086,23 +3086,25 @@
         return;
       }
     }
-    const worker=state.workers.find(w=>Math.hypot(w.x-(x+.5),w.y-(y+.5))<=.85);
-    if(worker){openWorkerInventory(worker);return;}
     if(selectedTool==="construir"){
       $("#build-status").textContent="Seleção cancelada.";
       setTool("universal");
       return;
     }
-    // Clique direito sempre cancela as ordens do terreno, não importa a
-    // ferramenta selecionada. Cultivo concluído e árvores nunca são apagados.
+    // O jogador solicitou cancelamento no terreno: esta intenção tem
+    // prioridade sobre um colono que ocasionalmente esteja passando no tile.
+    // A blueprint específica já foi tratada acima sem afetar outras ordens.
     const ids=state.orders.filter(o=>o.x===x&&o.y===y).map(o=>o.id);
     if(ids.length){
-      removeOrders(ids);notify(ids.length+" ordem(ns) cancelada(s) com botão direito.");
-    }else{
-      setTool("universal");
-      $("#tile-tooltip").hidden=true;
-      notify("Seleção cancelada · modo Universal.");
+      removeOrders(ids);
+      notify(ids.length+" ordem(ns) cancelada(s) com botão direito.");
+      return;
     }
+    const worker=state.workers.find(w=>Math.hypot(w.x-(x+.5),w.y-(y+.5))<=.85);
+    if(worker){openWorkerInventory(worker);return;}
+    setTool("universal");
+    $("#tile-tooltip").hidden=true;
+    notify("Seleção cancelada · modo Universal.");
   });
   canvas.addEventListener("pointerleave",()=>{
     buildHover=null;hoveredTile=null;
