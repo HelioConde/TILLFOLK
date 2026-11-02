@@ -34,6 +34,10 @@ test("baú pode ser cancelado com botão direito, devolvendo materiais entregues
    s.orders=[{id:"96-60:buildChest",type:"buildChest",x:96,y:60,delivered:{twigs:5}},
      {id:"97-60:buildWell",type:"buildWell",x:97,y:60}];
    s.workers.forEach(w=>{w.task=null;w.progress=0;});
+   // Um entregador pode estar levando itens sem possuir a tarefa final.
+   s.workers[0].haul={orderId:"96-60:buildChest",phase:"deliver",kind:"twigs",
+     cargo:2,qty:2,limit:2,destination:{x:96,y:60},source:{type:"stock",x:96,y:60}};
+   s.workers[0].inventory.carrying={kind:"twigs",qty:2};
    s.groundItems=[];
    s.sessionSpeed=0;
  });
@@ -43,7 +47,11 @@ test("baú pode ser cancelado com botão direito, devolvendo materiais entregues
  expect(final.orders.some(o=>o.type==="buildChest")).toBe(false);
  expect(final.orders.some(o=>o.type==="buildWell")).toBe(true);
  expect(final.groundItems.filter(i=>i.x===96&&i.y===60&&i.kind==="twigs")
-   .reduce((n,i)=>n+i.qty,0)).toBe(5);
+   .reduce((n,i)=>n+i.qty,0)).toBeGreaterThanOrEqual(5);
+ expect(final.groundItems.filter(i=>i.kind==="twigs")
+   .reduce((n,i)=>n+i.qty,0)).toBe(7,"5 entregues + 2 em transporte");
+ expect(final.workers[0].haul).toBeNull();
+ expect(final.workers[0].inventory.carrying).toBeNull();
  await expect(page.locator("#build-status")).toContainText("cancelada");
  await page.screenshot({path:"screenshots/blueprint-cancel-bau-desktop.png",animations:"disabled"});
  expect(errors).toEqual([]);
@@ -67,6 +75,7 @@ test("poço bloqueado por pesquisa pode ser cancelado sem criar obra nova",async
  expect(errors).toEqual([]);
 });
 test("foguete cancela pelo canto da área 3x3; cabana pelo canto 2x2",async({page})=>{
+ test.setTimeout(75000); // Dois footprints em uma partida grande + boot no Chromium CI.
  await start(page,1366,768);
  await reloadWithSave(page,s=>{
    s.orders=[
