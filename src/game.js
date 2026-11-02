@@ -694,7 +694,7 @@
       appearance:c.appearance ?? i,personalPriority:{},inventory:{tools:{},items:{}},x:W/2-.5+i,y:H/2-.5,task:null,progress:0,facing:"down",moving:false,walkFrame:0,
       satiety:100,health:100,hungerState:"fed",starvationMinutes:0,lastMealDay:1
     }));
-    state = {day:1,minutes:8*60,seeds:0,water:0,food:8,firstHarvest:false,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",tutorial:Missions.create(),
+    state = {day:1,minutes:Night.DAY_START,seeds:0,water:0,food:8,firstHarvest:false,mode:config.mode||"survival",farmName:config.farmName||"Vale do Amanhecer",tutorial:Missions.create(),
       plots,orders:[],world,spawn:{x:W/2,y:H/2},house:window.TillfolkHouseBuilder.initial(),
       cropSeeds:Crops.normalizeStock({}),cropProduce:Crops.normalizeStock({}),selectedCrop:"potato",workstations:[],crafting:Crafting.normalize(null),
       groundItems:[],chests:[],wells:[],nextDropId:1,homes:[],
@@ -1369,7 +1369,8 @@
   function step(dt){
     if(!playing||simSpeed===0)return;
     const scaled=Math.min(dt,.07)*simSpeed;
-    state.minutes+=scaled*1.25;
+    const elapsedClockMinutes=Night.elapsedMinutes(scaled);
+    state.minutes+=elapsedClockMinutes;
     if(state.minutes>=1440){
       state.minutes-=1440;state.day++;
       // A água agora vem somente de ordens manuais para a lagoa.
@@ -1412,12 +1413,12 @@
       Care.advance(p,scaled/Life.cropDuration(p.crop||"potato")*
         fertility*Life.growthMultiplier(state,p.crop));
     }
-    const lifeEvents=Life.advance(state,scaled*1.25);
+    const lifeEvents=Life.advance(state,elapsedClockMinutes);
     for(const event of lifeEvents)log("🌿 "+event);
     // Se a chuva concluir uma rega ordenada, libere o colono e seus suprimentos.
     // Evita que ele continue caminhando para uma tarefa que a chuva resolveu.
     if(lifeEvents.some(event=>event.startsWith("Chuva irrigou ")))recalcTasks();
-    const survivalEvents=Survival.advance(state,scaled*1.25);
+    const survivalEvents=Survival.advance(state,elapsedClockMinutes);
     for(const event of survivalEvents){
       if(event.type==="warning")log("⚠ "+event.worker.name+" precisa de comida em breve. Saciedade: "+Math.round(event.worker.satiety)+"%");
       else if(event.type==="hungry")log("⚠ "+event.worker.name+" está com fome. Saciedade: "+Math.round(event.worker.satiety)+"%");
@@ -2125,9 +2126,8 @@
       '<span>♥ Moral '+Math.round(w.morale||0)+'%</span></span>'+
       '<meter min="0" max="100" value="'+Math.round(w.energy||0)+'" aria-label="Energia"></meter>'+
       '<label class="colony-shift-label">Horário de trabalho <select data-colony-shift="'+w.id+'" aria-label="Turno de '+escapeHtml(w.name)+'">'+
-      '<option value="day" '+(w.shift==="day"||!w.shift?"selected":"")+'>☀️ Diurno · dormir 21h–6h</option>'+
-      '<option value="night" '+(w.shift==="night"?"selected":"")+'>🌙 Noturno · dormir 8h–16h</option>'+
-      '<option value="flex" '+(w.shift==="flex"?"selected":"")+'>⚡ Flexível · dormir por cansaço</option>'+
+      '<option value="day" '+(w.shift==="day"||!w.shift?"selected":"")+'>☀️ Diurno · dormir 22h–6h (8h)</option>'+
+      '<option value="night" '+(w.shift==="night"?"selected":"")+'>🌙 Noturno · dormir 8h–16h (8h)</option>'+
       '</select></label></div>').join("");
   }
   function renderProgressionPanel(){
@@ -2307,11 +2307,11 @@
     const selector=event.target.closest("select[data-colony-shift]");
     if(!selector||!state)return;
     const worker=state.workers.find(w=>String(w.id)===selector.dataset.colonyShift);
-    if(!worker||!["day","night","flex"].includes(selector.value))return;
+    if(!worker||!["day","night"].includes(selector.value))return;
     worker.shift=selector.value;
     worker.resting=false;worker.atRest=false;
     log("🛏️ Turno de "+worker.name+" alterado para "+
-      (selector.value==="night"?"noturno":selector.value==="flex"?"flexível":"diurno")+".");
+      (selector.value==="night"?"noturno":"diurno")+".");
     notify("Novo turno de "+worker.name+" salvo.");
     save();
   });
