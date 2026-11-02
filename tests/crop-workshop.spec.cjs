@@ -70,6 +70,7 @@ test("work station exibe artes e receitas mesmo antes da construção",async({pa
  expect(errors).toEqual([]);
 });
 test("receitas da Work Station produzem machado e sementes com consumo real",async({page})=>{
+ test.setTimeout(90000); // a fabricação exige entrega e tempo de trabalho reais
  const errors=[];page.on("pageerror",error=>errors.push(error.message));
  await openGame(page);
  // Aplicar a fixture no próximo carregamento, após pagehide salvar o jogo atual.
@@ -78,13 +79,25 @@ test("receitas da Work Station produzem machado e sementes com consumo real",asy
   if(sessionStorage.getItem("workshop-fixture-loaded"))return;
   const s=JSON.parse(localStorage.getItem("tillfolk-v01"));
   if(!s)return;
-  const ws={x:Math.floor(s.spawn?.x??96)+2,y:Math.floor(s.spawn?.y??60)+2};
-   s.crafting.station=ws;s.workstations=[ws];s.firstHarvest=true; // estação perto dos colonos no mapa 192x120
+  const cx=Math.floor(s.spawn.x),cy=Math.floor(s.spawn.y);
+  const blocked=new Set(s.world.objects.map(o=>o.x+","+o.y));
+  const water=new Set(s.world.water.map(o=>o.x+","+o.y));
+  const ws=s.plots.filter(p=>Math.abs(p.x-cx)<=6&&Math.abs(p.y-cy)<=6&&
+    !blocked.has(p.x+","+p.y)&&!water.has(p.x+","+p.y)&&
+    !s.workers.some(w=>Math.floor(w.x)===p.x&&Math.floor(w.y)===p.y))
+    .sort((a,b)=>Math.hypot(a.x-cx,a.y-cy)-Math.hypot(b.x-cx,b.y-cy))[0];
+  if(!ws)throw new Error("Fixture: nenhuma posição livre perto do spawn");
+  s.crafting.station={x:ws.x,y:ws.y};s.workstations=[{x:ws.x,y:ws.y}];s.firstHarvest=true;
   s.inventory.twigs=50;s.inventory.gravel=20;s.inventory.grass=20;s.inventory.wood=20;s.inventory.stone=10;
   s.cropProduce.tomato=4;s.food=10;
   s.foodLedger={version:1,stock:{tomato:4},generic:6};
   // Evita que um traço inicial aleatório impeça o artesão da fixture.
-  for(const worker of s.workers){worker.neg=[];worker.energy=100;worker.resting=false;worker.atRest=false;}
+  for(const worker of s.workers){
+    worker.neg=[];worker.energy=100;worker.resting=false;worker.atRest=false;
+    worker.task=null;worker.progress=0;worker.route=[];worker.routeTask=null;worker.haul=null;
+  }
+  s.minutes=360; // a fixture não deve iniciar no horário de descanso
+  s.orders=[];
   localStorage.setItem("tillfolk-v01",JSON.stringify(s));
   sessionStorage.setItem("workshop-fixture-loaded","1");
  });
@@ -93,8 +106,10 @@ test("receitas da Work Station produzem machado e sementes com consumo real",asy
  await page.locator('[data-tool="construir"]').click();
  await page.locator("#open-workshop").click();
  const loaded=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
- expect(loaded.crafting?.station).toEqual({
-    x:Math.floor(loaded.spawn?.x??96)+2,y:Math.floor(loaded.spawn?.y??60)+2});
+ expect(loaded.crafting?.station).toBeTruthy();
+ expect(loaded.workstations).toContainEqual(loaded.crafting.station);
+ expect(loaded.world.water.some(w=>w.x===loaded.crafting.station.x&&w.y===loaded.crafting.station.y)).toBe(false);
+ expect(loaded.world.objects.some(o=>o.x===loaded.crafting.station.x&&o.y===loaded.crafting.station.y)).toBe(false);
  expect(loaded.inventory.twigs).toBe(50);
  expect(loaded.inventory.grass).toBe(20);
  await expect(page.locator('[data-craft-tool="axe"]')).toBeEnabled();
