@@ -11,6 +11,8 @@
   if(!Progression)throw new Error("Carregue src/progression.js antes do motor TILLFOLK.");
   if(!Exploration)throw new Error("Carregue src/exploration.js antes do motor TILLFOLK.");
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
+  const FirstVillage=window.TillfolkFirstVillage;
+  if(!FirstVillage)throw new Error("Carregue src/first-village-guide.js antes de src/game.js.");
   const BlueprintCancel=window.TillfolkBlueprintCancel;
   if(!BlueprintCancel)throw new Error("Carregue src/blueprint-cancel.js antes de src/game.js.");
   const Food=window.TillfolkFoodLedger;
@@ -939,6 +941,7 @@
     if(result.finished){
       tutorialSpeedBeforeFinish=simSpeed;
       simSpeed=0;updateSpeed();refresh();closeDrawer();
+      FirstVillage.render(state,Progression,$("#tutorial-next-goals"));
       $("#tutorial-done-dialog").showModal();
     }else if(previous)notify("✓ "+previous.complete);
   }
@@ -3827,8 +3830,13 @@
   });
   const tutorialDone=$("#tutorial-done-dialog");
   tutorialDone.addEventListener("cancel",event=>event.preventDefault());
-  $("#tutorial-continue-game").addEventListener("click",()=>{
+  function resumeAfterTutorial(){
     tutorialDone.close();simSpeed=tutorialSpeedBeforeFinish;updateSpeed();refresh();save();
+  }
+  $("#tutorial-continue-game").addEventListener("click",resumeAfterTutorial);
+  $("#tutorial-open-journey").addEventListener("click",()=>{
+    resumeAfterTutorial();
+    openProgressionDialog();
   });
   $("#tutorial-back-menu").addEventListener("click",()=>{
     tutorialDone.close();save();$("#game-return-title").click();
