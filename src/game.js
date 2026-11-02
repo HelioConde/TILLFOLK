@@ -902,6 +902,7 @@
       state.sessionSpeed=gameOptions?.open?speedBeforeOptions:
         management?.open?speedBeforeManagement:
         optionsSubdialog?speedBeforeOptions:simSpeed;
+      Food.normalize(state); // O total da comida permanece consistente com o estoque tipado.
       localStorage.setItem(SAVE_KEY,JSON.stringify(state));
       return true;
     }catch(error){console.warn("Não foi possível salvar:",error);return false;}
@@ -3278,6 +3279,24 @@
     const label=$("#crop-choice-current");
     if(label)label.textContent="Plantio selecionado: "+(current?.name||"Batata")+
       " · "+(state.cropSeeds[state.selectedCrop]||0)+" sementes disponíveis";
+    const outlook=$("#food-outlook");
+    if(outlook){
+      const stats=Survival.getStats(state);
+      const growing=state.plots.filter(plot=>plot.seeded&&plot.growth<1).length;
+      const ripe=state.plots.filter(plot=>plot.seeded&&plot.growth>=1||plot.produce).length;
+      if(state.mode==="survival"){
+        const days=stats.daysRemaining===null?"—":stats.daysRemaining.toFixed(1);
+        outlook.dataset.risk=stats.alert;
+        outlook.textContent=(stats.alert==="critical"?"⚠️ Estoque crítico":stats.alert==="warning"?"⚠️ Planeje novas colheitas":"🥕 Abastecimento")+
+          " · "+state.food+" alimentos · cerca de "+days+" dia(s) de consumo normal."+
+          " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte."+
+          " Safras futuras não entram nesta reserva até serem levadas ao estoque.";
+      }else{
+        outlook.dataset.risk="ok";
+        outlook.textContent="🌱 Fazenda tranquila · "+state.food+" alimentos disponíveis."+
+          " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte.";
+      }
+    }
     const help=$("#crop-choice-hint");
     if(help)help.textContent=state.seeds>0?
       "Selecione uma cultura com sementes. Universal e Semear usarão essa escolha nas próximas ordens. Ordens já criadas não mudam.":
