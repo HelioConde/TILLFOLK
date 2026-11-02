@@ -48,6 +48,8 @@ jobs:
           node --test tests/colony-council.test.cjs
           node --test tests/day-night.test.cjs tests/colony-life.test.cjs
           node --test tests/specialization.test.cjs
+          node --check src/food-ledger.js
+          node --test tests/food-ledger.test.cjs
           node --check src/survival.js
           node --check src/tutorial-pointer.js
           node --check src/live-update.js
