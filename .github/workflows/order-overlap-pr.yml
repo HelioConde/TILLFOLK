@@ -1,0 +1,36 @@
+name: TILLFOLK — clique direito sobre colono
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/game.js'
+      - 'tests/order-overlap-cancel.spec.cjs'
+      - '.github/workflows/order-overlap-pr.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validar JavaScript e contrato dos terrenos
+        run: |
+          node --check src/game.js
+          node --check tests/order-overlap-cancel.spec.cjs
+          node --test tests/blueprint-cancel.test.cjs tests/worker-allocation.test.cjs
+          node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
+      - name: Instalar navegador
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Servir jogo
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-overlap.log 2>&1 &
+          sleep 2
+      - name: Validar prioridade do botão direito
+        run: npx playwright test tests/order-overlap-cancel.spec.cjs --browser chromium --workers=1 --reporter=line
