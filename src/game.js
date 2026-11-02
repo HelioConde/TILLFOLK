@@ -11,6 +11,8 @@
   if(!Progression)throw new Error("Carregue src/progression.js antes do motor TILLFOLK.");
   if(!Exploration)throw new Error("Carregue src/exploration.js antes do motor TILLFOLK.");
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
+  const TaskAI=window.TillfolkTaskAssignment;
+  if(!TaskAI)throw new Error("Carregue src/task-assignment.js antes do motor TILLFOLK.");
   const Food=window.TillfolkFoodLedger;
   if(!Food)throw new Error("Carregue src/food-ledger.js antes do motor TILLFOLK.");
   const Care=window.TillfolkCropCare,Planning=window.TillfolkFarmPlanning,
@@ -1128,15 +1130,10 @@
   function assign(w){
     if(w.task||w.resting)return;
     const available=tasks.filter(t=>t.status==="ready"&&!t.assigned&&!workerTaskBlocker(w,t));
-    const priorityScore=t=>{
-      const global=Number.isInteger(t.priority)?t.priority:state.priorities[t.type]||5;
-      const individual=w.personalPriority?.[t.type]??5;
-      const expertise=bonus(w,t.type);
-      const distance=Math.abs(w.x-(t.x+.5))+Math.abs(w.y-(t.y+.5));
-      return global*100+individual*14+expertise*9-distance*.3;
-    };
-    available.sort((a,b)=>priorityScore(b)-priorityScore(a));
-    if(available.length){w.task=available[0].id;w.progress=0;w.routeTask=null;w.route=[];available[0].assigned=w.id;}
+    // A urgência alimentar apenas favorece ordens já autorizadas: a regra
+    // de prioridade manual, habilidades e restrições permanece soberana.
+    const ranked=TaskAI.rank(w,available,state,(worker,type)=>bonus(worker,type));
+    if(ranked.length){w.task=ranked[0].id;w.progress=0;w.routeTask=null;w.route=[];ranked[0].assigned=w.id;}
   }
   function assignIdleWorkers(){
     const idle=state.workers.filter(w=>!w.task&&!w.resting);
