@@ -37,6 +37,9 @@
   const $ = (s) => document.querySelector(s);
   let worldPanX=0,worldPanY=0,panPointer=null,suppressMapClick=false;
   let selectionPointer=null,areaSelection=null,areaMode=false,suppressRightContext=false;
+  // Histórico transitório de UM arrasto; jamais persiste nem reverte tarefas
+  // anteriores de um save. Cada ID é conferido antes da exclusão.
+  let lastAreaOrderIds=[];
   // A câmera tem escala renderizada e escala desejada: a roda não salta entre quadros.
   let cameraZoom=1,targetCameraZoom=1,cameraAnchor=null,lastCameraFrame=0,lastMinimapFrame=-1000;
   const ZOOM_MIN=.5,ZOOM_MAX=6;
@@ -964,6 +967,7 @@
       }
       restoredGameOver=state.gameOver||state.workers.length===0;
     }else reset(chosenStarters,config);
+    lastAreaOrderIds=[];syncAreaUndoButton();
     houseHistory=[];buildHover=null;areaSelection=null;selectionPointer=null;resetSpeechScene();setTool("universal");
     recalcTasks(); // Limpar ordens já concluídas antes da primeira renderização.
     playing=true;$("#menu").hidden=true;$(".app-shell").inert=false;$("#continue").disabled=false;
@@ -2702,6 +2706,25 @@
     showMapFeedback(x,y,result.state==="blocked"?"#d4a779":"#fff5af");
     return result;
   }
+  function syncAreaUndoButton(){
+    const button=$("#undo-area-orders");
+    if(!button)return;
+    const count=state?.orders?.filter(o=>lastAreaOrderIds.includes(o.id)).length||0;
+    button.disabled=count===0;
+    button.title=count?"Desfazer as "+count+" ordens do último arrasto ainda pendentes":
+      "Não há um arrasto recente para desfazer";
+  }
+  $("#undo-area-orders")?.addEventListener("click",()=>{
+    if(!playing||!state)return;
+    const pending=new Set(state.orders.map(o=>o.id));
+    const ids=lastAreaOrderIds.filter(id=>pending.has(id));
+    lastAreaOrderIds=[];syncAreaUndoButton();
+    if(!ids.length){notify("As ordens deste arrasto já foram concluídas ou canceladas.");return;}
+    // Usa o cancelamento oficial: reembolsa entregas e interrompe colonos
+    // atribuídos sem criar recursos mágicos.
+    removeOrders(ids);
+    notify(ids.length+" ordem(ns) do último arrasto desfeita(s).");
+  });
   function applyToArea(from,to,forceCancel=false){
     const x0=Math.max(0,Math.min(from.x,to.x)),x1=Math.min(W-1,Math.max(from.x,to.x));
     const y0=Math.max(0,Math.min(from.y,to.y)),y1=Math.min(H-1,Math.max(from.y,to.y));
@@ -2716,7 +2739,7 @@
       return;
     }
     let added=0,cancelled=0,skipped=0;
-    const removals=[];
+    const removals=[],createdIds=[];
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
       if(forceCancel||selectedTool==="remover"){
         const ids=state.orders.filter(o=>o.x===x&&o.y===y).map(o=>o.id);
@@ -2725,12 +2748,20 @@
       const type=selectedTool==="universal"?nextUniversalOrder(x,y):selectedTool;
       if(!type||!Orders.TYPES.includes(type)){skipped++;continue;}
       const result=queueAt(type,x,y,{quiet:true});
-      if(result.error)skipped++;else added++;
+      if(result.error)skipped++;
+      else {added++;createdIds.push(result.order.id);}
     }
     // Reutilizar a mesma transação de cancelamento para seleção por área:
     // não deixar transportadores seguindo para uma obra já descartada.
-    if(cancelled)removeOrders([...new Set(removals)]);
-    if(added){hoveredTile=null;recalcTasks();refresh();save();}
+    if(cancelled){
+      removeOrders([...new Set(removals)]);
+      lastAreaOrderIds=[];syncAreaUndoButton();
+    }
+    if(added){
+      lastAreaOrderIds=createdIds;
+      syncAreaUndoButton();
+      hoveredTile=null;recalcTasks();refresh();save();
+    }
     $("#tile-tooltip").hidden=true;
     notify(added?added+" ordem(ns) adicionada(s)"+(skipped?" · "+skipped+" ignorada(s)":"")+"."
       :cancelled?cancelled+" ordem(ns) cancelada(s).":
