@@ -38,6 +38,13 @@ test("clique direito cancela ordem sobre o colono antes de abrir inventário",as
   const after=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
   expect(after.orders.some(o=>o.x===x&&o.y===y)).toBe(false);
   await expect(page.locator("#worker-inventory-dialog")).toBeHidden();
+  // Retomar o save também valida que o cancelamento persistiu.
+  // A UI de atualização pode reconstruir o canvas entre interações.
+  await page.goto(URL,{waitUntil:"load"});
+  if(await page.locator("#menu").isVisible())await page.locator("#continue").click();
+  await expect(page.locator("#world")).toHaveCount(1);
+  const persisted=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
+  expect(persisted.orders.some(o=>o.x===x&&o.y===y)).toBe(false);
   // Sem ordem, o clique direito continua abrindo o inventário do colono.
   await rightClick();
   await expect(page.locator("#worker-inventory-dialog")).toBeVisible();
