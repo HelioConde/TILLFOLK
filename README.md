@@ -13,6 +13,8 @@
 
 **Economia de comida (02/11):** o estoque por cultura agora desconta refeições, estrago, trocas e outros gastos, impedindo fabricar sementes a partir de safras já consumidas. O Estoque mostra uma previsão de abastecimento. [Regras e migração de saves](./docs/ECONOMIA_COMIDA.md).
 
+**Irrigação e metas S4 (02/11):** cada cultura exige de 1 a 3 regas ao longo da safra; a chuva pode ajudar e o Estoque apresenta uma meta orientativa de colheitas para a equipe. [Regras e QA](./docs/IRRIGACAO_E_SAFRAS.md).
+
 **Regra visual permanente:** [autotile oficial 16×16, 11×7, 8 vizinhos — NÃO ALTERAR](./docs/AUTOTILE_PADRAO_IMUTAVEL.md). Os nove atlases de solo compartilham o mesmo mapeamento de bordas e cantos; melhorias de cenário não devem remapear o tilemap.
 
 ## Como o jogo deve funcionar
