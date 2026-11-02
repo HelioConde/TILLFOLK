@@ -65,6 +65,8 @@ jobs:
           node --test tests/tutorial-missions.test.cjs
           node --check src/game-hud.js
           node --check src/sprout-ui-skin.js
+          node --check src/irrigation-orders.js
+          node --test tests/irrigation-orders.test.cjs
           node --check src/task-orders.js
           node --check src/house-building.js
           node --check src/blueprints.js

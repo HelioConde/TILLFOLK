@@ -116,10 +116,14 @@
    // Chuva molha os canteiros; não inventa água em baldes.
    if(currentWeather==="chuva"){
      const care=typeof window!=="undefined"?window.TillfolkCropCare:null;
+     let irrigated=0;
      for(const plot of state.plots||[])if(plot.seeded&&plot.growth<1){
-       if(care)care.irrigate(plot); // Chuva substitui uma rega, sem consumir água estocada.
-       else plot.watered=true;
+       if(care){if(care.irrigate(plot))irrigated++;}
+       else if(!plot.watered){plot.watered=true;irrigated++;}
      }
+     // Evento somente quando algum canteiro efetivamente mudou de etapa.
+     // O motor pode então retirar ordens de rega que a chuva já resolveu.
+     if(irrigated>0)events.push("Chuva irrigou "+irrigated+" canteiro(s).");
    }
    return events;
  }

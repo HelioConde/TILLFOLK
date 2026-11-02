@@ -19,3 +19,24 @@ body.play-session #food-outlook[data-risk="critical"] {
 @media(max-width:520px){
   body.play-session #food-outlook{font-size:11px;padding:10px 11px}
 }
+
+/* Ordem por lote: controle explícito em Estoque, não automação. */
+body.play-session #water-orders-controls{
+  display:grid;gap:7px;margin:8px 0 18px;
+  padding:10px;border:1px solid #809d7c;border-radius:6px;
+  background:#263c31;
+}
+body.play-session #queue-dry-plots{
+  display:block;width:100%;min-height:40px;
+  padding:9px 12px;white-space:normal;text-align:center;
+  cursor:pointer;font-weight:800;
+}
+body.play-session #queue-dry-plots:disabled{opacity:.55;cursor:not-allowed;}
+body.play-session #queue-dry-plots:focus-visible{outline:3px solid #f4e5b6;outline-offset:2px;}
+body.play-session #water-orders-info{
+  color:#e3e3c7;font:600 11px/1.5 system-ui,sans-serif;
+}
+@media(max-width:520px){
+  body.play-session #water-orders-controls{padding:8px;}
+  body.play-session #queue-dry-plots{min-height:44px;}
+}

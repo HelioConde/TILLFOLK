@@ -13,7 +13,9 @@
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
   const Food=window.TillfolkFoodLedger;
   if(!Food)throw new Error("Carregue src/food-ledger.js antes do motor TILLFOLK.");
-  const Care=window.TillfolkCropCare,Planning=window.TillfolkFarmPlanning;
+  const Care=window.TillfolkCropCare,Planning=window.TillfolkFarmPlanning,
+    IrrigationOrders=window.TillfolkIrrigationOrders;
+  if(!IrrigationOrders)throw new Error("Carregue src/irrigation-orders.js antes do motor TILLFOLK.");
   if(!Care)throw new Error("Carregue src/crop-care.js antes do motor TILLFOLK.");
   if(!Planning)throw new Error("Carregue src/farm-planning.js antes do motor TILLFOLK.");
   if(!Crops)throw new Error("Carregue src/crop-catalog.js antes do motor TILLFOLK.");
@@ -1412,6 +1414,9 @@
     }
     const lifeEvents=Life.advance(state,scaled*1.25);
     for(const event of lifeEvents)log("🌿 "+event);
+    // Se a chuva concluir uma rega ordenada, libere o colono e seus suprimentos.
+    // Evita que ele continue caminhando para uma tarefa que a chuva resolveu.
+    if(lifeEvents.some(event=>event.startsWith("Chuva irrigou ")))recalcTasks();
     const survivalEvents=Survival.advance(state,scaled*1.25);
     for(const event of survivalEvents){
       if(event.type==="warning")log("⚠ "+event.worker.name+" precisa de comida em breve. Saciedade: "+Math.round(event.worker.satiety)+"%");
@@ -3308,6 +3313,18 @@
           " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte, "+thirsty+" aguardando rega."+goal;
       }
     }
+    const waterPlan=IrrigationOrders.plan(state);
+    const queueWater=$("#queue-dry-plots"),waterInfo=$("#water-orders-info");
+    if(queueWater){
+      queueWater.disabled=waterPlan.ready.length===0;
+      queueWater.textContent="💧 Ordenar rega de "+waterPlan.ready.length+" canteiro(s)";
+    }
+    if(waterInfo)waterInfo.textContent=waterPlan.needing===0?
+      "Nenhum canteiro precisa de água agora.":
+      waterPlan.needing+" aguardando água · "+waterPlan.already+" já com ordem · "+
+      waterPlan.blocked+" sem pré-requisitos · "+waterPlan.ready.length+" prontos para ordenar."+
+      (waterPlan.overflow?" Limite de 40 novas regas por vez.":"")+
+      (waterPlan.reason?" "+waterPlan.reason+".":"");
     const help=$("#crop-choice-hint");
     if(help)help.textContent=state.seeds>0?
       "Selecione uma cultura com sementes. Universal e Semear usarão essa escolha nas próximas ordens. Ordens já criadas não mudam.":
@@ -3322,6 +3339,17 @@
     }).join("");
     Crops.drawIcons(grid);
   }
+  // Somente o jogador autoriza este lote. Cada rega segue consumindo água,
+  // equipamento, trajeto e tempo de trabalho individual do motor.
+  $("#queue-dry-plots")?.addEventListener("click",()=>{
+    if(!playing||!state)return;
+    const result=IrrigationOrders.queue(state);
+    if(result.added){
+      recalcTasks();refresh();save();
+      notify("💧 "+result.added+" rega(s) ordenada(s). A equipe executará conforme as prioridades.");
+    }else notify(result.reason||"Nenhum canteiro disponível para uma nova rega.");
+    renderCropStock();
+  });
   // O inventário vira também seletor real da próxima semente usada no mapa.
   // Uma ordem já designada conserva sua cultura; saves antigos seguem válidos.
   $("#crop-stock-grid")?.addEventListener("click",event=>{
