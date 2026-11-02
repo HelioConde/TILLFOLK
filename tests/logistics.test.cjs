@@ -51,7 +51,7 @@ test("habilidade de transporte diminui viagens e três restrições ampliam a ca
 });
 test("baú premium recebe carga física, conserva quantidade e fornece itens para obra",()=>{
   const state=makeState();
-  state.chests=[{x:8,y:8,items:{}}];L.drop(state,2,3,"grass",5);
+  state.chests=[{x:8,y:8,items:{},autoCollect:true}];L.drop(state,2,3,"grass",5);
   const worker={x:2,y:3,skills:["carry"],neg:[]};
   const job=L.planStorage(state,worker);
   assert.equal(job.destination.x,8);
@@ -86,5 +86,62 @@ test("ordem de construção usa pilhas no chão sem exigir estoque mágico",()=>
   assert.equal(O.status(order,plot,null,state).state,"blocked");
   L.drop(state,10,10,"twigs",10);
   assert.equal(O.status(order,plot,null,state).state,"ready");
-  assert.equal(fs.existsSync("public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Tilesets/Building parts/Chest.png"),true);
+  assert.equal(fs.existsSync(L.CHEST_SPRITE.replace(/^\.\//,"")),true);
+});
+
+test("blueprint de baú não cria depósito invisível nem recolhe pilhas do mapa",()=>{
+  const state=makeState();
+  state.orders=[{id:"20-20:buildChest",type:"buildChest",x:20,y:20}];
+  L.drop(state,4,6,"grass",12);
+  L.drop(state,9,10,"twigs",6);
+  const before=JSON.stringify(state.groundItems);
+  const worker={x:4,y:6,neg:[],skills:["carry"]};
+  assert.equal(state.chests.length,0,"projeto não concluiu um baú");
+  assert.equal(L.planStorage(state,worker),null,"blueprint não é depósito");
+  assert.equal(JSON.stringify(state.groundItems),before);
+  assert.equal(L.available(state,"grass"),12);
+  assert.equal(L.available(state,"twigs"),6);
+});
+
+test("baús antigos não recolhem tudo automaticamente, mas preservam seus itens e saves",()=>{
+  const state=makeState();
+  state.chests=[{x:8,y:8,items:{wood:7}}];
+  L.drop(state,7,8,"twigs",5);
+  const worker={x:7,y:8,neg:[],skills:[]};
+  L.normalize(state);
+  assert.equal(state.chests[0].autoCollect,false);
+  assert.equal(state.chests[0].items.wood,7);
+  assert.equal(L.planStorage(state,worker),null);
+  const restored=L.normalize(JSON.parse(JSON.stringify(state)));
+  assert.equal(restored.chests[0].autoCollect,false);
+  assert.equal(L.available(restored,"wood"),7);
+  assert.equal(L.available(restored,"twigs"),5);
+});
+
+test("coleta autorizada é local, física, persistente e nunca varre o mapa inteiro",()=>{
+  const state=makeState();
+  const worker={x:10,y:10,neg:[],skills:["carry"]};
+  state.chests=[{x:9,y:9,items:{},autoCollect:false}];
+  L.drop(state,10,10,"twigs",5);
+  L.drop(state,29,29,"stone",20);
+  const before=JSON.stringify(state.groundItems);
+  assert.equal(L.planStorage(state,worker),null);
+  assert.equal(JSON.stringify(state.groundItems),before);
+  state.chests[0].autoCollect=true;
+  const job=L.planStorage(state,worker);
+  assert.equal(job.kind,"twigs");
+  assert.deepEqual([job.destination.x,job.destination.y],[9,9]);
+  assert.equal(L.collect(state,job),4);
+  assert.equal(L.deliver(state,null,job),4);
+  assert.equal(state.chests[0].items.twigs,4);
+  assert.equal(L.available(state,"twigs"),5);
+  assert.equal(L.available(state,"stone"),20);
+  const restored=L.normalize(JSON.parse(JSON.stringify(state)));
+  assert.equal(restored.chests[0].autoCollect,true);
+  assert.equal(restored.chests[0].items.twigs,4);
+  assert.equal(L.planStorage(restored,worker).kind,"twigs");
+  assert.equal(L.storageEnabled(restored,{x:9,y:9}),true);
+  restored.chests[0].autoCollect=false;
+  assert.equal(L.planStorage(restored,worker),null);
+  assert.equal(L.storageEnabled(restored,{x:9,y:9}),false);
 });
