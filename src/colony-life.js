@@ -44,7 +44,9 @@
      worker.energy=clamp(worker.energy,0,100);
      worker.morale=clamp(worker.morale,0,100);
      worker.resting=worker.resting===true;
-     worker.shift=['day','night','flex'].includes(worker.shift)?worker.shift:'day';
+     // Todos os turnos disponíveis dormem 8h fixas. Saves antigos com
+     // "flex" migram para o turno diurno padrão, sem apagar o trabalhador.
+     worker.shift=worker.shift==="night"?"night":"day";
      worker.carryBonus=base.researchLevel>=4?1:0;
    }
    return state.colonyLife;
@@ -52,23 +54,16 @@
  function workMultiplier(w){
    return clamp(.72+(w.energy||0)/340+(w.morale||0)/400,.55,1.24);
  }
+ // Sono não depende da energia atual: o colono de turno diurno deita
+ // às 22h e acorda às 06h, mesmo que tenha dormido com 100% ou esteja
+ // cansado ao despertar. Turno noturno alternativo: 08h–16h, também 8h.
  function sleepWindow(worker,minute){
-   const hour=((minute||0)%1440+1440)%1440/60;
+   const hour=((Number(minute)||0)%1440+1440)%1440/60;
    if(worker?.shift==="night")return hour>=8&&hour<16;
-   if(worker?.shift==="flex")return false;
-   return hour>=21||hour<6;
+   return hour>=22||hour<6;
  }
  function sleepRequired(worker,minute){
-   const hour=((minute||0)%1440+1440)%1440/60;
-   const shift=worker.shift==="night"?"night":worker.shift==="flex"?"flex":"day";
-   const scheduled=sleepWindow(worker,minute);
-   if(worker.resting){
-     const wakeHour=shift==="night"?16:7;
-     if(worker.energy>=94)return false;
-     if(shift!=="flex"&&hour>=wakeHour&&hour<wakeHour+5&&worker.energy>=68)return false;
-     return true;
-   }
-   return worker.energy<20||(scheduled&&worker.energy<83);
+   return sleepWindow(worker,minute);
  }
  function advance(state,elapsedMinutes){
    const life=normalize(state),passed=clamp(Number(elapsedMinutes)||0,0,60);
