@@ -11,6 +11,8 @@
   if(!Progression)throw new Error("Carregue src/progression.js antes do motor TILLFOLK.");
   if(!Exploration)throw new Error("Carregue src/exploration.js antes do motor TILLFOLK.");
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
+  const Food=window.TillfolkFoodLedger;
+  if(!Food)throw new Error("Carregue src/food-ledger.js antes do motor TILLFOLK.");
   if(!Crops)throw new Error("Carregue src/crop-catalog.js antes do motor TILLFOLK.");
   if(!Crafting)throw new Error("Carregue src/crafting.js antes do motor TILLFOLK.");
   if(!Missions)throw new Error("Carregue src/missions.js antes do motor TILLFOLK.");
@@ -695,6 +697,7 @@
       candidates:structuredClone(initialCandidates),nextWorkerId:team.length+1,priorities:{...startPriorities},buildPriority:5,
       survivalVersion:1,startingColonists:initialColonists,deaths:[],gameOver:false,
       journal:["A equipe inicial chegou ao vale: "+team.map(w=>w.name).join(" e ")+"!"]};
+    Food.normalize(state); // A comida inicial é genérica; não inventar colheitas.
     Life.normalize(state);
     Council.normalize(state);
     Minerals.normalize(state);
@@ -759,6 +762,7 @@
       // Migração não destrutiva: os saves continuam utilizáveis, mas não há moeda.
       delete state.coins;
       state.food=Survival.normalizeFood(state.food);
+      Food.normalize(state); // Migração conservadora dos saves anteriores a foodLedger v1.
       state.firstHarvest=Boolean(s.firstHarvest||s.tutorial?.stats?.harvest>0);
       state.house=window.TillfolkHouseBuilder.normalize(s.house);
       state.orders=Orders.normalize(s.orders);
@@ -1340,7 +1344,7 @@
         const variety=Crops.get(p.crop)?p.crop:"carrot";
         const crop=Crops.get(variety),amount=crop.food,seedReturn=crop.seedYield||1;
         p.produce=false;p.fertilized=false;
-        state.food+=amount;state.cropProduce[variety]+=amount;showPickup(t.x,t.y,"food",amount);
+        Food.add(state,variety,amount);state.cropProduce[variety]+=amount;showPickup(t.x,t.y,"food",amount);
         // Somente a colheita transportada ao estoque devolve sementes.
         // Nenhuma semente aparece ao semear ou colher no terreno.
         state.cropSeeds[variety]+=seedReturn;state.seeds+=seedReturn;
@@ -2544,7 +2548,7 @@
     if(housingVacancy()<1){notify("Construa uma casa livre para o novo ajudante.");return;}
     const price=foodHireCost(c);
     if(state.food<price){notify("Comida insuficiente para a troca.");return;}
-    state.food-=price;
+    if(!Food.spend(state,price)){notify("Comida insuficiente para a troca.");return;}
     state.workers.push({id:state.nextWorkerId++,name:c.name,skills:[...c.skills],neg:[...c.neg],color:c.color,appearance:c.appearance??0,personalPriority:{},inventory:{tools:{},items:{}},x:state.spawn.x,y:state.spawn.y,task:null,progress:0,facing:"down",moving:false,walkFrame:0,satiety:100,health:100,hungerState:"fed",starvationMinutes:0,lastMealDay:state.day,energy:100,morale:75});
     // Reaproveita ferramentas legadas que não puderam ser realocadas no load.
     // Não cria nem destrói equipamento: transfere apenas a quem pode usá-lo.
@@ -3280,7 +3284,8 @@
       "Sem sementes: limpe a grama alta para encontrá-las. A primeira semente do tutorial é garantida.";
     grid.innerHTML=Crops.ALL.map(crop=>{
       const stock=state.cropSeeds[crop.id]||0;
-      const details=stock+" sementes · "+(state.cropProduce[crop.id]||0)+" alimentos registrados"+
+      const details=stock+" sementes · "+Food.available(state,crop.id)+" alimentos disponíveis · "+
+        (state.cropProduce[crop.id]||0)+" colhidos no histórico"+
         " · +" +crop.food+" comida / +"+crop.seedYield+" sementes por safra"+
         " · "+cropCycleLabel(crop)+" · Melhor: "+crop.favoredSeason;
       return cropTile(crop,details,"select-crop",stock<=0,state.selectedCrop===crop.id);
@@ -3360,8 +3365,8 @@
     paintWorkshopTools();
     const grid=$("#workshop-recipes");
     grid.innerHTML=Crops.ALL.map(crop=>cropTile(crop,
-      (state.cropProduce[crop.id]||0)+" colhidos · fabricar 3 sementes",
-      "craft-crop",!ready||(state.cropProduce[crop.id]||0)<2||state.food<2)).join("");
+      Food.available(state,crop.id)+" disponíveis · 2 alimentos → 3 sementes",
+      "craft-crop",!ready||Food.available(state,crop.id)<2)).join("");
     Crops.drawIcons(grid);
   }
   function openWorkshop(){
@@ -3397,9 +3402,8 @@
     const button=event.target.closest("[data-craft-crop]");
     if(!button||button.disabled)return;
     const id=button.dataset.craftCrop;
-    if(!Crops.get(id)||!state.workstations?.length||
-       state.food<2||(state.cropProduce[id]||0)<2)return;
-    state.cropProduce[id]-=2;state.food-=2;state.cropSeeds[id]+=3;state.seeds+=3;
+    if(!Crops.get(id)||!state.workstations?.length||!Food.spend(state,2,id))return;
+    state.cropSeeds[id]+=3;state.seeds+=3;
     log("A oficina preparou 3 sementes de "+Crops.get(id).name+".");
     renderWorkshop();refresh();save();
   });
