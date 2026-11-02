@@ -1,19 +1,25 @@
 "use strict";
-/* Ciclo visual do mundo, desacoplado da velocidade da simulação e do HUD.
-   05–07 amanhecer, 07–18 dia, 18–20 entardecer, 20–05 noite. */
+/* Ciclo do mundo. Dia claro: 06h–22h (16 horas); noite: 22h–06h (8 horas).
+   Um dia completo dura 32 minutos reais em 1× e respeita 3×/6×/pausa. */
 (()=>{
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  const MINUTES_PER_REAL_SECOND=.75;
+  const DAY_START=6*60, NIGHT_START=22*60;
+  // Usar a mesma variação em relógio, energia, moral e fome.
+  function elapsedMinutes(scaledSeconds){
+    return Number.isFinite(scaledSeconds)?Math.max(0,scaledSeconds)*MINUTES_PER_REAL_SECOND:0;
+  }
   const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
   function alpha(minutes){
     const hour=((Number(minutes)||0)%1440+1440)%1440/60;
-    if(hour>=20||hour<5)return .64;
-    if(hour<7)return .64*(1-smooth((hour-5)/2));
-    if(hour<18)return 0;
-    return .64*smooth((hour-18)/2);
+    if(hour>=22||hour<6)return .64;
+    if(hour<7)return .64*(1-smooth(hour-6));
+    if(hour<21)return 0;
+    return .64*smooth(hour-21);
   }
   function phase(minutes){
     const h=((Number(minutes)||0)%1440+1440)%1440/60;
-    return h>=20||h<5?"night":h<7?"dawn":h>=18?"dusk":"day";
+    return h>=22||h<6?"night":h<7?"dawn":h>=21?"dusk":"day";
   }
   const labels={night:"🌙 Noite",dawn:"🌄 Amanhecer",day:"☀️ Dia",dusk:"🌇 Entardecer"};
   let layer=null,layerCtx=null;
@@ -55,5 +61,5 @@
     ctx.drawImage(layer,left,top,width,height);
     ctx.restore();
   }
-  window.TillfolkDayNight=Object.freeze({alpha,phase,labels,paint});
+  window.TillfolkDayNight=Object.freeze({alpha,phase,labels,paint,elapsedMinutes,DAY_START,NIGHT_START,MINUTES_PER_REAL_SECOND});
 })();

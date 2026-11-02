@@ -17,26 +17,33 @@ test("estado antigo recebe energia e moral sem perder a partida",()=>{
  assert.equal(Life.season(1),"Primavera");
  assert.equal(Life.season(8),"Verão");
 });
-test("turnos independentes distinguem diurno, noturno e flexível",()=>{
- const worker={energy:65,resting:false,shift:"day"};
- assert.equal(Life.sleepWindow(worker,23*60),true);
- assert.equal(Life.sleepWindow(worker,12*60),false);
- assert.equal(Life.sleepRequired(worker,23*60),true);
- worker.shift="night";
- assert.equal(Life.sleepWindow(worker,12*60),true);
- assert.equal(Life.sleepWindow(worker,23*60),false);
- assert.equal(Life.sleepRequired(worker,23*60),false);
- assert.equal(Life.sleepRequired(worker,12*60),true);
- worker.shift="flex";
- assert.equal(Life.sleepWindow(worker,12*60),false);
- assert.equal(Life.sleepRequired(worker,23*60),false);
- worker.energy=19;
- assert.equal(Life.sleepRequired(worker,12*60),true);
- worker.resting=true;worker.energy=96;
- assert.equal(Life.sleepRequired(worker,12*60),false);
+test("turno diurno: 22h–06h, exatamente 8 horas e acordar às 6h",()=>{
+ const w={energy:100,resting:false,shift:"day"};
+ const minutes=[0,1,5*60+59,6*60,12*60,21*60+59,22*60,23*60+59];
+ const expected=[true,true,true,false,false,false,true,true];
+ assert.deepEqual(minutes.map(m=>Life.sleepRequired(w,m)),expected);
+ assert.equal(Life.sleepWindow(w,22*60),true);
+ assert.equal(Life.sleepWindow(w,6*60),false);
+ // Nem 100% de energia permite acordar cedo; exaustão diurna não cria siestas.
+ w.energy=100;w.resting=true;
+ assert.equal(Life.sleepRequired(w,23*60),true);
+ w.energy=10;w.resting=false;
+ assert.equal(Life.sleepRequired(w,12*60),false);
+ w.energy=10;w.resting=true;
+ assert.equal(Life.sleepRequired(w,6*60),false);
+});
+test("turno noturno opcional mantém 8h; save com flex migra ao padrão",()=>{
+ const w={energy:100,resting:false,shift:"night"};
+ for(const h of [8,12,15.99])assert.equal(Life.sleepRequired(w,h*60),true);
+ for(const h of [0,6,7.99,16,22])assert.equal(Life.sleepRequired(w,h*60),false);
  const legacy=state();
+ legacy.workers[0].shift="flex";
  Life.normalize(legacy);
  assert.equal(legacy.workers[0].shift,"day");
+ assert.equal(Life.sleepRequired(legacy.workers[0],23*60),true);
+ const fresh=state();
+ Life.normalize(fresh);
+ assert.equal(fresh.workers[0].shift,"day");
 });
 test("cansaço cresce com trabalho e descanso regenera energia",()=>{
  const s=state(),w=s.workers[0];w.task="10-12:till";
@@ -47,7 +54,7 @@ test("cansaço cresce com trabalho e descanso regenera energia",()=>{
  Life.advance(s,60);
  assert.ok(w.energy>before);
  w.energy=16;w.resting=false;
- assert.equal(Life.sleepRequired(w,9*60),true);
+ assert.equal(Life.sleepRequired(w,9*60),false,"Sem cochilos fora do turno");
  w.energy=54;w.resting=false;
  assert.equal(Life.sleepRequired(w,22*60),true);
  assert.equal(Life.sleepRequired(w,14*60),false);

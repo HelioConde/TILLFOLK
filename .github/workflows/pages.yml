@@ -33,6 +33,7 @@ jobs:
           node --check src/wild-world.js
           node --test tests/biome-rivers.test.cjs tests/bridge-geometry.test.cjs tests/continent-protection.test.cjs tests/wildlife-animations.test.cjs
           node --check src/game.js
+          # Relógio desacelerado, 16h de dia e sono fixo 22h–06h
           node --check src/day-night.js
           node --check src/progression.js
           node --check src/colony-contracts.js
