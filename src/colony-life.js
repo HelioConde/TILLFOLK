@@ -114,8 +114,13 @@
      life.wellProgress=Math.min(life.wellProgress,900);
    }
    // Chuva molha os canteiros; não inventa água em baldes.
-   if(currentWeather==="chuva")
-     for(const plot of state.plots||[])if(plot.seeded)plot.watered=true;
+   if(currentWeather==="chuva"){
+     const care=typeof window!=="undefined"?window.TillfolkCropCare:null;
+     for(const plot of state.plots||[])if(plot.seeded&&plot.growth<1){
+       if(care)care.irrigate(plot); // Chuva substitui uma rega, sem consumir água estocada.
+       else plot.watered=true;
+     }
+   }
    return events;
  }
  function growthMultiplier(state,crop){
