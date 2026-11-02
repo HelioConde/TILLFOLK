@@ -2,6 +2,39 @@
 
 > Plano de implementação para um agente de código conectado ao GitHub. Atualizado em 02/11/2026 após leitura do código, skills, workflows e logs de CI da main. É um **plano**, não a declaração de que todas as melhorias já foram feitas.
 
+## REVISÃO OPERACIONAL — main `d5cc254a` (02/11/2026, após auditoria de Actions)
+
+**Este documento é o prompt mestre único do projeto.** Os itens abaixo atualizam a prioridade e devem ser lidos junto às fases já descritas. Não declarar uma fase finalizada apenas por existência de módulo; testar o fluxo inteiro em navegador. Trabalhar em ordem e repetir a auditoria após cada merge.
+
+**O que a main já possui — preservar, não reimplementar:** tutorial de 13 objetivos com Catpaw, primeira Work Station, especializações e proibições de colonos, transporte físico e baús com coleta expressamente habilitada, contrato de terreno 9 atlas 11×7 imutável, seis biomas, progressão por minerais, Jornada/foguete, guia pós-primeira cabana, controle de ordens em área (máximo 24 antes da bancada, 120 depois), marcadores agrupados no zoom distante, GitHub Pages e backup JSON. **Não confundir módulo existente com fluxo garantido.**
+
+**CI real na main (`d5cc254a`):** `pages.yml`, alocação, fauna, cancelamento de blueprints e jornada após tutorial passaram. Falharam: [Work Station 41438063339](https://github.com/HelioConde/TILLFOLK/actions/runs/41438063339), [colônia 41438063152](https://github.com/HelioConde/TILLFOLK/actions/runs/41438063152), [mapa/biomas 41438063009](https://github.com/HelioConde/TILLFOLK/actions/runs/41438063009), [retomada de sessão 41438063080](https://github.com/HelioConde/TILLFOLK/actions/runs/41438063080) e [diagnóstico da patinha 41438063059](https://github.com/HelioConde/TILLFOLK/actions/runs/41438063059). A auditoria visual e full-audit foram canceladas, não aprovadas. O diagnóstico da patinha inclui um teste desatualizado que exige aviso de enxada no hover da ferramenta Universal; houve mudança deliberada para evitar poluição no tutorial. Revisar por evidência, não marcar o jogo como livre de falhas.
+
+**PRs a revisar antes de criar trabalho duplicado:** [#53](https://github.com/HelioConde/TILLFOLK/pull/53) fixtures/Work Station, [#54](https://github.com/HelioConde/TILLFOLK/pull/54) colônia/QA, [#56](https://github.com/HelioConde/TILLFOLK/pull/56) cancelamento sobre colonos, [#57](https://github.com/HelioConde/TILLFOLK/pull/57) persistência de coleta na lagoa, [#60](https://github.com/HelioConde/TILLFOLK/pull/60) diagnóstico do tutorial e [#61](https://github.com/HelioConde/TILLFOLK/pull/61) desfazer último arrasto; consultar status e conflito **antes** de integrar. Não mesclar PRs com CI bloqueante.
+
+### Backlog executável, em uma sequência única
+
+| Ordem | Prioridade | Entrega verificável | Aceite real |
+|---|---|---|---|
+| 1 | P0 | Corrigir falhas de QA de colônia sem apagar as oito verificações (fauna doméstica vs selvagem, água, esterco, casas, irrigação e save antigo). | Todos os cenários `tests/colony.spec.cjs` relevantes passam em Chromium com seed registrado. |
+| 2 | P0 | Reproduzir e corrigir fluxo da Work Station (receita, ferramentas por colono, entrega real, ordem ativa e repouso) sem acelerar magicamente produção. | Machado e sementes são fabricados fisicamente, sem inventário negativo, via Playwright. |
+| 3 | P0 | Alinhar cenários do mapa 192×120, blueprints e drag/cancel com UI real; separar regressão de teste legado e corrigir travas do tutorial. | `biome-smoke` verde, screenshots desktop/mobile, sem excluir asserções. |
+| 4 | P0 | Corrigir retomada ao clicar Continuar, ida/volta ao menu e `pagehide` sem sobrescrever save importado ou antigo. | `session-resume`, `save-backup` e reload aprovados sem perda. |
+| 5 | P0 | Auditar cada passo da mãozinha Catpaw: graveto, bancada, ferramenta, cultivo, árvore, casa; tooltip de ferramenta só após ação inválida real. | Patinha aponta para alvo acessível e não cobre diálogos; `tutorial-pointer` verde. |
+| 6 | P0 | Proteger ordens de coleta sobre água, materiais entregues e cancelamento em tela, inclusive sobre colono; evitar baús/depósitos fantasmas. | Não há teletransporte, coleta automática sem habilitação nem estoque negativo. |
+| 7 | P1 | Refinar **primeiros 30 minutos**, alternando pequenas decisões e feedback entre etapas lentas do cultivo; reaproveitar 13 missões e guia pós-cabana. | Playtest de iniciante conclui bancada, primeira ferramenta, plantio, rega, corte e cabana sem bloqueio. |
+| 8 | P1 | Organizar HUD em camadas: missão e ação prioritária à vista; detalhes, mini mapa, pedidos e avisos secundários sob demanda; sem sobreposição na abertura das janelas. | Screenshots 1600×900, 1366×768 e 390×844, leitura e foco acessível. |
+| 9 | P1 | Melhorar IA: reserva exclusiva de recursos/tarefas, prioridades, motivação de ociosidade, caminhos e ferramentas realmente elegíveis; respeitar bônus de especialistas e proibições. | Cenários com 2, 5 e 20 trabalhadores determinísticos, sem ordens criadas pela IA. |
+| 10 | P1 | Medir agricultura/consumo das 19 culturas e logística de colheita/baú; prever autonomia de comida sem recursos gratuitos. | Simulações 7, 14 e 28 dias com 2, 3 e 5 colonos e invariantes de conservação. |
+| 11 | P1 | Melhorar moradias e obras em andamento, progresso de material entregue, reserva, cancelamento e baú visível com opção de coleta local. | Save preserva progresso e nenhum item desaparece ao colocar blueprint. |
+| 12 | P2 | Tornar exploração dos seis biomas uma escolha real: EPIs, rota, custo de viagem, minérios e gargalos de pesquisa. | Caminho até foguete verificável, sem softlock ou atalho que pule tecnologia. |
+| 13 | P2 | Aprimorar Mutirões e Conselho existentes: decisões com custos e consequências, riscos ambientais avisados com antecedência e oportunidades de cooperação. | Eventos rastreados em save, escolha reversível apenas quando o GDD permitir. |
+| 14 | P2 | Dar personalidade a colonos por microeventos, diálogos curtos contextuais e feedback de obra/colheita concluída sem poluir a tela. | Sprites/autorização preservados; suporte a áudio/movimento reduzidos. |
+| 15 | P3 | Auditoria de sprites, camadas, orientação, foco, tipografia, performance no mapa 192×120 e suporte mobile. | Screenshots comparáveis antes/depois, 0 404 de asset JS/CSS e frames medidos. |
+| 16 | P0 contínuo | Automatizar QA por PR, validar contrato dos nove terrenos, simular save/reload e revisar diff antes de cada merge. | Actions efetivamente concluídas e Pages conferido; relatório por PR. |
+
+**Regra de execução:** selecionar o primeiro item não concluído, fazer branch pequena, reproduzir, corrigir, testar Node/Playwright/terrenos, capturar imagens quando houver UI, abrir PR, revisar Actions e mesclar só com critérios atendidos; então ir ao próximo item sem novo comando. Publicar relatório final com commits, problemas que permaneceram e estado exato das verificações. Nada de mudanças massivas, banco de dados, engine nova, sprites inventados ou modificação no contrato `tillfolk-terrain-autotile/v1`.
+
 ## PROMPT PARA COPIAR E EXECUTAR
 
 Atue como **game director, game designer de sobrevivência, engenheiro JavaScript/Canvas, especialista em IA de trabalhadores, UX/UI, QA e release engineer** do projeto **TILLFOLK**:
