@@ -2597,9 +2597,15 @@
     const toRefund=state.orders.filter(o=>cancelled.has(o.id));
     for(const order of toRefund)Logistics.refund(state,order);
     state.orders=state.orders.filter(o=>!cancelled.has(o.id));
-    for(const worker of state.workers)if(cancelled.has(worker.task)){
-      releaseSupply(worker);
-      worker.task=null;worker.progress=0;worker.route=[];worker.routeTask=null;worker.workGoal=null;
+    for(const worker of state.workers){
+      const lostTask=cancelled.has(worker.task);
+      const lostDelivery=worker.haul?.orderId&&cancelled.has(worker.haul.orderId);
+      if(!lostTask&&!lostDelivery)continue;
+      // Entregadores podem transportar para a obra SEM estarem atribuídos
+      // à tarefa final. Cancelar deve interromper também essa viagem.
+      if(lostTask){releaseSupply(worker);worker.task=null;worker.progress=0;}
+      else refundHaul(worker); // Carga em trânsito volta fisicamente ao chão.
+      worker.route=[];worker.routeTask=null;worker.workGoal=null;
     }
     hoveredTile=null;
     recalcTasks();refresh();save();
@@ -2659,17 +2665,10 @@
       const result=queueAt(type,x,y);
       if(result.error)skipped++;else added++;
     }
-    if(cancelled){
-      const ids=new Set(removals);
-      for(const order of state.orders)if(ids.has(order.id))
-        Logistics.refund(state,order);
-      state.orders=state.orders.filter(o=>!ids.has(o.id));
-      for(const worker of state.workers)if(ids.has(worker.task)){
-        releaseSupply(worker);
-        worker.task=null;worker.progress=0;worker.route=[];worker.routeTask=null;worker.workGoal=null;
-      }
-    }
-    if(added||cancelled){hoveredTile=null;recalcTasks();refresh();save();}
+    // Reutilizar a mesma transação de cancelamento para seleção por área:
+    // não deixar transportadores seguindo para uma obra já descartada.
+    if(cancelled)removeOrders([...new Set(removals)]);
+    if(added){hoveredTile=null;recalcTasks();refresh();save();}
     $("#tile-tooltip").hidden=true;
     notify(added?added+" ordem(ns) adicionada(s)"+(skipped?" · "+skipped+" ignorada(s)":"")+"."
       :cancelled?cancelled+" ordem(ns) cancelada(s).":
