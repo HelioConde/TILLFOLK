@@ -1,0 +1,24 @@
+name: TILLFOLK — integridade de fabricação no PR
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/crafting.js'
+      - 'tests/crafting.test.cjs'
+      - '.github/workflows/crafting-atomic-pr.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Testar gasto atômico e logística física
+        run: |
+          node --check src/crafting.js
+          node --check tests/crafting.test.cjs
+          node --test tests/crafting.test.cjs tests/logistics.test.cjs
+          node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
