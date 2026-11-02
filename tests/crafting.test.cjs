@@ -138,3 +138,15 @@ test("contratação religa reconciliação de ferramentas preservadas",()=>{
   const hire=game.slice(game.indexOf("  function hire(i){"),game.indexOf("  let plotCache="));
   assert.match(hire,/Crafting\.reconcileEquipment\(state\);/);
 });
+
+test("fabricação direta é atômica: pilhas no chão não permitem estoque negativo",()=>{
+  const s=state();s.crafting.station={x:10,y:10};
+  s.inventory.twigs=2;s.inventory.gravel=2;
+  // O inventário não possui 4 gravetos, embora o chão possua estoque físico.
+  context.window.TillfolkLogistics={available:()=>100};
+  const before=JSON.stringify(s.inventory);
+  assert.match(C.craft(s,"axe").error,/estoque/);
+  assert.equal(JSON.stringify(s.inventory),before);
+  assert.equal(C.has(s,"axe"),false);
+  delete context.window.TillfolkLogistics;
+});
