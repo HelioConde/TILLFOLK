@@ -888,7 +888,10 @@
         ...protectedWaterTiles,...state.chests,...state.wells,
         ...state.orders.map(o=>({x:o.x,y:o.y}))
       ]);
-      state.orders=state.orders.filter(order=>!World.waterAt(state.world,order.x,order.y));
+      // A coleta de água depende de uma ordem NA lagoa, que não deve
+      // desaparecer ao recarregar a partida.
+      state.orders=state.orders.filter(order=>
+        order.type==="collectWater"||!World.waterAt(state.world,order.x,order.y));
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
       state.candidates.forEach(homageSavedName);
       state.journal=Array.isArray(s.journal)?s.journal:[];
