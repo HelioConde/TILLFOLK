@@ -71,6 +71,7 @@ jobs:
           node --check src/irrigation-orders.js
           node --test tests/irrigation-orders.test.cjs
           node --check src/task-orders.js
+          node --test tests/manure-wildlife.test.cjs
           node --check src/house-building.js
           node --check src/blueprints.js
           node --check src/menu.js
