@@ -3,6 +3,7 @@ async function continueIfMenuVisible(page){
   await expect(page.locator('#menu')).toBeHidden();
 }
 const {test,expect}=require('@playwright/test');
+const {reloadWithSave}=require('./helpers/save-fixture.cjs');
 const BASE='http://127.0.0.1:4173/';
 const snap=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
 async function start(page,width=1366,height=768){
@@ -13,12 +14,17 @@ async function start(page,width=1366,height=768){
   await page.locator('#starter-confirm').click();
   await expect(page.locator('body')).toHaveClass(/play-session/);
   // Fluxos antigos de cancelamento utilizam uma fazenda com ferramentas já prontas.
-  await page.evaluate(()=>{
-    const save=JSON.parse(localStorage.getItem('tillfolk-v01'));
+  await reloadWithSave(page,save=>{
+    // O autosave pagehide não pode substituir a fixture no reload.
     for(const tool of Object.keys(save.crafting.equipment))save.crafting.equipment[tool]=true;
-    localStorage.setItem('tillfolk-v01',JSON.stringify(save));
+    for(const worker of save.workers){
+      worker.neg=[];
+      worker.inventory=worker.inventory||{tools:{},items:{}};
+      worker.inventory.tools=worker.inventory.tools||{};
+      for(const tool of Object.keys(save.crafting.equipment))worker.inventory.tools[tool]=true;
+    }
+    save.minutes=360;
   });
-  await page.reload({waitUntil:'networkidle'});
   await continueIfMenuVisible(page);
 }
 const dispatchTile=(page,x,y,type='click')=>page.locator('#world').evaluate(
@@ -34,10 +40,13 @@ async function freeCells(page,count=3){
  return page.evaluate(count=>{
    const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
    const cells=[];
-   for(let y=24;y<29;y++)for(let x=37;x<44;x++){
+   const cx=Math.floor(s.spawn.x),cy=Math.floor(s.spawn.y);
+   for(let y=cy-12;y<=cy+12;y++)for(let x=cx-12;x<=cx+12;x++){
      const p=s.plots.find(p=>p.x===x&&p.y===y);
-     if(p&&!window.TillfolkWild.at(s.world,x,y)&&
+     if(p&&window.TillfolkWild.terrainAt(s.world,x,y)?.farmable&&
+        !window.TillfolkWild.at(s.world,x,y)&&
         !window.TillfolkWild.waterAt(s.world,x,y)&&
+        !s.workers.some(w=>Math.floor(w.x)===x&&Math.floor(w.y)===y)&&
         !s.orders.some(o=>o.x===x&&o.y===y))cells.push({x,y});
    }
    for(let i=0;i<cells.length-count+1;i++){
