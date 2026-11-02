@@ -51,7 +51,7 @@ test("habilidade de transporte diminui viagens e três restrições ampliam a ca
 });
 test("baú premium recebe carga física, conserva quantidade e fornece itens para obra",()=>{
   const state=makeState();
-  state.chests=[{x:8,y:8,items:{},autoCollect:true}];L.drop(state,2,3,"grass",5);
+  state.chests=[{x:8,y:8,items:{},autoCollect:true}];L.drop(state,3,4,"grass",5);
   const worker={x:2,y:3,skills:["carry"],neg:[]};
   const job=L.planStorage(state,worker);
   assert.equal(job.destination.x,8);
