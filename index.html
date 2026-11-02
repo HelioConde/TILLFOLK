@@ -74,7 +74,8 @@
   <script defer src="./src/save-backup.js?v=20261102-backup-v1"></script>
   <script defer src="./src/worker-allocation.js?v=20261102-real-eligibility-v1"></script>
   <script defer src="./src/blueprint-cancel.js?v=20261102-rightclick-v1"></script>
-  <script defer src="./src/game.js?v=20261102-rightclick-v1"></script>
+  <script defer src="./src/first-village-guide.js?v=20261102-post-tutorial-v1"></script>
+  <script defer src="./src/game.js?v=20261102-post-tutorial-v1"></script>
   <script defer src="./src/game-hud.js?v=20261101-shifts-fixes-v4"></script>
   <script defer src="./src/hud-focus.js?v=20261101-v1"></script>
   <script defer src="./src/sprout-ui-skin.js?v=3"></script>
@@ -467,8 +468,12 @@
     <span class="overline">O VALE AGORA É SEU</span>
     <h2 id="tutorial-done-title">Missões concluídas!</h2>
     <p>Você plantou e colheu alimento, derrubou sua primeira árvore e construiu uma cabana. A colônia tem um começo de verdade!</p>
-    <p><strong>Próximo desafio: construir um baú e garantir comida e abrigo para todos.</strong> Consulte 🧭 Jornada para seguir rumo aos outros continentes e ao foguete. Sua colônia permanece salva.</p>
-    <div class="tutorial-end-actions"><button id="tutorial-continue-game" type="button" class="large-primary">▶ Continuar jogando</button><button id="tutorial-back-menu" type="button" class="large-secondary">↩ Voltar ao menu inicial</button></div>
+    <section class="tutorial-next-journey" aria-labelledby="tutorial-next-title">
+      <h3 id="tutorial-next-title">🧭 Seus próximos objetivos</h3>
+      <p>Agora a colônia precisa crescer com os recursos que você realmente produzir. Escolha quais ordens dar; os colonos executarão as tarefas autorizadas.</p>
+      <ol id="tutorial-next-goals"></ol>
+    </section>
+    <div class="tutorial-end-actions"><button id="tutorial-continue-game" type="button" class="large-primary">▶ Continuar jogando</button><button id="tutorial-open-journey" type="button" class="large-secondary">🧭 Abrir Jornada</button><button id="tutorial-back-menu" type="button" class="large-secondary">↩ Voltar ao menu inicial</button></div>
   </dialog>
   <dialog id="progression-dialog" class="game-modal progression-dialog" aria-labelledby="progression-title">
     <form method="dialog"><button class="modal-x" aria-label="Fechar jornada da colônia">✕</button></form>
