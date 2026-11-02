@@ -1,0 +1,58 @@
+name: TILLFOLK — P0 gameplay antes do merge
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/crafting.js'
+      - 'src/game.js'
+      - 'src/logistics.js'
+      - 'src/blueprints.js'
+      - 'tests/crafting.test.cjs'
+      - 'tests/crop-workshop.spec.cjs'
+      - 'tests/blueprints.spec.cjs'
+      - 'tests/order-cancel-fruittrees.spec.cjs'
+      - 'tests/helpers/**'
+      - '.github/workflows/p0-gameplay-pr.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  p0:
+    name: Fabricação, blueprints e contratos de terreno
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validar sintaxe e invariantes
+        run: |
+          node --check src/crafting.js
+          node --check src/game.js
+          node --check tests/crop-workshop.spec.cjs
+          node --check tests/blueprints.spec.cjs
+          node --check tests/order-cancel-fruittrees.spec.cjs
+          node --test tests/crafting.test.cjs tests/logistics.test.cjs
+          node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
+      - name: Instalar Playwright Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Servir o jogo estático
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-p0-http.log 2>&1 &
+          sleep 2
+      - name: Testar Work Station, blueprints e cancelamento
+        run: npx playwright test tests/crop-workshop.spec.cjs tests/blueprints.spec.cjs tests/order-cancel-fruittrees.spec.cjs --browser chromium --workers=1 --reporter=line
+      - name: Anexar evidências
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-p0-pr-evidencias
+          path: |
+            screenshots/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
