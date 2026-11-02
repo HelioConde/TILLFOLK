@@ -84,6 +84,8 @@ test("foguete cancela pelo canto da área 3x3; cabana pelo canto 2x2",async({pag
    ];
    s.sessionSpeed=0;
  });
+ const initial=(await save(page)).orders.map(o=>o.type);
+ expect(initial).toEqual(["buildHome","buildRocket"]);
  await select(page,"rocket");
  await rightClickCell(page,102,67);
  expect((await save(page)).orders.map(o=>o.type)).toEqual(["buildHome"]);
