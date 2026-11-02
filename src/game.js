@@ -1125,36 +1125,27 @@
     }
     return "Procurando a próxima ordem";
   }
-  function assign(w){
-    if(w.task||w.resting)return;
-    const available=tasks.filter(t=>t.status==="ready"&&!t.assigned&&!workerTaskBlocker(w,t));
-    const priorityScore=t=>{
-      const global=Number.isInteger(t.priority)?t.priority:state.priorities[t.type]||5;
-      const individual=w.personalPriority?.[t.type]??5;
-      const expertise=bonus(w,t.type);
-      const distance=Math.abs(w.x-(t.x+.5))+Math.abs(w.y-(t.y+.5));
-      return global*100+individual*14+expertise*9-distance*.3;
-    };
-    available.sort((a,b)=>priorityScore(b)-priorityScore(a));
-    if(available.length){w.task=available[0].id;w.progress=0;w.routeTask=null;w.route=[];available[0].assigned=w.id;}
+  function taskPriorityScore(w,t){
+    const global=Number.isInteger(t.priority)?t.priority:state.priorities[t.type]||5;
+    const individual=w.personalPriority?.[t.type]??5;
+    const expertise=bonus(w,t.type);
+    const distance=Math.abs(w.x-(t.x+.5))+Math.abs(w.y-(t.y+.5));
+    return global*100+individual*14+expertise*9-distance*.3;
   }
   function assignIdleWorkers(){
+    // A rota, a ferramenta e os traços vermelhos são avaliados ANTES de
+    // escolher quem vai trabalhar. Uma contagem apenas por tipo de tarefa
+    // fazia o generalista roubar o único serviço acessível ao especialista.
     const idle=state.workers.filter(w=>!w.task&&!w.resting);
     if(!idle.length)return;
-    // Trabalhadores especializados/restritos escolhem antes dos generalistas.
-    // Evita o versátil ocupar a única ordem disponível para outro colono.
-    // Contagem leve: o teste de caminho continua centralizado em assign().
-    const options=w=>tasks.reduce((count,t)=>{
-      if(t.status!=="ready"||t.assigned||w.neg.includes(t.type))return count;
-      if(t.type==="craftTool"&&!Crafting.canEquip(w,t.recipe))return count;
-      if(deliveryTypes.has(t.type)&&!Logistics.complete(t)&&w.neg.includes("carry"))return count;
-      if(t.type==="water"&&state.water<=0&&w.neg.includes("collectWater"))return count;
-      if(t.type==="fertilize"&&state.inventory.manure<=0&&w.neg.includes("collectManure"))return count;
-      return count+1;
-    },0);
-    const ranked=idle.map(w=>({worker:w,options:options(w)}))
-      .sort((a,b)=>a.options-b.options||a.worker.id-b.worker.id);
-    for(const entry of ranked)assign(entry.worker);
+    const plan=WorkerAllocation.plan(idle,tasks,
+      (w,t)=>!workerTaskBlocker(w,t),taskPriorityScore);
+    for(const {worker,task} of plan){
+      if(worker.task||task.assigned)continue;
+      worker.task=task.id;worker.progress=0;
+      worker.routeTask=null;worker.route=[];
+      task.assigned=worker.id;
+    }
   }
   // Rotina real: o trabalhador caminha até o abrigo antes de descansar.
   // Sem casa ele descansa na clareira, mas perde moral e recupera-se mais devagar.
