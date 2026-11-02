@@ -1,0 +1,51 @@
+name: TILLFOLK — baú não recolhe itens invisivelmente
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/logistics.js'
+      - 'src/game.js'
+      - 'index.html'
+      - 'tests/logistics.test.cjs'
+      - 'tests/chest-storage.spec.cjs'
+      - '.github/workflows/chest-storage-pr.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  storage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Sintaxe, logística, save e terrenos protegidos
+        run: |
+          node --check src/logistics.js
+          node --check src/game.js
+          node --check tests/chest-storage.spec.cjs
+          node --test tests/logistics.test.cjs tests/crafting.test.cjs tests/blueprint-cancel.test.cjs
+          node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
+      - name: Instalar Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Servir TILLFOLK
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-chest-http.log 2>&1 &
+          sleep 2
+      - name: Validar blueprint e baú no navegador
+        run: npx playwright test tests/chest-storage.spec.cjs --browser chromium --workers=1 --reporter=line
+      - name: Guardar screenshots e rastros
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-bau-regressao
+          path: |
+            screenshots/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
