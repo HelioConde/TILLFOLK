@@ -1,0 +1,48 @@
+name: TILLFOLK — fabricação real da Work Station
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/crop-workshop.spec.cjs'
+      - 'src/crafting.js'
+      - 'src/game.js'
+      - '.github/workflows/p0-workstation-pr.yml'
+permissions:
+  contents: read
+jobs:
+  crafting:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validar sintaxe, crafting e terrenos protegidos
+        run: |
+          node --check src/game.js
+          node --check src/crafting.js
+          node --check tests/crop-workshop.spec.cjs
+          node --test tests/crafting.test.cjs tests/logistics.test.cjs
+          node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
+      - name: Preparar navegador
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Servir jogo estático
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-workshop-pr.log 2>&1 &
+          sleep 2
+      - name: Testar receita com transporte e consumo real
+        run: npx playwright test tests/crop-workshop.spec.cjs --browser chromium --workers=1 --reporter=line
+      - name: Anexar screenshots para validação visual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-workstation-p0-screenshots
+          path: |
+            screenshots/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
