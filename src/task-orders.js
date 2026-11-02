@@ -167,7 +167,11 @@
           return {state:"blocked",reason:"Sem sementes de "+(window.TillfolkCrops?.get(order.crop)?.name||order.crop)};
         return {state:"ready",reason:"Pronta"};
       case "water":
-        if(plot.watered&&plot.seeded)return {state:"done",reason:"Já irrigado"};
+        // Nunca mandar um colono irrigar uma safra já madura ou colhida.
+        // Chuva ou outra ordem podem tornar uma rega pendente desnecessária.
+        if(plot.produce||plot.seeded&&plot.growth>=1)
+          return {state:"done",reason:"Cultivo já pronto para colher"};
+        if(plot.watered&&plot.seeded)return {state:"done",reason:"Etapa já irrigada"};
         if(!plot.seeded)return {state:"blocked",reason:"Aguardando semeadura"};
         const can=window.TillfolkCrafting?.blocked(resources,"water");
         if(can)return {state:"blocked",reason:can};
