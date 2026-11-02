@@ -82,6 +82,7 @@ test("baú concluído é visível, pede autorização e salva a opção sem move
   await reloadScenario(page,s=>{
     // Um baú concluído de save antigo não possuía a flag autoCollect.
     s.chests=[{x:tile.x,y:tile.y,items:{wood:4}}];
+    s.workers[0].name="Bia 19"; // nome atual deve sobreviver ao backup
     s.groundItems=[{id:999,x:tile.x+2,y:tile.y+2,kind:"twigs",qty:7}];
     s.nextDropId=1000;
   });
@@ -119,6 +120,7 @@ test("baú concluído é visível, pede autorização e salva a opção sem move
   const restored=await save(page);
   expect(restored.chests[0].autoCollect).toBe(false);
   expect(restored.chests[0].items.wood).toBe(4);
+  expect(restored.workers[0].name).toBe("Bia 19");
   expect(restored.groundItems.find(i=>i.id===999)?.qty).toBe(7);
   expect(errors).toEqual([]);
 });
