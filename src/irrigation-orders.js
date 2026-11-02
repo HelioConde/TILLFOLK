@@ -22,7 +22,8 @@
      const id=Orders.id("water",p.x,p.y);
      if(queued.has(id)){already++;continue;}
      const canWork=workers.some(w=>!w.neg?.includes("water")&&
-       (Number(state.water)>0||!w.neg?.includes("collectWater")));
+       (Number(state.water)>0||!w.neg?.includes("collectWater"))&&
+       !root.TillfolkCrafting?.blocked?.(state,"water",null,w));
      if(!canWork){blocked++;reason=reason||"Nenhum colono habilitado para regar ou buscar água";continue;}
      const obj=World?.at?.(state.world,p.x,p.y)||null;
      const check=Orders.status({id,type:"water",x:p.x,y:p.y},p,obj,state);
