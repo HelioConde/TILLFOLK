@@ -27,7 +27,9 @@ async function reloadWithSave(page,mutate){
   },{saveKey:SAVE_KEY,sessionKey:SESSION_KEY,pendingKey:PENDING_KEY});
   await page.evaluate(([key,data])=>sessionStorage.setItem(key,JSON.stringify(data)),
     [PENDING_KEY,state]);
-  await page.reload({waitUntil:"networkidle"});
+  // O jogo tem sondagem de versão/salvamento; esperar rede ociosa pode
+  // bloquear a navegação apesar da partida estar pronta para uso.
+  await page.reload({waitUntil:"load"});
   return state;
 }
 
