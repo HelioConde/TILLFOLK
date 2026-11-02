@@ -1,0 +1,68 @@
+/* Agricultura estratégica — cards clicáveis do próprio catálogo Sprout Lands.
+   Somente layout, sem sprites novos e sem alteração no tilemap. */
+body.play-session #game-stock-dialog .crop-choice-current{
+  padding:9px 12px;
+  margin:8px 0;
+  border:1px solid #d3b875;
+  border-radius:6px;
+  background:#3c593b;
+  color:#fff1c9;
+  font:800 13px/1.4 system-ui,sans-serif;
+}
+body.play-session #game-stock-dialog #crop-choice-hint{
+  margin:7px 0 13px;
+  line-height:1.5;
+}
+body.play-session #crop-stock-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(175px,1fr));
+  gap:9px;
+  margin:12px 0;
+  width:100%;
+}
+body.play-session #crop-stock-grid [data-select-crop]{
+  display:flex;
+  min-height:112px;
+  align-items:flex-start;
+  width:100%;
+  padding:10px 9px;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  border:2px solid #728c65;
+  border-radius:7px;
+  background:#294737;
+  color:#f6edcd;
+  text-align:left;
+}
+body.play-session #crop-stock-grid [data-select-crop] strong{
+  color:#fff1cc;
+  font-size:12px;
+}
+body.play-session #crop-stock-grid [data-select-crop] small{
+  color:#d3e3b2;
+  font-size:11px;
+  line-height:1.55;
+  white-space:normal;
+}
+body.play-session #crop-stock-grid [data-select-crop]:disabled{
+  opacity:.67;
+  filter:grayscale(.35);
+}
+body.play-session #crop-stock-grid [data-select-crop][aria-pressed="true"]{
+  background:#496545;
+  border-color:#f3d389;
+  box-shadow:inset 0 0 0 1px #ddca9c;
+}
+body.play-session #crop-stock-grid [data-select-crop]:focus-visible{
+  outline:3px solid #fff2c2;
+  outline-offset:2px;
+}
+@media(max-width:560px){
+  body.play-session #crop-stock-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  body.play-session #crop-stock-grid [data-select-crop]{min-height:124px;padding:7px 5px;gap:6px}
+  body.play-session #crop-stock-grid [data-select-crop] canvas{width:28px;height:28px}
+  body.play-session #crop-stock-grid [data-select-crop] small{font-size:10px}
+}
+@media(max-width:340px){
+  body.play-session #crop-stock-grid{grid-template-columns:1fr}
+}
