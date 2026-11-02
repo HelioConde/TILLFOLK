@@ -1159,7 +1159,7 @@
   function processRest(w,scaled){
     // Escolher o abrigo uma vez ao iniciar a rotina, sem BFS a cada frame.
     // Se não há caminho seguro até a casa, tentar clareira; por último, chão.
-    if(!String(w.routeTask||"").startsWith("rest:")){
+    if(!String(w.routeTask||"").startsWith("rest:")||!w.restTarget){
       const assigned=state.homes.find(h=>h.residentId===w.id);
       const plan=RestRouting.choose(w,assigned,state.spawn,routeBetween);
       w.route=plan.route;
@@ -1434,7 +1434,8 @@
     for(const w of state.workers){
       const mustSleep=Life.sleepRequired(w,state.minutes);
       if(mustSleep&&!w.resting){
-        w.resting=true;w.atRest=false;
+        w.resting=true;w.atRest=false;w.restTarget=null;w.restingAtFallback=false;
+        w.routeTask=null;w.route=[];
         if(w.haul)refundHaul(w);
         if(w.task){releaseSupply(w);w.task=null;w.progress=0;w.route=[];w.routeTask=null;w.workGoal=null;}
       }else if(!mustSleep&&w.resting){
@@ -2313,6 +2314,7 @@
     if(!worker||!["day","night"].includes(selector.value))return;
     worker.shift=selector.value;
     worker.resting=false;worker.atRest=false;
+    worker.restTarget=null;worker.restingAtFallback=false;worker.routeTask=null;worker.route=[];
     log("🛏️ Turno de "+worker.name+" alterado para "+
       (selector.value==="night"?"noturno":"diurno")+".");
     notify("Novo turno de "+worker.name+" salvo.");
