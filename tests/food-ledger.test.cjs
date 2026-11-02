@@ -76,7 +76,7 @@ test("refeição, deterioração e conselho debitam o mesmo registro",()=>{
   {id:1,name:"Sim",satiety:20,health:100,energy:80,morale:75},
   {id:2,name:"Mone",satiety:80,health:100,energy:80,morale:75}],
   world:{seed:99},plots:[],homes:[],animals:[],
-  tutorial:{active:false,finished:true},
+  tutorial:{active:false,finished:true},council:{version:1,nextDay:2},
   foodLedger:{version:1,stock:{tomato:5},generic:7}};
  assert.equal(Survival.tryEat(s,s.workers[0]),true);
  assert.equal(s.food,11);
