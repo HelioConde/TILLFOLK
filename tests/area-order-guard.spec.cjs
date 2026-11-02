@@ -1,6 +1,7 @@
 "use strict";
 const {test,expect}=require("@playwright/test");
 const {reloadWithSave}=require("./helpers/save-fixture.cjs");
+const {reloadWithSave}=require("./helpers/save-fixture.cjs");
 const URL="http://127.0.0.1:4173/";
 const snap=page=>page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
 async function start(page){
@@ -64,5 +65,47 @@ test("zoom 50% agrupa ordens e mantém sua quantidade e saves",async({page})=>{
   const after=await snap(page);
   expect(after.orders).toEqual(before.orders);
   expect(after.groundItems).toEqual(before.groundItems);
+  expect(errors).toEqual([]);
+});
+
+test("Desfazer último arrasto remove só novas ordens e preserva o save",async({page})=>{
+  test.setTimeout(90000);
+  const errors=[];page.on("pageerror",error=>errors.push(error.message));
+  await start(page);
+  const initial=await snap(page);
+  const cx=Math.floor(initial.spawn.x),cy=Math.floor(initial.spawn.y);
+  const x=cx-5,y=cy-3;
+  await reloadWithSave(page,s=>{
+    s.minutes=360;s.sessionSpeed=0;
+    const within=(a,b)=>a>=x&&a<x+4&&b>=y&&b<y+3;
+    s.world.objects=s.world.objects.filter(o=>!within(o.x,o.y)&&!(o.x===cx+5&&o.y===cy-2));
+    for(let yy=y;yy<y+3;yy++)for(let xx=x;xx<x+4;xx++)
+      s.world.objects.push({x:xx,y:yy,kind:"twig",variant:0,age:0});
+    s.world.objects.push({x:cx+5,y:cy-2,kind:"twig",variant:0,age:0});
+    s.orders=[{id:(cx+5)+"-"+(cy-2)+":clear",type:"clear",x:cx+5,y:cy-2}];
+    s.workers.forEach(w=>{w.task=null;w.route=[];w.routeTask=null;w.progress=0;});
+  });
+  if(await page.locator("#menu").isVisible())await page.locator("#continue").click();
+  const original=(await snap(page)).orders.map(o=>o.id);
+  expect(original).toHaveLength(1);
+  await expect(page.locator("#undo-area-orders")).toBeDisabled();
+  await page.locator("#orders-btn").click();
+  await page.locator('[data-order-type="clear"]').click();
+  await dragTiles(page,{x,y},{x:x+3,y:y+2});
+  const staged=await snap(page);
+  expect(staged.orders.length).toBeGreaterThan(original.length);
+  expect(staged.orders.some(o=>o.id===original[0])).toBe(true);
+  await expect(page.locator("#undo-area-orders")).toBeEnabled();
+  await page.screenshot({path:"screenshots/ordens-desfazer-antes-1600x900.png",animations:"disabled"});
+  await page.locator("#undo-area-orders").click();
+  const after=await snap(page);
+  expect(after.orders.map(o=>o.id)).toEqual(original);
+  expect(after.groundItems).toEqual(initial.groundItems);
+  await expect(page.locator("#undo-area-orders")).toBeDisabled();
+  await page.setViewportSize({width:390,height:844});
+  await expect(page.locator("#undo-area-orders")).toBeVisible();
+  await page.screenshot({path:"screenshots/ordens-desfazer-mobile-390x844.png",animations:"disabled"});
+  await page.reload({waitUntil:"load"});
+  expect((await snap(page)).orders.map(o=>o.id)).toEqual(original);
   expect(errors).toEqual([]);
 });
