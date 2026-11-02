@@ -1,0 +1,53 @@
+name: TILLFOLK — horta autônoma após aprendizado
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/farm-autonomy.js'
+      - 'src/game.js'
+      - 'src/task-orders.js'
+      - 'src/colony-life.js'
+      - 'index.html'
+      - 'tests/farm-autonomy.test.cjs'
+      - 'tests/farm-autonomy.spec.cjs'
+      - '.github/workflows/farm-autonomy-pr.yml'
+permissions:
+  contents: read
+jobs:
+  farming:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Sintaxe, cultivo, logística e contrato imutável
+        run: |
+          node --check src/game.js
+          node --check src/farm-autonomy.js
+          node --check src/task-orders.js
+          node --check tests/farm-autonomy.spec.cjs
+          node --test tests/farm-autonomy.test.cjs tests/crop-care.test.cjs tests/crops.test.cjs tests/logistics.test.cjs
+          node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
+      - name: Preparar Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Iniciar jogo estático
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-farm.log 2>&1 &
+          sleep 2
+      - name: Simular ensino, automação e pausa no navegador
+        run: npx playwright test tests/farm-autonomy.spec.cjs --browser chromium --workers=1 --reporter=line
+      - name: Armazenar screenshots para comparar
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-horta-autonoma-qa
+          path: |
+            screenshots/farm-automatic-*.png
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14

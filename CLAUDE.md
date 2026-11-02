@@ -9,7 +9,7 @@ Leia antes de qualquer alteração:
 
 ## Regras obrigatórias
 - **Não migrar o motor de JavaScript/Canvas para Godot, Phaser ou outra stack sem autorização.** Godot MCP e GdUnit4 são para projetos Godot separados.
-- Jogador ordena trabalhos; IA escolhe quem executa conforme prioridade, distância, necessidades e limites. Não enfileirar automaticamente toda cadeia agrícola sem consentimento.
+- Jogador ordena trabalhos; IA escolhe quem executa conforme prioridade, distância, necessidades e limites. **Após a primeira colheita transportada**, o cultivo inicial que o jogador preparou autoriza a manutenção recorrente desse canteiro (semear, regar, colher e guardar). Não abrir novas áreas agrícolas, fabricar ferramentas ou criar outras ordens sem consentimento; a automação pode ser pausada por canteiro e em Gestão.
 - Cada trabalhador pode ter até **3 especialidades positivas e 3 traços negativos**. Todos podem trabalhar em qualquer função não proibida pelo traço negativo. Uma única especialidade dá bônus maior que ter várias.
 - Sobrevivência tem consequências: falta de comida → fome → perda de capacidade → dano → morte; implementar com aviso, gradualidade e testes. Não declarar mecanismo existente sem constatar no código.
 - Mantemos **GitHub Pages + localStorage**. Não adicionar dependência de servidor/banco sem pedido. Respeitar saves antigos.

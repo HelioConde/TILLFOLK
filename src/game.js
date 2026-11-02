@@ -19,6 +19,8 @@
   const WorkerAllocation=window.TillfolkWorkerAllocation;
   if(!WorkerAllocation)throw new Error("Carregue src/worker-allocation.js antes de src/game.js.");
   if(!Food)throw new Error("Carregue src/food-ledger.js antes do motor TILLFOLK.");
+  const FarmAutonomy=window.TillfolkFarmAutonomy;
+  if(!FarmAutonomy)throw new Error("Carregue src/farm-autonomy.js antes de game.js.");
   const Care=window.TillfolkCropCare,Planning=window.TillfolkFarmPlanning,
     IrrigationOrders=window.TillfolkIrrigationOrders;
   if(!IrrigationOrders)throw new Error("Carregue src/irrigation-orders.js antes do motor TILLFOLK.");
@@ -761,6 +763,8 @@
         appearance:Number.isInteger(worker.appearance)?worker.appearance:index
       }));
       state.tutorial=Missions.normalize(s.tutorial); // Saves antigos continuam jogáveis, sem iniciar missões retroativas.
+      // Reabrir horta já ensinada em saves antigos sem inventar colheitas.
+      if(FarmAutonomy.trained(state))FarmAutonomy.learn(state);
       // Migração das sementes genéricas preserva todos os recursos de fazendas antigas.
       state.cropSeeds=Crops.normalizeStock(s.cropSeeds||{carrot:Number(s.seeds)||0});
       state.cropProduce=Crops.normalizeStock(s.cropProduce);
@@ -1200,22 +1204,25 @@
     let added=0;
     for(const plot of state.plots){
       if(added>=5||state.orders.length>=350)break;
-      if(!plot.tilled&&!(plot.seeded||plot.produce))continue;
-      const kind=plot.produce?"carry":plot.seeded?
-        (plot.growth>=1?"harvest":!plot.watered?"water":null):
-        state.cropSeeds[state.selectedCrop]>0?"sow":null;
-      if(!kind||state.orders.some(o=>o.x===plot.x&&o.y===plot.y&&o.type===kind))continue;
-      const result=Orders.status({type:kind,x:plot.x,y:plot.y,crop:state.selectedCrop},
-        plot,World.at(state.world,plot.x,plot.y),state);
+      // Não cria uma fazenda nova e não interfere em uma ordem MANUAL
+      // existente: apenas mantém canteiros que o jogador preparou.
+      const planned=FarmAutonomy.next(state,plot);
+      if(!planned||state.orders.some(o=>o.x===plot.x&&o.y===plot.y))continue;
+      if(World.waterAt(state.world,plot.x,plot.y)||
+         World.at(state.world,plot.x,plot.y)||
+         !World.terrainAt(state.world,plot.x,plot.y)?.farmable)continue;
+      const {type,crop}=planned;
+      const result=Orders.status({type,x:plot.x,y:plot.y,crop},
+        plot,null,state);
       if(result.state!=="ready")continue;
-      const next=Orders.add(state.orders,kind,plot.x,plot.y,
-        plot,World.at(state.world,plot.x,plot.y),state);
+      const next=Orders.add(state.orders,type,plot.x,plot.y,plot,null,state);
       if(!next.order)continue;
-      if(kind==="sow")next.order.crop=state.selectedCrop;
+      if(type==="sow")next.order.crop=crop;
+      next.order.autoFarm=true;
       next.order.priority=6;
       state.orders.push(next.order);added++;
     }
-    if(added){recalcTasks();log("🌱 Rotina agrícola: "+added+" tarefa(s) agendada(s) automaticamente.");}
+    if(added)recalcTasks(); // não poluir o registro a cada rega automática
   }
   function finish(w,t){
     const p=findPlot(t.x,t.y);
@@ -1345,7 +1352,7 @@
         break;
       }
       case "till":if(Crafting.blocked(state,"till",null,w))return false;
-        p.tilled=true;recordTutorial("till");break;
+        p.tilled=true;p.farmManaged=true;recordTutorial("till");break;
       case "fertilize":
         if(!w.carryingManure&&state.inventory.manure<=0)return false;
         if(w.carryingManure)w.carryingManure=false;else state.inventory.manure--;
@@ -1355,6 +1362,7 @@
         if(state.seeds<=0||!(state.cropSeeds[variety]>0))return false;
         state.cropSeeds[variety]--;state.seeds--;
         Care.sow(p,variety);
+        p.farmManaged=true; // Plantio manual autoriza manutenção futura deste solo.
         recordTutorial("sow");break;
       }
       case "water":
@@ -1374,7 +1382,12 @@
         state.cropSeeds[variety]+=seedReturn;state.seeds+=seedReturn;
         showPickup(t.x,t.y,"seed",seedReturn);
         log(w.name+" guardou "+crop.name+" (+"+amount+" comida, +"+seedReturn+" sementes).");
-        recordTutorial("carry");break;
+        recordTutorial("carry");
+        if(FarmAutonomy.learn(state)){
+          notify("🌱 Aprendemos a cultivar! Seus canteiros serão cuidados automaticamente. Desative em Gestão se quiser.");
+          log("🌱 Agricultura aprendida: canteiros arados agora têm manutenção automática.");
+        }
+        break;
       }
     }
     if(complete&&t.type!=="carry"&&t.type!=="harvest")log(w.name+" terminou: "+labels[t.type].toLowerCase()+".");
@@ -2371,7 +2384,8 @@
     if(!state)return;
     const life=Life.normalize(state);
     life.autoFarm=!life.autoFarm;
-    notify(life.autoFarm?"🌱 Rotina agrícola ativada.":"Rotina agrícola desligada.");
+    life.autoFarmUserSet=true; // Escolha explícita nunca é revertida pelo tutorial.
+    notify(life.autoFarm?"🌱 Manutenção da horta ativada.":"🌱 Manutenção da horta pausada.");
     renderColonyPanel();save();
   });
   $("#colony-research-upgrade").addEventListener("click",()=>{
@@ -2652,7 +2666,15 @@
     if(!ids.length)return;
     const cancelled=new Set(ids);
     const toRefund=state.orders.filter(o=>cancelled.has(o.id));
-    for(const order of toRefund)Logistics.refund(state,order);
+    for(const order of toRefund){
+      // Cancelar um trabalho automático é a decisão do jogador de PAUSAR
+      // esse canteiro. Não recolocar a mesma ordem no frame seguinte.
+      if(FarmAutonomy.shouldPauseOnCancel(order)){
+        const plot=findPlot(order.x,order.y);
+        if(plot)plot.farmManaged=false;
+      }
+      Logistics.refund(state,order);
+    }
     state.orders=state.orders.filter(o=>!cancelled.has(o.id));
     for(const worker of state.workers){
       const lostTask=cancelled.has(worker.task);
@@ -2701,6 +2723,7 @@
     const result=Orders.add(state.orders,type,x,y,plot,World.at(state.world,x,y),state);
     if(result.error)return result;
     if(type==="sow")result.order.crop=state.selectedCrop;
+    if(plot&&["till","sow"].includes(type))plot.farmManaged=true;
     if(type==="buildHome"||type==="buildStation")result.order.priority=state.buildPriority;
     if(type==="buildHome"||type==="buildStation")result.order.priority=state.buildPriority;
     state.orders.push(result.order);

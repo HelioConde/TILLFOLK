@@ -13,7 +13,7 @@ Melhorar as decisões agrícolas após o tutorial. Entrega incremental de S4; ai
 
 ## Invariantes
 - Nada muda no contrato do autotile e nos nove atlas de terrenos.
-- IA executa apenas ordens autorizadas; restrições vermelhas e ferramentas permanecem.
+- IA executa apenas ordens autorizadas; a construção do canteiro autoriza somente sua manutenção recorrente **após a primeira colheita transportada**. O jogador pode pausar a rotina em Gestão ou cancelar uma tarefa automática para desativar aquele canteiro. Não abrir novos canteiros nem gerar sementes/água/alimentos sem trabalho físico; restrições vermelhas e ferramentas permanecem.
 - Sem banco de dados, serviços externos, novas artes ou alteração no consumo de alimento.
 - Saves anteriores com culturas sem metadados recebem o fallback de crescimento existente.
 
