@@ -46,7 +46,11 @@
   // Conferir novamente o estoque: a refeição nunca pode consumir a reserva.
   if(positive(s.food)<cost+view.reserve&&cost>0)
    return {ok:false,reason:"O estoque mudou e não permite essa escolha."};
-  s.food=Math.max(0,Number(s.food||0)-cost);
+  if(cost>0){
+   const ledger=typeof window!=="undefined"?window.TillfolkFoodLedger:null;
+   if(ledger){if(!ledger.spend(s,cost))return {ok:false,reason:"Estoque insuficiente."};}
+   else s.food=Math.max(0,Number(s.food||0)-cost);
+  }
   if(cost>0)for(const w of s.workers){
    w.energy=Math.min(100,Math.max(0,(Number.isFinite(w.energy)?w.energy:75)+option.energy));
    w.morale=Math.min(100,Math.max(0,(Number.isFinite(w.morale)?w.morale:75)+option.morale));
