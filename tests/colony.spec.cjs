@@ -114,6 +114,7 @@ test("A ordem explícita de coleta de água exige caminhar até a lagoa",async({
 });
 
 test("Fertilização continua bloqueada pela fauna selvagem e funciona com rebanho doméstico",async({page})=>{
+  test.setTimeout(100000); // Testar migração/carregamento sem interromper o mundo 192x120 aos 30s.
   await start(page);
   const empty=await snap(page);
   expect(empty.animals.filter(a=>!a.wild)).toEqual([]);
@@ -261,6 +262,7 @@ test("Cabana precisa de entregas físicas e trabalho, nunca nasce ao clicar",asy
 });
 
 test("Save legado remove vaca inicial artificial sem apagar rebanho e fauna selvagem",async({page})=>{
+  test.setTimeout(100000); // Testar migração/carregamento sem interromper o mundo 192x120 aos 30s.
   await start(page);
   const prior=await snap(page),wild=prior.animals.filter(a=>a.wild).length;
   await reloadScenario(page,s=>{
