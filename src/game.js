@@ -744,6 +744,10 @@
       state.gameOver=Boolean(s.gameOver);
       state.deaths=Array.isArray(s.deaths)?s.deaths.filter(death=>
         death&&typeof death.name==="string"&&Number.isInteger(death.day)):[];
+      // A migração dos nomes antigos só vale para saves anteriores ao
+      // registro dos dois colonos iniciais. Saves atuais podem sortear nomes
+      // como "Bia 19" e jamais devem ser renomeados em backup/reload.
+      const migrateLegacyNames=!Array.isArray(s.startingColonists)||!s.startingColonists.length;
       const savedStarters=Array.isArray(s.startingColonists)&&s.startingColonists.length?
         s.startingColonists:s.workers;
       state.startingColonists=savedStarters.slice(0,2).map((worker,index)=>({
@@ -773,7 +777,7 @@
         Care.normalize(p); // Plantações antigas irrigadas continuam crescendo.
       });
       state.workers.forEach(w=>{
-        homageSavedName(w);
+        if(migrateLegacyNames)homageSavedName(w);
         Crafting.normalizeWorker(w,!w.inventory?s.crafting?.equipment:null);
         Survival.normalizeWorker(w,state.day);
       });
@@ -895,7 +899,7 @@
       ]);
       state.orders=state.orders.filter(order=>!World.waterAt(state.world,order.x,order.y));
       state.candidates=Array.isArray(s.candidates)?s.candidates:structuredClone(initialCandidates);
-      state.candidates.forEach(homageSavedName);
+      if(migrateLegacyNames)state.candidates.forEach(homageSavedName);
       state.journal=Array.isArray(s.journal)?s.journal:[];
       // Antigas partidas reconhecem suas conquistas, mas não recebem
       // recompensas retroativas que alterariam a economia já existente.
