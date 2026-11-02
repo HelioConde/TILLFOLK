@@ -26,21 +26,23 @@
   ];
   // Agronomia v1: cada cultura tem uma estação favorável e uma reposição de sementes.
   // Mantém ao menos 1 semente por colheita entregue, sem sementes grátis ao plantar.
+  // [estação favorável, sementes recuperadas, regas por safra].
+  // A batata do tutorial e as folhas rápidas continuam com uma só rega.
   const farmingTraits=Object.freeze({
-    bamboo:["Primavera",1],beetroot:["Outono",1],berry:["Primavera",2],
-    broccoli:["Inverno",1],carrot:["Outono",2],cauliflower:["Inverno",1],
-    celery:["Outono",1],corn:["Verão",2],eggplant:["Verão",1],
-    grape:["Verão",2],leek:["Outono",1],lettuce:["Primavera",2],
-    onion:["Outono",1],pepper:["Verão",1],potato:["Inverno",1],
-    pumpkin:["Outono",2],radish:["Primavera",1],tomato:["Verão",2],
-    wheat:["Verão",3]
+    bamboo:["Primavera",1,3],beetroot:["Outono",1,1],berry:["Primavera",2,2],
+    broccoli:["Inverno",1,2],carrot:["Outono",2,1],cauliflower:["Inverno",1,2],
+    celery:["Outono",1,2],corn:["Verão",2,3],eggplant:["Verão",1,2],
+    grape:["Verão",2,3],leek:["Outono",1,1],lettuce:["Primavera",2,1],
+    onion:["Outono",1,1],pepper:["Verão",1,2],potato:["Inverno",1,1],
+    pumpkin:["Outono",2,3],radish:["Primavera",1,1],tomato:["Verão",2,2],
+    wheat:["Verão",3,2]
   });
   const records=specs.map(([id,name,w,h,frames,iconFrames,food,weight])=>{
     const folder=base+id+"/";
     const growth=folder+"growth_basic/"+id+"_"+w+"x"+h+"_"+frames+"frames.png";
     const icon=folder+"icon/"+id+"_icon_16x16"+(iconFrames>1?"_"+iconFrames+"frames":"")+".png";
-    const [favoredSeason,seedYield]=farmingTraits[id]||["Primavera",1];
-    return Object.freeze({id,name,w,h,frames,iconFrames,food,weight,seedYield,favoredSeason,growth,icon});
+    const [favoredSeason,seedYield,waterNeed]=farmingTraits[id]||["Primavera",1,1];
+    return Object.freeze({id,name,w,h,frames,iconFrames,food,weight,seedYield,favoredSeason,waterNeed,growth,icon});
   });
   const ALL=Object.freeze(records);
   const byId=new Map(ALL.map(item=>[item.id,item]));
