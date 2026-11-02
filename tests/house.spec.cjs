@@ -41,8 +41,8 @@ test("Objetos mostra as seis construções atuais e permite planejar Work Statio
  });
  expect(cell).toBeTruthy();
  await clickTile(page,cell.x,cell.y);
- // Modo Objetos permanece aberto para permitir múltiplos blueprints seguidos.
- await expect(page.locator("#construction-panel")).toBeVisible();
+ // Clicar no mapa fecha o painel flutuante, mas mantém o blueprint na fila.
+ await expect(page.locator("#construction-panel")).toBeHidden();
  await expect(page.locator("#build-status")).toContainText("Work Station planejada");
  const orders=await page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")).orders);
  expect(orders.some(o=>o.type==="buildStation"&&o.x===cell.x&&o.y===cell.y)).toBe(true);
