@@ -13,8 +13,9 @@
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
   const Food=window.TillfolkFoodLedger;
   if(!Food)throw new Error("Carregue src/food-ledger.js antes do motor TILLFOLK.");
-  const Care=window.TillfolkCropCare;
+  const Care=window.TillfolkCropCare,Planning=window.TillfolkFarmPlanning;
   if(!Care)throw new Error("Carregue src/crop-care.js antes do motor TILLFOLK.");
+  if(!Planning)throw new Error("Carregue src/farm-planning.js antes do motor TILLFOLK.");
   if(!Crops)throw new Error("Carregue src/crop-catalog.js antes do motor TILLFOLK.");
   if(!Crafting)throw new Error("Carregue src/crafting.js antes do motor TILLFOLK.");
   if(!Missions)throw new Error("Carregue src/missions.js antes do motor TILLFOLK.");
@@ -3291,17 +3292,20 @@
       const growing=state.plots.filter(plot=>plot.seeded&&plot.growth<1).length;
       const ripe=state.plots.filter(plot=>plot.seeded&&plot.growth>=1||plot.produce).length;
       const thirsty=state.plots.filter(plot=>Care.needsWater(plot)).length;
+      const target=Planning.forecast(state,state.selectedCrop);
+      const goal=target?" Meta orientativa: "+target.harvestsPerDay+" colheita(s) de "+target.cropName+
+        "/dia e até "+target.wateringsPerDay+" rega(s), se não chover. Depende de ordens e transporte.":"";
       if(state.mode==="survival"){
         const days=stats.daysRemaining===null?"—":stats.daysRemaining.toFixed(1);
         outlook.dataset.risk=stats.alert;
         outlook.textContent=(stats.alert==="critical"?"⚠️ Estoque crítico":stats.alert==="warning"?"⚠️ Planeje novas colheitas":"🥕 Abastecimento")+
           " · "+state.food+" alimentos · cerca de "+days+" dia(s) de consumo normal."+
           " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte, "+thirsty+" aguardando rega."+
-          " Safras futuras não entram nesta reserva até serem levadas ao estoque.";
+          " Safras futuras não entram nesta reserva até serem levadas ao estoque."+goal;
       }else{
         outlook.dataset.risk="ok";
         outlook.textContent="🌱 Fazenda tranquila · "+state.food+" alimentos disponíveis."+
-          " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte, "+thirsty+" aguardando rega.";
+          " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte, "+thirsty+" aguardando rega."+goal;
       }
     }
     const help=$("#crop-choice-hint");
