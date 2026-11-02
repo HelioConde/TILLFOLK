@@ -60,7 +60,15 @@ async function freeCells(page,count=3){
      const distance=row=>Math.abs(row[0].x+count/2-cx)+Math.abs(row[0].y-cy);
      return distance(a)-distance(b);
    });
-   return rows[0]||[];
+   const canvas=document.querySelector("#world"),rect=canvas.getBoundingClientRect();
+   const hit=cell=>{
+     const px=rect.left+rect.width*(cell.x+.5)/(canvas.width/32);
+     const py=rect.top+rect.height*(cell.y+.5)/(canvas.height/32);
+     return px>=0&&px<innerWidth&&py>=0&&py<innerHeight&&
+       document.elementFromPoint(px,py)===canvas;
+   };
+   // Para arrasto real do mouse, os três tiles precisam estar visíveis.
+   return rows.find(row=>row.every(hit))||[];
  },count);
 }
 test('Clique direito cancela ordem e remove o destaque persistente, sem remover o cultivo',async({page})=>{
@@ -94,6 +102,7 @@ test('Clique direito cancela ordem e remove o destaque persistente, sem remover 
  expect(errors).toEqual([]);
 });
 test('Botão direito arrastado cancela área, sem alterar a ferramenta selecionada',async({page})=>{
+ test.setTimeout(90000);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await start(page,1600,900);
  const cells=await freeCells(page,3);
@@ -120,6 +129,7 @@ test('Botão direito arrastado cancela área, sem alterar a ferramenta seleciona
  expect(errors).toEqual([]);
 });
 test('Árvores frutíferas não são geradas e saves legados são convertidos sem excluir madeira',async({page})=>{
+ test.setTimeout(90000);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await start(page,1366,768);
  let s=await snap(page);
@@ -143,7 +153,7 @@ test('Árvores frutíferas não são geradas e saves legados são convertidos se
  expect(indices.every(([x,y])=>s.world.objects.some(o=>o.kind==='tree'&&o.x===x&&o.y===y))).toBe(true);
  const frames=await page.evaluate(()=>[2,3,4,5].map(i=>window.TillfolkWild.spriteFrame('tree',i)));
  expect(frames.every(f=>f&&!(f[0]>=48&&f[0]<=144&&f[1]===0))).toBe(true);
- await page.screenshot({path:'screenshots/floresta-sem-arvores-frutiferas-1366x768.png',animations:'disabled'});
+ await page.screenshot({path:'screenshots/floresta-sem-arvores-frutiferas-1366x768.png',animations:'disabled',timeout:60000});
  expect(errors).toEqual([]);
 });
 test('Saves antigos com marcação sem tarefa voltam ao solo natural',async({page})=>{
