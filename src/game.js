@@ -3290,17 +3290,18 @@
       const stats=Survival.getStats(state);
       const growing=state.plots.filter(plot=>plot.seeded&&plot.growth<1).length;
       const ripe=state.plots.filter(plot=>plot.seeded&&plot.growth>=1||plot.produce).length;
+      const thirsty=state.plots.filter(plot=>Care.needsWater(plot)).length;
       if(state.mode==="survival"){
         const days=stats.daysRemaining===null?"—":stats.daysRemaining.toFixed(1);
         outlook.dataset.risk=stats.alert;
         outlook.textContent=(stats.alert==="critical"?"⚠️ Estoque crítico":stats.alert==="warning"?"⚠️ Planeje novas colheitas":"🥕 Abastecimento")+
           " · "+state.food+" alimentos · cerca de "+days+" dia(s) de consumo normal."+
-          " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte."+
+          " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte, "+thirsty+" aguardando rega."+
           " Safras futuras não entram nesta reserva até serem levadas ao estoque.";
       }else{
         outlook.dataset.risk="ok";
         outlook.textContent="🌱 Fazenda tranquila · "+state.food+" alimentos disponíveis."+
-          " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte.";
+          " Canteiros: "+growing+" crescendo, "+ripe+" prontos ou aguardando transporte, "+thirsty+" aguardando rega.";
       }
     }
     const help=$("#crop-choice-hint");
