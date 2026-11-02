@@ -121,8 +121,12 @@ test('Cabana 2x2: prévia azul, fila dos trabalhadores, salvar e desfazer',async
  await mouseTile(page,cell.x,cell.y,'contextmenu');
  s=await save(page);
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(false);
+ // O clique no mapa fecha o menu Objetos e restaura Universal.
+ // Para planejar uma nova cabana, o jogador precisa selecionar Objetos novamente.
+ await page.locator('[data-tool="construir"]').click();
+ await page.locator('[data-build-layer="home"]').click();
  await mouseTile(page,cell.x,cell.y);
- await page.reload({waitUntil:'networkidle'});
+ await page.reload({waitUntil:'load'});
  await continueIfMenuVisible(page);
  s=await save(page);
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(true);
