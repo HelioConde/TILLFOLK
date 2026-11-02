@@ -4,6 +4,9 @@ const {reloadWithSave}=require("./helpers/save-fixture.cjs");
 const URL="http://127.0.0.1:4173/";
 
 test("clique direito cancela ordem sobre o colono antes de abrir inventário",async({page})=>{
+  // Um mapa 192×120 pode exigir mais que o timeout padrão de 30s no CI,
+  // especialmente com múltiplos workflows Chromium simultâneos.
+  test.setTimeout(90000);
   const errors=[];page.on("pageerror",e=>errors.push(e.message));
   await page.setViewportSize({width:1366,height:768});
   await page.goto(URL,{waitUntil:"networkidle"});
