@@ -11,6 +11,8 @@
   if(!Progression)throw new Error("Carregue src/progression.js antes do motor TILLFOLK.");
   if(!Exploration)throw new Error("Carregue src/exploration.js antes do motor TILLFOLK.");
   const World=window.TillfolkWild,Orders=window.TillfolkOrders,Missions=window.TillfolkMissions,Crops=window.TillfolkCrops,Crafting=window.TillfolkCrafting,Survival=window.TillfolkSurvival,Logistics=window.TillfolkLogistics,Night=window.TillfolkDayNight,Life=window.TillfolkColonyLife;
+  const BlueprintCancel=window.TillfolkBlueprintCancel;
+  if(!BlueprintCancel)throw new Error("Carregue src/blueprint-cancel.js antes de src/game.js.");
   const Food=window.TillfolkFoodLedger;
   const WorkerAllocation=window.TillfolkWorkerAllocation;
   if(!WorkerAllocation)throw new Error("Carregue src/worker-allocation.js antes de src/game.js.");
@@ -2595,9 +2597,15 @@
     const toRefund=state.orders.filter(o=>cancelled.has(o.id));
     for(const order of toRefund)Logistics.refund(state,order);
     state.orders=state.orders.filter(o=>!cancelled.has(o.id));
-    for(const worker of state.workers)if(cancelled.has(worker.task)){
-      releaseSupply(worker);
-      worker.task=null;worker.progress=0;worker.route=[];worker.routeTask=null;worker.workGoal=null;
+    for(const worker of state.workers){
+      const lostTask=cancelled.has(worker.task);
+      const lostDelivery=worker.haul?.orderId&&cancelled.has(worker.haul.orderId);
+      if(!lostTask&&!lostDelivery)continue;
+      // Entregadores podem transportar para a obra SEM estarem atribuídos
+      // à tarefa final. Cancelar deve interromper também essa viagem.
+      if(lostTask){releaseSupply(worker);worker.task=null;worker.progress=0;}
+      else refundHaul(worker); // Carga em trânsito volta fisicamente ao chão.
+      worker.route=[];worker.routeTask=null;worker.workGoal=null;
     }
     hoveredTile=null;
     recalcTasks();refresh();save();
@@ -2657,17 +2665,10 @@
       const result=queueAt(type,x,y);
       if(result.error)skipped++;else added++;
     }
-    if(cancelled){
-      const ids=new Set(removals);
-      for(const order of state.orders)if(ids.has(order.id))
-        Logistics.refund(state,order);
-      state.orders=state.orders.filter(o=>!ids.has(o.id));
-      for(const worker of state.workers)if(ids.has(worker.task)){
-        releaseSupply(worker);
-        worker.task=null;worker.progress=0;worker.route=[];worker.routeTask=null;worker.workGoal=null;
-      }
-    }
-    if(added||cancelled){hoveredTile=null;recalcTasks();refresh();save();}
+    // Reutilizar a mesma transação de cancelamento para seleção por área:
+    // não deixar transportadores seguindo para uma obra já descartada.
+    if(cancelled)removeOrders([...new Set(removals)]);
+    if(added){hoveredTile=null;recalcTasks();refresh();save();}
     $("#tile-tooltip").hidden=true;
     notify(added?added+" ordem(ns) adicionada(s)"+(skipped?" · "+skipped+" ignorada(s)":"")+"."
       :cancelled?cancelled+" ordem(ns) cancelada(s).":
@@ -2976,24 +2977,25 @@
     if(suppressRightContext){suppressRightContext=false;return;}
     const {x,y}=buildCellFromEvent(event);
     if(x<0||y<0||x>=W||y>=H)return;
+    // Antes de abrir o inventário de um colono em cima da obra,
+    // cancelar EXCLUSIVAMENTE a blueprint pendente da camada selecionada.
+    // Não validar a construção para cancelar: terreno ocupado, falta de
+    // pesquisa ou materiais entregues não podem impedir a desistência.
+    if(selectedTool==="construir"){
+      const ids=BlueprintCancel.matching(state.orders,buildLayer,x,y);
+      if(ids.length){
+        removeOrders(ids); // Devolve entregas, libera colonos e salva.
+        $("#build-status").textContent=ids.length+" ordem(ns) de construção cancelada(s).";
+        notify("Blueprint cancelado · materiais entregues devolvidos ao chão.");
+        return;
+      }
+    }
     const worker=state.workers.find(w=>Math.hypot(w.x-(x+.5),w.y-(y+.5))<=.85);
     if(worker){openWorkerInventory(worker);return;}
     if(selectedTool==="construir"){
-      if(buildLayer==="field"||buildLayer==="home"||buildLayer==="station"||
-         buildLayer==="rocket"){
-        const ids=state.orders.filter(o=>buildLayer==="field"?
-          o.x===x&&o.y===y&&["till","sow"].includes(o.type):
-          buildLayer==="station"?o.type==="buildStation"&&o.x===x&&o.y===y:
-          buildLayer==="rocket"?o.type==="buildRocket"&&o.x===x&&o.y===y:
-          buildLayer==="chest"?o.type==="buildChest"&&o.x===x&&o.y===y:
-          buildLayer==="well"?o.type==="buildWell"&&o.x===x&&o.y===y:
-          o.type==="buildHome"&&homeTiles(o.x,o.y).some(([hx,hy])=>hx===x&&hy===y))
-          .map(o=>o.id);
-        if(ids.length){removeOrders(ids);$("#build-status").textContent="Blueprint cancelado.";}
-        else {$("#build-status").textContent="Seleção cancelada.";setTool("universal");}
-        return;
-      }
-      paintHouse(x,y,true);return;
+      $("#build-status").textContent="Seleção cancelada.";
+      setTool("universal");
+      return;
     }
     // Clique direito sempre cancela as ordens do terreno, não importa a
     // ferramenta selecionada. Cultivo concluído e árvores nunca são apagados.

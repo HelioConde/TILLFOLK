@@ -1,0 +1,63 @@
+name: TILLFOLK — QA de cancelamento de blueprints
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/blueprint-cancel.js'
+      - 'src/game.js'
+      - 'index.html'
+      - 'tests/blueprint-cancel.test.cjs'
+      - 'tests/blueprint-cancel.spec.cjs'
+      - '.github/workflows/qa-blueprint-cancel.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/blueprint-cancel.js'
+      - 'src/game.js'
+      - 'index.html'
+      - 'tests/blueprint-cancel.test.cjs'
+      - 'tests/blueprint-cancel.spec.cjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit:
+    name: Cancelamento puro e contrato imutável de terrenos
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          node --check src/blueprint-cancel.js
+          node --check src/game.js
+          node --test tests/blueprint-cancel.test.cjs
+          node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
+  browser:
+    name: Cancelamento e devolução na partida real
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-blueprint.log 2>&1 &
+          sleep 2
+      - run: npx playwright test tests/blueprint-cancel.spec.cjs --workers=1 --browser chromium --reporter=line
+      - name: Salvar capturas e falhas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-qa-cancelamento-blueprints
+          path: |
+            screenshots/blueprint-cancel-*.png
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
