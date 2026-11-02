@@ -1,7 +1,6 @@
 "use strict";
 const {test,expect}=require("@playwright/test");
 const {reloadWithSave}=require("./helpers/save-fixture.cjs");
-const {reloadWithSave}=require("./helpers/save-fixture.cjs");
 const URL="http://127.0.0.1:4173/";
 const snap=page=>page.evaluate(()=>JSON.parse(localStorage.getItem("tillfolk-v01")));
 async function start(page){
