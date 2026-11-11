@@ -10,3 +10,5 @@ O mapa passou de 28×18 para 192×120 com seis biomas, rios e fauna selvagem. An
 - Registros de teste devem comprovar que recursos continuam físicos, sem geração gratuita.
 
 A atualização dos cenários não elimina a necessidade de validar construções, abastecimento e migração de saves em partidas reais. Não remover mecânicas para satisfazer expectativas legadas.
+
+O arquivo `tests/colony.spec.cjs` foi reescrito para verificar a fauna selvagem atual, ordens de água, construção por Objetos, migração de vaca legada, economia por população e irrigação real em terreno livre perto do spawn.

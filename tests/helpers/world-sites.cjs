@@ -23,7 +23,8 @@ async function findFreeSite(page,{width=1,height=1,kind="field",count=1}={}){
             const xx=x+dx,yy=y+dy,k=xx+","+yy,p=plot.get(k);
             const terrain=window.TillfolkWild.terrainAt(world,xx,yy);
             if(!p||water.has(k)||objects.has(k)||reserved.has(k)||occupied.has(k)||
-              (kind==="field"&&!terrain.farmable)||(kind==="home"&&!terrain.buildable)||
+              ((kind==="field"||kind==="both")&&!terrain.farmable)||
+              ((kind==="home"||kind==="both")&&!terrain.buildable)||
               p.selected||p.tilled||p.seeded||p.produce||p.dirty||
               (s.workers||[]).some(w=>Math.abs(Math.floor(w.x)-xx)<=1&&Math.abs(Math.floor(w.y)-yy)<=1)){
               valid=false;break;
