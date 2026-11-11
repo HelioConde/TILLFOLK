@@ -19,7 +19,7 @@ permissions:
 jobs:
   test:
     name: Autosave, seeds, desktop e celular
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
           node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
       - name: Instalar Chromium
         run: |
-          npm install --no-save @playwright/test@1.55.0
+          npm ci
           npx playwright install --with-deps chromium
       - name: Servir HTML5
         run: |
