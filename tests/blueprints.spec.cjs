@@ -17,7 +17,7 @@ async function start(page,width=1366,height=768){
   await expect(page.locator('#construction-panel')).toBeVisible();
 }
 const save=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
-async function freeCells(page){return findFreeSite(page,{width:2,height:2,kind:"home"});}
+async function freeCells(page){return findFreeSite(page,{width:2,height:2,kind:"both"});}
 async function mouseTile(page,x,y,type='click'){
  await page.locator('#world').evaluate((el,{x,y,type})=>{
   const rect=el.getBoundingClientRect();
