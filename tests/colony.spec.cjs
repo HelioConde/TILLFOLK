@@ -90,6 +90,10 @@ test("cabana é planejada por Objetos, não aparece concluída imediatamente e p
   const staged=await save(page);
   expect(staged.orders.some(o=>o.type==="buildHome"&&o.x===site.x&&o.y===site.y)).toBe(true);
   expect(staged.homes).toHaveLength(0);
+  // O clique que planeja a cabana fecha o painel Objetos. Selecioná-lo
+  // novamente permite cancelar qualquer célula da planta 2×2.
+  await page.locator('[data-tool="construir"]').click();
+  await page.locator('[data-build-layer="home"]').click();
   await point(page,site.x+1,site.y+1,"contextmenu");
   const restored=await save(page);
   expect(restored.orders.some(o=>o.type==="buildHome"&&o.x===site.x&&o.y===site.y)).toBe(false);
@@ -130,6 +134,15 @@ test("rega consome água somente com ferramenta, colono e ordem no canteiro",asy
     const plot=s.plots.find(p=>p.x===site.x&&p.y===site.y);
     plot.tilled=true;plot.seeded=true;plot.crop="potato";plot.growth=0;
     plot.watered=false;plot.waterings=0;
+    // A chuva pode irrigar sem gastar água. Escolher um dia seco permite
+    // verificar exclusivamente a coleta/consumo manual sem alterar o clima do motor.
+    const seed=s.world.seed||1;
+    const dry=Array.from({length:21},(_,i)=>i+1).find(day=>{
+      const n=Math.abs(Math.sin((day+17)*(seed+37)*.137))%1;
+      return n>=.26;
+    });
+    if(!dry)throw new Error("Não foi possível preparar dia sem chuva");
+    s.day=dry;s.minutes=360;
     s.water=2;s.orders=[{id:site.x+"-"+site.y+":water",type:"water",x:site.x,y:site.y}];
     s.workers[0].neg=[];
     s.workers[0].inventory.tools.wateringCan=true;

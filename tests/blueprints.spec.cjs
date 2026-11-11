@@ -91,7 +91,11 @@ test('Cabana 2x2: prévia azul, fila dos trabalhadores, salvar e desfazer',async
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(true);
  expect(s.homes.some(h=>h.x===cell.x&&h.y===cell.y)).toBe(false);
  await page.screenshot({path:'screenshots/blueprint-cabana-pendente-1600x900.png',animations:'disabled'});
- await page.locator('#build-undo').click();
+ // A versão atual usa clique direito para cancelar plantas individuais;
+ // o botão Desfazer área é exclusivo para arrastos recentes.
+ await page.locator('[data-tool="construir"]').click();
+ await page.locator('[data-build-layer="home"]').click();
+ await mouseTile(page,cell.x+1,cell.y+1,'contextmenu');
  s=await save(page);
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(false);
  await mouseTile(page,cell.x,cell.y);
@@ -101,33 +105,27 @@ test('Cabana 2x2: prévia azul, fila dos trabalhadores, salvar e desfazer',async
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(true);
  expect(errors).toEqual([]);
 });
-test('Plantação por arrasto no celular: várias células e desfazer sem danificar o save',async({page})=>{
+test('Canteiros adjacentes no celular mantêm ordens independentes e cancelamento seguro',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await start(page,390,844);
  await page.locator('[data-build-layer="field"]').click();
  const cell=await freeCells(page);expect(cell).not.toBeNull();
- const pos=await page.locator('#world').evaluate((el,{x,y})=>{
-  const r=el.getBoundingClientRect();
-  return [ [x,y],[x+1,y+1] ].map(([a,b])=>({
-   x:r.left+r.width*(a+.5)/(el.width/32),
-   y:r.top+r.height*(b+.5)/(el.height/32)
-  }));
- },cell);
- // Mouse real em viewport mobile para testar a área pelo próprio motor;
- // o botão Área também permite executar o mesmo gesto com toque.
- await page.mouse.move(pos[0].x,pos[0].y);
- await page.mouse.down();
- await page.mouse.move(pos[1].x,pos[1].y,{steps:10});
- await page.mouse.up();
+ for(const dx of [0,1]){
+   if(dx){await page.locator('[data-tool="construir"]').click();
+     await page.locator('[data-build-layer="field"]').click();}
+   await mouseTile(page,cell.x+dx,cell.y);
+ }
  let s=await save(page);
- expect(s.orders.filter(o=>['till','sow'].includes(o.type)).length).toBeGreaterThanOrEqual(4);
+ expect(s.orders.filter(o=>['till','sow'].includes(o.type)).length).toBe(4);
  await page.screenshot({path:'screenshots/blueprint-canteiros-mobile-390x844.png',animations:'disabled'});
- await page.locator('#build-undo').click();
+ await page.locator('[data-tool="construir"]').click();
+ await page.locator('[data-build-layer="field"]').click();
+ await mouseTile(page,cell.x,cell.y,'contextmenu');
+ await mouseTile(page,cell.x+1,cell.y,'contextmenu');
  s=await save(page);
  expect(s.orders.filter(o=>['till','sow'].includes(o.type))).toHaveLength(0);
  expect(errors).toEqual([]);
 });
-
 
 test('HUD com blueprint: velocidade, gestão e menu não se sobrepõem',async({page})=>{
   await start(page,1366,768);

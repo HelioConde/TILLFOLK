@@ -2,6 +2,7 @@ async function continueIfMenuVisible(page){
   if(await page.locator("#menu").isVisible())await page.locator("#continue").click();
   await expect(page.locator("#menu")).toBeHidden();
 }
+const {findFreeSite}=require("./helpers/world-sites.cjs");
 const {test,expect}=require("@playwright/test");
 const URL="http://127.0.0.1:4173/";
 
@@ -21,6 +22,7 @@ async function startFarm(page,button="tutorial-start"){
  await expect(page.locator("#mission-card")).toBeVisible();
 }
 async function jumpToAxeMission(page){
+ const location=await findFreeSite(page,{kind:"both",width:2,height:2});
  // pagehide salva a sessão ativa; aplicar o fixture ANTES do script do jogo no reload.
  await page.addInitScript(()=>{
    const fixture=sessionStorage.getItem("__tutorialFinalFixture");
@@ -29,26 +31,28 @@ async function jumpToAxeMission(page){
      sessionStorage.removeItem("__tutorialFinalFixture");
    }
  });
- await page.evaluate(()=>{
+ await page.evaluate(location=>{
   const save=JSON.parse(localStorage.getItem("tillfolk-v01"));
   const steps=window.TillfolkMissions.STEPS;
   save.tutorial={active:true,step:steps.findIndex(s=>s.key==="axe"),finished:false,version:6,
    stats:Object.fromEntries(steps.map((step,i)=>[step.key,i<steps.findIndex(s=>s.key==="axe")?1:0]))};
   save.tutorial.stats.harvest=1;
   save.firstHarvest=true;
-  save.crafting.station={x:40,y:29};
-  save.workstations=[{x:40,y:29}];
+  save.crafting.station={x:location.x,y:location.y};
+  save.workstations=[{x:location.x,y:location.y}];
   save.crafting.equipment.axe=false;
   save.inventory.twigs=50;
   save.inventory.gravel=10; // A receita atual do machado também exige cascalho.
   save.inventory.grass=20;
   for(const w of save.workers){
-   w.x=39.5;w.y=28.5;w.neg=[];w.route=[];w.task=null;
+   w.x=location.x+1.5;w.y=location.y+.5;w.neg=[];w.route=[];w.task=null;
+   w.resting=false;w.shift="day";
    w.inventory=w.inventory||{tools:{},items:{}};w.inventory.tools.axe=false;
   }
   save.orders=[];
+  save.minutes=360;save.sessionSpeed=0;
   sessionStorage.setItem("__tutorialFinalFixture",JSON.stringify(save));
- });
+ },location);
  await page.reload({waitUntil:"networkidle"});
  await continueIfMenuVisible(page);
  await expect(page.locator("#mission-chapter")).toHaveText("MISSÃO 11 / 13");
