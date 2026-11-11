@@ -34,7 +34,7 @@ jobs:
           node-version: '22'
       - name: Preparar navegador
         run: |
-          npm install --no-save @playwright/test@1.55.0
+          npm ci
           npx playwright install chromium
       - name: Servir a versão atual do jogo
         run: |

@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   farming:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 13
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
         run: node --test tests/crops.test.cjs
       - name: Instalar navegador
         run: |
-          npm install --no-save @playwright/test@1.55.0
+          npm ci
           npx playwright install --with-deps chromium
       - name: Servir TILLFOLK
         run: |

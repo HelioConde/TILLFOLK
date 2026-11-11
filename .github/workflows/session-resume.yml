@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   restore-session:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +24,7 @@ jobs:
           node-version: '22'
       - name: Preparar navegador de testes
         run: |
-          npm install --no-save @playwright/test@1.55.0
+          npm ci
           npx playwright install --with-deps chromium
       - name: Abrir site local estático
         run: |

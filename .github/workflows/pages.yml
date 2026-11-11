@@ -15,11 +15,13 @@ concurrency:
 jobs:
   build:
     name: Validar cena HTML5
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Verificar JavaScript
         run: |
+          node --test tests/repository-integrity.test.cjs
+          node --test marketplace/colony-worker-ai/tests/assignment.test.cjs
           node --check src/biomes.js
           node --check src/terrain-autotile.js
           node --check src/terrain-catalog.js
@@ -36,6 +38,8 @@ jobs:
           node --test tests/save-backup.test.cjs
           node --check src/blueprint-cancel.js
           node --test tests/blueprint-cancel.test.cjs
+          node --check src/session-policy.js
+          node --test tests/session-policy.test.cjs
           node --check src/game.js
           # Relógio desacelerado, 16h de dia e sono fixo 22h–06h
           node --check src/day-night.js
@@ -295,7 +299,7 @@ jobs:
   deploy:
     name: Publicar no GitHub Pages
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: github-pages
     permissions:
       pages: write

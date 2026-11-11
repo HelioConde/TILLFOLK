@@ -23,7 +23,7 @@ permissions:
 jobs:
   unit:
     name: Restrições, escassez e contrato de terrenos
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
           node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
   browser:
     name: Trabalhadores em partida real
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4

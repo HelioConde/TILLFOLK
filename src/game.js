@@ -726,17 +726,11 @@
     Progression.normalize(state);
     tasks=[]; simSpeed=1; updateSpeed();
   }
-  // "play" significa que a fazenda estava aberta na última visita.
-  // "menu" preserva a decisão explícita de voltar à tela inicial.
-  function setSessionMode(mode){
-    try{localStorage.setItem(SESSION_KEY,mode);}catch(error){console.warn("Preferência da sessão indisponível:",error);}
-  }
-  function shouldAutoResume(){
-    try{
-      // Saves antigos (sem SESSION_KEY) também devem reabrir a fazenda.
-      return Boolean(localStorage.getItem(SAVE_KEY))&&localStorage.getItem(SESSION_KEY)!=="menu";
-    }catch{return false;}
-  }
+  // Política de sessão isolada e testada; saves existentes continuam iguais.
+  const Session=window.TillfolkSessionPolicy;
+  if(!Session)throw new Error("Carregue src/session-policy.js antes do motor TILLFOLK.");
+  const setSessionMode=mode=>Session.setSessionMode(localStorage,SESSION_KEY,mode);
+  const shouldAutoResume=()=>Session.shouldAutoResume(localStorage,SAVE_KEY,SESSION_KEY);
   function readSave(){
     const previousState=state;
     try {
