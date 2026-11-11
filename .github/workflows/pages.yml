@@ -239,7 +239,7 @@ jobs:
           test -f "_site/public/assets/Sprout Lands - Sprites - premium pack/Sprout Lands - Sprites - premium pack/Objects/work station.png"
           test -f _site/tutorial-missions.css
           grep -q 'src/missions.js' _site/index.html
-          grep -q 'tutorial-missions.css' _site/index.html
+          grep -q 'Source: tutorial-missions.css' _site/game.bundle.css
           test -f _site/src/tutorial.js
           test -f _site/menu-refinement.css
           test -f _site/hud-settings.css
@@ -249,12 +249,12 @@ jobs:
           test -f _site/game-interface.css
           test -f _site/camera-ui.css
           test -f _site/top-speed.css
-          grep -q 'top-speed.css' _site/index.html
-          grep -q 'game-refinement.css' _site/index.html
+          grep -q 'Source: top-speed.css' _site/game.bundle.css
+          grep -q 'Source: game-refinement.css' _site/game.bundle.css
           test -f _site/src/sprout-ui-skin.js
-          grep -q 'sprout-ui.css' _site/index.html
+          grep -q 'Source: sprout-ui.css' _site/game.bundle.css
           test -f _site/src/game-hud.js
-          grep -q 'game-hud.css' _site/index.html
+          grep -q 'Source: game-hud.css' _site/game.bundle.css
           grep -q 'game-hud.js' _site/index.html
           test -f _site/team-ux.css
           test -f _site/src/house-renderer.js
@@ -289,9 +289,9 @@ jobs:
           test -f _site/menu.css
           test -f _site/menu-layout.css
           grep -q 'src/task-orders.js' _site/index.html
-          grep -q 'task-orders.css' _site/index.html
+          grep -q 'Source: task-orders.css' _site/game.bundle.css
           # O CSS de layout do menu também precisa existir no site publicado.
-          grep -q 'menu-layout.css' _site/index.html
+          grep -q 'Source: menu-layout.css' _site/game.bundle.css
           grep -q 'menu-layout.css' _site/menu-layout.css || test -s _site/menu-layout.css
           test -f "_site/public/assets/Sprout Lands - UI Pack - Basic pack/fonts/pixelFont-7-8x14-sproutLands.ttf"
       - name: Configurar GitHub Pages
