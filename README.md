@@ -74,7 +74,7 @@ Depois acesse `http://localhost:8080/`. Para produção, o GitHub Actions public
 ## Estrutura principal
 
 - `index.html`, `styles.css` e arquivos CSS adicionais: menu, HUD, janelas e interface.
-- `src/game.js`: simulação do tempo, trabalhadores, tarefas, movimento, produção, recrutamento e salvamento.
+- `src/game.js`: simulação do tempo, trabalhadores, tarefas, movimento, produção, recrutamento e salvamento; `src/session-policy.js`: política independente de retomada/menu, com testes.
 - `src/task-orders.js`: validação de ordens e pré-requisitos; `src/crafting.js`: equipamentos e Work Station.
 - `src/wild-world.js`, `src/biomes.js`: geração procedural, biomas e obstáculos.
 - `src/crop-catalog.js`: espécies e sprites de cultivo.

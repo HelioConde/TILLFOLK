@@ -38,6 +38,8 @@ jobs:
           node --test tests/save-backup.test.cjs
           node --check src/blueprint-cancel.js
           node --test tests/blueprint-cancel.test.cjs
+          node --check src/session-policy.js
+          node --test tests/session-policy.test.cjs
           node --check src/game.js
           # Relógio desacelerado, 16h de dia e sono fixo 22h–06h
           node --check src/day-night.js
