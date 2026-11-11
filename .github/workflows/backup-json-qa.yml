@@ -43,7 +43,7 @@ jobs:
         with:
           node-version: '22'
       - run: |
-          npm install --no-save @playwright/test@1.55.0
+          npm ci
           npx playwright install --with-deps chromium
       - run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-backup-http.log 2>&1 &

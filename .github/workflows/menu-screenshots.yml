@@ -85,7 +85,7 @@ jobs:
           node-version: '22'
       - name: Preparar Playwright
         run: |
-          npm install --no-save @playwright/test@1.55.0
+          npm ci
           npx playwright install --with-deps chromium
       - name: Servir versão real do jogo
         run: |
