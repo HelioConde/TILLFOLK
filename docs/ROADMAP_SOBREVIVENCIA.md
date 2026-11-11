@@ -1,5 +1,7 @@
 # Roadmap de sobrevivência — TILLFOLK
-**Prioridades do jogo, por dependência | 31/10/2026**
+**Prioridades do jogo, por dependência | baseline de 31/10/2026**
+
+> **Auditoria de 11/11/2026:** a tabela descreve marcos de produto, não a versão final de todos os subsistemas. S0–S3 estão presentes no código; S4 exige playtest integrado. Sistemas S5–S11 têm implementações parciais posteriores a este documento (ex.: moradias, turnos, logística, alocação, minerais), mas isso **não comprova o aceite integral** de cada etapa. Consultar [protocolo de playtest S4](PLAYTEST_S4_2026-11-11.md) e os testes reais.
 
 **Documento de produto:** [GDD_TILLFOLK.md](./GDD_TILLFOLK.md). A tabela distingue etapas implementadas das ainda planejadas; status local não significa publicação no GitHub Pages.
 
