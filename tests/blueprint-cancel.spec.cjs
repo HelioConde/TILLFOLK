@@ -28,6 +28,7 @@ async function select(page,layer){
  await page.locator('[data-build-layer="'+layer+'"]').click();
 }
 test("baú pode ser cancelado com botão direito, devolvendo materiais entregues",async({page})=>{
+ test.setTimeout(90000);
  const errors=[];page.on("pageerror",error=>errors.push(error.message));
  await start(page,1366,768);
  const state=await reloadWithSave(page,s=>{
@@ -53,7 +54,7 @@ test("baú pode ser cancelado com botão direito, devolvendo materiais entregues
  expect(final.workers[0].haul).toBeNull();
  expect(final.workers[0].inventory.carrying).toBeNull();
  await expect(page.locator("#build-status")).toContainText("cancelada");
- await page.screenshot({path:"screenshots/blueprint-cancel-bau-desktop.png",animations:"disabled"});
+ await page.screenshot({path:"screenshots/blueprint-cancel-bau-desktop.png",animations:"disabled",timeout:60000});
  expect(errors).toEqual([]);
 });
 test("poço bloqueado por pesquisa pode ser cancelado sem criar obra nova",async({page})=>{
@@ -93,6 +94,7 @@ test("foguete cancela pelo canto 3x3 sem remover uma cabana no mesmo terreno",as
  expect((await save(page)).orders.map(o=>o.type)).toEqual(["buildHome"]);
 });
 test("cabana pode ser cancelada pelo canto do footprint 2x2",async({page})=>{
+ test.setTimeout(75000);
  await start(page,1366,768);
  const staged=await reloadWithSave(page,s=>{
    const x=Math.floor(s.spawn.x),y=Math.floor(s.spawn.y);

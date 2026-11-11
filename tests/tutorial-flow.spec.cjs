@@ -40,6 +40,7 @@ async function jumpToAxeMission(page){
   save.workstations=[{x:40,y:29}];
   save.crafting.equipment.axe=false;
   save.inventory.twigs=50;
+  save.inventory.gravel=10; // A receita atual do machado também exige cascalho.
   save.inventory.grass=20;
   for(const w of save.workers){
    w.x=39.5;w.y=28.5;w.neg=[];w.route=[];w.task=null;

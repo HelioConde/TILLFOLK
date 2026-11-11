@@ -1,3 +1,5 @@
+const {freeRow}=require("./helpers/world-sites.cjs");
+const {reloadWithSave}=require("./helpers/save-fixture.cjs");
 async function continueIfMenuVisible(page){
   if(await page.locator('#menu').isVisible())await page.locator('#continue').click();
   await expect(page.locator('#menu')).toBeHidden();
@@ -13,12 +15,16 @@ async function start(page,width=1366,height=768){
   await page.locator('#starter-confirm').click();
   await expect(page.locator('body')).toHaveClass(/play-session/);
   // Fluxos antigos de cancelamento utilizam uma fazenda com ferramentas já prontas.
-  await page.evaluate(()=>{
-    const save=JSON.parse(localStorage.getItem('tillfolk-v01'));
-    for(const tool of Object.keys(save.crafting.equipment))save.crafting.equipment[tool]=true;
-    localStorage.setItem('tillfolk-v01',JSON.stringify(save));
+  await reloadWithSave(page,save=>{
+    // Flags globais antigas não equipam ferramentas nos colonos novos.
+    // Dar ferramentas à fixture explicitamente, sem alterar regras do jogo.
+    save.workers.forEach(w=>{
+      w.neg=[];
+      w.inventory=w.inventory||{tools:{},items:{}};
+      w.inventory.tools={...w.inventory.tools,hoe:true,axe:true,shovel:true,pickaxe:true,wateringCan:true};
+    });
+    save.sessionSpeed=0;
   });
-  await page.reload({waitUntil:'networkidle'});
   await continueIfMenuVisible(page);
 }
 const dispatchTile=(page,x,y,type='click')=>page.locator('#world').evaluate(
@@ -30,23 +36,7 @@ const dispatchTile=(page,x,y,type='click')=>page.locator('#world').evaluate(
      clientY:rect.top+rect.height*(y+.5)/(canvas.height/32)
    }));
  },{x,y,type});
-async function freeCells(page,count=3){
- return page.evaluate(count=>{
-   const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
-   const cells=[];
-   for(let y=24;y<29;y++)for(let x=37;x<44;x++){
-     const p=s.plots.find(p=>p.x===x&&p.y===y);
-     if(p&&!window.TillfolkWild.at(s.world,x,y)&&
-        !window.TillfolkWild.waterAt(s.world,x,y)&&
-        !s.orders.some(o=>o.x===x&&o.y===y))cells.push({x,y});
-   }
-   for(let i=0;i<cells.length-count+1;i++){
-     const row=cells.slice(i,i+count);
-     if(row.every((p,j)=>p.y===row[0].y&&p.x===row[0].x+j))return row;
-   }
-   return cells.slice(0,count);
- },count);
-}
+async function freeCells(page,count=3){return freeRow(page,count);}
 test('Clique direito cancela ordem e remove o destaque persistente, sem remover o cultivo',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await start(page);

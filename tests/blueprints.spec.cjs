@@ -1,3 +1,4 @@
+const {findFreeSite}=require("./helpers/world-sites.cjs");
 async function continueIfMenuVisible(page){
   if(await page.locator('#menu').isVisible())await page.locator('#continue').click();
   await expect(page.locator('#menu')).toBeHidden();
@@ -16,22 +17,7 @@ async function start(page,width=1366,height=768){
   await expect(page.locator('#construction-panel')).toBeVisible();
 }
 const save=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
-async function freeCells(page){
- return page.evaluate(()=>{
-  const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
-  const plots=new Set(s.plots.map(p=>p.x+','+p.y));
-  const occupied=new Set(s.world.objects.map(o=>o.x+','+o.y));
-  const waters=new Set(s.world.water.map(o=>o.x+','+o.y));
-  for(let y=22;y<=28;y++)for(let x=36;x<=45;x++){
-   const area=[[x,y],[x+1,y],[x,y+1],[x+1,y+1]];
-   if(area.every(([a,b])=>plots.has(a+','+b)&&!occupied.has(a+','+b)&&!waters.has(a+','+b)&&
-     window.TillfolkWild.terrainAt(s.world,a,b).farmable)&&
-     !s.workers.some(w=>Math.floor(w.x)>=x&&Math.floor(w.x)<=x+1&&
-       Math.floor(w.y)>=y&&Math.floor(w.y)<=y+1))return {x,y};
-  }
-  return null;
- });
-}
+async function freeCells(page){return findFreeSite(page,{width:2,height:2,kind:"home"});}
 async function mouseTile(page,x,y,type='click'){
  await page.locator('#world').evaluate((el,{x,y,type})=>{
   const rect=el.getBoundingClientRect();
