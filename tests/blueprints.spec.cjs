@@ -98,6 +98,10 @@ test('Cabana 2x2: prévia azul, fila dos trabalhadores, salvar e desfazer',async
  await mouseTile(page,cell.x+1,cell.y+1,'contextmenu');
  s=await save(page);
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(false);
+ // O menu Objetos se fecha após o contexto, inclusive em cancelamentos.
+ // Reativar a ferramenta antes de criar a nova ordem.
+ await page.locator('[data-tool="construir"]').click();
+ await page.locator('[data-build-layer="home"]').click();
  await mouseTile(page,cell.x,cell.y);
  await page.reload({waitUntil:'networkidle'});
  await continueIfMenuVisible(page);
