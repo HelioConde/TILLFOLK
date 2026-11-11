@@ -152,7 +152,11 @@ test('HUD com blueprint: velocidade, gestão e menu não se sobrepõem',async({p
       expect(geometry.speed.right).toBeLessThanOrEqual(geometry.panels.left+2);
     }else{
       expect(geometry.speed.top).toBeGreaterThanOrEqual(geometry.panels.bottom-2);
-      expect(geometry.metrics.right).toBeLessThanOrEqual(geometry.speed.left+2);
+      // Em telas estreitas, a barra de velocidade ocupa a terceira linha.
+      // Comparar apenas a coordenada X reprova um layout corretamente separado em Y.
+      const overlap=(a,b)=>a.left<b.right-1&&a.right>b.left+1&&a.top<b.bottom-1&&a.bottom>b.top+1;
+      expect(overlap(geometry.metrics,geometry.speed)).toBe(false);
+      expect(geometry.speed.top).toBeGreaterThanOrEqual(geometry.metrics.bottom-2);
       expect(geometry.clock.right).toBeLessThanOrEqual(geometry.metrics.right+1);
       expect(geometry.brand.right).toBeLessThanOrEqual(geometry.panels.left+1);
     }
