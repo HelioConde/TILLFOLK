@@ -3,11 +3,12 @@
     "test:survival": "node tests/hunger.test.cjs && node tests/survival-death.test.cjs && node tests/survival-hud.test.cjs",
     "test:e2e:survival": "playwright test tests/survival.spec.cjs",
     "test:workers": "node tests/worker-restrictions.test.cjs",
-    "test": "npm run test:workers && npm run test:survival && npm run test:integrity && npm run test:marketplace && npm run test:economy && npm run test:session",
+    "test": "npm run test:workers && npm run test:survival && npm run test:integrity && npm run test:marketplace && npm run test:economy && npm run test:session && npm run test:performance",
     "test:integrity": "node --test tests/repository-integrity.test.cjs",
     "test:marketplace": "node --test marketplace/colony-worker-ai/tests/assignment.test.cjs",
     "test:economy": "node --test tests/colony-food-economy-acceptance.test.cjs",
-    "test:session": "node --test tests/session-policy.test.cjs"
+    "test:session": "node --test tests/session-policy.test.cjs",
+    "test:performance": "node --test tests/css-bundle.test.cjs tests/render-budget.test.cjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

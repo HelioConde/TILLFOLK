@@ -4141,6 +4141,9 @@
   // Abrir automaticamente a fazenda quando a última sessão estava jogando.
   // Retornar ao menu por escolha do jogador NÃO dispara retomada na próxima visita.
   if(shouldAutoResume()&&start(true))renderPriorityControls();
+  const RenderBudget=window.TillfolkRenderBudget;
+  if(!RenderBudget)throw new Error("Carregue src/render-budget.js antes de src/game.js.");
+  let lastDrawFrame=0;
   let pawNextUpdate=0;
   function loop(now){
     const dt=last?Math.min((now-last)/1000,.07):0;last=now;
@@ -4150,7 +4153,10 @@
       if(saveAccumulator>8){save();saveAccumulator=0;}
     }
     updateCamera(now);
-    draw();
+    // Limitar desenho no celular sem alterar o tick de simulação ou salvamento.
+    if(document.visibilityState!=="hidden"&&RenderBudget.shouldDraw(now,lastDrawFrame,window.innerWidth)){
+      draw();lastDrawFrame=now;
+    }
     if(now>=pawNextUpdate){
       pawNextUpdate=now+130;
       window.TillfolkTutorialPointer?.guide({playing,state,

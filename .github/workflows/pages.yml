@@ -21,6 +21,8 @@ jobs:
       - name: Verificar JavaScript
         run: |
           node --test tests/repository-integrity.test.cjs
+          node --test tests/css-bundle.test.cjs tests/render-budget.test.cjs
+          node --check src/render-budget.js
           node --test marketplace/colony-worker-ai/tests/assignment.test.cjs
           node --check src/biomes.js
           node --check src/terrain-autotile.js
@@ -94,6 +96,9 @@ jobs:
           mkdir -p _site/src _site/public/assets
           # Publicar todos os estilos locais. Evita 404 quando novos sistemas forem adicionados.
           cp index.html ./*.css _site/
+          # Consolidar os estilos preservando cascata e URLs sem alterar as fontes.
+          node tools/build-css-bundle.cjs _site
+          test -s _site/game.bundle.css
           # Publicar todos os módulos do motor, incluindo sobrevivência e guia do tutorial.
           cp src/*.js _site/src/
           cp -a public/assets/sprout-lands _site/public/assets/
