@@ -92,3 +92,6 @@ Depois acesse `http://localhost:8080/`. Para produção, o GitHub Actions public
 ## Créditos e licença
 
 **Sprites: Sprout Lands, por Cup Nooble.** Consultar [créditos](./docs/ASSET_CREDITS.md) e [licença premium](./licenses/sprout-lands-premium.txt). Não redistribuir o pacote isolado e não utilizar os assets licenciados para treinamento de IA. O objetivo é criar um jogo próprio com mecânicas inspiradas em Oxygen Not Included, sem copiar arte, código ou personagens.
+
+## Verificações rápidas (11/11/2026)
+Após instalar as dependências com `npm ci`, rode `npm test`. A suíte inclui testes de sobrevivência, integridade dos arquivos referenciados pelo HTML, economia alimentar para 2/3/5 colonos e a habilidade independente de alocação de trabalhadores. Testes de navegador são executados nos workflows Playwright; o protocolo de jogabilidade está em [docs/PLAYTEST_S4_2026-11-11.md](./docs/PLAYTEST_S4_2026-11-11.md).

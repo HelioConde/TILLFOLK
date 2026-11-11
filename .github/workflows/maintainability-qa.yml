@@ -1,0 +1,41 @@
+name: TILLFOLK — integridade e economia S4 (unitário)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/repository-integrity.test.cjs'
+      - 'tests/colony-food-economy-acceptance.test.cjs'
+      - 'marketplace/**'
+      - 'src/survival.js'
+      - 'src/food-ledger.js'
+      - 'src/crop-catalog.js'
+      - 'package.json'
+      - '.github/workflows/maintainability-qa.yml'
+  pull_request:
+    paths:
+      - 'tests/repository-integrity.test.cjs'
+      - 'tests/colony-food-economy-acceptance.test.cjs'
+      - 'marketplace/**'
+      - 'src/survival.js'
+      - 'src/food-ledger.js'
+      - 'src/crop-catalog.js'
+      - 'package.json'
+      - '.github/workflows/maintainability-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  invariants:
+    name: Integridade, economia e skill independente
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Dependências de teste do lockfile
+        run: npm ci
+      - name: Testes unitários de sobrevivência, assets e pacote AI
+        run: npm test
