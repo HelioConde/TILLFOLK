@@ -104,15 +104,13 @@ test('Árvores frutíferas não são geradas e saves legados são convertidos se
  expect(trees.length).toBeGreaterThan(5);
  expect(trees.every(o=>[0,1,6].includes(o.variant))).toBe(true);
  const indices=trees.slice(0,4).map(o=>[o.x,o.y]);
- await page.evaluate(indices=>{
-   const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
+ await reloadWithSave(page,save=>{
    for(let i=0;i<indices.length;i++){
-     const [x,y]=indices[i],tree=s.world.objects.find(o=>o.x===x&&o.y===y&&o.kind==='tree');
+     const [x,y]=indices[i];
+     const tree=save.world.objects.find(o=>o.x===x&&o.y===y&&o.kind==='tree');
      tree.variant=i+2;
    }
-   localStorage.setItem('tillfolk-v01',JSON.stringify(s));
- },indices);
- await page.reload({waitUntil:'networkidle'});
+ });
  await continueIfMenuVisible(page);
  s=await snap(page);
  expect(s.world.objects.filter(o=>o.kind==='tree').length).toBe(trees.length);
