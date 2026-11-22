@@ -55,12 +55,11 @@ test('Clique direito cancela ordem e remove o destaque persistente, sem remover 
  await page.screenshot({path:'screenshots/ordem-depois-cancelar-direito-1366x768.png',animations:'disabled',timeout:60000});
  await dispatchTile(page,x,y);
  s=await snap(page);expect(s.orders).toHaveLength(1);
- await page.evaluate(({x,y})=>{
-   const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
-   s.plots.find(p=>p.x===x&&p.y===y).tilled=true;
-   localStorage.setItem('tillfolk-v01',JSON.stringify(s));
- },{x,y});
- await page.reload({waitUntil:'networkidle'});
+ // Preparar uma ordem legada concluída antes do carregamento.
+ // reloadWithSave protege a fixture do autosave disparado por pagehide.
+ await reloadWithSave(page,save=>{
+   save.plots.find(p=>p.x===x&&p.y===y).tilled=true;
+ });
  await continueIfMenuVisible(page);
  s=await snap(page);
  expect(s.orders.some(o=>o.x===x&&o.y===y)).toBe(false);
@@ -127,13 +126,10 @@ test('Árvores frutíferas não são geradas e saves legados são convertidos se
 test('Saves antigos com marcação sem tarefa voltam ao solo natural',async({page})=>{
  await start(page,390,844);
  const [{x,y}]=await freeCells(page);
- await page.evaluate(({x,y})=>{
-   const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
-   s.orders=[];
-   s.plots.find(p=>p.x===x&&p.y===y).selected=true;
-   localStorage.setItem('tillfolk-v01',JSON.stringify(s));
- },{x,y});
- await page.reload({waitUntil:'networkidle'});
+ await reloadWithSave(page,save=>{
+   save.orders=[];
+   save.plots.find(p=>p.x===x&&p.y===y).selected=true;
+ });
  await continueIfMenuVisible(page);
  const s=await snap(page);
  expect(s.plots.find(p=>p.x===x&&p.y===y).selected).toBe(false);
