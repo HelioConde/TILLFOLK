@@ -68,6 +68,31 @@ test('Clique direito cancela ordem e remove o destaque persistente, sem remover 
  await page.screenshot({path:'screenshots/ordem-concluida-sem-marcacao-1366x768.png',animations:'disabled',timeout:60000});
  expect(errors).toEqual([]);
 });
+test('Clique direito cancela ordem sob um colono antes de abrir seu inventário',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await start(page);
+ const [{x,y}]=await freeCells(page);
+ await reloadWithSave(page,save=>{
+   save.orders=[{id:x+'-'+y+':till',type:'till',x,y}];
+   const worker=save.workers[0];
+   worker.x=x+.5;worker.y=y+.5;
+   worker.task=null;worker.haul=null;worker.route=[];worker.routeTask=null;
+   worker.resting=false;worker.atRest=false;
+   save.sessionSpeed=0;
+ });
+ await continueIfMenuVisible(page);
+ let s=await snap(page);
+ expect(s.orders.some(o=>o.x===x&&o.y===y)).toBe(true);
+ expect(Math.hypot(s.workers[0].x-x-.5,s.workers[0].y-y-.5)).toBeLessThan(.85);
+ await dispatchTile(page,x,y,'contextmenu');
+ s=await snap(page);
+ expect(s.orders.some(o=>o.x===x&&o.y===y)).toBe(false);
+ await expect(page.locator('#worker-inventory-dialog')).toHaveJSProperty('open',false);
+ // Sem tarefa pendente, a ação original de inspecionar o colono é preservada.
+ await dispatchTile(page,x,y,'contextmenu');
+ await expect(page.locator('#worker-inventory-dialog')).toHaveJSProperty('open',true);
+ expect(errors).toEqual([]);
+});
 test('Botão direito arrastado cancela área, sem alterar a ferramenta selecionada',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await start(page,1600,900);
