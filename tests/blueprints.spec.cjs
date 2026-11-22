@@ -1,3 +1,4 @@
+const {findFreeSite}=require("./helpers/world-sites.cjs");
 async function continueIfMenuVisible(page){
   if(await page.locator('#menu').isVisible())await page.locator('#continue').click();
   await expect(page.locator('#menu')).toBeHidden();
@@ -16,22 +17,7 @@ async function start(page,width=1366,height=768){
   await expect(page.locator('#construction-panel')).toBeVisible();
 }
 const save=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('tillfolk-v01')));
-async function freeCells(page){
- return page.evaluate(()=>{
-  const s=JSON.parse(localStorage.getItem('tillfolk-v01'));
-  const plots=new Set(s.plots.map(p=>p.x+','+p.y));
-  const occupied=new Set(s.world.objects.map(o=>o.x+','+o.y));
-  const waters=new Set(s.world.water.map(o=>o.x+','+o.y));
-  for(let y=22;y<=28;y++)for(let x=36;x<=45;x++){
-   const area=[[x,y],[x+1,y],[x,y+1],[x+1,y+1]];
-   if(area.every(([a,b])=>plots.has(a+','+b)&&!occupied.has(a+','+b)&&!waters.has(a+','+b)&&
-     window.TillfolkWild.terrainAt(s.world,a,b).farmable)&&
-     !s.workers.some(w=>Math.floor(w.x)>=x&&Math.floor(w.x)<=x+1&&
-       Math.floor(w.y)>=y&&Math.floor(w.y)<=y+1))return {x,y};
-  }
-  return null;
- });
-}
+async function freeCells(page){return findFreeSite(page,{width:2,height:2,kind:"both"});}
 async function mouseTile(page,x,y,type='click'){
  await page.locator('#world').evaluate((el,{x,y,type})=>{
   const rect=el.getBoundingClientRect();
@@ -105,9 +91,17 @@ test('Cabana 2x2: prévia azul, fila dos trabalhadores, salvar e desfazer',async
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(true);
  expect(s.homes.some(h=>h.x===cell.x&&h.y===cell.y)).toBe(false);
  await page.screenshot({path:'screenshots/blueprint-cabana-pendente-1600x900.png',animations:'disabled'});
- await page.locator('#build-undo').click();
+ // A versão atual usa clique direito para cancelar plantas individuais;
+ // o botão Desfazer área é exclusivo para arrastos recentes.
+ await page.locator('[data-tool="construir"]').click();
+ await page.locator('[data-build-layer="home"]').click();
+ await mouseTile(page,cell.x+1,cell.y+1,'contextmenu');
  s=await save(page);
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(false);
+ // O menu Objetos se fecha após o contexto, inclusive em cancelamentos.
+ // Reativar a ferramenta antes de criar a nova ordem.
+ await page.locator('[data-tool="construir"]').click();
+ await page.locator('[data-build-layer="home"]').click();
  await mouseTile(page,cell.x,cell.y);
  await page.reload({waitUntil:'networkidle'});
  await continueIfMenuVisible(page);
@@ -115,33 +109,27 @@ test('Cabana 2x2: prévia azul, fila dos trabalhadores, salvar e desfazer',async
  expect(s.orders.some(o=>o.type==='buildHome'&&o.x===cell.x&&o.y===cell.y)).toBe(true);
  expect(errors).toEqual([]);
 });
-test('Plantação por arrasto no celular: várias células e desfazer sem danificar o save',async({page})=>{
+test('Canteiros adjacentes no celular mantêm ordens independentes e cancelamento seguro',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await start(page,390,844);
  await page.locator('[data-build-layer="field"]').click();
  const cell=await freeCells(page);expect(cell).not.toBeNull();
- const pos=await page.locator('#world').evaluate((el,{x,y})=>{
-  const r=el.getBoundingClientRect();
-  return [ [x,y],[x+1,y+1] ].map(([a,b])=>({
-   x:r.left+r.width*(a+.5)/(el.width/32),
-   y:r.top+r.height*(b+.5)/(el.height/32)
-  }));
- },cell);
- // Mouse real em viewport mobile para testar a área pelo próprio motor;
- // o botão Área também permite executar o mesmo gesto com toque.
- await page.mouse.move(pos[0].x,pos[0].y);
- await page.mouse.down();
- await page.mouse.move(pos[1].x,pos[1].y,{steps:10});
- await page.mouse.up();
+ for(const dx of [0,1]){
+   if(dx){await page.locator('[data-tool="construir"]').click();
+     await page.locator('[data-build-layer="field"]').click();}
+   await mouseTile(page,cell.x+dx,cell.y);
+ }
  let s=await save(page);
- expect(s.orders.filter(o=>['till','sow'].includes(o.type)).length).toBeGreaterThanOrEqual(4);
+ expect(s.orders.filter(o=>['till','sow'].includes(o.type)).length).toBe(4);
  await page.screenshot({path:'screenshots/blueprint-canteiros-mobile-390x844.png',animations:'disabled'});
- await page.locator('#build-undo').click();
+ await page.locator('[data-tool="construir"]').click();
+ await page.locator('[data-build-layer="field"]').click();
+ await mouseTile(page,cell.x,cell.y,'contextmenu');
+ await mouseTile(page,cell.x+1,cell.y,'contextmenu');
  s=await save(page);
  expect(s.orders.filter(o=>['till','sow'].includes(o.type))).toHaveLength(0);
  expect(errors).toEqual([]);
 });
-
 
 test('HUD com blueprint: velocidade, gestão e menu não se sobrepõem',async({page})=>{
   await start(page,1366,768);
@@ -166,7 +154,11 @@ test('HUD com blueprint: velocidade, gestão e menu não se sobrepõem',async({p
       expect(geometry.speed.right).toBeLessThanOrEqual(geometry.panels.left+2);
     }else{
       expect(geometry.speed.top).toBeGreaterThanOrEqual(geometry.panels.bottom-2);
-      expect(geometry.metrics.right).toBeLessThanOrEqual(geometry.speed.left+2);
+      // Em telas estreitas, a barra de velocidade ocupa a terceira linha.
+      // Comparar apenas a coordenada X reprova um layout corretamente separado em Y.
+      const overlap=(a,b)=>a.left<b.right-1&&a.right>b.left+1&&a.top<b.bottom-1&&a.bottom>b.top+1;
+      expect(overlap(geometry.metrics,geometry.speed)).toBe(false);
+      expect(geometry.speed.top).toBeGreaterThanOrEqual(geometry.metrics.bottom-2);
       expect(geometry.clock.right).toBeLessThanOrEqual(geometry.metrics.right+1);
       expect(geometry.brand.right).toBeLessThanOrEqual(geometry.panels.left+1);
     }

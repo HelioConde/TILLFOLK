@@ -23,3 +23,5 @@ Escopo: análise estática da branch main em 73d4da3. Esta auditoria **não equi
 - Pacote de habilidade de IA independente: sem copiar skills externas, sem sprites premium e com testes reproduzíveis.
 
 **Regra:** não apagar assets que possam estar em saves, nem alterar o contrato do autotile tillfolk-terrain-autotile/v1.
+
+A auditoria foi ampliada com `tools/audit-assets.cjs` e `docs/INVENTARIO_ASSETS_2026-11-11.md`; não exclui conteúdo sem análise de uso/licença.

@@ -14,7 +14,8 @@ test("Ordens não oferece seletor de cultura; variedades continuam disponíveis"
  await page.locator("#orders-btn").click();
  await expect(page.locator("#open-crop-catalog")).toHaveCount(0);
  await expect(page.locator("#crop-catalog-dialog")).toHaveCount(0);
- await expect(page.locator('[data-order-type]')).toHaveCount(8);
+ await expect(page.locator('[data-order-type]')).toHaveCount(9);
+  await expect(page.locator('[data-order-type="collectWater"]')).toHaveCount(1);
  expect(await page.evaluate(()=>window.TillfolkCrops.ALL.length)).toBe(19);
  expect(errors).toEqual([]);
 });

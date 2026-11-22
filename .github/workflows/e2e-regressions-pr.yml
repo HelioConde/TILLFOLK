@@ -1,0 +1,59 @@
+name: TILLFOLK — regressões de navegador (PR)
+on:
+  pull_request:
+    paths:
+      - 'tests/**'
+      - 'src/**'
+      - 'index.html'
+      - '*.css'
+      - '.github/workflows/e2e-regressions-pr.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  e2e:
+    name: Chromium / ${{ matrix.group }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: colony
+            spec: tests/colony.spec.cjs
+          - group: blueprints
+            spec: tests/blueprints.spec.cjs
+          - group: order-cancel
+            spec: tests/order-cancel-fruittrees.spec.cjs
+          - group: blueprint-cancel
+            spec: tests/blueprint-cancel.spec.cjs
+          - group: tutorial-flow
+            spec: tests/tutorial-flow.spec.cjs
+          - group: biome
+            spec: tests/biomes.spec.cjs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar navegador e dependências reprodutíveis
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Servir versão atual
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-e2e.log 2>&1 &
+          sleep 2
+      - name: Executar testes da área
+        run: npx playwright test "${{ matrix.spec }}" --browser chromium --reporter=line --workers=1
+      - name: Salvar rastros e capturas em caso de falha
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-e2e-${{ matrix.group }}
+          path: |
+            test-results/
+            screenshots/
+          if-no-files-found: warn
+          retention-days: 7
