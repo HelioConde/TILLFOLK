@@ -1,0 +1,27 @@
+name: TILLFOLK — Godot 4 (port experimental)
+
+on:
+  pull_request:
+    paths:
+      - 'godot-port/**'
+      - '.github/workflows/tillfolk-godot-port.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+      - name: Importar recursos e validar GDScript
+        run: godot --headless --editor --path godot-port --quit
+      - name: Validar jogabilidade mínima
+        run: godot --headless --path godot-port --script res://tests/smoke_test.gd
