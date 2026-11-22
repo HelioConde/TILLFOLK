@@ -25,9 +25,14 @@ godot --headless --editor --path godot-port --quit
 godot --headless --path godot-port --script res://tests/smoke_test.gd
 \`\`\`
 
+
+## Versão Web para testes (sem alterar GitHub Pages)
+
+A Action `TILLFOLK — Godot 4 (port experimental)` faz importação, smoke e exportação Web. Depois de passar, abra a execução da PR #72, baixe o artefato `tillfolk-godot-web-preview` e sirva os arquivos localmente com `python -m http.server 8080` na pasta extraída. Não abra o HTML direto via `file://`, porque WebAssembly precisa de HTTP. O preview **não é publicado** em `helioconde.github.io/TILLFOLK/`.
+
 ## O que AINDA NÃO foi migrado
 
-Esta versão é um vertical slice, **não uma conversão completa**. Faltam os nove atlases Sprout Lands e o autotile oficial, mapa grande com seis biomas, pathfinding com obstáculos, logística de reservas, 19 culturas e economia S4, Work Station e ferramentas, moradias/recrutamento, turismo/animais, mapa dinâmico, tutorial, HUD detalhado, exportação Web e migração de saves do \`localStorage\` antigo. Os visuais atuais são formas procedurais **temporárias**; não são sprites PixelLab nem os sprites premium da versão JS.
+Esta versão é um vertical slice, **não uma conversão completa**. Faltam os nove atlases Sprout Lands e o autotile oficial, mapa grande com seis biomas, pathfinding com obstáculos, logística de reservas, 19 culturas e economia S4, Work Station e ferramentas, moradias/recrutamento, turismo/animais, mapa dinâmico, tutorial, HUD detalhado, publicação Web e migração de saves do \`localStorage\` antigo. Os visuais atuais são formas procedurais **temporárias**; não são sprites PixelLab nem os sprites premium da versão JS.
 
 As texturas/tilemaps oficiais do JavaScript não foram alterados. **Não tratar \`user://tillfolk-godot-v1.json\` como compatível com \`tillfolk-v01\`.** O sistema de saves do Godot exige um migrador próprio antes da substituição do site. Nenhum dado legado do navegador é apagado.
 

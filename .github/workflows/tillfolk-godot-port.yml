@@ -13,15 +13,32 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Instalar Godot 4.7.2
+      - name: Instalar Godot 4.7.2 e export templates
         uses: chickensoft-games/setup-godot@v2
         with:
           version: 4.7.2
           use-dotnet: false
+          include-templates: true
       - name: Importar recursos e validar GDScript
         run: godot --headless --editor --path godot-port --quit
       - name: Validar jogabilidade mínima
         run: godot --headless --path godot-port --script res://tests/smoke_test.gd
+      - name: Exportar versão Web experimental
+        run: |
+          cd godot-port
+          mkdir -p dist
+          godot --headless --path . --export-release "Web" dist/index.html
+          test -s dist/index.html
+          test -s dist/index.js
+          test -s dist/index.wasm
+          test -s dist/index.pck
+      - name: Entregar protótipo Web como artefato, sem publicar no Pages
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-godot-web-preview
+          path: godot-port/dist/
+          if-no-files-found: error
+          retention-days: 14
