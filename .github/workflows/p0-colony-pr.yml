@@ -1,0 +1,51 @@
+name: TILLFOLK — P0 colônia antes do merge
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/game.js'
+      - 'src/colony-life.js'
+      - 'src/logistics.js'
+      - 'tests/colony.spec.cjs'
+      - 'tests/helpers/**'
+      - 'index.html'
+      - '.github/workflows/p0-colony-pr.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  colony:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validar o contrato de terreno e a colônia
+        run: |
+          node --check src/game.js
+          node --check tests/colony.spec.cjs
+          node --test tests/manure-wildlife.test.cjs tests/colony-life.test.cjs tests/logistics.test.cjs
+          node --test tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
+      - name: Instalar navegador
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Servir aplicação
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/tillfolk-colony-http.log 2>&1 &
+          sleep 2
+      - name: Verificar oito jornadas reais da colônia
+        run: npx playwright test tests/colony.spec.cjs --browser chromium --workers=1 --reporter=line
+      - name: Publicar evidências
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillfolk-colony-p0-evidencias
+          path: |
+            screenshots/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
