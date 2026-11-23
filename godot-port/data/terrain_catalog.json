@@ -1,0 +1,21 @@
+{
+  "terrainAtlases": {
+    "grassLayer": "Grass_Tile_Layers.png",
+    "grassLayer2": "Grass_Tile_layers2.png",
+    "darkGrassLayer": "Darker_Grass_Tile_Layers.png",
+    "darkGrassLayer2": "Darker_Grass_Tile_Layers2.png",
+    "grassGround": "Grass_tiles_v2.png",
+    "darkGrassGround": "Darker_Grass_Tiles_v2.png",
+    "soilGround": "Soil_Ground_Tiles.png",
+    "darkSoilGround": "Darker_Soil_Ground_Tiles.png",
+    "stoneGround": "Stone_Ground_Tiles.png"
+  },
+  "biomeAtlas": {
+    "g": "grassLayer",
+    "f": "darkGrassLayer",
+    "s": "soilGround",
+    "i": "stoneGround",
+    "w": "darkSoilGround",
+    "p": "darkGrassLayer2"
+  }
+}

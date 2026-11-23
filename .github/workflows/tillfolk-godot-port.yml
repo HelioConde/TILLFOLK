@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'godot-port/**'
+      - 'tests/godot-terrain-parity.test.cjs'
+      - 'src/terrain-autotile.js'
+      - 'src/terrain-catalog.js'
+      - 'public/assets/**/Grass_Tile_Layers_terrain.json'
       - '.github/workflows/tillfolk-godot-port.yml'
   workflow_dispatch:
 
@@ -16,6 +20,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Verificar equivalencia com terreno HTML5 e contrato imutavel
+        run: |
+          node --test tests/godot-terrain-parity.test.cjs tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
       - name: Instalar Godot 4.7.2 e export templates
         uses: chickensoft-games/setup-godot@v2
         with:
@@ -26,6 +33,8 @@ jobs:
         run: godot --headless --editor --path godot-port --quit
       - name: Validar jogabilidade mínima
         run: godot --headless --path godot-port --script res://tests/smoke_test.gd
+      - name: Validar resolver autotile Godot
+        run: godot --headless --path godot-port --script res://tests/terrain_contract_test.gd
       - name: Exportar versão Web experimental
         run: |
           cd godot-port

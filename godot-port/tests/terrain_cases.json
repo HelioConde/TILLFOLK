@@ -1,0 +1,241 @@
+[
+  {
+    "name": "centro",
+    "rows": [
+      "111",
+      "111",
+      "111"
+    ],
+    "role": "centro",
+    "inner": [],
+    "fallback": false
+  },
+  {
+    "name": "canto_noroeste",
+    "rows": [
+      "000",
+      "011",
+      "011"
+    ],
+    "role": "canto_noroeste",
+    "inner": [],
+    "fallback": false
+  },
+  {
+    "name": "canto_nordeste",
+    "rows": [
+      "000",
+      "110",
+      "110"
+    ],
+    "role": "canto_nordeste",
+    "inner": [],
+    "fallback": false
+  },
+  {
+    "name": "canto_sudoeste",
+    "rows": [
+      "011",
+      "011",
+      "000"
+    ],
+    "role": "canto_sudoeste",
+    "inner": [],
+    "fallback": false
+  },
+  {
+    "name": "canto_sudeste",
+    "rows": [
+      "110",
+      "110",
+      "000"
+    ],
+    "role": "canto_sudeste",
+    "inner": [],
+    "fallback": false
+  },
+  {
+    "name": "borda_norte",
+    "rows": [
+      "000",
+      "111",
+      "111"
+    ],
+    "role": "borda_norte",
+    "inner": [],
+    "fallback": false
+  },
+  {
+    "name": "borda_leste",
+    "rows": [
+      "110",
+      "110",
+      "110"
+    ],
+    "role": "borda_leste",
+    "inner": [],
+    "fallback": false
+  },
+  {
+    "name": "borda_sul",
+    "rows": [
+      "111",
+      "111",
+      "000"
+    ],
+    "role": "borda_sul",
+    "inner": [],
+    "fallback": false
+  },
+  {
+    "name": "borda_oeste",
+    "rows": [
+      "011",
+      "011",
+      "011"
+    ],
+    "role": "borda_oeste",
+    "inner": [],
+    "fallback": false
+  },
+  {
+    "name": "isolado",
+    "rows": [
+      "000",
+      "010",
+      "000"
+    ],
+    "role": "isolado",
+    "inner": [],
+    "fallback": true
+  },
+  {
+    "name": "horizontal",
+    "rows": [
+      "000",
+      "111",
+      "000"
+    ],
+    "role": "horizontal",
+    "inner": [],
+    "fallback": true
+  },
+  {
+    "name": "vertical",
+    "rows": [
+      "010",
+      "010",
+      "010"
+    ],
+    "role": "vertical",
+    "inner": [],
+    "fallback": true
+  },
+  {
+    "name": "ponta_norte",
+    "rows": [
+      "010",
+      "010",
+      "000"
+    ],
+    "role": "ponta_norte",
+    "inner": [],
+    "fallback": true
+  },
+  {
+    "name": "ponta_leste",
+    "rows": [
+      "000",
+      "011",
+      "000"
+    ],
+    "role": "ponta_leste",
+    "inner": [],
+    "fallback": true
+  },
+  {
+    "name": "ponta_sul",
+    "rows": [
+      "000",
+      "010",
+      "010"
+    ],
+    "role": "ponta_sul",
+    "inner": [],
+    "fallback": true
+  },
+  {
+    "name": "ponta_oeste",
+    "rows": [
+      "000",
+      "110",
+      "000"
+    ],
+    "role": "ponta_oeste",
+    "inner": [],
+    "fallback": true
+  },
+  {
+    "name": "interno_noroeste",
+    "rows": [
+      "011",
+      "111",
+      "111"
+    ],
+    "role": "centro",
+    "inner": [
+      "interno_noroeste"
+    ],
+    "fallback": false
+  },
+  {
+    "name": "interno_nordeste",
+    "rows": [
+      "110",
+      "111",
+      "111"
+    ],
+    "role": "centro",
+    "inner": [
+      "interno_nordeste"
+    ],
+    "fallback": false
+  },
+  {
+    "name": "interno_sudoeste",
+    "rows": [
+      "111",
+      "111",
+      "011"
+    ],
+    "role": "centro",
+    "inner": [
+      "interno_sudoeste"
+    ],
+    "fallback": false
+  },
+  {
+    "name": "interno_sudeste",
+    "rows": [
+      "111",
+      "111",
+      "110"
+    ],
+    "role": "centro",
+    "inner": [
+      "interno_sudeste"
+    ],
+    "fallback": false
+  },
+  {
+    "name": "vazio",
+    "rows": [
+      "000",
+      "000",
+      "000"
+    ],
+    "role": null,
+    "inner": [],
+    "fallback": false
+  }
+]
