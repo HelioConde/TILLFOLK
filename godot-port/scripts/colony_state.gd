@@ -46,9 +46,9 @@ func reset() -> void:
 	get_tile(Vector2i(10, 6))["resource"] = "tree"
 	workers = [
 		{"name": "Lia", "x": 4.5, "y": 5.5, "hunger": 85.0, "health": 100.0,
-			"skills": ["till", "plant"], "cargo": {}, "order_id": 0},
+			"skills": ["till", "plant"], "blocked_tools": [], "cargo": {}, "order_id": 0},
 		{"name": "Nilo", "x": 5.5, "y": 4.5, "hunger": 85.0, "health": 100.0,
-			"skills": ["collect", "carry", "fetch_water"], "cargo": {}, "order_id": 0}
+			"skills": ["collect", "carry", "fetch_water"], "blocked_tools": [], "cargo": {}, "order_id": 0}
 	]
 	stocks = {"food": 6, "seeds": 5, "water": 6, "wood": 0}
 	day = 1
@@ -86,15 +86,15 @@ func _valid_work(cell: Vector2i, tool: String) -> bool:
 			return int(tile["produce"]) > 0
 	return false
 
-func queue_order(cell: Vector2i, tool: String) -> bool:
-	if game_over or not TOOLS.has(tool) or not _valid_work(cell, tool):
+func queue_order(cell: Vector2i, tool: String, priority: int = 5) -> bool:
+	if game_over or not TOOLS.has(tool) or priority < 1 or priority > 9 or not _valid_work(cell, tool):
 		return false
 	# Uma ação por célula de cada vez evita acumular etapas não autorizadas.
 	for order in orders:
 		if int(order["x"]) == cell.x and int(order["y"]) == cell.y:
 			return false
 	orders.append({"id": next_id, "x": cell.x, "y": cell.y, "tool": tool,
-		"worker": -1, "progress": 0.0})
+		"priority": priority, "worker": -1, "progress": 0.0})
 	next_id += 1
 	return true
 
@@ -115,6 +115,20 @@ func _find_order(order_id: int) -> Dictionary:
 			return order
 	return {}
 
+## O bonus segue o contrato do jogo HTML5: especializar em menos funcoes
+## aumenta a eficiencia em cada uma, sem bloquear trabalhos genericos.
+func _skill_multiplier(worker: Dictionary, tool: String) -> float:
+	var skills: Array = worker.get("skills", [])
+	if not skills.has(tool):
+		return 1.0
+	match skills.size():
+		1:
+			return 2.0
+		2:
+			return 1.6
+		_:
+			return 1.3
+
 func _choose_order(worker_index: int) -> Dictionary:
 	var chosen: Dictionary = {}
 	var best := INF
@@ -123,15 +137,22 @@ func _choose_order(worker_index: int) -> Dictionary:
 		if int(order["worker"]) >= 0:
 			continue
 		var cell := Vector2i(int(order["x"]), int(order["y"]))
-		if not _valid_work(cell, str(order["tool"])):
+		var tool: String = str(order["tool"])
+		# Tracos vermelhos proíbem a atividade; bonus positivo nao e permissao.
+		var forbidden: Array = worker.get("blocked_tools", [])
+		if forbidden.has(tool) or not _valid_work(cell, tool):
 			continue
 		var start := Vector2i(floori(float(worker["x"])), floori(float(worker["y"])))
 		var route: Array[Vector2i] = Navigation.find_route(start, cell, tiles, WIDTH, HEIGHT)
 		if route.is_empty():
 			continue # Nao atribuir trabalho inacessivel.
 		var distance := float(route.size() - 1)
-		var preferred := 1.0 if (worker["skills"] as Array).has(order["tool"]) else 0.0
-		var score: float = distance - preferred
+		var preferred: float = (_skill_multiplier(worker, tool) - 1.0) * 8.0
+		# Prioridade 9 vem antes de 1. A diferenca de 100 pontos evita
+		# que uma caminhada longa neutralize a ordem urgente neste mapa.
+		# Saves antigos sem priority mantem o padrao intermediario (5).
+		var priority: int = clampi(int(order.get("priority", 5)), 1, 9)
+		var score: float = float(9 - priority) * 100.0 + distance - preferred
 		if score < best:
 			best = score
 			chosen = order
@@ -236,7 +257,7 @@ func _advance_worker(worker_index: int, delta: float) -> void:
 		return
 	if _travel_worker(worker_index, cell, delta) != 0:
 		return
-	var bonus := 1.6 if (worker["skills"] as Array).has(order["tool"]) else 1.0
+	var bonus: float = _skill_multiplier(worker, str(order["tool"]))
 	order["progress"] = float(order["progress"]) + delta * bonus
 	if float(order["progress"]) >= float(JOB_SECONDS[order["tool"]]):
 		_complete_order(order, worker)
@@ -292,8 +313,18 @@ func restore(data: Dictionary) -> bool:
 	for worker in candidate_workers:
 		if not (worker is Dictionary) or not worker.has_all(["name", "x", "y", "hunger", "health", "skills", "cargo", "order_id"]):
 			return false
+		if not (worker["skills"] is Array) or worker["skills"].size() > 3:
+			return false
+		if worker.has("blocked_tools"):
+			if not (worker["blocked_tools"] is Array) or worker["blocked_tools"].size() > 3:
+				return false
+			for blocked_tool in worker["blocked_tools"]:
+				if not TOOLS.has(str(blocked_tool)):
+					return false
 	for order in candidate_orders:
 		if not (order is Dictionary) or not order.has_all(["id", "x", "y", "tool", "worker", "progress"]):
+			return false
+		if order.has("priority") and (int(order["priority"]) < 1 or int(order["priority"]) > 9):
 			return false
 	for kind in ["food", "seeds", "water", "wood"]:
 		if not candidate_stocks.has(kind) or int(candidate_stocks[kind]) < 0:
