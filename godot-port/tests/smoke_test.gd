@@ -96,5 +96,57 @@ func _run() -> void:
 	if int(restored.stocks["food"]) != previous_food:
 		_fail("Save inválido modificou estado anterior.")
 		return
-	print("TILLFOLK Godot: coleta, depósito, agricultura, transporte e save OK")
+	# Teste de colisao: arvore no caminho, arbusto alem dela.
+	var blocked = ColonyState.new()
+	blocked.workers[1]["health"] = 0.0
+	blocked.workers[0]["x"] = 5.5
+	blocked.workers[0]["y"] = 5.5
+	blocked.get_tile(Vector2i(6, 5))["resource"] = "tree"
+	blocked.get_tile(Vector2i(7, 5))["resource"] = "bush"
+	if not blocked.queue_order(Vector2i(7, 5), "collect"):
+		_fail("Coleta atras de obstaculo foi rejeitada.")
+		return
+	for i in range(240):
+		blocked.step(0.1)
+		var pos := Vector2i(floori(float(blocked.workers[0]["x"])), floori(float(blocked.workers[0]["y"])))
+		if pos == Vector2i(6, 5):
+			_fail("Colono atravessou uma arvore durante a coleta.")
+			return
+	if int(blocked.stocks["food"]) != 8:
+		_fail("O caminho alternativo nao concluiu a coleta e o transporte.")
+		return
+	# Coleta de agua deve acontecer na margem, nao dentro do rio.
+	var river = ColonyState.new()
+	river.workers[1]["health"] = 0.0
+	river.workers[0]["x"] = 19.5
+	river.workers[0]["y"] = 5.5
+	river.get_tile(Vector2i(19, 5))["resource"] = "empty"
+	if not river.queue_order(Vector2i(20, 5), "fetch_water"):
+		_fail("Buscar agua no rio foi rejeitado.")
+		return
+	for i in range(280):
+		river.step(0.1)
+		var pos := Vector2i(floori(float(river.workers[0]["x"])), floori(float(river.workers[0]["y"])))
+		if river.get_tile(pos).get("resource") == "water" or river.get_tile(pos).get("resource") == "tree":
+			_fail("Colono atravessou obstaculo ao buscar agua.")
+			return
+	if int(river.stocks["water"]) != 9:
+		_fail("Agua nao chegou fisicamente ao deposito.")
+		return
+	# Alvo totalmente bloqueado continua na fila, sem atribuir ou criar recursos.
+	var isolated = ColonyState.new()
+	var target := Vector2i(12, 9)
+	isolated.get_tile(target)["resource"] = "bush"
+	for direction in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+		isolated.get_tile(target + direction)["resource"] = "tree"
+	if not isolated.queue_order(target, "collect"):
+		_fail("Ordem distante bloqueada nao deveria ser descartada silenciosamente.")
+		return
+	for i in range(30):
+		isolated.step(0.1)
+	if int(isolated.orders[0]["worker"]) != -1 or int(isolated.stocks["food"]) != 6:
+		_fail("Trabalho inacessivel foi executado sem um caminho livre.")
+		return
+	print("TILLFOLK Godot: pathfinding, costa, bloqueio, estoque e save OK")
+
 	quit(0)
