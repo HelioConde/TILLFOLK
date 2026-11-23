@@ -15,7 +15,7 @@
     "rows": [
       "000",
       "011",
-      "010"
+      "011"
     ],
     "role": "canto_noroeste",
     "inner": [],
@@ -26,7 +26,7 @@
     "rows": [
       "000",
       "110",
-      "010"
+      "110"
     ],
     "role": "canto_nordeste",
     "inner": [],
@@ -35,7 +35,7 @@
   {
     "name": "canto_sudoeste",
     "rows": [
-      "010",
+      "011",
       "011",
       "000"
     ],
@@ -46,7 +46,7 @@
   {
     "name": "canto_sudeste",
     "rows": [
-      "010",
+      "110",
       "110",
       "000"
     ],
@@ -59,7 +59,7 @@
     "rows": [
       "000",
       "111",
-      "010"
+      "111"
     ],
     "role": "borda_norte",
     "inner": [],
@@ -68,9 +68,9 @@
   {
     "name": "borda_leste",
     "rows": [
-      "010",
       "110",
-      "010"
+      "110",
+      "110"
     ],
     "role": "borda_leste",
     "inner": [],
@@ -79,7 +79,7 @@
   {
     "name": "borda_sul",
     "rows": [
-      "010",
+      "111",
       "111",
       "000"
     ],
@@ -90,9 +90,9 @@
   {
     "name": "borda_oeste",
     "rows": [
-      "010",
       "011",
-      "010"
+      "011",
+      "011"
     ],
     "role": "borda_oeste",
     "inner": [],
