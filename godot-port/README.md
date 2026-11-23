@@ -6,11 +6,12 @@ Este é o **primeiro recorte de migração do TILLFOLK**, colocado em \`godot-po
 - Mapa top-down reproduzível com clareira, árvores, arbustos e fonte de água.
 - Dois colonos com nomes, fome, saúde, habilidade preferencial e autonomia para selecionar ordens explícitas.
 - Coleta de alimentos, sementes e madeira; busca de água; transporte físico ao depósito.
+- Navegação por grade contorna árvores e rios; madeira e água são coletadas de células adjacentes transitáveis, sem atravessar obstáculos ou gerar recursos à distância.
 - Arar → semear → regar → amadurecer → colher → transportar. As etapas **não são criadas automaticamente**.
 - Consumo de comida, fome, dano e derrota; dia e horário.
 - Ordem por clique, cancelamento com botão direito, seleção de ferramentas 1–7.
 - Novo jogo, salvar e carregar no sistema de arquivos local do Godot (\`user://\`), com verificação mínima de integridade.
-- Um smoke test GDScript sem dependências de servidor.
+- Um smoke test GDScript sem dependências de servidor, incluindo desvio de árvore, trabalho na margem do rio e tarefas isoladas.
 
 ## Rodar localmente
 
@@ -32,7 +33,7 @@ A Action `TILLFOLK — Godot 4 (port experimental)` faz importação, smoke e ex
 
 ## O que AINDA NÃO foi migrado
 
-Esta versão é um vertical slice, **não uma conversão completa**. Faltam os nove atlases Sprout Lands e o autotile oficial, mapa grande com seis biomas, pathfinding com obstáculos, logística de reservas, 19 culturas e economia S4, Work Station e ferramentas, moradias/recrutamento, turismo/animais, mapa dinâmico, tutorial, HUD detalhado, publicação Web e migração de saves do \`localStorage\` antigo. Os visuais atuais são formas procedurais **temporárias**; não são sprites PixelLab nem os sprites premium da versão JS.
+Esta versão é um vertical slice, **não uma conversão completa**. Faltam os nove atlases Sprout Lands e o autotile oficial, mapa grande com seis biomas, navegação avançada (terrenos/custos dinâmicos e reservas), logística de reservas, 19 culturas e economia S4, Work Station e ferramentas, moradias/recrutamento, turismo/animais, mapa dinâmico, tutorial, HUD detalhado, publicação Web e migração de saves do \`localStorage\` antigo. Os visuais atuais são formas procedurais **temporárias**; não são sprites PixelLab nem os sprites premium da versão JS.
 
 As texturas/tilemaps oficiais do JavaScript não foram alterados. **Não tratar \`user://tillfolk-godot-v1.json\` como compatível com \`tillfolk-v01\`.** O sistema de saves do Godot exige um migrador próprio antes da substituição do site. Nenhum dado legado do navegador é apagado.
 
@@ -41,7 +42,7 @@ As texturas/tilemaps oficiais do JavaScript não foram alterados. **Não tratar 
 1. Portar o contrato \`tillfolk-terrain-autotile/v1\` para um TileSet/TileMapLayer sem mudar IDs ou papéis.
 2. Integrar os sprites autorizados de Sprout Lands com orientação e animações verificadas, preservando a licença.
 3. Portar a lógica real de save e a economia agrária com testes comparativos entre JS e Godot.
-4. Portar pathfinding, ordens/prioridades, trabalho com ferramentas, física de transporte e profissões.
+4. Evoluir o pathfinding básico com custos e reservas, além de ordens/prioridades, trabalho com ferramentas, física de transporte e profissões.
 5. Adicionar testes visuais desktop/mobile e só então configurar uma publicação Web **alternativa**, sem substituir a versão HTML5 atual.
 
 O jogo de ação **Eclipse Vanguard** continua exclusivamente no repositório \`Re-Dream\`.
