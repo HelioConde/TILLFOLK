@@ -96,6 +96,28 @@ func _run() -> void:
 	if int(restriction.orders[0]["worker"]) != 1:
 		_fail("Atividade proibida nao foi entregue ao outro trabalhador apto.")
 		return
+	# Restricao aplicada a tarefa ja atribuida libera a ordem sem perder recursos.
+	var midtask = ColonyState.new()
+	midtask.workers[1]["health"] = 0.0
+	midtask.workers[0]["x"] = 7.5
+	midtask.workers[0]["y"] = 5.5
+	if not midtask.queue_order(Vector2i(8, 5), "collect", 7):
+		_fail("Tarefa para validar elegibilidade durante a execucao foi recusada.")
+		return
+	midtask.step(0.1)
+	if int(midtask.orders[0]["worker"]) != 0:
+		_fail("Tarefa nao foi atribuida antes da alteracao de restricao.")
+		return
+	midtask.workers[0]["blocked_tools"] = ["collect"]
+	midtask.step(0.1)
+	if int(midtask.orders[0]["worker"]) != -1 or int(midtask.workers[0]["order_id"]) != 0 or int(midtask.stocks["food"]) != 6:
+		_fail("Atividade proibida continuou em execucao ou consumiu recursos.")
+		return
+	midtask.workers[1]["health"] = 100.0
+	midtask.step(0.1)
+	if int(midtask.orders[0]["worker"]) != 1:
+		_fail("Ordem suspensa por restricao nao foi liberada ao colono apto.")
+		return
 	# Bonus conforme GDD: uma especialidade 2.0x, duas 1.6x e tres 1.3x.
 	if absf(priority._skill_multiplier({"skills": ["water"]}, "water") - 2.0) > 0.001:
 		_fail("Bonus para uma especialidade diferente do GDD.")
