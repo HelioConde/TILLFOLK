@@ -21,6 +21,25 @@ func _run() -> void:
 	if colony == null or colony.workers.size() != 2:
 		_fail("A primeira colônia deve começar com dois colonos.")
 		return
+	# Tempo: pausa congela toda a simulação; 3x executa três passos reais.
+	var start_minutes: float = float(colony.minutes)
+	main.call("_toggle_pause")
+	main.call("_process", 0.2)
+	if absf(float(colony.minutes) - start_minutes) > 0.001:
+		_fail("Simulação continuou avançando durante a pausa.")
+		return
+	main.call("_set_speed", 3)
+	if bool(main.get("simulation_paused")) or int(main.get("simulation_speed")) != 3:
+		_fail("Selecionar 3x não retomou a simulação.")
+		return
+	main.call("_process", 0.1)
+	if absf(float(colony.minutes) - start_minutes - 2.4) > 0.001:
+		_fail("Velocidade 3x não avançou três passos da simulação.")
+		return
+	main.call("_set_speed", 1)
+	if int(main.get("simulation_speed")) != 1:
+		_fail("Velocidade normal não foi restaurada.")
+		return
 	if not colony.queue_order(Vector2i(8, 5), "collect"):
 		_fail("Coleta real na clareira não entrou na fila.")
 		return

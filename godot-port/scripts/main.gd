@@ -16,6 +16,10 @@ var hud_label: Label
 var help_label: Label
 var message_label: Label
 var tool_buttons: Dictionary = {}
+var pause_button: Button
+var speed_buttons: Dictionary = {}
+var simulation_paused := false
+var simulation_speed := 1
 var render_elapsed := 0.0
 
 func _ready() -> void:
@@ -49,6 +53,20 @@ func _build_hud() -> void:
 	message_label.position = Vector2(22, 647)
 	message_label.add_theme_color_override("font_color", Color("#f4d18b"))
 	overlay.add_child(message_label)
+	pause_button = Button.new()
+	pause_button.position = Vector2(824, 62)
+	pause_button.custom_minimum_size = Vector2(100, 30)
+	pause_button.pressed.connect(_toggle_pause)
+	overlay.add_child(pause_button)
+	for i in range(3):
+		var speed := i + 1
+		var speed_button := Button.new()
+		speed_button.text = "%dx" % speed
+		speed_button.position = Vector2(934 + i * 74, 62)
+		speed_button.custom_minimum_size = Vector2(66, 30)
+		speed_button.pressed.connect(_set_speed.bind(speed))
+		overlay.add_child(speed_button)
+		speed_buttons[speed] = speed_button
 	for i in range(TOOL_KEYS.size()):
 		var tool: String = TOOL_KEYS[i]
 		var button := Button.new()
@@ -83,8 +101,29 @@ func _select_tool(tool: String) -> void:
 	message_label.text = "Ferramenta escolhida: " + TOOL_LABELS[tool]
 	_update_hud()
 
+func _toggle_pause() -> void:
+	simulation_paused = not simulation_paused
+	message_label.text = "Simulação pausada." if simulation_paused else "Simulação retomada."
+	_update_hud()
+
+func _set_speed(speed: int) -> void:
+	if speed < 1 or speed > 3:
+		return
+	simulation_speed = speed
+	simulation_paused = false
+	message_label.text = "Velocidade ajustada para %dx." % speed
+	_update_hud()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_P:
+			_toggle_pause()
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode in [KEY_8, KEY_9, KEY_0]:
+			_set_speed(1 if event.keycode == KEY_8 else (2 if event.keycode == KEY_9 else 3))
+			get_viewport().set_input_as_handled()
+			return
 		var idx: int = int(event.keycode) - int(KEY_1)
 		if idx >= 0 and idx < TOOL_KEYS.size():
 			_select_tool(TOOL_KEYS[idx])
@@ -104,7 +143,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		queue_redraw()
 
 func _process(delta: float) -> void:
-	colony.step(delta)
+	if not simulation_paused:
+		# Executar passos normais preserva os limites de dt da simulação.
+		for _tick in range(simulation_speed):
+			colony.step(delta)
 	render_elapsed += delta
 	if render_elapsed >= 0.12:
 		render_elapsed = 0.0
@@ -120,12 +162,15 @@ func _update_hud() -> void:
 	for worker in colony.workers:
 		if float(worker["health"]) > 0.0:
 			remaining += 1
-	hud_label.text = "COLÔNIA\nDia %d  •  %02d:%02d\n\nVivos: %d / %d\nComida: %d\nSementes: %d\nÁgua: %d\nMadeira: %d\nOrdens: %d" % [
-		colony.day, hours, mins, remaining, colony.workers.size(),
+	hud_label.text = "COLÔNIA\nDia %d  •  %02d:%02d\nTempo: %s\n\nVivos: %d / %d\nComida: %d\nSementes: %d\nÁgua: %d\nMadeira: %d\nOrdens: %d" % [
+		colony.day, hours, mins, ("PAUSADO" if simulation_paused else "%dx" % simulation_speed), remaining, colony.workers.size(),
 		colony.stocks["food"], colony.stocks["seeds"],
 		colony.stocks["water"], colony.stocks["wood"], colony.orders.size()
 	]
-	help_label.text = "TRABALHO\n1–7: selecionar ordem\nClique: colocar ordem\nDireito: cancelar\n\nA coleta precisa chegar ao\nacampamento para virar estoque.\nA agricultura exige etapas:\narar → semear → regar →\ncolher → transportar.\n\n%s" % ("COLÔNIA PERDIDA" if colony.game_over else "Proteja seus colonos da fome.")
+	help_label.text = "TRABALHO\n1–7: selecionar ordem\nP: pausar / retomar\n8 / 9 / 0: 1x / 2x / 3x\nClique: colocar ordem\nDireito: cancelar\n\nA coleta precisa chegar ao\nacampamento para virar estoque.\nA agricultura exige etapas:\narar → semear → regar →\ncolher → transportar.\n\n%s" % ("COLÔNIA PERDIDA" if colony.game_over else "Proteja seus colonos da fome.")
+	pause_button.text = "Retomar" if simulation_paused else "Pausar"
+	for speed in speed_buttons:
+		speed_buttons[speed].modulate = Color("#b6de81") if speed == simulation_speed and not simulation_paused else Color.WHITE
 	for tool in TOOL_KEYS:
 		var button: Button = tool_buttons[tool]
 		button.modulate = Color("#b6de81") if tool == selected_tool else Color.WHITE

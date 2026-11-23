@@ -10,6 +10,7 @@ Este é o **primeiro recorte de migração do TILLFOLK**, colocado em \`godot-po
 - Arar → semear → regar → amadurecer → colher → transportar. As etapas **não são criadas automaticamente**.
 - Consumo de comida, fome, dano e derrota; dia e horário.
 - Ordem por clique, cancelamento com botão direito, seleção de ferramentas 1–7.
+- Pausa e retomada (`P` ou botão) e velocidades de simulação 1x, 2x e 3x (`8`, `9`, `0` ou botões). A pausa congela o relógio, os colonos, a fome e os trabalhos; mudar a velocidade retoma a partida. Os controles de tempo são da sessão e não alteram o formato do save.
 - Novo jogo, salvar e carregar no sistema de arquivos local do Godot (\`user://\`), com verificação mínima de integridade.
 - Um smoke test GDScript sem dependências de servidor, incluindo desvio de árvore, trabalho na margem do rio e tarefas isoladas.
 
