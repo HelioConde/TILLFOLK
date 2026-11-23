@@ -7,10 +7,12 @@ const DEPOT := Vector2(4.5, 4.5)
 const MOVE_SPEED := 3.0
 const JOB_SECONDS := {"collect": 2.0, "fetch_water": 2.0, "till": 1.8, "plant": 1.3, "water": 1.3, "harvest": 2.2, "carry": 1.4}
 const TOOLS := ["collect", "till", "plant", "water", "harvest", "carry", "fetch_water"]
+const Navigation = preload("res://scripts/navigation.gd")
 
 var tiles: Array = []
 var workers: Array = []
 var orders: Array = []
+var navigation_targets: Dictionary = {} # cache transitorio, nunca salvo
 var stocks: Dictionary = {}
 var day := 1
 var minutes := 360.0
@@ -24,6 +26,7 @@ func reset() -> void:
 	tiles.clear()
 	workers.clear()
 	orders.clear()
+	navigation_targets.clear()
 	for y in range(HEIGHT):
 		for x in range(WIDTH):
 			var roll := (x * 19 + y * 37 + x * y * 7) % 17
@@ -101,6 +104,7 @@ func cancel_order(cell: Vector2i) -> bool:
 			var worker_id: int = int(order["worker"])
 			if worker_id >= 0 and worker_id < workers.size():
 				workers[worker_id]["order_id"] = 0
+				navigation_targets.erase(worker_id)
 			orders.erase(order)
 			return true
 	return false
@@ -121,7 +125,11 @@ func _choose_order(worker_index: int) -> Dictionary:
 		var cell := Vector2i(int(order["x"]), int(order["y"]))
 		if not _valid_work(cell, str(order["tool"])):
 			continue
-		var distance := Vector2(float(worker["x"]), float(worker["y"])).distance_to(Vector2(cell) + Vector2(0.5, 0.5))
+		var start := Vector2i(floori(float(worker["x"])), floori(float(worker["y"])))
+		var route: Array[Vector2i] = Navigation.find_route(start, cell, tiles, WIDTH, HEIGHT)
+		if route.is_empty():
+			continue # Nao atribuir trabalho inacessivel.
+		var distance := float(route.size() - 1)
 		var preferred := 1.0 if (worker["skills"] as Array).has(order["tool"]) else 0.0
 		var score: float = distance - preferred
 		if score < best:
@@ -138,6 +146,30 @@ func _move_worker(worker: Dictionary, target: Vector2, delta: float) -> bool:
 	worker["x"] = moved.x
 	worker["y"] = moved.y
 	return moved.distance_to(target) > 0.08
+
+## -1: inacessivel, 0: chegou, 1: deslocamento em andamento.
+## O proximo centro de celula fica fixo ate ser alcancado, impedindo
+## movimentos diagonais e atalhos atraves dos obstaculos.
+func _travel_worker(worker_index: int, destination: Vector2i, delta: float) -> int:
+	var worker: Dictionary = workers[worker_index]
+	var cached: Dictionary = navigation_targets.get(worker_index, {})
+	var hop: Vector2i
+	if cached.is_empty() or cached.get("goal") != destination or not Navigation.walkable(cached["hop"], tiles, WIDTH, HEIGHT):
+		var start := Vector2i(floori(float(worker["x"])), floori(float(worker["y"])))
+		var route: Array[Vector2i] = Navigation.find_route(start, destination, tiles, WIDTH, HEIGHT)
+		if route.is_empty():
+			navigation_targets.erase(worker_index)
+			return -1
+		hop = route[1] if route.size() > 1 else route[0]
+		navigation_targets[worker_index] = {"goal": destination, "hop": hop}
+	else:
+		hop = cached["hop"]
+	if _move_worker(worker, Vector2(hop) + Vector2(0.5, 0.5), delta):
+		return 1
+	navigation_targets.erase(worker_index)
+	if hop == destination or (not Navigation.walkable(destination, tiles, WIDTH, HEIGHT) and (hop - destination).length_squared() == 1):
+		return 0
+	return 1
 
 func _complete_order(order: Dictionary, worker: Dictionary) -> void:
 	var cell := Vector2i(int(order["x"]), int(order["y"]))
@@ -176,7 +208,7 @@ func _advance_worker(worker_index: int, delta: float) -> void:
 		return
 	var cargo: Dictionary = worker["cargo"]
 	if not cargo.is_empty():
-		if _move_worker(worker, DEPOT, delta):
+		if _travel_worker(worker_index, Vector2i(4, 4), delta) != 0:
 			return
 		for kind in cargo.keys():
 			stocks[kind] = int(stocks.get(kind, 0)) + int(cargo[kind])
@@ -193,7 +225,7 @@ func _advance_worker(worker_index: int, delta: float) -> void:
 		order["worker"] = -1
 		worker["order_id"] = 0
 		return
-	if _move_worker(worker, Vector2(cell) + Vector2(0.5, 0.5), delta):
+	if _travel_worker(worker_index, cell, delta) != 0:
 		return
 	var bonus := 1.6 if (worker["skills"] as Array).has(order["tool"]) else 1.0
 	order["progress"] = float(order["progress"]) + delta * bonus
@@ -265,4 +297,5 @@ func restore(data: Dictionary) -> bool:
 	minutes = clampf(float(data.get("minutes", 360.0)), 0.0, 1439.99)
 	next_id = maxi(1, int(data.get("next_id", 1)))
 	game_over = bool(data.get("game_over", false))
+	navigation_targets.clear()
 	return true
