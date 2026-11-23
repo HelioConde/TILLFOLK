@@ -64,6 +64,109 @@ func _run() -> void:
 	if not death.orders.is_empty() or int(death.stocks["food"]) != 8:
 		_fail("Trabalhador sobrevivente nao finalizou coleta e transporte.")
 		return
+	# Ordem urgente deve vencer a ordem mais proxima; a escolha e do jogador.
+	var priority = ColonyState.new()
+	priority.workers[0]["health"] = 0.0
+	if not priority.queue_order(Vector2i(8, 5), "collect", 1):
+		_fail("Ordem de prioridade baixa nao foi aceita.")
+		return
+	if not priority.queue_order(Vector2i(10, 6), "collect", 9):
+		_fail("Ordem urgente nao foi aceita.")
+		return
+	if priority.queue_order(Vector2i(6, 6), "till", 0) or priority.queue_order(Vector2i(6, 6), "till", 10):
+		_fail("Prioridade fora da faixa 1 a 9 foi aceita.")
+		return
+	priority.step(0.1)
+	if int(priority.orders[0]["worker"]) != -1 or int(priority.orders[1]["worker"]) != 1:
+		_fail("Ordem urgente mais distante nao foi selecionada antes da coleta comum.")
+		return
+	# Um trabalhador nunca executa atividade proibida por traco negativo.
+	var restriction = ColonyState.new()
+	restriction.workers[0]["blocked_tools"] = ["collect"]
+	restriction.workers[1]["health"] = 0.0
+	if not restriction.queue_order(Vector2i(8, 5), "collect", 9):
+		_fail("Ordem explicita para testar traco negativo foi recusada.")
+		return
+	restriction.step(0.1)
+	if int(restriction.orders[0]["worker"]) != -1 or int(restriction.stocks["food"]) != 6:
+		_fail("Traco negativo nao bloqueou a atribuicao ou criou recursos.")
+		return
+	restriction.workers[1]["health"] = 100.0
+	restriction.step(0.1)
+	if int(restriction.orders[0]["worker"]) != 1:
+		_fail("Atividade proibida nao foi entregue ao outro trabalhador apto.")
+		return
+	# Restricao aplicada a tarefa ja atribuida libera a ordem sem perder recursos.
+	var midtask = ColonyState.new()
+	midtask.workers[1]["health"] = 0.0
+	midtask.workers[0]["x"] = 7.5
+	midtask.workers[0]["y"] = 5.5
+	if not midtask.queue_order(Vector2i(8, 5), "collect", 7):
+		_fail("Tarefa para validar elegibilidade durante a execucao foi recusada.")
+		return
+	midtask.step(0.1)
+	if int(midtask.orders[0]["worker"]) != 0:
+		_fail("Tarefa nao foi atribuida antes da alteracao de restricao.")
+		return
+	midtask.workers[0]["blocked_tools"] = ["collect"]
+	midtask.step(0.1)
+	if int(midtask.orders[0]["worker"]) != -1 or int(midtask.workers[0]["order_id"]) != 0 or int(midtask.stocks["food"]) != 6:
+		_fail("Atividade proibida continuou em execucao ou consumiu recursos.")
+		return
+	midtask.workers[1]["health"] = 100.0
+	midtask.step(0.1)
+	if int(midtask.orders[0]["worker"]) != 1:
+		_fail("Ordem suspensa por restricao nao foi liberada ao colono apto.")
+		return
+	# Bonus conforme GDD: uma especialidade 2.0x, duas 1.6x e tres 1.3x.
+	if absf(priority._skill_multiplier({"skills": ["water"]}, "water") - 2.0) > 0.001:
+		_fail("Bonus para uma especialidade diferente do GDD.")
+		return
+	if absf(priority._skill_multiplier({"skills": ["water", "till"]}, "water") - 1.6) > 0.001:
+		_fail("Bonus para duas especialidades diferente do GDD.")
+		return
+	if absf(priority._skill_multiplier({"skills": ["water", "till", "plant"]}, "water") - 1.3) > 0.001:
+		_fail("Bonus para tres especialidades diferente do GDD.")
+		return
+	if absf(priority._skill_multiplier({"skills": ["water"]}, "carry") - 1.0) > 0.001:
+		_fail("Trabalho sem especialidade recebeu bonus indevido.")
+		return
+	# Controles de prioridade do HUD respeitam os limites e nao mudam o tempo.
+	var time_before_priority: float = float(colony.minutes)
+	main.call("_change_priority", 99)
+	if int(main.get("selected_priority")) != 9:
+		_fail("HUD nao limitou prioridade maxima em 9.")
+		return
+	main.call("_change_priority", -99)
+	if int(main.get("selected_priority")) != 1:
+		_fail("HUD nao limitou prioridade minima em 1.")
+		return
+	if absf(float(colony.minutes) - time_before_priority) > 0.001:
+		_fail("Mudar prioridade alterou tempo da colonia.")
+		return
+	# Novo save preserva prioridade. Save v1 legado (sem novos campos) continua valido.
+	var priority_save: Dictionary = priority.snapshot()
+	var priority_restored = ColonyState.new()
+	if not priority_restored.restore(priority_save) or int(priority_restored.orders[1]["priority"]) != 9:
+		_fail("Prioridade nao foi persistida no save Godot.")
+		return
+	var legacy_save: Dictionary = priority_save.duplicate(true)
+	for order in legacy_save["orders"]:
+		order.erase("priority")
+	for worker in legacy_save["workers"]:
+		worker.erase("blocked_tools")
+	var legacy_colony = ColonyState.new()
+	if not legacy_colony.restore(legacy_save):
+		_fail("Save Godot anterior sem prioridade/traco nao foi aceito.")
+		return
+	if int(legacy_colony.orders[0].get("priority", 5)) != 5:
+		_fail("Save anterior nao recebeu prioridade padrao 5.")
+		return
+	var corrupt_save: Dictionary = priority_save.duplicate(true)
+	corrupt_save["orders"][0]["priority"] = 10
+	if priority_restored.restore(corrupt_save) or int(priority_restored.orders[1]["priority"]) != 9:
+		_fail("Save com prioridade invalida foi aceito ou corrompeu o estado.")
+		return
 	if not colony.queue_order(Vector2i(8, 5), "collect"):
 		_fail("Coleta real na clareira não entrou na fila.")
 		return
