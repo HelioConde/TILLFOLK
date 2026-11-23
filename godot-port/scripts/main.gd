@@ -12,6 +12,8 @@ const TOOL_LABELS := {
 const TOOL_KEYS := ["collect", "till", "plant", "water", "harvest", "carry", "fetch_water"]
 var colony = ColonyState.new()
 var selected_tool := "collect"
+var selected_priority := 5
+var priority_label: Label
 var hud_label: Label
 var help_label: Label
 var message_label: Label
@@ -45,6 +47,18 @@ func _build_hud() -> void:
 	hud_label.add_theme_font_size_override("font_size", 18)
 	hud_label.add_theme_color_override("font_color", Color("#f8efd8"))
 	overlay.add_child(hud_label)
+	priority_label = Label.new()
+	priority_label.position = Vector2(824, 299)
+	priority_label.add_theme_font_size_override("font_size", 16)
+	priority_label.add_theme_color_override("font_color", Color("#f4d18b"))
+	overlay.add_child(priority_label)
+	for change in [-1, 1]:
+		var priority_button := Button.new()
+		priority_button.text = "-" if change < 0 else "+"
+		priority_button.position = Vector2(1090 if change < 0 else 1146, 294)
+		priority_button.custom_minimum_size = Vector2(48, 32)
+		priority_button.pressed.connect(_change_priority.bind(change))
+		overlay.add_child(priority_button)
 	help_label = Label.new()
 	help_label.position = Vector2(824, 345)
 	help_label.add_theme_color_override("font_color", Color("#e4d2a7"))
@@ -101,6 +115,11 @@ func _select_tool(tool: String) -> void:
 	message_label.text = "Ferramenta escolhida: " + TOOL_LABELS[tool]
 	_update_hud()
 
+func _change_priority(change: int) -> void:
+	selected_priority = clampi(selected_priority + change, 1, 9)
+	message_label.text = "Novas ordens terão prioridade %d." % selected_priority
+	_update_hud()
+
 func _toggle_pause() -> void:
 	simulation_paused = not simulation_paused
 	message_label.text = "Simulação pausada." if simulation_paused else "Simulação retomada."
@@ -120,6 +139,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			_toggle_pause()
 			get_viewport().set_input_as_handled()
 			return
+		if event.keycode == KEY_MINUS or event.keycode == KEY_EQUAL:
+			_change_priority(-1 if event.keycode == KEY_MINUS else 1)
+			get_viewport().set_input_as_handled()
+			return
 		if event.keycode in [KEY_8, KEY_9, KEY_0]:
 			_set_speed(1 if event.keycode == KEY_8 else (2 if event.keycode == KEY_9 else 3))
 			get_viewport().set_input_as_handled()
@@ -137,7 +160,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			message_label.text = "Ordem cancelada." if colony.cancel_order(cell) else "Nenhuma ordem nessa célula."
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_LEFT:
-			message_label.text = "Ordem enviada: " + TOOL_LABELS[selected_tool] if colony.queue_order(cell, selected_tool) else "Ordem inválida ou sem recursos."
+			if colony.queue_order(cell, selected_tool, selected_priority):
+				message_label.text = "Ordem P%d: %s" % [selected_priority, TOOL_LABELS[selected_tool]]
+			else:
+				message_label.text = "Ordem inválida ou sem recursos."
 			get_viewport().set_input_as_handled()
 		_update_hud()
 		queue_redraw()
@@ -167,7 +193,8 @@ func _update_hud() -> void:
 		colony.stocks["food"], colony.stocks["seeds"],
 		colony.stocks["water"], colony.stocks["wood"], colony.orders.size()
 	]
-	help_label.text = "TRABALHO\n1–7: selecionar ordem\nP: pausar / retomar\n8 / 9 / 0: 1x / 2x / 3x\nClique: colocar ordem\nDireito: cancelar\n\nA coleta precisa chegar ao\nacampamento para virar estoque.\nA agricultura exige etapas:\narar → semear → regar →\ncolher → transportar.\n\n%s" % ("COLÔNIA PERDIDA" if colony.game_over else "Proteja seus colonos da fome.")
+	priority_label.text = "Próxima ordem: P%d / 9" % selected_priority
+	help_label.text = "TRABALHO\n1–7: selecionar ordem\nP: pausar / retomar\n8 / 9 / 0: 1x / 2x / 3x\n- / =: prioridade\nClique: colocar ordem\nDireito: cancelar\n\nA coleta precisa chegar ao\nacampamento para virar estoque.\nA agricultura exige etapas:\narar → semear → regar →\ncolher → transportar.\n\n%s" % ("COLÔNIA PERDIDA" if colony.game_over else "Proteja seus colonos da fome.")
 	pause_button.text = "Retomar" if simulation_paused else "Pausar"
 	for speed in speed_buttons:
 		speed_buttons[speed].modulate = Color("#b6de81") if speed == simulation_speed and not simulation_paused else Color.WHITE
@@ -205,7 +232,9 @@ func _draw() -> void:
 				draw_circle(p + Vector2(15, 15), 8.0, Color("#e6b66a"))
 	for order in colony.orders:
 		var p := ORIGIN + Vector2(int(order["x"]), int(order["y"])) * CELL
-		draw_rect(Rect2(p + Vector2(2, 2), Vector2(CELL - 5, CELL - 5)), Color("#f4d18b"), false, 2.0)
+		var urgency: int = clampi(int(order.get("priority", 5)), 1, 9)
+		var outline: Color = Color("#ff9a70") if urgency >= 7 else Color("#f4d18b")
+		draw_rect(Rect2(p + Vector2(2, 2), Vector2(CELL - 5, CELL - 5)), outline, false, 1.0 + float(urgency) * 0.25)
 	var depot_pos := ORIGIN + ColonyState.DEPOT * CELL
 	draw_rect(Rect2(depot_pos - Vector2(12, 12), Vector2(24, 24)), Color("#dab66d"))
 	for i in range(colony.workers.size()):
