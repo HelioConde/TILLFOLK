@@ -250,6 +250,14 @@ func _advance_worker(worker_index: int, delta: float) -> void:
 		order = _choose_order(worker_index)
 	if order.is_empty():
 		return
+	# A elegibilidade tambem e verificada durante a execucao, inclusive
+	# apos carregar um save com ordem ja reservada.
+	var forbidden_now: Array = worker.get("blocked_tools", [])
+	if forbidden_now.has(str(order["tool"])):
+		order["worker"] = -1
+		worker["order_id"] = 0
+		navigation_targets.erase(worker_index)
+		return
 	var cell := Vector2i(int(order["x"]), int(order["y"]))
 	if not _valid_work(cell, str(order["tool"])):
 		order["worker"] = -1
