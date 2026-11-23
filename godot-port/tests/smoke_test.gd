@@ -40,6 +40,30 @@ func _run() -> void:
 	if int(main.get("simulation_speed")) != 1:
 		_fail("Velocidade normal não foi restaurada.")
 		return
+	# A morte nao deve bloquear uma ordem que outro colono ainda pode executar.
+	var death = ColonyState.new()
+	death.workers[0]["x"] = 7.5
+	death.workers[0]["y"] = 5.5
+	if not death.queue_order(Vector2i(8, 5), "collect"):
+		_fail("Ordem de coleta para teste de morte nao entrou na fila.")
+		return
+	death.step(0.1)
+	if int(death.orders[0]["worker"]) != 0:
+		_fail("Primeiro colono nao recebeu a ordem antes de morrer.")
+		return
+	death.workers[0]["health"] = 0.0
+	death.step(0.1)
+	if int(death.workers[0]["order_id"]) != 0 or int(death.orders[0]["worker"]) != 1:
+		_fail("Morte manteve a ordem presa no trabalhador falecido.")
+		return
+	if int(death.stocks["food"]) != 6:
+		_fail("Troca de trabalhador criou comida antes da entrega.")
+		return
+	for i in range(240):
+		death.step(0.1)
+	if not death.orders.is_empty() or int(death.stocks["food"]) != 8:
+		_fail("Trabalhador sobrevivente nao finalizou coleta e transporte.")
+		return
 	if not colony.queue_order(Vector2i(8, 5), "collect"):
 		_fail("Coleta real na clareira não entrou na fila.")
 		return

@@ -205,6 +205,15 @@ func _complete_order(order: Dictionary, worker: Dictionary) -> void:
 func _advance_worker(worker_index: int, delta: float) -> void:
 	var worker: Dictionary = workers[worker_index]
 	if float(worker["health"]) <= 0.0:
+		# Um colono falecido nao pode manter uma ordem explicitamente autorizada
+		# reservada para sempre. Preservar o progresso e qualquer carga fisica.
+		var dead_order_id: int = int(worker["order_id"])
+		if dead_order_id != 0:
+			var abandoned: Dictionary = _find_order(dead_order_id)
+			if not abandoned.is_empty() and int(abandoned["worker"]) == worker_index:
+				abandoned["worker"] = -1
+			worker["order_id"] = 0
+			navigation_targets.erase(worker_index)
 		return
 	var cargo: Dictionary = worker["cargo"]
 	if not cargo.is_empty():
