@@ -21,6 +21,18 @@ func _run() -> void:
 	if colony == null or colony.workers.size() != 2:
 		_fail("A primeira colônia deve começar com dois colonos.")
 		return
+	# A cena principal usa o atlas oficial no mapa jogável, não só na prévia.
+	var terrain_base := main.get_node_or_null("TerrainBase") as TileMapLayer
+	var terrain_overlay := main.get_node_or_null("TerrainInnerCorners") as TileMapLayer
+	if terrain_base == null or terrain_overlay == null:
+		_fail("O mapa principal não integrou as camadas TileMapLayer oficiais.")
+		return
+	if terrain_base.get_used_cells().size() != ColonyState.WIDTH * ColonyState.HEIGHT - 13:
+		_fail("O terreno principal deve pintar o chão e deixar o rio como camada independente.")
+		return
+	if absf(terrain_base.scale.x - 30.0 / 16.0) > 0.001:
+		_fail("O atlas de 16 px não está alinhado à grade de trabalho de 30 px.")
+		return
 	# Tempo: pausa congela toda a simulação; 3x executa três passos reais.
 	var start_minutes: float = float(colony.minutes)
 	main.call("_toggle_pause")
