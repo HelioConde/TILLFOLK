@@ -15,12 +15,12 @@ Este é o **primeiro recorte de migração do TILLFOLK**, colocado em \`godot-po
 - Pausa e retomada (`P` ou botão) e velocidades de simulação 1x, 2x e 3x (`8`, `9`, `0` ou botões). A pausa congela o relógio, os colonos, a fome e os trabalhos; mudar a velocidade retoma a partida. Os controles de tempo são da sessão e não alteram o formato do save.
 - Novo jogo, salvar e carregar no sistema de arquivos local do Godot (\`user://\`), com verificação mínima de integridade.
 - Um smoke test GDScript sem dependências de servidor, incluindo desvio de árvore, trabalho na margem do rio, tarefas isoladas, reatribuição de ordens após morte, prioridade, restrições, bônus e saves legados.
-- **Núcleo de autotile oficial em GDScript:** `scripts/terrain_autotile.gd` reproduz bordas, cantos, cantos internos e fallback do contrato `tillfolk-terrain-autotile/v1` (16×16, 11×7, 8 vizinhos). O JSON e o catálogo dos nove atlases/seis biomas são comparados automaticamente com HTML5. A renderização em TileMapLayer ainda não foi implementada.
+- **Núcleo de autotile oficial em GDScript:** `scripts/terrain_autotile.gd` reproduz bordas, cantos, cantos internos e fallback do contrato `tillfolk-terrain-autotile/v1` (16×16, 11×7, 8 vizinhos). O JSON e o catálogo dos nove atlases/seis biomas são comparados automaticamente com HTML5. A cena isolada `scenes/TerrainPreview.tscn` já demonstra os nove atlas reais em seis áreas de bioma com `TileMapLayer`; a cena principal e a publicação HTML5 continuam preservadas.
 
 ## Rodar localmente
 
 1. Instale Godot 4.7.2, padrão GDScript (não .NET).
-2. Abra **\`godot-port/project.godot\`** no Godot e pressione F5.
+2. Abra `godot-port/project.godot` no Godot e pressione F5. Para abrir a prévia isolada de terreno, rode `godot --path godot-port res://scenes/TerrainPreview.tscn`.
 3. Escolha uma ferramenta com o botão ou com as teclas 1 a 7, clique no mapa e acompanhe os colonos até concluírem a tarefa.
 4. Clique direito cancela uma ordem ainda pendente. Ajuste a prioridade da próxima ordem com os botões `-`/`+` do painel direito ou com as teclas `-`/`=`. Isso não altera prioridades de ordens já criadas.
 
@@ -29,6 +29,7 @@ Testes:
 godot --headless --editor --path godot-port --quit
 godot --headless --path godot-port --script res://tests/smoke_test.gd
 godot --headless --path godot-port --script res://tests/terrain_contract_test.gd
+godot --headless --path godot-port --script res://tests/terrain_tilemap_test.gd
 node --test tests/godot-terrain-parity.test.cjs tests/terrain-contract.test.cjs tests/terrain-biomes.test.cjs tests/terrain-autotile.test.cjs
 \`\`\`
 
@@ -39,7 +40,7 @@ A Action `TILLFOLK — Godot 4 (port experimental)` faz importação, smoke e ex
 
 ## O que AINDA NÃO foi migrado
 
-Esta versão é um vertical slice, **não uma conversão completa**. Falta desenhar os nove atlases Sprout Lands via TileSet/TileMapLayer (o contrato e catálogo de seleção já estão migrados), mapa grande com seis biomas, navegação avançada (terrenos/custos dinâmicos e reservas), logística de reservas, 19 culturas e economia S4, Work Station e ferramentas, moradias/recrutamento, turismo/animais, mapa dinâmico, tutorial, HUD detalhado, publicação Web e migração de saves do \`localStorage\` antigo. Os visuais atuais são formas procedurais **temporárias**; não são sprites PixelLab nem os sprites premium da versão JS.
+Esta versão é um vertical slice, **não uma conversão completa**. A cena principal ainda usa formas temporárias; falta integrar os nove atlas Sprout Lands e expandir o mundo com seis biomas, navegação avançada (terrenos/custos dinâmicos e reservas), logística de reservas, 19 culturas e economia S4, Work Station e ferramentas, moradias/recrutamento, turismo/animais, mapa dinâmico, tutorial, HUD detalhado, publicação Web e migração de saves do \`localStorage\` antigo. Os visuais atuais são formas procedurais **temporárias**; não são sprites PixelLab nem os sprites premium da versão JS.
 
 Saves `schema: 1` anteriores continuam aceitos: a prioridade de ordens antigas ausente no JSON é interpretada como 5 e a lista de atividades proibidas ausente é tratada como vazia. A edição desses novos campos não altera o esquema, os materiais ou os saves da versão HTML5.
 
