@@ -3,7 +3,7 @@
 Este é o **primeiro recorte de migração do TILLFOLK**, colocado em \`godot-port/\` para proteger a versão HTML5 em produção. O repositório [Re-Dream / Eclipse Vanguard](https://github.com/HelioConde/Re-Dream) foi consultado como referência de stack (Godot 4.7.2, GDScript, importação headless e smoke test); **não é o destino dos arquivos de TILLFOLK**, porque são jogos de gêneros diferentes.
 
 ## O que funciona neste recorte
-- Mapa top-down reproduzível com clareira, árvores, arbustos e fonte de água.
+- Mapa top-down reproduzível com atlas oficial de grama via `TileMapLayer`; rios ficam em camada própria, com árvores, arbustos e demais recursos desenhados por cima.
 - Dois colonos com nomes, fome, saúde, habilidade preferencial e autonomia para selecionar ordens explícitas.
 - Coleta de alimentos, sementes e madeira; busca de água; transporte físico ao depósito.
 - Navegação por grade contorna árvores e rios; madeira e água são coletadas de células adjacentes transitáveis, sem atravessar obstáculos ou gerar recursos à distância.
@@ -40,7 +40,7 @@ A Action `TILLFOLK — Godot 4 (port experimental)` faz importação, smoke e ex
 
 ## O que AINDA NÃO foi migrado
 
-Esta versão é um vertical slice, **não uma conversão completa**. A cena principal ainda usa formas temporárias; falta integrar os nove atlas Sprout Lands e expandir o mundo com seis biomas, navegação avançada (terrenos/custos dinâmicos e reservas), logística de reservas, 19 culturas e economia S4, Work Station e ferramentas, moradias/recrutamento, turismo/animais, mapa dinâmico, tutorial, HUD detalhado, publicação Web e migração de saves do \`localStorage\` antigo. Os visuais atuais são formas procedurais **temporárias**; não são sprites PixelLab nem os sprites premium da versão JS.
+Esta versão é um vertical slice, **não uma conversão completa**. A cena principal já usa o atlas oficial de grama e a prévia isolada demonstra os nove atlas nos seis biomas; faltam os objetos e colonos com sprites Sprout Lands e expandir o mundo com seis biomas, navegação avançada (terrenos/custos dinâmicos e reservas), logística de reservas, 19 culturas e economia S4, Work Station e ferramentas, moradias/recrutamento, turismo/animais, mapa dinâmico, tutorial, HUD detalhado, publicação Web e migração de saves do \`localStorage\` antigo. Os visuais atuais são formas procedurais **temporárias**; não são sprites PixelLab nem os sprites premium da versão JS.
 
 Saves `schema: 1` anteriores continuam aceitos: a prioridade de ordens antigas ausente no JSON é interpretada como 5 e a lista de atividades proibidas ausente é tratada como vazia. A edição desses novos campos não altera o esquema, os materiais ou os saves da versão HTML5.
 
