@@ -1,6 +1,8 @@
 extends Node2D
 ## Prototipo do TILLFOLK Godot: gestao top-down, sem modificar Eclipse Vanguard.
 const ColonyState = preload("res://scripts/colony_state.gd")
+const Terrain = preload("res://scripts/terrain_autotile.gd")
+const TerrainTilemap = preload("res://scripts/terrain_tilemap.gd")
 const CELL := 30.0
 const ORIGIN := Vector2(18, 94)
 const SAVE_PATH := "user://tillfolk-godot-v1.json"
@@ -23,10 +25,53 @@ var speed_buttons: Dictionary = {}
 var simulation_paused := false
 var simulation_speed := 1
 var render_elapsed := 0.0
+var terrain_base: TileMapLayer
+var terrain_overlay: TileMapLayer
 
 func _ready() -> void:
+	_build_terrain_layers()
 	_build_hud()
 	_update_hud()
+
+func _build_terrain_layers() -> void:
+	var built: Dictionary = TerrainTilemap.create_tile_set()
+	if built.has("error"):
+		push_error("Não foi possível carregar os atlas de terreno: %s" % str(built["error"]))
+		return
+	var tile_set: TileSet = built["tile_set"]
+	var source_ids: Dictionary = built["source_ids"]
+	var grass_source := int(source_ids.get("grassLayer", -1))
+	if grass_source < 0:
+		push_error("Atlas oficial de grama não está no catálogo.")
+		return
+	terrain_base = TileMapLayer.new()
+	terrain_base.name = "TerrainBase"
+	terrain_base.tile_set = tile_set
+	terrain_base.position = ORIGIN
+	terrain_base.scale = Vector2.ONE * (CELL / float(TerrainTilemap.TILE_SIZE))
+	terrain_base.z_index = -1
+	terrain_base.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(terrain_base)
+	terrain_overlay = TileMapLayer.new()
+	terrain_overlay.name = "TerrainInnerCorners"
+	terrain_overlay.tile_set = tile_set
+	terrain_overlay.position = ORIGIN
+	terrain_overlay.scale = terrain_base.scale
+	terrain_overlay.z_index = -1
+	terrain_overlay.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(terrain_overlay)
+	var land_mask: Array = []
+	for y in range(ColonyState.HEIGHT):
+		var row: Array[bool] = []
+		for x in range(ColonyState.WIDTH):
+			row.append(str(colony.get_tile(Vector2i(x, y)).get("resource", "empty")) != "water")
+		land_mask.append(row)
+	var result: Dictionary = TerrainTilemap.paint_mask(
+		terrain_base, terrain_overlay, grass_source, land_mask,
+		Terrain.config_for_atlas("grassLayer").get("roles", {})
+	)
+	if not str(result.get("error", "")).is_empty():
+		push_error("Falha ao desenhar terreno oficial: %s" % str(result["error"]))
 
 func _build_hud() -> void:
 	var overlay := CanvasLayer.new()
@@ -203,7 +248,6 @@ func _update_hud() -> void:
 		button.modulate = Color("#b6de81") if tool == selected_tool else Color.WHITE
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, Vector2(1280, 720)), Color("#152721"))
 	draw_rect(Rect2(Vector2(810, 94), Vector2(446, 550)), Color("#21382f"))
 	for y in range(ColonyState.HEIGHT):
 		for x in range(ColonyState.WIDTH):
@@ -211,12 +255,11 @@ func _draw() -> void:
 			var tile: Dictionary = colony.get_tile(cell)
 			var p := ORIGIN + Vector2(x, y) * CELL
 			var resource: String = str(tile["resource"])
-			var ground := Color("#507d4d") if (x + y) % 2 == 0 else Color("#5c8a55")
 			if bool(tile["tilled"]):
-				ground = Color("#786145")
+				draw_rect(Rect2(p + Vector2(1, 1), Vector2(CELL - 3, CELL - 3)), Color(0.47, 0.34, 0.21, 0.58))
 			if resource == "water":
-				ground = Color("#427c9c")
-			draw_rect(Rect2(p, Vector2(CELL - 1, CELL - 1)), ground)
+				draw_rect(Rect2(p, Vector2(CELL - 1, CELL - 1)), Color("#427c9c"))
+			draw_rect(Rect2(p, Vector2(CELL - 1, CELL - 1)), Color(0.10, 0.17, 0.11, 0.28), false, 1.0)
 			if resource == "tree":
 				draw_rect(Rect2(p + Vector2(12, 15), Vector2(6, 14)), Color("#6c4b35"))
 				draw_circle(p + Vector2(15, 12), 11.0, Color("#264f30"))
