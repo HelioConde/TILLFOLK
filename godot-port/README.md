@@ -34,9 +34,9 @@ node --test tests/godot-terrain-parity.test.cjs tests/terrain-contract.test.cjs 
 \`\`\`
 
 
-## Versão Web para testes (sem alterar GitHub Pages)
+## Versão Web e publicação no GitHub Pages
 
-A Action `TILLFOLK — Godot 4 (port experimental)` faz importação, smoke e exportação Web. Depois de passar, abra a execução da PR Godot mais recente, baixe o artefato `tillfolk-godot-web-preview` e sirva os arquivos localmente com `python -m http.server 8080` na pasta extraída. Não abra o HTML direto via `file://`, porque WebAssembly precisa de HTTP. O preview **não é publicado** em `helioconde.github.io/TILLFOLK/`.
+A Action `TILLFOLK — Godot 4 (port experimental)` faz importação, smoke e exportação Web. Depois de passar, abra a execução da PR Godot mais recente, baixe o artefato `tillfolk-godot-web-preview` e sirva os arquivos localmente com `python -m http.server 8080` na pasta extraída. Não abra o HTML direto via `file://`, porque WebAssembly precisa de HTTP. A publicação oficial passa a usar o Godot na raiz de `helioconde.github.io/TILLFOLK/` após aprovação da PR de publicação. A versão HTML5 permanece em `/TILLFOLK/legacy/`, com saves separados.
 
 ## O que AINDA NÃO foi migrado
 
@@ -52,6 +52,6 @@ As texturas/tilemaps oficiais do JavaScript não foram alterados. **Não tratar 
 2. Integrar os sprites autorizados de Sprout Lands com orientação e animações verificadas, preservando a licença.
 3. Portar a lógica real de save e a economia agrária com testes comparativos entre JS e Godot.
 4. Evoluir o pathfinding básico com custos e reservas, prioridades globais/individuais por trabalhador (além das prioridades por ordem já portadas), trabalho com ferramentas, física de transporte e profissões.
-5. Adicionar testes visuais desktop/mobile e só então configurar uma publicação Web **alternativa**, sem substituir a versão HTML5 atual.
+5. Adicionar testes visuais desktop/mobile e ampliar a versão Web publicada, preservando a edição HTML5 em `/legacy/`.
 
 O jogo de ação **Eclipse Vanguard** continua exclusivamente no repositório \`Re-Dream\`.
