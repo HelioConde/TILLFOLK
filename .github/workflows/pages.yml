@@ -1,7 +1,9 @@
-name: TILLFOLK — validar e publicar
+name: TILLFOLK — validar e publicar Godot
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -9,12 +11,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: tillfolk-pages
+  group: tillfolk-pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Validar cena HTML5
+    name: Validar legado e exportar Godot
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -289,14 +291,46 @@ jobs:
           grep -q 'menu-layout.css' _site/index.html
           grep -q 'menu-layout.css' _site/menu-layout.css || test -s _site/menu-layout.css
           test -f "_site/public/assets/Sprout Lands - UI Pack - Basic pack/fonts/pixelFont-7-8x14-sproutLands.ttf"
+      - name: Preservar versão HTML5 em /legacy/
+        run: |
+          mv _site _legacy
+          mkdir -p _site
+          mv _legacy _site/legacy
+      - name: Instalar Godot 4.7.2 e export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+      - name: Testar Godot e paridade de terrenos
+        run: |
+          node --test tests/godot-terrain-parity.test.cjs
+          godot --headless --editor --path godot-port --quit
+          godot --headless --path godot-port --script res://tests/smoke_test.gd
+          godot --headless --path godot-port --script res://tests/terrain_contract_test.gd
+          godot --headless --path godot-port --script res://tests/terrain_tilemap_test.gd
+      - name: Exportar Godot Web na raiz do Pages
+        run: |
+          mkdir -p godot-port/dist
+          godot --headless --path godot-port --export-release "Web" dist/index.html
+          for file in index.html index.js index.wasm index.pck; do
+            test -s "godot-port/dist/$file"
+          done
+          cp -a godot-port/dist/. _site/
+          touch _site/.nojekyll
+          test -s _site/legacy/index.html
+          test -s _site/index.wasm
       - name: Configurar GitHub Pages
+        if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v5
       - name: Enviar artefato do site
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     name: Publicar no GitHub Pages
     needs: build
     runs-on: ubuntu-24.04
